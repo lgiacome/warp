@@ -1186,8 +1186,8 @@ def Seed(SolCase,Q,emitx,emity,sigmax,sigmay):
         # --- check that both emittances are positive
         #     if not, use continuous estimates
         if emitx0 < 0 or emity0 < 0:
-            emitx0 = sqrt(((sigma0x/lperiod)^2*rxbar - 2*Q0/(rxbar+rybar))*rxbar**3)
-            emity0 = sqrt(((sigma0y/lperiod)^2*rybar - 2*Q0/(rxbar+rybar))*rybar**3)
+            emitx0 = sqrt(((sigma0x/lperiod)**2*rxbar - 2*Q0/(rxbar+rybar))*rxbar**3)
+            emity0 = sqrt(((sigma0y/lperiod)**2*rybar - 2*Q0/(rxbar+rybar))*rybar**3)
     elif SolCase == '2'  or SolCase == '2a' or SolCase == '2b' or \
          SolCase == '3a' or SolCase == '3b' or SolCase == '0':
         if   SolCase == '2' or SolCase == '0':
