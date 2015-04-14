@@ -2,30 +2,78 @@
 # Python file with some parallel operations
 #
 from numpy import *
-# --- Try import mpi - if not found, then run in serial mode
+# --- Try import mpi (pyMPI) 
+#     - if not found, try to from mpi4py import MPI as mpi (mpi4py) 
+#     - if not found then run in serial mode
 # --- Note that:
 # --- mpi.COMM_WORLD is same as MPI_COMM_WORLD
-# --- mpi.WORLD is a duplicate of MPI_COMM_WORLD
+# --- mpi.WORLD is a duplicate of MPI_COMM_WORLD (pyMPI)
+# --- mpi.COMM_WORLD is directly used for mpi4py (mpi4py)
 # --- comm_world is used for most communications (and defaults to mpi.WORLD)
 try:
+    #Try to import pyMPI
     import mpi
     mpi.synchronizeQueuedOutput(None)
     me = mpi.rank
     npes = mpi.procs
     comm_world = mpi.WORLD
-except ImportError:
-    me = 0
-    npes = 1
-    comm_world = None
+    lpyMPIactive = True
+    lmpi4pyactive = False
+except:
+    try:
+        #Try to import mpi4py
+        from mpi4py import MPI as mpi 
+        #mpi.synchronizeQueuedOutput(None) 
+        #not available for mpi4py (as far as i know)
+        comm_world = mpi.COMM_WORLD    
+        me = comm_world.Get_rank()
+        npes = comm_world.Get_size()
+        lmpi4pyactive = True
+        lpyMPIactive = False
+    except ImportError:
+        #Single core version of WARP
+        me = 0
+        npes = 1
+        comm_world = None
+        lpyMPIactive = False
+        lmpi4pyactive = False
 
 lparallel = (npes > 1)
+
+if lmpi4pyactive:
+    import sys
+    globalvar = sys._getframe().f_globals
+    #-------------------------------------------------------------------------------
+    # synchronizeQueuedOutput 
+    # (mpi4pywork around... not synchronized, but only PE=0 prints to the console)
+    #-------------------------------------------------------------------------------
+    def synchronizeQueuedOutput_mpi4py(out = True, error = False):
+        if out == False:
+            exec("sys.stdout = sys.__stdout__", globalvar)
+        else:
+            if me > 0:
+                exec("""__mpi_stdoutfile__ = open("/dev/null", "w"); sys.stdout = __mpi_stdoutfile__""",
+                    globalvar)
+
+        if error == False:
+            exec("sys.stderr = sys.__stderr__", globalvar)
+        else:
+            if me > 0:
+                exec("""__mpi_stderrfile__ = open("/dev/null", "w"); sys.stderr = __mpi_stderrfile__""",
+                    globalvar)
+        return
 
 def setdefaultcomm_world(comm):
     global comm_world,me,npes
     if not lparallel: return
-    comm_world = comm
-    me = comm_world.rank
-    npes = comm_world.procs
+    if lpyMPIactive: #check if pyMPI is used
+        comm_world = comm
+        me = comm_world.rank
+        npes = comm_world.procs
+    if lmpi4pyactive: #check if mpi4py is used
+        comm_world = comm
+        me = comm_world.Get_rank()
+        npes = comm_world.Get_size()
 
 """
 # --- This check is old enough that it is no longer needed.
@@ -37,13 +85,14 @@ def setdefaultcomm_world(comm):
 if lparallel:
   mpi.send(me,me)
   _i = mpi.recv(me)
-  if isinstance(_i,tuple): _newpympi = 1
-  else:                    _newpympi = 0
+  if type(_i) == TupleType: _newpympi = 1
+  else:                     _newpympi = 0
 else:
   _newpympi = 1
 """
-_newpympi = 1
-
+#_newpympi = 1 #not needed anymore
+"""
+# --- Old routines for mpirecv for the support of old pyMPI versions.
 if _newpympi:
     def mpirecv(pe=0,ms=0,comm=None):
         if comm is None: comm = comm_world
@@ -53,37 +102,106 @@ else:
     def mpirecv(pe=0,ms=0,comm=None):
         if comm is None: comm = comm_world
         return comm.recv(pe,ms)
+"""
+# ---------------------------------------------------------------------------
+# --- New routines for handling sends and receives supporting pyMPI and mpi4py
+# --- Checks if pyMPI or mpi4py is used...
+# --- If pyMPI is active, uses the standard pyMPI routines
+# --- If mpi4py is active, uses the standard (slow) mpi4py routines
+# --- Also the "fast" routines of mpi4py (sending/receiving numpy arrays)
+# --- can be used with lmpi4pynp = True. Defaults to "False", as some routines
+# --- in parallel.py (e.g. gather) do not behave correctly anymore.
+# --- New routines that send and receive numpy arrays should make use of 
+# --- the "fast" mpi4py routines. Therefore the array that is sent and received  
+# --- needs to be defined on both, the sending and the receiving processor.
+# ---------------------------------------------------------------------------
+
+def mpirecv(data = None, source = 0, tag = 0, comm = None, lmpi4pynp = False):
+    if comm is None: comm = comm_world
+    if lpyMPIactive:
+        result, status = comm.recv(source, tag)
+    elif lmpi4pyactive and lmpi4pynp == False:
+        result = comm.recv(source = source, tag = tag)
+    else:
+        result = comm.Recv(data, source = source, tag = tag)
+    return result
+
+def mpisend(data = None, dest = 0, tag = 0, comm = None, lmpi4pynp = False):
+    if comm is None: comm = comm_world
+    if lpyMPIactive:
+        result = comm.send(data, dest, tag)
+    elif lmpi4pyactive and lmpi4pynp == False:
+        result = comm.send(data, dest = dest, tag = tag)
+    else:
+        result = comm.Send(data, dest = dest, tag = tag)
+    return result
+
+def mpibcast(data = None, root = 0, comm = None, lmpi4pynp = False):
+    if comm is None: comm = comm_world
+    if lpyMPIactive:
+        result = comm.bcast(data, root)
+    elif lmpi4pyactive and lmpi4pynp == False:
+        result = comm.bcast(data, root = root)
+    else: 
+        result = comm.Bcast(data, root = root)
+    return result
+
+def mpiallreduce(data = None, op = mpi.SUM, comm = None, lmpi4pynp = False):
+    if comm is None: comm = comm_world
+    if lpyMPIactive:
+        result = comm.allreduce(data, op)
+    elif lmpi4pyactive and lmpi4pynp == False:
+        result = comm.allreduce(data, op = op)
+    else:
+        result = comm.Allreduce(data, op = op)
+    return result
 
 # ---------------------------------------------------------------------------
 # --- By default, set so that only PE0 sends output to the terminal.
-if lparallel:
+# --- mpi4py version supports output to me = 0, but not "synchronized"
+if lparallel and lpyMPIactive:
     mpi.synchronizeQueuedOutput('/dev/null')
+if lparallel and lmpi4pyactive:
+    synchronizeQueuedOutput_mpi4py(out = True, error = False)
 
 def number_of_PE(comm=None):
     if not lparallel: return 1
     if comm is None: comm = comm_world
-    return comm.procs
+    if lpyMPIactive:
+        return comm.procs
+    else:
+        return comm.Get_size()
+
 def get_rank(comm=None):
     if not lparallel: return 0
     if comm is None: comm = comm_world
-    return comm.rank
+    if lpyMPIactive:
+        return comm.rank
+    else:
+        return comm.Get_rank()
 
 # ---------------------------------------------------------------------------
 # Enable output from all processors
 def EnableAll():
     if not lparallel: return
-    mpi.synchronizeQueuedOutput(None)
+    if lpyMPIactive:
+        mpi.synchronizeQueuedOutput(None)
+    if lmpi4pyactive:
+        synchronizeQueuedOutput_mpi4py(out = False, error = False)
 
 # ---------------------------------------------------------------------------
 # Disable output from all but processor 0
 def DisableAll():
     if not lparallel: return
-    mpi.synchronizeQueuedOutput('/dev/null')
+    if lpyMPIactive:
+        mpi.synchronizeQueuedOutput('/dev/null')
+    if lmpi4pyactive:
+        synchronizeQueuedOutput_mpi4py(out = True, error = False)
 
 # ---------------------------------------------------------------------------
 # Print object on all processors
 def pprint(obj):
-    if not lparallel:
+    if not (lparallel and lpyMPIactive):
         print str(obj)
         return
     # Ignore all exceptions to make sure that there is not a lock up.
@@ -97,7 +215,7 @@ def pprint(obj):
 # ---------------------------------------------------------------------------
 # Print array (or list) from all processors
 def aprint(obj):
-    if not lparallel:
+    if not (lparallel and lpyMPIactive):
         print str(obj)
         return
     mpi.synchronizedWrite(str(obj))
@@ -107,17 +225,20 @@ def aprint(obj):
 def self_address(comm=None):
     if not lparallel: return 0
     if comm is None: comm = comm_world
-    return comm.rank
+    if lpyMPIactive:
+        return comm.rank
+    else:
+        return comm.Get_rank()
 
 # ---------------------------------------------------------------------------
 # Copy an array from processor i to processor 0
 def getarray(src,v,dest=0,comm=None):
     if not lparallel: return v
     if comm is None: comm = comm_world
-    if comm.rank == src:
-        comm.send(v,dest)
-    elif comm.rank == dest:
-        return mpirecv(src,comm=comm)
+    if get_rank(comm = comm) == src:
+        mpisend(data = v, dest = dest, comm = comm)
+    elif get_rank(comm = comm) == dest:
+        return mpirecv(data = v, source = src, comm=comm)
     return v
 
 # ---------------------------------------------------------------------------
@@ -125,16 +246,16 @@ def getarray(src,v,dest=0,comm=None):
 def gather(obj,dest=0,comm=None):
     if not lparallel: return [obj]
     if comm is None: comm = comm_world
-    if comm.rank == dest:
+    if get_rank(comm = comm) == dest:
         result = []
-        for i in range(comm.procs):
+        for i in range(number_of_PE(comm = comm)):
             if i == dest:
                 result.append(obj)
             else:
-                result.append(mpirecv(i,comm=comm))
+                result.append(mpirecv(data = obj, source = i , comm=comm)) 
         return result
     else:
-        comm.send(obj,dest)
+        mpisend(data = obj, dest = dest, comm = comm)
         return [obj]
 
 # ---------------------------------------------------------------------------
@@ -144,24 +265,25 @@ def gatherlist(obj,dest=0,procs=None,bcast=0,comm=None):
     if not lparallel: return [obj]
     if comm is None: comm = comm_world
     if procs is None:
-        procs=range(comm.procs)
+        procs=range(number_of_PE(comm = comm))
     else:
         procs=list(procs)
     result = []
-    if comm.rank == dest:
+    if get_rank(comm = comm) == dest:
         for i in procs:
             if i == dest:
                 result.append(obj)
             else:
-                result.append(mpirecv(i,comm=comm))
+                result.append(mpirecv(data = obj, source = i , comm=comm))
     else:
-        if comm.rank in procs:
-            comm.send(obj,dest)
+        if get_rank(comm = comm) in procs:
+            mpisend(data = obj, dest = dest, comm = comm)
 
     if bcast:
-        result = comm.bcast(result,dest)
+        result = mpibcast(data = result, root = dest, comm = comm)
 
     return result
+
 
 # ---------------------------------------------------------------------------
 # Gather an object from a list of processors into a list on destination processor,
@@ -171,7 +293,7 @@ def gatherlog(obj,dest=0,procs=None,bcast=0,comm=None):
     if not lparallel: return [obj]
     if comm is None: comm = comm_world
     if procs is None:
-        procs=range(comm.procs)
+        procs=range(number_of_PE(comm = comm))
     else:
         procs=list(procs)
     n = int(ceil(log2(len(procs))))
@@ -181,21 +303,21 @@ def gatherlog(obj,dest=0,procs=None,bcast=0,comm=None):
         stp = 2**(i+1)
         listsend = procs[st::stp]
         listrecv = procs[::stp][:len(listsend)]
-        if comm.rank in listsend:
-            ip = listsend.index(comm.rank)
-            comm.send(obj,listrecv[ip])
-        if comm.rank in listrecv:
-            ip = listrecv.index(comm.rank)
-            obj+=mpirecv(listsend[ip],comm=comm)
+        if get_rank(comm = comm) in listsend:
+            ip = listsend.index(get_rank(comm = comm))
+            mpisend(data = obj, dest = listrecv[ip], comm = comm)
+        if get_rank(comm = comm) in listrecv:
+            ip = listrecv.index(get_rank(comm = comm))
+            obj+=mpirecv(data = obj, source = listsend[ip], comm=comm)
 
     if bcast:
-        obj = comm.bcast(obj,procs[0])
+        obj = mpibcast(data = obj, root = procs[0], comm = comm)
     else:
         if dest != procs[0]:
-            if comm.rank==procs[0]:
-                comm.send(obj,dest)
-            if comm.rank==dest:
-                obj=mpirecv(procs[0],comm=comm)
+            if get_rank(comm = comm)==procs[0]:
+                mpisend(data = obj, dest = dest, comm = comm)
+            if get_rank(comm = comm)==dest:
+                obj=mpirecv(data = obj, source = procs[0], comm=comm)
 
     return obj
 
@@ -204,22 +326,25 @@ def gatherlog(obj,dest=0,procs=None,bcast=0,comm=None):
 def barrier(comm=None):
     if not lparallel: return
     if comm is None: comm = comm_world
-    comm.barrier()
+    if lpyMPIactive:
+        comm.barrier()
+    else:
+        comm.Barrier()
 
 # ---------------------------------------------------------------------------
 # Broadcast an object to all processors
 def broadcast(obj,root=0,comm=None):
     if not lparallel: return obj
     if comm is None: comm = comm_world
-    return comm.bcast(obj,root)
+    return mpibcast(data = obj, root = root, comm = comm)
 
 # ---------------------------------------------------------------------------
 # Gather an object from all processors into a list and scatter back to all
 def gatherall(obj,comm=None):
     if not lparallel: return obj
     if comm is None: comm = comm_world
-    obj = gather(obj,comm=comm)
-    return comm.bcast(obj)
+    obj = gather(obj, comm=comm)
+    return mpibcast(data = obj, comm = comm)
 
 # ---------------------------------------------------------------------------
 # General gatherarray which returns an array object combining the
@@ -260,27 +385,27 @@ def gatherarray(a,root=0,othersempty=0,bcast=0,comm=None):
         return None
     # --- All processors but root simply return either the input argument
     # --- or an empty array unless the result is to be broadcast
-    if comm.rank != root and not bcast:
+    if get_rank(comm = comm) != root and not bcast:
         if othersempty: return zeros(len(shape(a))*[0],a.dtype.char)
         else: return a
     # --- Root processor reshapes the data, removing the first dimension
     # --- Do it bit by bit since the data passed by the other processors may
     # --- not be all the same size.
-    if comm.rank == root:
+    if get_rank(comm = comm) == root:
         newlen = 0
-        for i in range(comm.size):
+        for i in range(number_of_PE(comm = comm)):
             newlen = newlen + shape(result[i])[0]
         newshape = list(shape(result[0]))
         newshape[0] = newlen
         newresult = zeros(newshape,a.dtype.char)
         i1 = 0
-        for i in range(comm.size):
+        for i in range(number_of_PE(comm = comm)):
             i2 = i1 + shape(result[i])[0]
             newresult[i1:i2,...] = result[i]
             i1 = i2
     else:
         newresult = 0
-    if bcast: newresult = comm.bcast(newresult,root)
+    if bcast: newresult = mpibcast(data = newresult, root = root, comm = comm)
     return newresult
     ## --- Old way
     ## --- Its easy if all of the arrays passed from the other processors
@@ -321,7 +446,7 @@ def globalop(a,localop,mpiop,defaultval,comm=None):
     else:
         local = defaultval
     if not lparallel: return local
-    return comm.allreduce(local,getattr(mpi,mpiop))
+    return mpiallreduce(local, op = getattr(mpi,mpiop), comm = comm)
 
 # ---------------------------------------------------------------------------
 # Specific operations on a distributed array.
@@ -345,15 +470,6 @@ def globalave(a,comm=None):
     n = globalsum(len(a),comm=comm)
     if n > 0: return s/n
     else:     return 0.
-def globalvar(x,comm=None):
-    if comm is None: comm = comm_world
-    if len(shape(x)) == 0: x = array([x])
-    n = globalsum(len(x),comm=comm)
-    if n < 1: return 0.
-    xbar = globalsum(x,comm=comm)/n
-    def _sse(x,xbar=xbar): return array((x-xbar)**2,copy=False).sum()
-    denom = n-1. if n>1 else 1.
-    return globalop(x,_sse,"SUM",0.,comm=comm)/denom
 
 # ---------------------------------------------------------------------------
 # Generic parallel element-by-element operation on a distributed array.
@@ -364,11 +480,11 @@ def parallelop(a,mpiop,comm=None):
     if type(a) == type(array([])):
         a1d = ravel(a) + 0
         for i in range(len(a1d)):
-            a1d[i] = comm.allreduce(a1d[i],getattr(mpi,mpiop))
+            a1d[i] = mpiallreduce(a1d[i], op = getattr(mpi,mpiop), comm = comm)
         a1d.shape = shape(a)
         return a1d
     else:
-        return comm.allreduce(a,getattr(mpi,mpiop))
+        return mpiallreduce(a, op = getattr(mpi,mpiop), comm = comm)
 
 # ---------------------------------------------------------------------------
 # Specific parallel element-by-element operations on a distributed array.
@@ -376,13 +492,20 @@ def parallelmax(a,comm=None):
     #return parallelop(a,"MAX")
     if not lparallel: return a
     if comm is None: comm = comm_world
-    return comm.allreduce(a,maximum)
+    if lpyMPIactive:
+        return mpiallreduce(a, op = maximum, comm = comm)
+    else:
+        return mpiallreduce(a, op = mpi.MAX, comm = comm)
+
 def parallelmin(a,comm=None):
     #return parallelop(a,"MIN")
     if not lparallel: return a
     if comm is None: comm = comm_world
-    return comm.allreduce(a,minimum)
+    if lpyMPIactive:
+        return mpiallreduce(a, op = minimum, comm = comm)
+    else:
+        return mpiallreduce(a, op = mpi.MIN, comm = comm)
 def parallelsum(a,comm=None):
     if not lparallel: return a
     if comm is None: comm = comm_world
-    return comm.allreduce(a,mpi.SUM)
+    return mpiallreduce(a, op = mpi.SUM, comm = comm)

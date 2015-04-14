@@ -2,7 +2,6 @@
 Most important ones are the paralleldump and parallelrestore functions.
 """
 from warp import *
-import mpi
 import __main__
 import copy
 
@@ -12,10 +11,20 @@ def warpparalleldoc():
     print warpparallel.__doc__
 
 try:
-    top.comm_world = comm_world.comm_fortran()
+    #pyMPI version
+    import mpi
+    top.comm_world = comm_world.comm_fortran() #pyMPI
     top.lcomm_world_initted = true
+
 except:
-    pass
+    try:
+        #mpi4py version
+        from mpi4py import MPI as mpi
+        top.comm_world = comm_world.py2f() #mpi4py
+        top.lcomm_world_initted = true
+    except:
+        pass
+        
 top.my_index = me
 top.nprocs = npes
 top.nslaves = top.nprocs
@@ -326,7 +335,7 @@ def paralleldump(fname,attr='dump',vars=[],serial=0,histz=2,varsuffix=None,
 
     # --- None of the processors can procede past this point until PE0 has
     # --- completed the above.
-    comm_world.barrier()
+    barrier(comm = comm_world)
 
     # --- If only writing non-parallel data, then return here
     if serial: return
@@ -341,7 +350,7 @@ def paralleldump(fname,attr='dump',vars=[],serial=0,histz=2,varsuffix=None,
     pattr = top.getvarattr('pgroup')
     if (max(map(lambda a:re.search(a,cattr),attr)) or
         max(map(lambda a:re.search(a,pattr),attr))):
-        if me > 0: mpirecv(me-1)
+        if me > 0: mpirecv(1, source = me-1, comm = comm_world)
         ff = PW.PW(fname,'a')
         if max(map(lambda a:re.search(a,cattr),attr)):
             if verbose: print "Writing out the conductors"
@@ -354,8 +363,8 @@ def paralleldump(fname,attr='dump',vars=[],serial=0,histz=2,varsuffix=None,
                                 '@pgroup%d@parallel'%me,[],[],0,
                                 verbose=verbose,lonlymakespace=1)
         ff.close()
-        if me < npes-1: comm_world.send(1,me+1)
-        comm_world.barrier()
+        if me < npes-1: mpisend(1, dest = me+1, comm = comm_world)
+        barrier(comm = comm_world)
 
     # --- All of the processors open the file for appending
     ff = PW.PW(fname,'a')

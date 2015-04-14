@@ -821,13 +821,13 @@ def pla(y,x=None,linetype="solid",local=1,**kw):
         if me == 0:
             for i in range(0,npes):
                 if i > 0:
-                    yy = mpirecv(i,3)
-                    xx = mpirecv(i,3)
+                    yy = mpirecv(yy, source = i, tag = 3, comm = comm_world)
+                    xx = mpirecv(xx, source = i, tag = 3, comm = comm_world)
                 if len(xx) > 0 and len(yy)==len(xx):
                     plg(yy,xx,local=1,**kw)
         else:
-            comm_world.send(yy,0,3)
-            comm_world.send(xx,0,3)
+            mpisend(yy, dest = 0, tag = 3, comm = comm_world)
+            mpisend(xx, dest = 0, tag = 3, comm = comm_world)
     else:
         # --- convert some arguments for pylab
         if with_matplotlib:
