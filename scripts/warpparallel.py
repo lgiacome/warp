@@ -350,7 +350,7 @@ def paralleldump(fname,attr='dump',vars=[],serial=0,histz=2,varsuffix=None,
     pattr = top.getvarattr('pgroup')
     if (max(map(lambda a:re.search(a,cattr),attr)) or
         max(map(lambda a:re.search(a,pattr),attr))):
-        if me > 0: mpirecv(1, source = me-1, comm = comm_world)
+        if me > 0: mpirecv(source = me-1)
         ff = PW.PW(fname,'a')
         if max(map(lambda a:re.search(a,cattr),attr)):
             if verbose: print "Writing out the conductors"
@@ -363,7 +363,7 @@ def paralleldump(fname,attr='dump',vars=[],serial=0,histz=2,varsuffix=None,
                                 '@pgroup%d@parallel'%me,[],[],0,
                                 verbose=verbose,lonlymakespace=1)
         ff.close()
-        if me < npes-1: mpisend(1, dest = me+1, comm = comm_world)
+        if me < npes-1: mpisend(1, dest = me+1)
         barrier(comm = comm_world)
 
     # --- All of the processors open the file for appending

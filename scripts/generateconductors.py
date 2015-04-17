@@ -416,9 +416,9 @@ class Assembly(VisualizableClass):
         emaxtot=parallelmax(emax)
         netot=0
         if me>0:
-            comm_world.send((ne,emin,emax),0,1)
+            mpisend((ne,emin,emax), dest = 0, tag = 1)
             if ne>0:
-                comm_world.send(self.lostparticles_energies[js],0,1)
+                mpisend(self.lostparticles_energies[js], dest = 0, tag = 1)
         else:
             henergies = zeros(n+1,'d')
             if ne>0:
@@ -427,10 +427,10 @@ class Assembly(VisualizableClass):
                 energies = emin+arange(ne,dtype='l')*de
                 setgrid1dw(ne,energies,self.lostparticles_energies[js],n,henergies,emintot,emaxtot)
             for i in range(1,npes):
-                ne,emin,emax = mpirecv(i,1)
+                ne,emin,emax = mpirecv(source = i, tag = 1)
                 if ne>0:
                     netot+=ne
-                    he = mpirecv(i,1)
+                    he = mpirecv(source = i, tag = 1)
                     de = (emax-emin)/(ne-1)
                     energies = emin+arange(ne,dtype='l')*de
                     setgrid1dw(ne,energies,he,n,henergies,emintot,emaxtot)

@@ -90,7 +90,7 @@ def runcounter(init=0,delta=1,ensembles=[],prefix=None,suffix="_runcounter",
         counter = init
 
     # --- Make sure that every processor has read in counter already
-    if npes>1: comm_world.barrier()
+    if npes>1: barrier()
 
     # --- PE0 (or serial job) can now write out the next value
     if me == 0:

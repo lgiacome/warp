@@ -1345,9 +1345,9 @@ class EM3D(SubcycledPoissonSolver):
         byp=zeros(n,'d')
         bzp=zeros(n,'d')
         if me>0:
-            mpisend(nlocal, dest = 0, tag = 3, comm = comm_world)
+            mpisend(nlocal, dest = 0, tag = 3)
             if nlocal>0:
-                mpisend((ilist,ex,ey,ez,bx,by,bz), dest = 0, tag = 3, comm = comm_world)
+                mpisend((ilist,ex,ey,ez,bx,by,bz), dest = 0, tag = 3)
         else:
             if nlocal>0:
                 for j,i in enumerate(ilist):
@@ -1358,9 +1358,9 @@ class EM3D(SubcycledPoissonSolver):
                     byp[i] = by[j]
                     bzp[i] = bz[j]
             for ip in range(1,npes):
-                nlocal = mpirecv(nlocal, source = ip, tag = 3, comm = comm_world)
+                nlocal = mpirecv(source = ip, tag = 3)
                 if nlocal>0:
-                    ilist,ex,ey,ez,bx,by,bz = mpirecv((ilist,ex,ey,ez,bx,by,bz), source = ip, tag = 3, comm = comm_world)
+                    ilist,ex,ey,ez,bx,by,bz = mpirecv(source = ip, tag = 3)
                     for j,i in enumerate(ilist):
                         exp[i] = ex[j]
                         eyp[i] = ey[j]
@@ -2764,9 +2764,9 @@ class EM3D(SubcycledPoissonSolver):
                 ptitles(title,xtitle,ytitle,'t = %gs'%(top.time))
             if isinstance(procs,types.IntType):procs=[procs]
             if me>0 and me in procs:
-                mpisend(self.isactive, dest = 0, tag = 3, comm = comm_world)
+                mpisend(self.isactive, dest = 0, tag = 3)
                 if self.isactive:
-                    mpisend((xmin,xmax,ymin,ymax,data), dest = 0, tag = 3, comm = comm_world)
+                    mpisend((xmin,xmax,ymin,ymax,data), dest = 0, tag = 3)
             else:
                 lcolorbar=1
                 if me in procs and data is not None:
@@ -2785,9 +2785,9 @@ class EM3D(SubcycledPoissonSolver):
                         ppgeneric(grid=data,**kw)
                         lcolorbar=0
                 for i in range(1,npes):
-                    isactive = mpirecv(self.isactive, source = i, tag = 3, comm = comm_world)
+                    isactive = mpirecv(source = i, tag = 3)
                     if isactive:
-                        xminp,xmaxp,yminp,ymaxp,data=mpirecv((xmin,xmax,ymin,ymax,data), source = i, tag = 3, comm = comm_world)
+                        xminp,xmaxp,yminp,ymaxp,data=mpirecv(source = i, tag = 3)
                         if data is not None:
                             if self.l_1dz:
                                 nz=shape(data)[0]
@@ -2812,7 +2812,7 @@ class EM3D(SubcycledPoissonSolver):
             dy=self.block.dy
             dz=self.block.dz
             if me>0 and me in procs:
-                mpisend((xmin,xmax,dx,ymin,ymax,dy,zmin,zmax,dz,data), dest = 0, tag = 3, comm = comm_world)
+                mpisend((xmin,xmax,dx,ymin,ymax,dy,zmin,zmax,dz,data), dest = 0, tag = 3)
             else:
                 # --- sets origins and deltas
                 if origins is None:origins = [xmin*xscale,ymin*yscale,zmin*zscale]
@@ -2876,7 +2876,7 @@ class EM3D(SubcycledPoissonSolver):
                 dxob = [e3d]
                 for i in procs:#range(1,npes):
                     if i != me:
-                        xminp,xmaxp,dxp,yminp,ymaxp,dyp,zminp,zmaxp,dzp,data=mpirecv((xmin,xmax,dx,ymin,ymax,dy,zmin,zmax,dz,data), source = i, tag = 3, comm = comm_world)
+                        xminp,xmaxp,dxp,yminp,ymaxp,dyp,zminp,zmaxp,dzp,data=mpirecv(source = i, tag = 3)
                         origins = [xminp*xscale,yminp*yscale,zminp*zscale]
                         deltas = [dxp*xscale,dyp*yscale,dzp*zscale]
                         Opyndx.DXReference(colormap)
@@ -3135,12 +3135,12 @@ class EM3D(SubcycledPoissonSolver):
             if type(procs) is int : procs=[procs] 
             # Send the data
             if me>0 and me in procs:
-                mpisend((xmin,xmax,dx,ymin,ymax,dy,zmin,zmax,dz,data), dest = 0, tag = 3, comm = comm_world)
+                mpisend((xmin,xmax,dx,ymin,ymax,dy,zmin,zmax,dz,data), dest = 0, tag = 3)
             else:
                 for i in procs :
                     # Receive the data on proc 0
                     if i != me:
-                        xminp,xmaxp,dxp,yminp,ymaxp,dyp,zminp,zmaxp,dzp,data=mpirecv((xmin,xmax,dx,ymin,ymax,dy,zmin,zmax,dz,data), source = i, tag = 3, comm = comm_world)
+                        xminp,xmaxp,dxp,yminp,ymaxp,dyp,zminp,zmaxp,dzp,data=mpirecv(source = i, tag = 3)
                     else:
                         xminp = xmin
                         yminp = ymin
@@ -5148,15 +5148,15 @@ class EM3D(SubcycledPoissonSolver):
             else:
                 condd = down<me
             if condu:
-                mpisend(self.isactive, dest = up, comm = comm_world)
+                mpisend(self.isactive, dest = up)
             if condd:
-                isactive = mpirecv(self.isactive, source = down, comm = comm_world)
+                isactive = mpirecv(source = down)
                 if isactive and self.isactive:self.bounds[ib]=em3d.otherproc
             # --- check upper bound in z
             if condd:
-                mpisend(self.isactive, dest = down, comm = comm_world)
+                mpisend(self.isactive, dest = down)
             if condu:
-                isactive = mpirecv(self.isactive, source = up, comm = comm_world)
+                isactive = mpirecv(source = up)
                 if isactive and self.isactive:self.bounds[ib+1]=em3d.otherproc
 
     def connectblocks(self,blo,bup,dir):

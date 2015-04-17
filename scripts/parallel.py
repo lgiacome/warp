@@ -107,53 +107,112 @@ else:
 # --- New routines for handling sends and receives supporting pyMPI and mpi4py
 # --- Checks if pyMPI or mpi4py is used...
 # --- If pyMPI is active, uses the standard pyMPI routines
-# --- If mpi4py is active, uses the standard (slow) mpi4py routines
-# --- Also the "fast" routines of mpi4py (sending/receiving numpy arrays)
-# --- can be used with lmpi4pynp = True. Defaults to "False", as some routines
-# --- in parallel.py (e.g. gather) do not behave correctly anymore.
-# --- New routines that send and receive numpy arrays should make use of 
-# --- the "fast" mpi4py routines. Therefore the array that is sent and received  
-# --- needs to be defined on both, the sending and the receiving processor.
+# --- If mpi4py is active, it tries to use the fast mpi4py routines,
+# --- if the array that is sent or received is a numpy array.
+# --- Otherwise the "slow" mpi4py routines are used.
+# ----
+# --- Note: Normally one would need to define an array of the same shape and
+# --- dtype on the receiving process in order to use the faster Send and Recv.
+# --- This is avoided by a workaround, whereby the shape and the dtype of the
+# --- array are sent as well with the "slow" routines and a special tag (tag + 99).
+# --- The tag+99 is used to "ensure" (there is a chance for this to fail) that the
+# --- correct shape and dtype is assigned to the corresponding send/recv combination.
+# ----
+# --- Performance: about 10 times faster than the "slow" routines for a Send
+# --- and Recv of an array random.rand(100,100,100) from one to another process and
+# --- about 20 percent slower than the fastest solution with predefined arrays
+# --- on both processes. About 2 times faster than pyMPI send and recv.
+# --- -> pyMPI is faster than the "slow" mpi4py routines, 
+# --- but slower than the "fast" mpi4py routines. (for numpy arrays)
 # ---------------------------------------------------------------------------
 
-def mpirecv(data = None, source = 0, tag = 0, comm = None, lmpi4pynp = False):
+def mpirecv(source = 0, tag = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result, status = comm.recv(source, tag)
-    elif lmpi4pyactive and lmpi4pynp == False:
-        result = comm.recv(source = source, tag = tag)
-    else:
-        result = comm.Recv(data, source = source, tag = tag)
+    elif lmpi4pyactive:
+        shape, dtype = comm_world.recv(source = source, tag = (tag + 99))
+        if shape not None:
+            data = empty(shape, dtype = dtype)
+            comm.Recv(data, source = source, tag = tag)
+            result = data
+        else:
+            result = comm.recv(source = source, tag = tag)
     return result
 
-def mpisend(data = None, dest = 0, tag = 0, comm = None, lmpi4pynp = False):
+def mpisend(data = None, dest = 0, tag = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.send(data, dest, tag)
-    elif lmpi4pyactive and lmpi4pynp == False:
-        result = comm.send(data, dest = dest, tag = tag)
-    else:
+    elif lmpi4pyactive and (type(data).__module__ == numpy.__name__):
+        data_shape, data_dtype = shape(data), data.dtype
+        comm.send((data_shape, data_dtype), dest = dest, tag = (tag + 99))
         result = comm.Send(data, dest = dest, tag = tag)
+    else:
+        comm.send((None, None), dest = dest, tag = (tag + 99))
+        result = comm.send(data, dest = dest, tag = tag)
     return result
 
-def mpibcast(data = None, root = 0, comm = None, lmpi4pynp = False):
+def mpiisend(data = None, dest = 0, tag = 0, comm = None):
+    if comm is None: comm = comm_world
+    if lpyMPIactive:
+        result = comm.isend(data, dest, tag)
+    elif lmpi4pyactive and (type(data).__module__ == numpy.__name__):
+        data_shape, data_dtype = shape(data), data.dtype
+        comm.isend((data_shape, data_dtype), dest = dest, tag = (tag + 99))
+        result = comm.Isend(data, dest = dest, tag = tag)
+    else:
+        comm.isend((None, None), dest = dest, tag = (tag + 99))
+        result = comm.isend(data, dest = dest, tag = tag)
+    return result
+
+def mpibcast(data = None, root = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.bcast(data, root)
-    elif lmpi4pyactive and lmpi4pynp == False:
-        result = comm.bcast(data, root = root)
+    elif lmpi4pyactive and (type(data).__module__ == numpy.__name__):
+        try:
+            result = comm.Bcast(data, root = root)
+        except:
+            result = comm.bcast(data, root = root)
     else: 
-        result = comm.Bcast(data, root = root)
+        result = comm.bcast(data, root = root)
     return result
 
-def mpiallreduce(data = None, op = mpi.SUM, comm = None, lmpi4pynp = False):
+def mpiallreduce(data = None, op = mpi.SUM, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.allreduce(data, op)
-    elif lmpi4pyactive and lmpi4pynp == False:
-        result = comm.allreduce(data, op = op)
+    elif lmpi4pyactive and (type(data).__module__ == numpy.__name__):
+        try:
+            result = comm.Allreduce(data, op = op)
+        except:
+            result = comm.allreduce(data, op = op)
     else:
-        result = comm.Allreduce(data, op = op)
+        result = comm.allreduce(data, op = op)
+    return result
+
+def mpicommcreate(group = None, comm = None):
+    if comm is None: comm = comm_world
+    if lpyMPIactive:
+        newcomm = comm.create(group)
+    if lmpi4pyactive:
+        oldgroup = comm_world.Get_group()
+        newgroup = oldgroup.Incl(ranks = group)
+        newcomm = comm.Create(newgroup)
+    return newcomm
+
+def mpiscatter(data = None, root = 0, comm = None):
+    if comm is None: comm = comm_world
+    if lpyMPIactive:
+        result = comm.scatter(data, root)
+    elif lmpi4pyactive and (type(data).__module__ == numpy.__name__):
+        try:
+            result = comm.Scatter(data, root = root)
+        except:
+            result = comm.scatter(data, root = root)
+    else: 
+        result = comm.scatter(data, root = root)
     return result
 
 # ---------------------------------------------------------------------------
@@ -238,7 +297,7 @@ def getarray(src,v,dest=0,comm=None):
     if get_rank(comm = comm) == src:
         mpisend(data = v, dest = dest, comm = comm)
     elif get_rank(comm = comm) == dest:
-        return mpirecv(data = v, source = src, comm=comm)
+        return mpirecv(source = src, comm=comm)
     return v
 
 # ---------------------------------------------------------------------------
@@ -252,7 +311,7 @@ def gather(obj,dest=0,comm=None):
             if i == dest:
                 result.append(obj)
             else:
-                result.append(mpirecv(data = obj, source = i , comm=comm)) 
+                result.append(mpirecv(source = i , comm=comm)) 
         return result
     else:
         mpisend(data = obj, dest = dest, comm = comm)
@@ -274,7 +333,7 @@ def gatherlist(obj,dest=0,procs=None,bcast=0,comm=None):
             if i == dest:
                 result.append(obj)
             else:
-                result.append(mpirecv(data = obj, source = i , comm=comm))
+                result.append(mpirecv(source = i , comm=comm))
     else:
         if get_rank(comm = comm) in procs:
             mpisend(data = obj, dest = dest, comm = comm)
@@ -308,7 +367,7 @@ def gatherlog(obj,dest=0,procs=None,bcast=0,comm=None):
             mpisend(data = obj, dest = listrecv[ip], comm = comm)
         if get_rank(comm = comm) in listrecv:
             ip = listrecv.index(get_rank(comm = comm))
-            obj+=mpirecv(data = obj, source = listsend[ip], comm=comm)
+            obj+=mpirecv(source = listsend[ip], comm=comm)
 
     if bcast:
         obj = mpibcast(data = obj, root = procs[0], comm = comm)
@@ -317,7 +376,7 @@ def gatherlog(obj,dest=0,procs=None,bcast=0,comm=None):
             if get_rank(comm = comm)==procs[0]:
                 mpisend(data = obj, dest = dest, comm = comm)
             if get_rank(comm = comm)==dest:
-                obj=mpirecv(data = obj, source = procs[0], comm=comm)
+                obj=mpirecv(source = procs[0], comm=comm)
 
     return obj
 

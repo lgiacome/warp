@@ -71,14 +71,20 @@ class Quasistatic(SubcycledPoissonSolver):
       procs = arange(npes)
       mygroupinit = compress(int(procs*nbuckets/npes)==bucketmpiid,procs)
       mygroup = mygroupinit[me%self.ntgroups::self.ntgroups]
-      self.mympigroup=comm_world.comm_create(mygroup)
+      try:
+        self.mympigroup=comm_world.comm_create(mygroup)
+      except:
+        self.mympigroup=comm_world.Create(mygroup)
       self.gme = self.mympigroup.rank
       self.gnpes = self.mympigroup.size
     if ntgroups>1:
       mytgroup = mygroupinit[ntgroups*((me-mygroupinit[0])/ntgroups)]+arange(ntgroups)
       print mygroupinit
       print "me,mygroup,mytgroup = ",me,mygroup,mytgroup
-      self.mympitgroup=comm_world.comm_create(mytgroup)
+      try:
+        self.mympitgroup=comm_world.comm_create(mytgroup)
+      except:
+        self.mympitgroup=comm_world.Create(mytgroup)
       self.gtme = self.mympitgroup.rank
       self.gtnpes = self.mympitgroup.size
     else:
@@ -850,9 +856,9 @@ class Quasistatic(SubcycledPoissonSolver):
   
   def send_rhotonext(self):
       if me<npes-self.ntgroups:
-        comm_world.send(self.rhotonext,me+self.ntgroups)
+        mpisend(self.rhotonext, dest = me+self.ntgroups)
       if me>self.ntgroups-1:
-        recved,status = comm_world.recv(me-self.ntgroups)
+        recved = mpirecv(source = me-self.ntgroups)
         g = self.gridions[0]
         for ig in range(frz.ngrids):
           if ig>0:
@@ -861,9 +867,9 @@ class Quasistatic(SubcycledPoissonSolver):
   
   def send_rhotoprev(self):
       if me>self.ntgroups-1:
-        comm_world.send(self.rhotoprev,me-self.ntgroups)
+        mpisend(self.rhotoprev, dest = me-self.ntgroups)
       if me<npes-self.ntgroups:
-        recved,status = comm_world.recv(me+self.ntgroups)
+        recved = mpirecv(source = me+self.ntgroups)
         g = self.gridions[1]
         for ig in range(frz.ngrids):
           if ig>0:
@@ -977,7 +983,7 @@ class Quasistatic(SubcycledPoissonSolver):
     if self.l_verbose:print me,top.it,self.iz,'enter sendrecv_storedions_toprev'
     # --- sends stored ions
     if me>self.ntgroups-1:
-      comm_world.send(self.ionstoprev,me-self.ntgroups)
+      mpisend(self.ionstoprev, dest = me-self.ntgroups)
       if self.ionstoprev[0]>0:
         if self.l_parallelverbose:print me, 'sends ',self.ionstoprev[0],' ions to ',me-1
 #        print 'send itn',self.ionstoprev[0],self.ionstoprev[3]
@@ -985,7 +991,7 @@ class Quasistatic(SubcycledPoissonSolver):
     if me<npes-self.ntgroups:
       js = w3d.nzp-1
       pg = self.pgions
-      recved,status = comm_world.recv(me+self.ntgroups)
+      recved = mpirecv(source = me+self.ntgroups)
       np = recved[0]
       if np>0:
         if self.l_parallelverbose:print me, 'recvs ',np,' ions from ',me+1
@@ -1021,7 +1027,7 @@ class Quasistatic(SubcycledPoissonSolver):
     if self.l_verbose:print me,top.it,self.iz,'enter sendrecv_storedions_tonext'
     # --- sends stored ions
     if me<npes-self.ntgroups:
-      comm_world.send(self.ionstonext,me+self.ntgroups)
+      mpisend(self.ionstonext, dest = me+self.ntgroups)
       if self.ionstonext[0]>0:
         if self.l_parallelverbose:print me, 'sends ',self.ionstonext[0],' ions to ',me+1
 #        print 'send',self.ionstonext[0],self.ionstonext[3]
@@ -1029,7 +1035,7 @@ class Quasistatic(SubcycledPoissonSolver):
     if me>self.ntgroups-1:
       js = 0
       pg = self.pgions
-      recved,status = comm_world.recv(me-self.ntgroups)
+      recved = mpirecv(source = me-self.ntgroups)
       np = recved[0]
       if np>0:
         if self.l_parallelverbose:print me, 'recvs ',np,' ions from ',me-1
@@ -1081,7 +1087,7 @@ class Quasistatic(SubcycledPoissonSolver):
       tosend.append(take(pg.by,ii))
       tosend.append(take(pg.bz,ii))
       if top.npid>0:tosend.append(take(pg.pid,ii,0))
-    comm_world.send(tosend,me+1)
+    mpisend(tosend, dest = me+1)
     if tosend[0]>0:
       if self.l_parallelverbose:print me, 'sends ',tosend[0],' ions to ',me+1
     if len(ii)>0:
@@ -1094,7 +1100,7 @@ class Quasistatic(SubcycledPoissonSolver):
     if self.l_verbose:print me,top.it,self.iz,'enter recvparticlesfromprevious'
     pg = self.pgions
     top.pgroup = pg
-    recved,status = comm_world.recv(me-1)
+    recved = mpirecv(source = me-1)
     np = recved[0]
     if np>0:
       if self.l_parallelverbose:print me, 'recvs ',np,' ions from ',me-1
@@ -1888,7 +1894,7 @@ class Quasistatic(SubcycledPoissonSolver):
         tosend.append(pg.uzp[il:iu])
         tosend.append(pg.gaminv[il:iu])
         if top.npid>0:tosend.append(pg.pid[il:iu,:])
-      comm_world.send(tosend,me-self.ntgroups)
+      mpisend(tosend, dest = me-self.ntgroups)
     # --- store electrons for diagnostics on all processors
     self.npelec_laststep=pg.nps[js]
     if 0:#pg.nps[js]>0:
@@ -1908,7 +1914,7 @@ class Quasistatic(SubcycledPoissonSolver):
         pp_pos2warp(0)
         pos.time=0.
         pos.tbirth[:]=0.
-      self.recved,status = comm_world.recv(me+self.ntgroups)
+      self.recved = mpirecv(source = me+self.ntgroups)
       np=self.recved[0]
       if np>0:
         if top.npid>0:
@@ -1942,7 +1948,7 @@ class Quasistatic(SubcycledPoissonSolver):
           tosend.append(pg.uzp[il:iu])
           tosend.append(pg.gaminv[il:iu])
           if top.npid>0:tosend.append(pg.pid[il:iu,:])
-        comm_world.send(tosend,npes-1)
+        mpisend(tosend, dest = npes-1)
         pg.nps[0]=0      
       if self.l_verbose:print me,top.it,self.iz,'exit clear_electrons'
       # --- receive electrons from next processor
@@ -1952,7 +1958,7 @@ class Quasistatic(SubcycledPoissonSolver):
           pp_pos2warp(0)
           pos.time=0.
           pos.tbirth[:]=0.
-        self.recved,status = comm_world.recv(0)
+        self.recved = mpirecv(source = 0)
         np=self.recved[0]
         if np>0:
           if top.npid>0:
@@ -2350,11 +2356,11 @@ class Quasistatic(SubcycledPoissonSolver):
     # recv data from down in X
     if top.procneighbors[0,0]<me:
       nin = 2*(g.transit_min_r)+1
-      g.rho[:nin,:]+=mpirecv(top.procneighbors[0,0])
+      g.rho[:nin,:]+=mpirecv(source = top.procneighbors[0,0])
     # recv data from up in X
     if top.procneighbors[1,0]>me:
       nin = 2*(g.transit_max_r)+1
-      g.rho[-nin:,:]+=mpirecv(top.procneighbors[1,0])
+      g.rho[-nin:,:]+=mpirecv(source = top.procneighbors[1,0])
     # send data up in Y
     if top.procneighbors[1,1]>me:
       nin = 2*(g.transit_max_z)+1
@@ -2366,11 +2372,11 @@ class Quasistatic(SubcycledPoissonSolver):
     # recv data from down in Y
     if top.procneighbors[0,1]<me:
       nin = 2*(g.transit_min_z)+1
-      g.rho[:,:nin]+=mpirecv(top.procneighbors[0,1])
+      g.rho[:,:nin]+=mpirecv(source = top.procneighbors[0,1])
     # recv data from up in Y
     if top.procneighbors[1,1]>me:
       nin = 2*(g.transit_max_z)+1
-      g.rho[:,-nin:]+=mpirecv(top.procneighbors[1,1])
+      g.rho[:,-nin:]+=mpirecv(source = top.procneighbors[1,1])
 
   def add_ei_fields(self,i=1):
     if self.l_verbose:print me,top.it,self.iz,'enter add_ei_fields'
@@ -2910,10 +2916,10 @@ class Quasistatic(SubcycledPoissonSolver):
       if self.mympigroup is not None and self.gnpes>1:
         # --- update boundary
         if self.gme>0:
-          self.mympigroup.send(b[0,:],self.gme-1)
+          mpisend(data = b[0,:], dest = self.gme-1, comm = self.mympigroup)
           b = b[1:,:]
         if self.gme<self.gnpes-1:
-          b[-1,:] += mpirecv(self.gme+1,comm=self.mympigroup)
+          b[-1,:] += mpirecv(source = self.gme+1, comm = self.mympigroup)
         # --- gather arrays from procs in one bucket
         b = gatherarray(b,bcast=0,comm=self.mympigroup)
       if zerotoone:
