@@ -132,7 +132,7 @@ def mpirecv(source = 0, tag = 0, comm = None):
         result, status = comm.recv(source, tag)
     elif lmpi4pyactive:
         shape, dtype = comm_world.recv(source = source, tag = (tag + 99))
-        if shape not None:
+        if shape is not None:
             data = empty(shape, dtype = dtype)
             comm.Recv(data, source = source, tag = tag)
             result = data
@@ -144,7 +144,7 @@ def mpisend(data = None, dest = 0, tag = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.send(data, dest, tag)
-    elif lmpi4pyactive and (type(data).__module__ == numpy.__name__):
+    elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
         data_shape, data_dtype = shape(data), data.dtype
         comm.send((data_shape, data_dtype), dest = dest, tag = (tag + 99))
         result = comm.Send(data, dest = dest, tag = tag)
@@ -157,7 +157,7 @@ def mpiisend(data = None, dest = 0, tag = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.isend(data, dest, tag)
-    elif lmpi4pyactive and (type(data).__module__ == numpy.__name__):
+    elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
         data_shape, data_dtype = shape(data), data.dtype
         comm.isend((data_shape, data_dtype), dest = dest, tag = (tag + 99))
         result = comm.Isend(data, dest = dest, tag = tag)
@@ -170,12 +170,13 @@ def mpibcast(data = None, root = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.bcast(data, root)
-    elif lmpi4pyactive and (type(data).__module__ == numpy.__name__):
+    elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
         try:
-            result = comm.Bcast(data, root = root)
+            comm.Bcast(data, root = root)
+            result = data
         except:
             result = comm.bcast(data, root = root)
-    else: 
+    else:
         result = comm.bcast(data, root = root)
     return result
 
@@ -183,9 +184,11 @@ def mpiallreduce(data = None, op = mpi.SUM, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.allreduce(data, op)
-    elif lmpi4pyactive and (type(data).__module__ == numpy.__name__):
+    elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
         try:
-            result = comm.Allreduce(data, op = op)
+            recvbuffer = empty_like(data) 
+            comm.Allreduce(data, recvbuffer, op = op)
+            result = recvbuffer
         except:
             result = comm.allreduce(data, op = op)
     else:
@@ -206,9 +209,14 @@ def mpiscatter(data = None, root = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.scatter(data, root)
-    elif lmpi4pyactive and (type(data).__module__ == numpy.__name__):
+    elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
         try:
-            result = comm.Scatter(data, root = root)
+            recv_shape = [shape(data)]
+            recv_shape[0] = shape(data)[0]/comm.Get_size()
+            recv_shape = tuple(recv_shape[:])
+            recvbuffer = empty(recv_shape, data.dtype)
+            comm.Scatter(data, recvbuffer, root = root)
+            result = recvbuffer
         except:
             result = comm.scatter(data, root = root)
     else: 
