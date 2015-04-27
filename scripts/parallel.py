@@ -24,7 +24,7 @@ except:
         #Try to import mpi4py
         from mpi4py import MPI as mpi 
         #mpi.synchronizeQueuedOutput(None) 
-        #not available for mpi4py (as far as i know)
+        #not available for mpi4py
         comm_world = mpi.COMM_WORLD    
         me = comm_world.Get_rank()
         npes = comm_world.Get_size()
@@ -75,34 +75,6 @@ def setdefaultcomm_world(comm):
         me = comm_world.Get_rank()
         npes = comm_world.Get_size()
 
-"""
-# --- This check is old enough that it is no longer needed.
-
-# --- The interface has changed some in the newest version of pyMPI.
-# --- Check the interface to the mpi.recv command. The newer versions
-# --- return a tuple instead of just the data itself.
-# --- Is there a better way of doing this?
-if lparallel:
-  mpi.send(me,me)
-  _i = mpi.recv(me)
-  if type(_i) == TupleType: _newpympi = 1
-  else:                     _newpympi = 0
-else:
-  _newpympi = 1
-"""
-#_newpympi = 1 #not needed anymore
-"""
-# --- Old routines for mpirecv for the support of old pyMPI versions.
-if _newpympi:
-    def mpirecv(pe=0,ms=0,comm=None):
-        if comm is None: comm = comm_world
-        result,stat = comm.recv(pe,ms)
-        return result
-else:
-    def mpirecv(pe=0,ms=0,comm=None):
-        if comm is None: comm = comm_world
-        return comm.recv(pe,ms)
-"""
 # ---------------------------------------------------------------------------
 # --- New routines for handling sends and receives supporting pyMPI and mpi4py
 # --- Checks if pyMPI or mpi4py is used...
@@ -131,9 +103,9 @@ def mpirecv(source = 0, tag = 0, comm = None):
     if lpyMPIactive:
         result, status = comm.recv(source, tag)
     elif lmpi4pyactive:
-        shape, dtype = comm_world.recv(source = source, tag = (tag + 99))
-        if shape is not None:
-            data = empty(shape, dtype = dtype)
+        data_shape, data_dtype = comm_world.recv(source = source, tag = (tag + 99))
+        if data_shape is not None:
+            data = empty(data_shape, dtype = data_dtype)
             comm.Recv(data, source = source, tag = tag)
             result = data
         else:
@@ -146,8 +118,12 @@ def mpisend(data = None, dest = 0, tag = 0, comm = None):
         result = comm.send(data, dest, tag)
     elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
         data_shape, data_dtype = shape(data), data.dtype
-        comm.send((data_shape, data_dtype), dest = dest, tag = (tag + 99))
-        result = comm.Send(data, dest = dest, tag = tag)
+        if data_dtype is not dtype('object'):
+            comm.send((data_shape, data_dtype), dest = dest, tag = (tag + 99))
+            result = comm.Send(data, dest = dest, tag = tag)
+        else:
+            comm.send((None, None), dest = dest, tag = (tag + 99))
+            result = comm.send(data, dest = dest, tag = tag)
     else:
         comm.send((None, None), dest = dest, tag = (tag + 99))
         result = comm.send(data, dest = dest, tag = tag)
@@ -159,22 +135,25 @@ def mpiisend(data = None, dest = 0, tag = 0, comm = None):
         result = comm.isend(data, dest, tag)
     elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
         data_shape, data_dtype = shape(data), data.dtype
-        comm.isend((data_shape, data_dtype), dest = dest, tag = (tag + 99))
-        result = comm.Isend(data, dest = dest, tag = tag)
+        if data_dtype is not dtype('object'):
+            comm.isend((data_shape, data_dtype), dest = dest, tag = (tag + 99))
+            result = comm.Isend(data, dest = dest, tag = tag)
+        else:
+            comm.isend((None, None), dest = dest, tag = (tag + 99))
+            result = comm.send(data, dest = dest, tag = tag)
     else:
         comm.isend((None, None), dest = dest, tag = (tag + 99))
         result = comm.isend(data, dest = dest, tag = tag)
-    return result
 
 def mpibcast(data = None, root = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.bcast(data, root)
     elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
-        try:
+        if data.dtype is not dtype('object'):
             comm.Bcast(data, root = root)
             result = data
-        except:
+        else:
             result = comm.bcast(data, root = root)
     else:
         result = comm.bcast(data, root = root)
@@ -185,12 +164,8 @@ def mpiallreduce(data = None, op = mpi.SUM, comm = None):
     if lpyMPIactive:
         result = comm.allreduce(data, op)
     elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
-        try:
-            recvbuffer = empty_like(data) 
-            comm.Allreduce(data, recvbuffer, op = op)
-            result = recvbuffer
-        except:
-            result = comm.allreduce(data, op = op)
+        #"slow" mpi4py routine, as the "fast" one produced a bug
+        result = comm.allreduce(data, op = op)
     else:
         result = comm.allreduce(data, op = op)
     return result
@@ -210,14 +185,14 @@ def mpiscatter(data = None, root = 0, comm = None):
     if lpyMPIactive:
         result = comm.scatter(data, root)
     elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
-        try:
+        if data.dtype is not dtype('object'):
             recv_shape = [shape(data)]
             recv_shape[0] = shape(data)[0]/comm.Get_size()
             recv_shape = tuple(recv_shape[:])
             recvbuffer = empty(recv_shape, data.dtype)
             comm.Scatter(data, recvbuffer, root = root)
             result = recvbuffer
-        except:
+        else:
             result = comm.scatter(data, root = root)
     else: 
         result = comm.scatter(data, root = root)
