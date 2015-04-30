@@ -149,24 +149,35 @@ def mpibcast(data = None, root = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.bcast(data, root)
-    elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
-        if data.dtype is not dtype('object'):
-            comm.Bcast(data, root = root)
-            result = data
+    if lmpi4pyactive:
+        if comm.Get_rank() == root and (type(data).__module__ == 'numpy'):
+            if data.dtype is not dtype('object'):
+                is_numpy = True
+                data_shape, data_dtype = shape(data), data.dtype
+            else:
+                is_numpy = False
+                data_shape, data_dtype = (None, None)
+        else:
+            is_numpy = False
+            data_shape, data_dtype = (None, None)
+        is_numpy, data_shape, data_dtype = comm.bcast((is_numpy, data_shape, data_dtype), root = root)
+        if is_numpy == True:
+            if comm.Get_rank() != root:
+                recvbuffer = empty(data_shape, dtype = data_dtype)
+            else:
+                recvbuffer = data
+            comm.Bcast(recvbuffer, root = root)
+            result = recvbuffer
         else:
             result = comm.bcast(data, root = root)
-    else:
-        result = comm.bcast(data, root = root)
     return result
 
 def mpiallreduce(data = None, op = mpi.SUM, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.allreduce(data, op)
-    elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
-        #"slow" mpi4py routine, as the "fast" one produced a bug
-        result = comm.allreduce(data, op = op)
-    else:
+    elif lmpi4pyactive:
+        #"fast" version was removed because it produced bugs
         result = comm.allreduce(data, op = op)
     return result
 
@@ -184,18 +195,29 @@ def mpiscatter(data = None, root = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.scatter(data, root)
-    elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
-        if data.dtype is not dtype('object'):
-            recv_shape = [shape(data)]
-            recv_shape[0] = shape(data)[0]/comm.Get_size()
+    if lmpi4pyactive:
+        if comm.Get_rank() == root and (type(data).__module__ == 'numpy'):
+            if data.dtype is not dtype('object'):
+                is_numpy = True
+                data_shape, data_dtype = shape(data), data.dtype
+            else:
+                is_numpy = False
+                data_shape, data_dtype = (None, None)
+        else:
+            is_numpy = False
+            data_shape, data_dtype = (None, None)
+        is_numpy, data_shape, data_dtype = comm.bcast((is_numpy, data_shape, data_dtype), root = root)
+        if is_numpy == True:
+            recv_shape = [data_shape]
+            recv_shape[0] = data_shape[0]/comm.Get_size()
             recv_shape = tuple(recv_shape[:])
-            recvbuffer = empty(recv_shape, data.dtype)
+            recvbuffer = empty(recv_shape, data_dtype)
+            if comm.Get_rank() != root:
+                data = empty(data_shape, dtype = data_dtype)
             comm.Scatter(data, recvbuffer, root = root)
             result = recvbuffer
         else:
             result = comm.scatter(data, root = root)
-    else: 
-        result = comm.scatter(data, root = root)
     return result
 
 # ---------------------------------------------------------------------------
