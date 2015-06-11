@@ -821,6 +821,18 @@ langevincollisions3d(lself:logical,np:integer,
                      dt:real,loglambda(np):real,epvth:real)
                          subroutine      # Langevin collision operator for like and
                                          # unlike particle species
+compton_scatter_electrons(photon_energy:real,
+                          photon_density(0:nx,0:ny,0:nz):real,
+                          photon_px(0:nx,0:ny,0:nz):real,
+                          photon_py(0:nx,0:ny,0:nz):real,
+                          photon_pz(0:nx,0:ny,0:nz):real,
+                          nx:integer, ny:integer, nz:integer, dx:real, dy:real, dz:real,
+                          xmmin:real, ymmin:real, zmmin:real, dt:real,
+                          boost_gamma:real, time:real,
+                          electrongroup:ParticleGroup, electrons:integer,
+                          photongroup:ParticleGroup, photons:integer,
+                          tbirthpid:integer) subroutine
+          # Scatters electrons off of a background photon density
 
 *********** AMR dump:
 AMRlevels                  integer /0/   # number of mesh refinement levels

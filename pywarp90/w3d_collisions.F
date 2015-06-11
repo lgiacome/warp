@@ -921,6 +921,329 @@ cc      write(*,*) "sddx2d=",sddx2d
       return
       end
 
+c=============================================================================
+      subroutine compton_scatter_electrons(photon_energy, photon_density, photon_px, photon_py, photon_pz,
+     &                                     nx, ny, nz, dx, dy, dz, xmmin, ymmin, zmmin, dt,
+     &                                     boost_gamma, time,
+     &                                     electrongroup, electrons, photongroup, photons, tbirthpid)
+      use Constant
+      use ParticleGroupModule
+      integer(ISZ):: nx, ny, nz
+      real(kind=8):: photon_energy
+      real(kind=8):: photon_density(0:nx,0:ny,0:nz)
+      real(kind=8):: photon_px(0:nx,0:ny,0:nz)
+      real(kind=8):: photon_py(0:nx,0:ny,0:nz)
+      real(kind=8):: photon_pz(0:nx,0:ny,0:nz)
+      real(kind=8):: dx, dy, dz, dt
+      real(kind=8):: xmmin, ymmin, zmmin
+      real(kind=8):: boost_gamma, time
+      type(ParticleGroup):: electrongroup
+      type(ParticleGroup):: photongroup
+      integer(ISZ):: photons
+      integer(ISZ):: electrons
+      integer(ISZ):: tbirthpid
 
+      integer(ISZ):: ie, ig
+      integer(ISZ):: ix, iy, iz
 
+      real(kind=8):: x
+      real(kind=8):: rn, c0, b, a
+      real(kind=8):: k, kprime
+      real(kind=8):: ratio, arg
+      real(kind=8):: theta, phi
+      real(kind=8):: e_radius, e_area, sigma, vz, zswept
+      real(kind=8):: numer, denom
+      real(kind=8):: factor1, factor2
+      real(kind=8):: prob
+      real(kind=8):: f, h, factor
 
+      real(kind=8):: uzboost
+      real(kind=8):: xlab, ylab, zlab
+      real(kind=8):: uxlab, uylab, uzlab, gamma_lab
+      real(kind=8):: ux, uy, uz
+      real(kind=8):: gamma_frame, umag
+      real(kind=8):: uxframe, uyframe, uzframe
+      real(kind=8):: uxhat, uyhat, uzhat, udotv, pdotv
+      real(kind=8):: pdens, px, py, pz, pe, p_tot, p_perp
+      real(kind=8):: px_old, py_old, pz_old
+      real(kind=8):: p_old, e_old, p_new, e_new
+      real(kind=8):: pxtemp, pytemp, pztemp, ptemp
+      real(kind=8):: pxlab, pylab, pzlab, pelab
+      real(kind=8):: delta_px, delta_py, delta_pz, delta_e, gamma_new
+      real(kind=8):: psx, psy, psz
+      real(kind=8):: wx, wy, wz
+      real(kind=8):: cphi, sphi, ctheta, stheta
+
+      uzboost = clight*sqrt(boost_gamma*boost_gamma - 1.)
+
+      e_radius = echarge**2/(4.0*pi*eps0*emass*clight**2)
+      e_area = pi*e_radius**2
+
+      ! --- Loop over electrons
+      do ie=electrongroup%ins(electrons), electrongroup%ins(electrons)+electrongroup%nps(electrons)-1
+
+        ! --- Boost particle to lab frame
+        xlab = electrongroup%xp(ie)
+        ylab = electrongroup%yp(ie)
+        zlab = boost_gamma*electrongroup%zp(ie) + uzboost*time
+        uxlab = electrongroup%uxp(ie)
+        uylab = electrongroup%uyp(ie)
+        uzlab = boost_gamma*electrongroup%uzp(ie) + uzboost/electrongroup%gaminv(ie)
+        gamma_lab = sqrt(1. + (uxlab**2 + uylab**2 + uzlab**2)/clight**2)
+
+        ! --- Quantities needed for frame transformations into and out
+        ! --- the rest frame of the electron
+        gamma_frame = gamma_lab
+        uxframe = uxlab
+        uyframe = uylab
+        uzframe = uzlab
+        umag = sqrt(uxframe**2 + uyframe**2 + uzframe**2)
+        if (umag > 0.) then
+          uxhat = uxframe/umag
+          uyhat = uyframe/umag
+          uzhat = uzframe/umag
+        endif
+
+        ix = int(xlab - xmmin)/dx
+        iy = int(ylab - ymmin)/dy
+        iz = int(zlab - zmmin)/dz
+        wx =    (xlab - xmmin)/dx - ix
+        wy =    (ylab - ymmin)/dy - iy
+        wz =    (zlab - zmmin)/dz - iz
+
+        ! --- Get the photon density at the electron location (in lab frame)
+        pdens = photon_density(ix-1,iy-1,iz-1)*(1. - wx)*(1. - wy)*(1. - wz) +
+     &          photon_density(ix  ,iy-1,iz-1)*      wx *(1. - wy)*(1. - wz) +
+     &          photon_density(ix-1,iy  ,iz-1)*(1. - wx)*      wy *(1. - wz) +
+     &          photon_density(ix  ,iy  ,iz-1)*      wx *      wy *(1. - wz) +
+     &          photon_density(ix-1,iy-1,iz  )*(1. - wx)*(1. - wy)*      wz  +
+     &          photon_density(ix  ,iy-1,iz  )*      wx *(1. - wy)*      wz  +
+     &          photon_density(ix-1,iy  ,iz  )*(1. - wx)*      wy *      wz  +
+     &          photon_density(ix  ,iy  ,iz  )*      wx *      wy *      wz 
+
+        ! --- Get the momentum of the incoming photon (in lab frame)
+        pxtemp = photon_px(ix-1,iy-1,iz-1)*(1. - wx)*(1. - wy)*(1. - wz) +
+     &           photon_px(ix  ,iy-1,iz-1)*      wx *(1. - wy)*(1. - wz) +
+     &           photon_px(ix-1,iy  ,iz-1)*(1. - wx)*      wy *(1. - wz) +
+     &           photon_px(ix  ,iy  ,iz-1)*      wx *      wy *(1. - wz) +
+     &           photon_px(ix-1,iy-1,iz  )*(1. - wx)*(1. - wy)*      wz  +
+     &           photon_px(ix  ,iy-1,iz  )*      wx *(1. - wy)*      wz  +
+     &           photon_px(ix-1,iy  ,iz  )*(1. - wx)*      wy *      wz  +
+     &           photon_px(ix  ,iy  ,iz  )*      wx *      wy *      wz
+        pytemp = photon_py(ix-1,iy-1,iz-1)*(1. - wx)*(1. - wy)*(1. - wz) +
+     &           photon_py(ix  ,iy-1,iz-1)*      wx *(1. - wy)*(1. - wz) +
+     &           photon_py(ix-1,iy  ,iz-1)*(1. - wx)*      wy *(1. - wz) +
+     &           photon_py(ix  ,iy  ,iz-1)*      wx *      wy *(1. - wz) +
+     &           photon_py(ix-1,iy-1,iz  )*(1. - wx)*(1. - wy)*      wz  +
+     &           photon_py(ix  ,iy-1,iz  )*      wx *(1. - wy)*      wz  +
+     &           photon_py(ix-1,iy  ,iz  )*(1. - wx)*      wy *      wz  +
+     &           photon_py(ix  ,iy  ,iz  )*      wx *      wy *      wz
+        pztemp = photon_pz(ix-1,iy-1,iz-1)*(1. - wx)*(1. - wy)*(1. - wz) +
+     &           photon_pz(ix  ,iy-1,iz-1)*      wx *(1. - wy)*(1. - wz) +
+     &           photon_pz(ix-1,iy  ,iz-1)*(1. - wx)*      wy *(1. - wz) +
+     &           photon_pz(ix  ,iy  ,iz-1)*      wx *      wy *(1. - wz) +
+     &           photon_pz(ix-1,iy-1,iz  )*(1. - wx)*(1. - wy)*      wz  +
+     &           photon_pz(ix  ,iy-1,iz  )*      wx *(1. - wy)*      wz  +
+     &           photon_pz(ix-1,iy  ,iz  )*(1. - wx)*      wy *      wz  +
+     &           photon_pz(ix  ,iy  ,iz  )*      wx *      wy *      wz
+
+        ! --- Photon energy in lab frame
+        pelab = photon_energy
+
+        ! --- The photon_px, y, and z are only used for directionality.
+        ! --- While the momentum encapsulates the energy, the
+        ! --- interpolated value may add an artificial numeric spread
+        ! --- in the energy. Scale the momentum to be consistent with
+        ! --- the input photon energy.
+        ! --- Note that the px, y, z are momentum, with units kg m/s.
+        ptemp = sqrt(pxtemp**2 + pytemp**2 + pztemp**2)
+        pxlab = photon_energy/clight*(pxtemp/ptemp)
+        pylab = photon_energy/clight*(pytemp/ptemp)
+        pzlab = photon_energy/clight*(pztemp/ptemp)
+
+        ! --- Transform the photon into the electron rest frame
+        if (umag > 0.) then
+          pdotv = pxlab*uxhat + pylab*uyhat + pzlab*uzhat
+          px = pxlab + (gamma_frame - 1.)*pdotv*uxhat - uxframe*pelab/clight**2
+          py = pylab + (gamma_frame - 1.)*pdotv*uyhat - uyframe*pelab/clight**2
+          pz = pzlab + (gamma_frame - 1.)*pdotv*uzhat - uzframe*pelab/clight**2
+        else
+          px = pxlab
+          py = pylab
+          pz = pzlab
+        endif
+
+        ! --- Photon energy in the electron rest frame
+        pe = sqrt(px**2 + py**2 + pz**2)*clight
+        k = pe/(emass*clight**2) ! scaled energy, relative to electron rest mass
+
+        numer   = 2.0*(2.0 + k*(1.0 + k)*(8.0 + k))
+        denom   = k**2*(1.0 + 2.0*k)**2
+        factor1 = numer/denom
+
+        numer   = (2.0 + k*(2.0 - k))*log(1.0 + 2.0*k)
+        factor2 = numer/k**3
+
+        ! --- sigma is the total cross section
+        sigma = e_area*(factor1 - factor2)
+
+        ! --- Probability of scattering
+        vz = electrongroup%uzp(ie)*electrongroup%gaminv(ie)
+        zswept = boost_gamma*dt*(vz + clight)
+        arg = sigma*pdens*zswept
+        prob = 1.0 - exp(-arg)
+        call random_number(rn)
+
+        if (rn < prob) then
+
+          ! --- rotate photon to align with z axis
+          p_perp = sqrt(px**2 + py**2)
+
+          p_tot = sqrt(px**2 + py**2 + pz**2) ! total momentum
+
+          theta = acos(pz/p_tot)
+
+          if (p_perp == 0.0) then
+            phi = 0.0
+          elseif (py >= 0.0) then
+            phi = acos(px/p_perp)
+          else
+            phi = 2.*pi - acos(px/p_perp)
+          endif
+
+          cphi   = cos(phi) ! save rotation angles
+          sphi   = sin(phi)
+          ctheta = cos(theta)
+          stheta = sin(theta)
+
+          ! --- Save old values that are needed later
+          ! --- Old means quantities in the electron rest frame before scattering
+          px_old = px
+          py_old = py
+          pz_old = pz
+          p_old  = p_tot
+          e_old  = pe
+
+          ! --- Get scattering angle from Klein-Nishina cross section
+          ! --- The method used is described here:
+          ! --- Ozmutl, E. N. "Sampling of Angular Distribution in Compton Scattering"
+          ! --- Appl. Radiat. Isot. 43, 6, pp. 713-715 (1992)
+          ! --- Int. J. Radiat. Appl. Instrum. Part A
+
+          c0 = 2.0*(2.0*k*k + 2.0*k + 1.0)/(2.0*k + 1.0)**3
+          b = (2.0 + c0)/(2.0 - c0)
+          a = 2.0*b - 1.0
+
+          kprime = 0.0
+
+          do while (kprime == 0.0)
+
+            call random_number(rn)
+
+            x = b - (b + 1.0)*(0.5*c0)**rn ! cos(theta)
+
+            factor = 1.0 + k*(1.0 - x)
+            denom  = factor*factor
+            numer  = 1.0 + x*x + (k*k*(1.0 - x)**2)/factor
+            f = numer/denom
+            h = a/(b - x)
+
+            ratio = f/h
+
+            call random_number(rn)
+
+            if (ratio >= rn) then
+              kprime = 1.0/(1.0 - x + 1.0/k)
+            endif
+
+          enddo
+
+          e_new = kprime*emass*clight**2 ! energy of scattered photons (in J)
+          p_new = e_new/clight
+
+          theta = acos(x) ! polar scattering angle
+
+          call random_number(rn)
+
+          phi = 2.*pi*rn ! azimuthal scattering angle
+
+          ! --- Rotation due to scattering
+          psx = p_new*sin(theta)*cos(phi)
+          psy = p_new*sin(theta)*sin(phi)
+          psz = p_new*cos(theta)
+
+          ! --- Rotate momentum vector back to old frame
+          px =  ctheta*cphi*psx - sphi*psy + stheta*cphi*psz
+          py =  ctheta*sphi*psx + cphi*psy + stheta*sphi*psz
+          pz = -stheta*     psx +            ctheta*     psz
+
+          ! --- Make sure there is enough space for the new photon
+          call chckpart(photongroup,photons,0,1)
+          ig = photongroup%ins(photons) + photongroup%nps(photons)
+          photongroup%nps(photons) = photongroup%nps(photons) + 1
+
+          ! --- Transform back into the lab frame (from the electron rest frame)
+          if (umag > 0.) then
+            pdotv = px*uxhat + py*uyhat + pz*uzhat
+            pxlab = px + (gamma_frame - 1.)*pdotv*uxhat + uxframe*e_new/clight**2
+            pylab = py + (gamma_frame - 1.)*pdotv*uyhat + uyframe*e_new/clight**2
+            pzlab = pz + (gamma_frame - 1.)*pdotv*uzhat + uzframe*e_new/clight**2
+          else
+            pxlab = px
+            pylab = py
+            pzlab = pz
+          endif
+          pelab = sqrt(pxlab**2 + pylab**2 + pzlab**2)*clight
+
+          ! --- New photon is created at the electron position (in lab frame)
+          photongroup%xp(ig) = xlab
+          photongroup%yp(ig) = ylab
+          photongroup%zp(ig) = zlab
+
+          photongroup%uxp(ig) = pxlab
+          photongroup%uyp(ig) = pylab
+          photongroup%uzp(ig) = pzlab
+          photongroup%gaminv(ig) = pelab/jperev ! A handy place to save the energy, in eV
+          if (tbirthpid > 0) then
+            photongroup%pid(ig,tbirthpid) = time
+          endif
+
+          ! --- Modify electron, giving it the remainder of the momentum and energy
+          delta_px = px_old - px
+          delta_py = py_old - py
+          delta_pz = pz_old - pz
+          delta_e = e_old - e_new
+          gamma_new = delta_e/(emass*clight**2) + 1.
+
+          ux = delta_px/emass
+          uy = delta_py/emass
+          uz = delta_pz/emass
+
+          ! --- Transform back into the lab frame (from the electron rest frame)
+          if (umag > 0.) then
+            udotv = ux*uxhat + uy*uyhat + uz*uzhat
+            uxlab = ux + (gamma_frame - 1.)*udotv*uxhat + uxframe*gamma_new
+            uylab = uy + (gamma_frame - 1.)*udotv*uyhat + uyframe*gamma_new
+            uzlab = uz + (gamma_frame - 1.)*udotv*uzhat + uzframe*gamma_new
+          else
+            uxlab = ux
+            uylab = uy
+            uzlab = uz
+          endif
+          gamma_lab = sqrt(1. + (uxlab**2 + uylab**2 + uzlab**2)/clight**2)
+
+          ! --- Boost electron back into boosted frame
+          ux = uxlab
+          uy = uylab
+          uz = boost_gamma*uzlab - uzboost*gamma_lab
+
+          electrongroup%uxp(ie) = ux
+          electrongroup%uyp(ie) = uy
+          electrongroup%uzp(ie) = uz
+          electrongroup%gaminv(ie) = 1./sqrt(1. + (ux**2 + uy**2 + uz**2)/clight**2)
+
+        endif
+      enddo
+
+      end subroutine compton_scatter_electrons
+c=============================================================================
