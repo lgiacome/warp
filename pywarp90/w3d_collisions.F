@@ -957,7 +957,7 @@ c=============================================================================
       real(kind=8):: prob
       real(kind=8):: f, h, factor
 
-      real(kind=8):: uzboost
+      real(kind=8):: boost_uz
       real(kind=8):: xlab, ylab, zlab
       real(kind=8):: uxlab, uylab, uzlab, gamma_lab
       real(kind=8):: ux, uy, uz
@@ -974,10 +974,15 @@ c=============================================================================
       real(kind=8):: wx, wy, wz
       real(kind=8):: cphi, sphi, ctheta, stheta
 
-      uzboost = clight*sqrt(boost_gamma*boost_gamma - 1.)
+      boost_uz = clight*sqrt(boost_gamma*boost_gamma - 1.)
 
       e_radius = echarge**2/(4.0*pi*eps0*emass*clight**2)
       e_area = pi*e_radius**2
+
+      ! --- Do this here since an unknown number of scattering will happen.
+      ! --- This cannot be done during the loop since it might rearrange
+      ! --- the electrons.
+      call chckpart(photongroup,photons,0,electrongroup%nps(electrons))
 
       ! --- Loop over electrons
       do ie=electrongroup%ins(electrons), electrongroup%ins(electrons)+electrongroup%nps(electrons)-1
@@ -985,10 +990,10 @@ c=============================================================================
         ! --- Boost particle to lab frame
         xlab = electrongroup%xp(ie)
         ylab = electrongroup%yp(ie)
-        zlab = boost_gamma*electrongroup%zp(ie) + uzboost*time
+        zlab = boost_gamma*electrongroup%zp(ie) + boost_uz*time
         uxlab = electrongroup%uxp(ie)
         uylab = electrongroup%uyp(ie)
-        uzlab = boost_gamma*electrongroup%uzp(ie) + uzboost/electrongroup%gaminv(ie)
+        uzlab = boost_gamma*electrongroup%uzp(ie) + boost_uz/electrongroup%gaminv(ie)
         gamma_lab = sqrt(1. + (uxlab**2 + uylab**2 + uzlab**2)/clight**2)
 
         ! --- Quantities needed for frame transformations into and out
@@ -1178,7 +1183,6 @@ c=============================================================================
           pz = -stheta*     psx +            ctheta*     psz
 
           ! --- Make sure there is enough space for the new photon
-          call chckpart(photongroup,photons,0,1)
           ig = photongroup%ins(photons) + photongroup%nps(photons)
           photongroup%nps(photons) = photongroup%nps(photons) + 1
 
@@ -1235,7 +1239,7 @@ c=============================================================================
           ! --- Boost electron back into boosted frame
           ux = uxlab
           uy = uylab
-          uz = boost_gamma*uzlab - uzboost*gamma_lab
+          uz = boost_gamma*uzlab - boost_uz*gamma_lab
 
           electrongroup%uxp(ie) = ux
           electrongroup%uyp(ie) = uy
