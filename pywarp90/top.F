@@ -3116,65 +3116,29 @@ c  Fast gamma advance, version 2, fastest, but least accurate
       real(kind=8):: uxf(np),uyf(np),uzf(np),gammaf(np)
 
       integer(ISZ) :: ip
-      real(kind=8):: gammapr,vx,vy,vz,v,vvp_x,vvp_y,vvp_z,vvp,vvvp_x,vvvp_y,vvvp_z,vvvp
-      real(kind=8):: vxp,vyp,vzp,vp_par,vp_perp,vpr_par,vpr_perp,gaminvf,const,invclightsq
-      logical(ISZ):: l_vperp
+      real(kind=8):: invclightsq
+      real(kind=8):: umagi, uxfhat, uyfhat, uzfhat
+      real(kind=8):: udotuf, gammap
+
       invclightsq = 1./(clight*clight)
+
       do ip=1,np
         if(gammaf(ip)<1.00000001) cycle
 
-!  --- get velocities
-        vxp = uxp(ip)*gaminv(ip)
-        vyp = uyp(ip)*gaminv(ip)
-        vzp = uzp(ip)*gaminv(ip)
+        umagi = 1./sqrt(uxf(ip)**2 + uyf(ip)**2 + uzf(ip)**2)
+        ! --- This is equivalent and may be slightly faster but it has round off problems when gamma is near 1.
+        !umagi = 1./sqrt(gammaf(ip)**2 - 1.)
+        uxfhat = uxf(ip)*umagi
+        uyfhat = uyf(ip)*umagi
+        uzfhat = uzf(ip)*umagi
 
-        gaminvf = 1./gammaf(ip)
-        vx=uxf(ip)*gaminvf
-        vy=uyf(ip)*gaminvf
-        vz=uzf(ip)*gaminvf
-        const = 1./(1.-(vxp*vx+vyp*vy+vzp*vz)*invclightsq)
+        udotuf = uxp(ip)*uxfhat + uyp(ip)*uyfhat + uzp(ip)*uzfhat
+        gammap = 1./gaminv(ip)
+        uxp(ip) = uxp(ip) + (gammaf(ip) - 1.)*udotuf*uxfhat - uxf(ip)*gammap
+        uyp(ip) = uyp(ip) + (gammaf(ip) - 1.)*udotuf*uyfhat - uyf(ip)*gammap
+        uzp(ip) = uzp(ip) + (gammaf(ip) - 1.)*udotuf*uzfhat - uzf(ip)*gammap
+        gaminv(ip) = 1./sqrt(1. + (uxp(ip)**2+uyp(ip)**2+uzp(ip)**2)*invclightsq)
 
-!   --- get unit vector v
-        v = sqrt(vx*vx+vy*vy+vz*vz)
-        vx = vx/v; vy = vy/v; vz = vz/v
-
-!   --- get unit vector v x vp
-        vvp_x = vy*vzp-vz*vyp
-        vvp_y = vz*vxp-vx*vzp
-        vvp_z = vx*vyp-vy*vxp
-        vvp = sqrt(vvp_x*vvp_x+vvp_y*vvp_y+vvp_z*vvp_z)
-!        if(vvp<1.e-10*v) then
-        if(vvp==0.) then
-          l_vperp=.false.
-        else
-          l_vperp=.true.
-        end if
-        if(l_vperp) then
-          vvp_x = vvp_x/vvp; vvp_y = vvp_y/vvp; vvp_z = vvp_z/vvp
-
-!   --- get vnit vector v x (v x vp)
-          vvvp_x = vy*vvp_z-vz*vvp_y
-          vvvp_y = vz*vvp_x-vx*vvp_z
-          vvvp_z = vx*vvp_y-vy*vvp_x
-          vvvp = sqrt(vvvp_x*vvvp_x+vvvp_y*vvvp_y+vvvp_z*vvvp_z)
-          vvvp_x = vvvp_x/vvvp; vvvp_y = vvvp_y/vvvp; vvvp_z = vvvp_z/vvvp
-        end if
-
- ! get particle velocity vp in base {v,v x (v x vp)}, i.e. {v_par,v_perp}
-        vp_par  = vxp*vx + vyp*vy + vzp*vz
-        if(l_vperp) vp_perp = vxp*vvvp_x + vyp*vvvp_y + vzp*vvvp_z
-        vpr_par = (vp_par-v)*const
-        const = const*gaminvf
-        if(l_vperp) then
-          vpr_perp = vp_perp*const
-        else
-          vpr_perp = 0.
-        endif
-        gammapr = 1./sqrt(1.-(vpr_par**2+vpr_perp**2)*invclightsq)
-        uxp(ip) = (vpr_par*vx+vpr_perp*vvvp_x)*gammapr
-        uyp(ip) = (vpr_par*vy+vpr_perp*vvvp_y)*gammapr
-        uzp(ip) = (vpr_par*vz+vpr_perp*vvvp_z)*gammapr
-        gaminv(ip) = 1./sqrt(1.+(uxp(ip)*uxp(ip)+uyp(ip)*uyp(ip)+uzp(ip)*uzp(ip))*invclightsq)
       enddo
 
       return
@@ -3188,64 +3152,16 @@ c  Fast gamma advance, version 2, fastest, but least accurate
       real(kind=8):: uzf,gammaf
 
       integer(ISZ) :: ip
-      real(kind=8):: gammapr,vz,v,vvp_x,vvp_y,vvp,vvvp_x,vvvp_y,vvvp
-      real(kind=8):: vxp,vyp,vzp,vp_par,vp_perp,vpr_par,vpr_perp,gaminvf,const,invclightsq
-      logical(ISZ):: l_vperp
-      invclightsq = 1./(clight*clight)
+      real(kind=8):: invclightsq
+
       if(gammaf<1.00000001) return
+      invclightsq = 1./(clight*clight)
+
       do ip=1,np
 
-!  --- get velocities
-        vxp = uxp(ip)*gaminv(ip)
-        vyp = uyp(ip)*gaminv(ip)
-        vzp = uzp(ip)*gaminv(ip)
+        uzp(ip) = gammaf*uzp(ip) - uzf/gaminv(ip)
+        gaminv(ip) = 1./sqrt(1. + (uxp(ip)**2+uyp(ip)**2+uzp(ip)**2)*invclightsq)
 
-        gaminvf = 1./gammaf
-        vz=uzf*gaminvf
-        const = 1./(1.-(vzp*vz)*invclightsq)
-
-!   --- get unit vector v
-        v = sqrt(vz*vz)
-        vz = vz/v
-
-!   --- get unit vector v x vp
-        vvp_x = -vz*vyp
-        vvp_y = vz*vxp
-        vvp = sqrt(vvp_x*vvp_x+vvp_y*vvp_y)
-!        if(vvp<1.e-10*v) then
-        if(vvp==0.) then
-          l_vperp=.false.
-        else
-          l_vperp=.true.
-        end if
-        if(l_vperp) then
-          vvp_x = vvp_x/vvp; vvp_y = vvp_y/vvp
-
-!   --- get vnit vector v x (v x vp)
-          vvvp_x = -vz*vvp_y
-          vvvp_y = vz*vvp_x
-          vvvp = sqrt(vvvp_x*vvvp_x+vvvp_y*vvvp_y)
-          vvvp_x = vvvp_x/vvvp; vvvp_y = vvvp_y/vvvp
-        else
-          vvvp_x = 0.
-          vvvp_y = 0.
-        end if
-
- ! get particle velocity vp in base {v,v x (v x vp)}, i.e. {v_par,v_perp}
-        vp_par  = vzp*vz
-        if(l_vperp) vp_perp = vxp*vvvp_x + vyp*vvvp_y
-        vpr_par = (vp_par-v)*const
-        const = const*gaminvf
-        if(l_vperp) then
-          vpr_perp = vp_perp*const
-        else
-          vpr_perp = 0.
-        endif
-        gammapr = 1./sqrt(1.-(vpr_par**2+vpr_perp**2)*invclightsq)
-        uxp(ip) = (vpr_perp*vvvp_x)*gammapr
-        uyp(ip) = (vpr_perp*vvvp_y)*gammapr
-        uzp(ip) = (vpr_par*vz)*gammapr
-        gaminv(ip) = 1./sqrt(1.+(uxp(ip)*uxp(ip)+uyp(ip)*uyp(ip)+uzp(ip)*uzp(ip))*invclightsq)
       enddo
 
       return
