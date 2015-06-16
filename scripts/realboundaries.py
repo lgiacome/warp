@@ -393,7 +393,7 @@ class RoundPipe(CapacityMatrix):
                 return 1
     #----------------------------------------------------------------------------
     def plotcond(s,color='fg',xscale=1.,yscale=1.):
-        tt = span(0.,2*pi,101)
+        tt = linspace(0., 2*pi, 101)
         xx = s.ax*cos(tt-pi*0.75) + s.ox
         yy = s.ay*sin(tt-pi*0.75) + s.oy
         ii = s.insymmetricgrid(xx,yy)
@@ -522,7 +522,7 @@ class RoundRods(CapacityMatrix):
         return 0
     #----------------------------------------------------------------------------
     def plotcond(s,color='fg',xscale=1.,yscale=1.):
-        tt = span(0.,2*pi,101)
+        tt = linspace(0., 2*pi, 101)
         for sx,sy,da,w in [(+1,0,0.,s.withx),(-1,0,pi,s.withx),
                            (0,+1,+pi/2.,s.withy),(0,-1,-pi/2.,s.withy)]:
             if not w: continue

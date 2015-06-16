@@ -54,8 +54,8 @@ def _addelement(zs,ze,zend,dh,zele,xele,zaxis,xaxis,zz,xx,zl,xl):
 def _makearcs(x,z,narc):
     xx,zz = [],[]
     for i in range(len(x)-1):
-        xx = xx + list(span(x[i],x[i+1],narc))
-        zz = zz + list(span(z[i],z[i+1],narc))
+        xx = xx + list(linspace(x[i], x[i+1], narc))
+        zz = zz + list(linspace(z[i], z[i+1], narc))
     return array(xx),array(zz)
 
 

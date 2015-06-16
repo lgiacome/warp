@@ -4041,7 +4041,7 @@ class Sphere(Assembly):
 
     def draw(self,color='fg',filled=None,fullplane=1,**kw):
         narcpoints = kw.get('narcpoints',64)
-        theta = span(0.,2.*pi,narcpoints+1)
+        theta = linspace(0., 2.*pi, narcpoints+1)
         r = self.radius*cos(theta)
         z = self.radius*sin(theta)
         self.plotdata(r,z,color=color,filled=filled,fullplane=fullplane,**kw)
@@ -4290,7 +4290,7 @@ class ZTorus(Assembly):
 
     def draw(self,color='fg',filled=None,fullplane=1,**kw):
         narcpoints = kw.get('narcpoints',64)
-        theta = span(0.,2.*pi,narcpoints+1)
+        theta = linspace(0., 2.*pi, narcpoints+1)
         r = self.r2*cos(theta) + self.r1
         z = self.r2*sin(theta)
         self.plotdata(r,z,color=color,filled=filled,fullplane=fullplane,**kw)
@@ -4551,10 +4551,10 @@ class Srfrv:
                         th2 = th2 + 2*pi
                     if (th1 < th2 and raddata[i] > 0. and zdata[i] < zdata[i+1]):
                         th1 = th1 + 2*pi
-                    tt = span(th1,th2,narcpoints)
+                    tt = linspace(th1, th2, narcpoints)
                     rr = abs(raddata[i])*sin(tt) + rcdata[i]
                     zz = abs(raddata[i])*cos(tt) + zcdata[i]
-                    #zz = span(zdata[i],zdata[i+1],narcpoints)
+                    #zz = linspace(zdata[i], zdata[i+1], narcpoints)
                     #if raddata[i] > 0.:
                     #  rr = rcdata[i] + sqrt(maximum(0,raddata[i]**2 - (zz-zcdata[i])**2))
                     #else:
@@ -4581,7 +4581,7 @@ class Srfrv:
         except AttributeError:
             nperdz = 100
         np = (self.zmax - self.zmin)/self.griddz*nperdz
-        zdata = span(self.zmin,self.zmax,nperdz+1)
+        zdata = linspace(self.zmin, self.zmax, nperdz+1)
         rofzdata = zeros(nperdz+1)
         for i in range(nperdz+1):
             f3d.srfrv_z = zdata[i]
