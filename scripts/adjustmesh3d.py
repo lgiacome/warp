@@ -18,7 +18,7 @@ def resizeZ_arrays(zzmin=None,zzmax=None,nzzarr=None):
     top.dzz = (top.zzmax - top.zzmin)/top.nzzarr
     top.dzzi = 1./top.dzz
     gchange('Z_arrays')
-    top.zplmesh = span(top.zzmin,top.zzmax,top.nzzarr+1)
+    top.zplmesh = linspace(top.zzmin, top.zzmax, top.nzzarr+1)
 
 def resizeLatticeInternal(zlmin=None,zlmax=None,nzlmax=None):
     if zlmin is not None: top.zlmin = zlmin
@@ -28,7 +28,7 @@ def resizeLatticeInternal(zlmin=None,zlmax=None,nzlmax=None):
     top.dzl = (top.zlmax - top.zlmin)/top.nzlmax
     top.dzli = 1./top.dzl
     gchange("LatticeInternal")
-    top.zlmesh = span(top.zlmin,top.zlmax,top.nzlmax+1)
+    top.zlmesh = linspace(top.zlmin, top.zlmax, top.nzlmax+1)
     setlatt()
 
 def resizeZ_Momments(zmmntmin=None,zmmntmax=None,nzmmnt=None):
@@ -38,7 +38,7 @@ def resizeZ_Momments(zmmntmin=None,zmmntmax=None,nzmmnt=None):
     top.dzm = (top.zmmntmax - top.zmmntmin)/top.nzmmnt
     top.dzmi = 1./top.dzm
     gchange("Z_Moments")
-    top.zmntmesh = span(top.zmmntmin,top.zmmntmax,top.nzmmnt+1)
+    top.zmntmesh = linspace(top.zmmntmin, top.zmmntmax, top.nzmmnt+1)
 
 def resizetopmeshes(zmmin=None,zmmax=None,nz=None):
     if zmmin is None: zmmin = w3d.zmmin

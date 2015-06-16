@@ -2118,7 +2118,7 @@ def ppvector(gridy=None,gridx=None,ymesh=None,xmesh=None,scale=None,
             if xmin is None: xmin = 0
             if xmax is None: xmax = nx
             dx = (xmax - xmin)/nx
-            xmesh = span(xmin,xmax,nx+1)
+            xmesh = linspace(xmin, xmax, nx+1)
         else:
             dx = (maxnd(xmesh) - minnd(xmesh))/nx
 
@@ -2126,7 +2126,7 @@ def ppvector(gridy=None,gridx=None,ymesh=None,xmesh=None,scale=None,
             if ymin is None: ymin = 0
             if ymax is None: ymax = ny
             dy = (ymax - ymin)/ny
-            ymesh = span(ymin,ymax,ny+1)
+            ymesh = linspace(ymin, ymax, ny+1)
         else:
             dy = (maxnd(ymesh) - minnd(ymesh))/ny
 
@@ -2303,9 +2303,9 @@ def colorbar(zmin,zmax,uselog=None,ncolor=100,view=None,levs=None,
         # --- plotted is uniformly spaced between zmin and zmax. The contour
         # --- levels are those specified. The result is that the colorbar
         # --- shows the contours levels by their values relative to zmin and zmax.
-        plotval = span(zmin,zmax,255)[:,newaxis]*ones(2)
+        plotval = linspace(zmin, zmax, 255)[:, newaxis]*ones(2)
         xx = array([xmin,xmax])*ones(255)[:,newaxis]
-        yy = span(ymin,ymax,255)[:,newaxis]*ones(2)
+        yy = linspace(ymin, ymax, 255)[:, newaxis]*ones(2)
         # --- ireg must be of type integer because some legacy code used
         # --- expects it.
         ireg = ones((255,2),'i')
@@ -2529,7 +2529,7 @@ def makepalette(filename,points,comments=None,ncolor=200):
         else:                  nc = ncolor - icolor
         if len(points[i]) > 4: power = points[i][4]
         else:                  power = 1.
-        s = span(0.,1.,nc+1)**power
+        s = linspace(0., 1., nc+1)**power
         r += list(nint((points[i][0] + (points[i+1][0] - points[i][0])*s[:-1])*255))
         g += list(nint((points[i][1] + (points[i+1][1] - points[i][1])*s[:-1])*255))
         b += list(nint((points[i][2] + (points[i+1][2] - points[i][2])*s[:-1])*255))

@@ -6,6 +6,20 @@ from warp import *
 import struct # needed for makefortranordered
 import appendablearray
 import re
+from functools import wraps
+
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used."""
+    @wraps(func)
+    def newFunc(*args, **kwargs):
+        warnings.simplefilter('always', DeprecationWarning)  # turn off filter
+        warnings.warn("Call to deprecated function %s." % func.__name__,
+                      category=DeprecationWarning, stacklevel=2)
+        warnings.simplefilter('default', DeprecationWarning)  # reset filter
+        return func(*args, **kwargs)
+    return newFunc
 
 
 def warputilsdoc():
@@ -242,6 +256,7 @@ def avend(x,defaultval=0.):
     if len(xtemp) == 0: return defaultval
     return sum(xtemp)/len(xtemp)
 
+@deprecated
 def span(lo, hi, num):
     """
   Returns an array of num equally spaced numbers starting with lo and

@@ -4176,7 +4176,7 @@ def combineemlts(ielist=None):
     # --- Create arrays to hold the combined data
     es = zeros((nzmax+1,top.nesmult))
     phz = zeros((nzmax+1,top.nesmult))
-    zz = span(zs,ze,nzmax+1)
+    zz = linspace(zs, ze, nzmax+1)
 
     # --- Use interpolation to gather the multiple moments data into a single
     # --- array.
@@ -4267,7 +4267,7 @@ def combinemmlts(imlist=None):
     # --- Create arrays to hold the combined data
     ms = zeros((nzmax+1,top.nmsmult))
     phz = zeros((nzmax+1,top.nmsmult))
-    zz = span(zs,ze,nzmax+1)
+    zz = linspace(zs, ze, nzmax+1)
 
     # --- Use interpolation to gather the multiple moments data into a single
     # --- array.
