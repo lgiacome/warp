@@ -6192,14 +6192,6 @@ def Quadrupole(ap=None,rl=None,rr=None,gl=None,gp=None,
 #============================================================================
 #============================================================================
 #============================================================================
-try:
-    enumerate
-except:
-    def enumerate(ll):
-        tt = []
-        for i in range(len(ll)):
-            tt.append((i,ll[i]))
-        return tt
 
 class SRFRVLApart:
     """

@@ -320,15 +320,6 @@ def warpprofilesample(frame,event,arg):
     print "%s %s %s"%(warpprofile.level*'  ',event,frame.f_code.co_name)
     if event == 'call': warpprofile.level = warpprofile.level + 1
 
-# --- Create enumerate function, which is defined in python2.3 but not 2.2
-try:
-    enumerate
-except:
-    def enumerate(ll):
-        tt = []
-        for i in range(len(ll)):
-            tt.append((i,ll[i]))
-        return tt
 
 # --- Convenience function to read in data from a text file
 def getdatafromtextfile(filename,nskip=0,dims=None,dtype='d',fortranordering=True,
