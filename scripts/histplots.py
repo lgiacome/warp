@@ -2791,246 +2791,246 @@ def histplotstest(**kw):
   Test all histplots
     """
     print 'hptotalke'
-    apply(hptotalke,(),kw);fma()
+    hptotalke(**kw); fma()
     print 'hptotale'
-    apply(hptotale,(),kw);fma()
+    hptotale(**kw); fma()
     print 'hpthermale'
-    apply(hpthermale,(),kw);fma()
+    hpthermale(**kw); fma()
     print 'hpeps6d'
-    apply(hpeps6d,(),kw);fma()
+    hpeps6d(**kw); fma()
     print 'hpepst'
-    apply(hpepst,(),kw);fma()
+    hpepst(**kw); fma()
     print 'hpepsnt'
-    apply(hpepsnt,(),kw);fma()
+    hpepsnt(**kw); fma()
     print 'hpxedge'
-    apply(hpxedge,(),kw);fma()
+    hpxedge(**kw); fma()
     print 'hpxpedge'
-    apply(hpxpedge,(),kw);fma()
+    hpxpedge(**kw); fma()
     print 'hpyedge'
-    apply(hpyedge,(),kw);fma()
+    hpyedge(**kw); fma()
     print 'hpypedge'
-    apply(hpypedge,(),kw);fma()
+    hpypedge(**kw); fma()
     print 'hpredge'
-    apply(hpredge,(),kw);fma()
+    hpredge(**kw); fma()
     print 'hpxedges'
-    apply(hpxedges,(),kw);fma()
+    hpxedges(**kw); fma()
     print 'hpyedges'
-    apply(hpyedges,(),kw);fma()
+    hpyedges(**kw); fma()
     print 'hpredges'
-    apply(hpredges,(),kw);fma()
+    hpredges(**kw); fma()
     print 'hpxxpslope'
-    apply(hpxxpslope,(),kw);fma()
+    hpxxpslope(**kw); fma()
     print 'hpyypslope'
-    apply(hpyypslope,(),kw);fma()
+    hpyypslope(**kw); fma()
     print 'hpenvx'
-    apply(hpenvx,(),kw);fma()
+    hpenvx(**kw); fma()
     print 'hpenvy'
-    apply(hpenvy,(),kw);fma()
+    hpenvy(**kw); fma()
     print 'hpzbeam'
-    apply(hpzbeam,(),kw);fma()
+    hpzbeam(**kw); fma()
     print 'hpvbeam'
-    apply(hpvbeam,(),kw);fma()
+    hpvbeam(**kw); fma()
     print 'hpbmlen'
-    apply(hpbmlen,(),kw);fma()
+    hpbmlen(**kw); fma()
     print 'hpefld'
-    apply(hpefld,(),kw);fma()
+    hpefld(**kw); fma()
     print 'hpekzmbe'
-    apply(hpekzmbe,(),kw);fma()
+    hpekzmbe(**kw); fma()
     print 'hpekzbeam'
-    apply(hpekzbeam,(),kw);fma()
+    hpekzbeam(**kw); fma()
     print 'hpekperp'
-    apply(hpekperp,(),kw);fma()
+    hpekperp(**kw); fma()
     print 'hpekinz'
-    apply(hpekinz,(),kw);fma()
+    hpekinz(**kw); fma()
     print 'hpekin'
-    apply(hpekin,(),kw);fma()
+    hpekin(**kw); fma()
     print 'hpepsx'
-    apply(hpepsx,(),kw);fma()
+    hpepsx(**kw); fma()
     print 'hpepsy'
-    apply(hpepsy,(),kw);fma()
+    hpepsy(**kw); fma()
     print 'hpepsz'
-    apply(hpepsz,(),kw);fma()
+    hpepsz(**kw); fma()
     print 'hpepsnx'
-    apply(hpepsnx,(),kw);fma()
+    hpepsnx(**kw); fma()
     print 'hpepsny'
-    apply(hpepsny,(),kw);fma()
+    hpepsny(**kw); fma()
     print 'hpepsnz'
-    apply(hpepsnz,(),kw);fma()
+    hpepsnz(**kw); fma()
     print 'hpepsr'
-    apply(hpepsr,(),kw);fma()
+    hpepsr(**kw); fma()
     print 'hpepsg'
-    apply(hpepsg,(),kw);fma()
+    hpepsg(**kw); fma()
     print 'hpepsh'
-    apply(hpepsh,(),kw);fma()
+    hpepsh(**kw); fma()
     print 'hpepsnr'
-    apply(hpepsnr,(),kw);fma()
+    hpepsnr(**kw); fma()
     print 'hpepsng'
-    apply(hpepsng,(),kw);fma()
+    hpepsng(**kw); fma()
     print 'hpepsnh'
-    apply(hpepsnh,(),kw);fma()
+    hpepsnh(**kw); fma()
     print 'hppnum'
-    apply(hppnum,(),kw);fma()
+    hppnum(**kw); fma()
     print 'hprhomid'
-    apply(hprhomid,(),kw);fma()
+    hprhomid(**kw); fma()
     print 'hprhomax'
-    apply(hprhomax,(),kw);fma()
+    hprhomax(**kw); fma()
     print 'hpxbar'
-    apply(hpxbar,(),kw);fma()
+    hpxbar(**kw); fma()
     print 'hpybar'
-    apply(hpybar,(),kw);fma()
+    hpybar(**kw); fma()
     print 'hpxybar'
-    apply(hpxybar,(),kw);fma()
+    hpxybar(**kw); fma()
     print 'hpxrms'
-    apply(hpxrms,(),kw);fma()
+    hpxrms(**kw); fma()
     print 'hpyrms'
-    apply(hpyrms,(),kw);fma()
+    hpyrms(**kw); fma()
     print 'hprrms'
-    apply(hprrms,(),kw);fma()
+    hprrms(**kw); fma()
     print 'hpxprms'
-    apply(hpxprms,(),kw);fma()
+    hpxprms(**kw); fma()
     print 'hpyprms'
-    apply(hpyprms,(),kw);fma()
+    hpyprms(**kw); fma()
     print 'hpxsqbar'
-    apply(hpxsqbar,(),kw);fma()
+    hpxsqbar(**kw); fma()
     print 'hpysqbar'
-    apply(hpysqbar,(),kw);fma()
+    hpysqbar(**kw); fma()
     print 'hpvxbar'
-    apply(hpvxbar,(),kw);fma()
+    hpvxbar(**kw); fma()
     print 'hpvybar'
-    apply(hpvybar,(),kw);fma()
+    hpvybar(**kw); fma()
     print 'hpvzbar'
-    apply(hpvzbar,(),kw);fma()
+    hpvzbar(**kw); fma()
     print 'hpxpbar'
-    apply(hpxpbar,(),kw);fma()
+    hpxpbar(**kw); fma()
     print 'hpypbar'
-    apply(hpypbar,(),kw);fma()
+    hpypbar(**kw); fma()
     print 'hpvxrms'
-    apply(hpvxrms,(),kw);fma()
+    hpvxrms(**kw); fma()
     print 'hpvyrms'
-    apply(hpvyrms,(),kw);fma()
+    hpvyrms(**kw); fma()
     print 'hpvzrms'
-    apply(hpvzrms,(),kw);fma()
+    hpvzrms(**kw); fma()
     print 'hpxpsqbar'
-    apply(hpxpsqbar,(),kw);fma()
+    hpxpsqbar(**kw); fma()
     print 'hpypsqbar'
-    apply(hpypsqbar,(),kw);fma()
+    hpypsqbar(**kw); fma()
     print 'hpxxpbar'
-    apply(hpxxpbar,(),kw);fma()
+    hpxxpbar(**kw); fma()
     print 'hpyypbar'
-    apply(hpyypbar,(),kw);fma()
+    hpyypbar(**kw); fma()
     print 'hpxvxbar'
-    apply(hpxvxbar,(),kw);fma()
+    hpxvxbar(**kw); fma()
     print 'hpyvybar'
-    apply(hpyvybar,(),kw);fma()
+    hpyvybar(**kw); fma()
     print 'hpxypbar'
-    apply(hpxypbar,(),kw);fma()
+    hpxypbar(**kw); fma()
     print 'hpyxpbar'
-    apply(hpyxpbar,(),kw);fma()
+    hpyxpbar(**kw); fma()
     print 'hpxpypbar'
-    apply(hpxpypbar,(),kw);fma()
+    hpxpypbar(**kw); fma()
     print 'hpxvybar'
-    apply(hpxvybar,(),kw);fma()
+    hpxvybar(**kw); fma()
     print 'hpyvxbar'
-    apply(hpyvxbar,(),kw);fma()
+    hpyvxbar(**kw); fma()
     print 'hpvxvybar'
-    apply(hpvxvybar,(),kw);fma()
+    hpvxvybar(**kw); fma()
     print 'hpxvzbar'
-    apply(hpxvzbar,(),kw);fma()
+    hpxvzbar(**kw); fma()
     print 'hpyvzbar'
-    apply(hpyvzbar,(),kw);fma()
+    hpyvzbar(**kw); fma()
     print 'hpvxvzbar'
-    apply(hpvxvzbar,(),kw);fma()
+    hpvxvzbar(**kw); fma()
     print 'hpvyvzbar'
-    apply(hpvyvzbar,(),kw);fma()
+    hpvyvzbar(**kw); fma()
     print 'hplinechg'
-    apply(hplinechg,(),kw);fma()
+    hplinechg(**kw); fma()
     print 'hpvzofz'
-    apply(hpvzofz,(),kw);fma()
+    hpvzofz(**kw); fma()
     print 'hpepsxz'
-    apply(hpepsxz,(),kw);fma()
+    hpepsxz(**kw); fma()
     print 'hpepsyz'
-    apply(hpepsyz,(),kw);fma()
+    hpepsyz(**kw); fma()
     print 'hpepsnxz'
-    apply(hpepsnxz,(),kw);fma()
+    hpepsnxz(**kw); fma()
     print 'hpepsnyz'
-    apply(hpepsnyz,(),kw);fma()
+    hpepsnyz(**kw); fma()
     print 'hpepsrz'
-    apply(hpepsrz,(),kw);fma()
+    hpepsrz(**kw); fma()
     print 'hpepsgz'
-    apply(hpepsgz,(),kw);fma()
+    hpepsgz(**kw); fma()
     print 'hpepshz'
-    apply(hpepshz,(),kw);fma()
+    hpepshz(**kw); fma()
     print 'hpepsnrz'
-    apply(hpepsnrz,(),kw);fma()
+    hpepsnrz(**kw); fma()
     print 'hpepsngz'
-    apply(hpepsngz,(),kw);fma()
+    hpepsngz(**kw); fma()
     print 'hpepsnhz'
-    apply(hpepsnhz,(),kw);fma()
+    hpepsnhz(**kw); fma()
     print 'hpxbarz'
-    apply(hpxbarz,(),kw);fma()
+    hpxbarz(**kw); fma()
     print 'hpybarz'
-    apply(hpybarz,(),kw);fma()
+    hpybarz(**kw); fma()
     print 'hpxybarz'
-    apply(hpxybarz,(),kw);fma()
+    hpxybarz(**kw); fma()
     print 'hpxrmsz'
-    apply(hpxrmsz,(),kw);fma()
+    hpxrmsz(**kw); fma()
     print 'hpyrmsz'
-    apply(hpyrmsz,(),kw);fma()
+    hpyrmsz(**kw); fma()
     print 'hprrmsz'
-    apply(hprrmsz,(),kw);fma()
+    hprrmsz(**kw); fma()
     print 'hpxprmsz'
-    apply(hpxprmsz,(),kw);fma()
+    hpxprmsz(**kw); fma()
     print 'hpyprmsz'
-    apply(hpyprmsz,(),kw);fma()
+    hpyprmsz(**kw); fma()
     print 'hpxsqbarz'
-    apply(hpxsqbarz,(),kw);fma()
+    hpxsqbarz(**kw); fma()
     print 'hpysqbarz'
-    apply(hpysqbarz,(),kw);fma()
+    hpysqbarz(**kw); fma()
     print 'hpvxbarz'
-    apply(hpvxbarz,(),kw);fma()
+    hpvxbarz(**kw); fma()
     print 'hpvybarz'
-    apply(hpvybarz,(),kw);fma()
+    hpvybarz(**kw); fma()
     print 'hpvzbarz'
-    apply(hpvzbarz,(),kw);fma()
+    hpvzbarz(**kw); fma()
     print 'hpxpbarz'
-    apply(hpxpbarz,(),kw);fma()
+    hpxpbarz(**kw); fma()
     print 'hpypbarz'
-    apply(hpypbarz,(),kw);fma()
+    hpypbarz(**kw); fma()
     print 'hpvxrmsz'
-    apply(hpvxrmsz,(),kw);fma()
+    hpvxrmsz(**kw); fma()
     print 'hpvyrmsz'
-    apply(hpvyrmsz,(),kw);fma()
+    hpvyrmsz(**kw); fma()
     print 'hpvzrmsz'
-    apply(hpvzrmsz,(),kw);fma()
+    hpvzrmsz(**kw); fma()
     print 'hpxpsqbarz'
-    apply(hpxpsqbarz,(),kw);fma()
+    hpxpsqbarz(**kw); fma()
     print 'hpypsqbarz'
-    apply(hpypsqbarz,(),kw);fma()
+    hpypsqbarz(**kw); fma()
     print 'hpxxpbarz'
-    apply(hpxxpbarz,(),kw);fma()
+    hpxxpbarz(**kw); fma()
     print 'hpyypbarz'
-    apply(hpyypbarz,(),kw);fma()
+    hpyypbarz(**kw); fma()
     print 'hpxvxbarz'
-    apply(hpxvxbarz,(),kw);fma()
+    hpxvxbarz(**kw); fma()
     print 'hpyvybarz'
-    apply(hpyvybarz,(),kw);fma()
+    hpyvybarz(**kw); fma()
     print 'hpxypbarz'
-    apply(hpxypbarz,(),kw);fma()
+    hpxypbarz(**kw); fma()
     print 'hpyxpbarz'
-    apply(hpyxpbarz,(),kw);fma()
+    hpyxpbarz(**kw); fma()
     print 'hpxpypbarz'
-    apply(hpxpypbarz,(),kw);fma()
+    hpxpypbarz(**kw); fma()
     print 'hpxvybarz'
-    apply(hpxvybarz,(),kw);fma()
+    hpxvybarz(**kw); fma()
     print 'hpyvxbarz'
-    apply(hpyvxbarz,(),kw);fma()
+    hpyvxbarz(**kw); fma()
     print 'hpvxvybarz'
-    apply(hpvxvybarz,(),kw);fma()
+    hpvxvybarz(**kw); fma()
     print 'hpxvzbarz'
-    apply(hpxvzbarz,(),kw);fma()
+    hpxvzbarz(**kw); fma()
     print 'hpyvzbarz'
-    apply(hpyvzbarz,(),kw);fma()
+    hpyvzbarz(**kw); fma()
     print 'hpvxvzbarz'
-    apply(hpvxvzbarz,(),kw);fma()
+    hpvxvzbarz(**kw); fma()
     print 'hpvyvzbarz'
-    apply(hpvyvzbarz,(),kw);fma()
+    hpvyvzbarz(**kw); fma()

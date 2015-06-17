@@ -1047,7 +1047,7 @@ class EllipticAssembly(Assembly):
             delpy = arglist[-4]
             arglist[-9] = y/self.ellipticity
 
-        apply(self.circlegeneratorf,arglist)
+        self.circlegeneratorf(*arglist)
 
         if self.ellipticity != 1.:
             delmy[:] = delmy*self.ellipticity
@@ -1060,7 +1060,7 @@ class EllipticAssembly(Assembly):
             intercepts.ymmin = intercepts.ymmin/self.ellipticity
             intercepts.dy = intercepts.dy/self.ellipticity
 
-        apply(self.circlegeneratorfnew,arglist)
+        self.circlegeneratorfnew(*arglist)
 
         if self.ellipticity != 1.:
             intercepts.ymmin *= self.ellipticity
@@ -1075,7 +1075,7 @@ class EllipticAssembly(Assembly):
             distance = arglist[-1]
             arglist[-3] = y/self.ellipticity
 
-        apply(self.circlegeneratord,arglist)
+        self.circlegeneratord(*arglist)
 
         if self.ellipticity != 1.:
             tt = arctan2(y,x)
@@ -1094,7 +1094,7 @@ class EllipticAssembly(Assembly):
             arglist[-10] = y/self.ellipticity
             arglist[-7] = vy/self.ellipticity
 
-        apply(self.circlegeneratori,arglist)
+        self.circlegeneratori(*arglist)
 
         if self.ellipticity != 1.:
             yi[:] = yi*self.ellipticity
@@ -1158,7 +1158,7 @@ class XAssembly(Assembly):
         arglist[-4] = argtuple[-2]
         arglist[-3] = argtuple[-7]
         arglist[-2] = argtuple[-6]
-        apply(self.zgeneratorf,arglist)
+        self.zgeneratorf(*arglist)
 
     def xconductorfnew(self,*argtuple):
         arglist = list(argtuple)
@@ -1170,7 +1170,7 @@ class XAssembly(Assembly):
         i.nx,i.ny,i.nz = i.ny,i.nz,i.nx
         i.ix,i.iy,i.iz = i.iy,i.iz,i.ix
 
-        apply(self.zgeneratorfnew,arglist)
+        self.zgeneratorfnew(*arglist)
 
         i.xmmin,i.ymmin,i.zmmin = i.zmmin,i.xmmin,i.ymmin
         i.dx,i.dy,i.dz = i.dz,i.dx,i.dy
@@ -1203,7 +1203,7 @@ class XAssembly(Assembly):
         arglist[-4] = argtuple[-3]
         arglist[-3] = argtuple[-2]
         arglist[-2] = argtuple[-4]
-        apply(self.zgeneratord,arglist)
+        self.zgeneratord(*arglist)
 
     def xintercept(self,*argtuple):
         arglist = list(argtuple)
@@ -1226,7 +1226,7 @@ class XAssembly(Assembly):
         # --- Create temps for the surface normal angles
         arglist[-2] = zeros(shape(argtuple[-2]),'d')
         arglist[-1] = zeros(shape(argtuple[-1]),'d')
-        apply(self.zgeneratori,arglist)
+        self.zgeneratori(*arglist)
         # --- Undo the surface normals
         ttheta = arglist[-2]
         tphi = arglist[-1]
@@ -1302,7 +1302,7 @@ class YAssembly(Assembly):
         arglist[-4] = argtuple[-6]
         arglist[-3] = argtuple[-5]
         arglist[-2] = argtuple[-4]
-        apply(self.zgeneratorf,arglist)
+        self.zgeneratorf(*arglist)
 
     def yconductorfnew(self,*argtuple):
         arglist = list(argtuple)
@@ -1314,7 +1314,7 @@ class YAssembly(Assembly):
         i.nx,i.ny,i.nz = i.nz,i.nx,i.ny
         i.ix,i.iy,i.iz = i.iz,i.ix,i.iy
 
-        apply(self.zgeneratorfnew,arglist)
+        self.zgeneratorfnew(*arglist)
 
         i.xmmin,i.ymmin,i.zmmin = i.ymmin,i.zmmin,i.xmmin
         i.dx,i.dy,i.dz = i.dy,i.dz,i.dx
@@ -1347,7 +1347,7 @@ class YAssembly(Assembly):
         arglist[-4] = argtuple[-2]
         arglist[-3] = argtuple[-4]
         arglist[-2] = argtuple[-3]
-        apply(self.zgeneratord,arglist)
+        self.zgeneratord(*arglist)
 
     def yintercept(self,*argtuple):
 #    l=len(argtuple)
@@ -1373,7 +1373,7 @@ class YAssembly(Assembly):
         # --- Create temps for the surface normal angles
         arglist[-2] = zeros(shape(argtuple[-2]),'d')
         arglist[-1] = zeros(shape(argtuple[-1]),'d')
-        apply(self.zgeneratori,arglist)
+        self.zgeneratori(*arglist)
         # --- Undo the surface normals
         ttheta = arglist[-2]
         tphi = arglist[-1]
@@ -1503,10 +1503,11 @@ class Delta:
             self.zz = zz
             self.dels = zeros((6,self.ndata),'d')
             fuzz = 1.e-13
-            apply(generator,kwlist + [self.ndata,self.xx,self.yy,self.zz,
-                                      self.dels[0,:],self.dels[1,:],
-                                      self.dels[2,:],self.dels[3,:],
-                                      self.dels[4,:],self.dels[5,:]] + [fuzz])
+            arglist = kwlist + [self.ndata, self.xx, self.yy, self.zz,
+                                self.dels[0, :], self.dels[1, :],
+                                self.dels[2, :], self.dels[3, :],
+                                self.dels[4, :], self.dels[5, :]] + [fuzz]
+            generator(*arglist)
             self.setvoltages(voltage)
             self.setcondids(condid)
             self.setlevels(0)
@@ -1840,7 +1841,8 @@ class GridIntercepts(object):
             self.intercepts.iz = iz
             fuzz = 1.e-13
             if nx >= 0 and ny >= 0 and nz >= 0:
-                apply(generator,kwlist + [self.intercepts,fuzz])
+                arglist = kwlist + [self.intercepts, fuzz]
+                generator(*arglist)
                 self.intercepts.xvoltages = voltage
                 self.intercepts.yvoltages = voltage
                 self.intercepts.zvoltages = voltage
@@ -2034,8 +2036,9 @@ class Distance:
             self.yy = yy
             self.zz = zz
             self.distance = zeros(self.ndata,'d')
-            apply(generator,kwlist + [self.ndata,self.xx,self.yy,self.zz,
-                                      self.distance[:]])
+            arglist = kwlist + [self.ndata, self.xx, self.yy, self.zz,
+                                self.distance[:]]
+            generator(*arglist)
         else:
             self.ndata = len(xx)
             self.xx = xx
@@ -2134,8 +2137,9 @@ class IsInside:
             self.condid = condid
             self.aura = aura
             distance = zeros(self.ndata,'d')
-            apply(generator,kwlist + [self.ndata,self.xx,self.yy,self.zz,
-                                      distance[:]])
+            arglist = kwlist + [self.ndata, self.xx, self.yy, self.zz,
+                                distance[:]]
+            generator(*arglist)
             self.isinside = where(distance <= aura,condid,0.)
         else:
             self.ndata = len(xx)
@@ -2201,9 +2205,10 @@ class Intercept:
             self.zi = zeros(self.ndata,'d')
             self.itheta = zeros(self.ndata,'d')
             self.iphi = zeros(self.ndata,'d')
-            apply(generator,kwlist + [self.ndata,self.xx,self.yy,self.zz,
-                                      self.vx,self.vy,self.vz,
-                                      self.xi,self.yi,self.zi,self.itheta,self.iphi])
+            arglist = kwlist + [self.ndata, self.xx, self.yy, self.zz,
+                                self.vx, self.vy, self.vz,
+                                self.xi, self.yi, self.zi, self.itheta, self.iphi]
+            generator(*arglist)
         else:
             self.xi = xi
             self.yi = yi

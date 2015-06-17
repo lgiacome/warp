@@ -338,7 +338,7 @@ class ParticlePlotsGUI(wx.Panel):
         if dofma and not self.plottypekw.has_key('surface'): fma()
         kw = {self.plotchoicekw:self.plotchoiceslidervalue}
         kw.update(self.plottypekw)
-        apply(self.currentplot,[],kw)
+        self.currentplot(**kw)
         redraw()
 
     def OnPpxyzButton(self, event):
