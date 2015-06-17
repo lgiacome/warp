@@ -110,7 +110,7 @@ def plot_moms(plots = ("env", "emit", "remit", "cent", "vz", "np"), jspec=None, 
         for spec in jspec:
             kw['nwin'] = spec
             kw['color'] = colors[spec % ncolors]
-            apply( eval("plot_"+plot), (), kw)
+            eval("plot_"+plot)(**kw)
         fma()
 
 def plot_delay(lfull=0, jspec=None):

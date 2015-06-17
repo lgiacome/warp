@@ -2642,7 +2642,7 @@ def ppmultispecies(pp,args,kw):
             for i in range(len(js)):
                 kw['js'] = js[i]
                 kw['color'] = color[i]
-                apply(pp,args,kw)
+                pp(*args, **kw)
             return true
     else:
         return false

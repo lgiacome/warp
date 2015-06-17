@@ -1136,7 +1136,7 @@ each species and each one in the list. Also assign colors accordingly
             for i in range(len(js)):
                 args[0] = js[i]
                 kw['color'] = color[i]
-                apply(pp,args,kw)
+                pp(*args, **kw)
             return true
 
     ############################################################################
@@ -2770,7 +2770,7 @@ each species and each one in the list. Also assign colors accordingly
             for i in range(len(js)):
                 args[0] = js[i]
                 kw['color'] = color[i]
-                apply(pp,args,kw)
+                pp(*args, **kw)
             return true
 
     ############################################################################

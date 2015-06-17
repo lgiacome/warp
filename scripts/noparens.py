@@ -14,4 +14,4 @@ class Noparens:
     __str__ = __repr__
 
     def __call__(self, *k, **kw):
-        return apply(self.func, k, kw)
+        return self.func(*k, **kw)

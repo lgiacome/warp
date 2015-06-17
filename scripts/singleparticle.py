@@ -377,10 +377,10 @@ class TraceParticle(object):
     #----------------------------------------------------------------------
     def plotparticle(self,y,x,kw):
         if kw.pop('trajectory',True):
-            apply(plg,(y,x),kw)
+            plg(y, x, **kw)
         else:
             if len(x) > 0:
-                apply(plp,(y[-1],x[-1]),kw)
+                plp(y[-1], x[-1], **kw)
 
     #----------------------------------------------------------------------
     def pxt(self,i=0,**kw):
@@ -907,46 +907,46 @@ class SingleParticle:
     #----------------------------------------------------------------------
     def pxt(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","time (s)","x (m)")
-        apply(plg,(self.getx(i),self.gett(i)),kw)
+        plg(self.getx(i), self.gett(i), **kw)
     def pyt(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","time (s)","y (m)")
-        apply(plg,(self.gety(i),self.gett(i)),kw)
+        plg(self.gety(i), self.gett(i), **kw)
     def prt(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","time (s)","r (m)")
-        apply(plg,(self.getr(i),self.gett(i)),kw)
+        plg(self.getr(i), self.gett(i), **kw)
     def pzt(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","time (s)","z (m)")
-        apply(plg,(self.getz(i),self.gett(i)),kw)
+        plg(self.getz(i), self.gett(i), **kw)
     def pvxt(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","time (s)","Vx (m/s)")
-        apply(plg,(self.getvx(i),self.gett(i)),kw)
+        plg(self.getvx(i), self.gett(i), **kw)
     def pvyt(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","time (s)","Vy (m/s)")
-        apply(plg,(self.getvy(i),self.gett(i)),kw)
+        plg(self.getvy(i), self.gett(i), **kw)
     def pvzt(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","time (s)","Vz (m/s)")
-        apply(plg,(self.getvz(i),self.gett(i)),kw)
+        plg(self.getvz(i), self.gett(i), **kw)
     def pgit(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","time (s)","gamma inverse")
-        apply(plg,(self.getgi(i),self.gett(i)),kw)
+        plg(self.getgi(i), self.gett(i), **kw)
     def pxy(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","x (m)","y (m)")
-        apply(plg,(self.gety(i),self.getx(i)),kw)
+        plg(self.gety(i), self.getx(i), **kw)
     def pzx(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","z (m)","x (m)")
-        apply(plg,(self.getx(i),self.getz(i)),kw)
+        plg(self.getx(i), self.getz(i), **kw)
     def pzy(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","z (m)","y (m)")
-        apply(plg,(self.gety(i),self.getz(i)),kw)
+        plg(self.gety(i), self.getz(i), **kw)
     def pzr(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","z (m)","r (m)")
-        apply(plg,(self.getr(i),self.getz(i)),kw)
+        plg(self.getr(i), self.getz(i), **kw)
     def pzvx(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","z (m)","Vx (m/s)")
-        apply(plg,(self.getvx(i),self.getz(i)),kw)
+        plg(self.getvx(i), self.getz(i), **kw)
     def pzvy(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","z (m)","Vy (m/s)")
-        apply(plg,(self.getvy(i),self.getz(i)),kw)
+        plg(self.getvy(i), self.getz(i), **kw)
     def pzvz(self,i=0,**kw):
         if kw.pop('titles',True): ptitles("Single particle","z (m)","Vz (m/s)")
-        apply(plg,(self.getvz(i),self.getz(i)),kw)
+        plg(self.getvz(i), self.getz(i), **kw)

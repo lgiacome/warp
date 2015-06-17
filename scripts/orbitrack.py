@@ -99,13 +99,16 @@ def ppsp(iwmb=-2, iwsp=-1, plots=('ppxy','ppxxp','ppyyp','ppxpyp'), scont=1, nco
     for plot in plots:
         if scont:
             palette("gray.gp")
-            apply(eval(plot), (), {'js': 0, 'iw': 0, 'color': 'fg',
-                                   'contours':ncont, 'filled':1, 'particles':0})
+            kwargs = {'js': 0, 'iw': 0, 'color': 'fg',
+                      'contours':ncont, 'filled':1, 'particles':0}
+            eval(plot)(**kwargs)
         else:
-            apply(eval(plot), (), {'js': 0, 'iw': iwmb, 'color': 'fg'})
+            kwargs = {'js': 0, 'iw': iwmb, 'color': 'fg'}
+            eval(plot)(**kwargs)
 
-        for spec in range(1,top.ns):
-            apply(eval(plot), (), {'js': spec, 'iw': iwsp, 'color': colors[spec]})
+        for spec in range(1, top.ns):
+            kwargs = {'js': spec, 'iw': iwsp, 'color': colors[spec]}
+            eval(plot)(**kwargs)
         fma()
 
 
