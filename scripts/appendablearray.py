@@ -186,10 +186,6 @@ class AppendableArray:
     def __setitem__(self,key,value):
         self.data()[key] = value
 
-if sys.version < "2.0":
-    def _appendablearray__getslice__(self,i,j):
-        return self.data()[i:j,...]
-    AppendableArray.__getslice__ = _appendablearray__getslice__
 
 class DynamicHistogram:
     """
