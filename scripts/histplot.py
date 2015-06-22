@@ -80,5 +80,4 @@ def histplot(**kw):
     hplinechg(kwdict=kw); fma()
     hpcurr(kwdict=kw); fma()
 
-if sys.version[:5] != "1.5.1":
-    histplot.__doc__ = hpdoc
+histplot.__doc__ = hpdoc

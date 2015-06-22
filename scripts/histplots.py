@@ -442,8 +442,7 @@ def hpzbeam(kwdict={},**kw):
     kw['titlel']="(m)"
     kw['perspecies'] = 0
     hpbasic('hzbeam',kw)
-if sys.version[:5] != "1.5.1":
-    hpzbeam.__doc__ = hpzbeam.__doc__ + hpbasictext
+hpzbeam.__doc__ = hpzbeam.__doc__ + hpbasictext
 
 
 def hpvbeam(kwdict={},**kw):
@@ -453,8 +452,7 @@ def hpvbeam(kwdict={},**kw):
     kw['titlel']="(m/s)"
     kw['perspecies'] = 0
     hpbasic('hvbeam',kw)
-if sys.version[:5] != "1.5.1":
-    hpvbeam.__doc__ = hpvbeam.__doc__ + hpbasictext
+hpvbeam.__doc__ = hpvbeam.__doc__ + hpbasictext
 
 
 def hpbmlen(kwdict={},**kw):
@@ -463,8 +461,7 @@ def hpbmlen(kwdict={},**kw):
     kw['titlet']="RMS beam length"
     kw['titlel']="(m)"
     hpbasic('hbmlen',kw)
-if sys.version[:5] != "1.5.1":
-    hpbmlen.__doc__ = hpbmlen.__doc__ + hpbasictext
+hpbmlen.__doc__ = hpbmlen.__doc__ + hpbasictext
 
 
 def hpefld(kwdict={},**kw):
@@ -474,8 +471,7 @@ def hpefld(kwdict={},**kw):
     kw['titlel']="(J)"
     kw['perspecies'] = 0
     hpbasic('hefld',kw)
-if sys.version[:5] != "1.5.1":
-    hpefld.__doc__ = hpefld.__doc__ + hpbasictext
+hpefld.__doc__ = hpefld.__doc__ + hpbasictext
 
 
 def hpekzmbe(kwdict={},**kw):
@@ -484,8 +480,7 @@ def hpekzmbe(kwdict={},**kw):
     kw['titlet']="Total Z Kinetic energy minus beam energy"
     kw['titlel']="(J)"
     hpbasic('hekzmbe',kw)
-if sys.version[:5] != "1.5.1":
-    hpekzmbe.__doc__ = hpekzmbe.__doc__ + hpbasictext
+hpekzmbe.__doc__ = hpekzmbe.__doc__ + hpbasictext
 
 
 def hpekzbeam(kwdict={},**kw):
@@ -494,8 +489,7 @@ def hpekzbeam(kwdict={},**kw):
     kw['titlet']="Z Kinetic energy in the beam frame"
     kw['titlel']="(J)"
     hpbasic('hekzbeam',kw)
-if sys.version[:5] != "1.5.1":
-    hpekzbeam.__doc__=hpekzbeam.__doc__+hpbasictext
+hpekzbeam.__doc__=hpekzbeam.__doc__+hpbasictext
 
 
 def hpekperp(kwdict={},**kw):
@@ -504,8 +498,7 @@ def hpekperp(kwdict={},**kw):
     kw['titlet']="Perp Kinetic energy"
     kw['titlel']="(J)"
     hpbasic('hekperp',kw)
-if sys.version[:5] != "1.5.1":
-    hpekperp.__doc__ = hpekperp.__doc__ + hpbasictext
+hpekperp.__doc__ = hpekperp.__doc__ + hpbasictext
 
 
 def hpxmaxp(kwdict={},**kw):
@@ -514,8 +507,7 @@ def hpxmaxp(kwdict={},**kw):
     kw['titlet']="Maximum value of X"
     kw['titlel']="(m)"
     hpbasic('hxmaxp',kw)
-if sys.version[:5] != "1.5.1":
-    hpxmaxp.__doc__ = hpxmaxp.__doc__ + hpbasictext
+hpxmaxp.__doc__ = hpxmaxp.__doc__ + hpbasictext
 
 
 def hpxminp(kwdict={},**kw):
@@ -524,8 +516,7 @@ def hpxminp(kwdict={},**kw):
     kw['titlet']="Minimum value of X"
     kw['titlel']="(m)"
     hpbasic('hxminp',kw)
-if sys.version[:5] != "1.5.1":
-    hpxminp.__doc__ = hpxminp.__doc__ + hpbasictext
+hpxminp.__doc__ = hpxminp.__doc__ + hpbasictext
 
 
 def hpymaxp(kwdict={},**kw):
@@ -534,8 +525,7 @@ def hpymaxp(kwdict={},**kw):
     kw['titlet']="Maximum value of Y"
     kw['titlel']="(m)"
     hpbasic('hymaxp',kw)
-if sys.version[:5] != "1.5.1":
-    hpymaxp.__doc__ = hpymaxp.__doc__ + hpbasictext
+hpymaxp.__doc__ = hpymaxp.__doc__ + hpbasictext
 
 
 def hpyminp(kwdict={},**kw):
@@ -544,8 +534,7 @@ def hpyminp(kwdict={},**kw):
     kw['titlet']="Minimum value of Y"
     kw['titlel']="(m)"
     hpbasic('hyminp',kw)
-if sys.version[:5] != "1.5.1":
-    hpyminp.__doc__ = hpyminp.__doc__ + hpbasictext
+hpyminp.__doc__ = hpyminp.__doc__ + hpbasictext
 
 
 def hpzmaxp(kwdict={},**kw):
@@ -554,8 +543,7 @@ def hpzmaxp(kwdict={},**kw):
     kw['titlet']="Maximum value of Z"
     kw['titlel']="(m)"
     hpbasic('hzmaxp',kw)
-if sys.version[:5] != "1.5.1":
-    hpzmaxp.__doc__ = hpzmaxp.__doc__ + hpbasictext
+hpzmaxp.__doc__ = hpzmaxp.__doc__ + hpbasictext
 
 
 def hpzminp(kwdict={},**kw):
@@ -564,8 +552,7 @@ def hpzminp(kwdict={},**kw):
     kw['titlet']="Minimum value of z"
     kw['titlel']="(m)"
     hpbasic('hzminp',kw)
-if sys.version[:5] != "1.5.1":
-    hpzminp.__doc__ = hpzminp.__doc__ + hpbasictext
+hpzminp.__doc__ = hpzminp.__doc__ + hpbasictext
 
 
 def hpvxmaxp(kwdict={},**kw):
@@ -574,8 +561,7 @@ def hpvxmaxp(kwdict={},**kw):
     kw['titlet']="Maximum value of Vx"
     kw['titlel']="(m/s)"
     hpbasic('hvxmaxp',kw)
-if sys.version[:5] != "1.5.1":
-    hpvxmaxp.__doc__ = hpvxmaxp.__doc__ + hpbasictext
+hpvxmaxp.__doc__ = hpvxmaxp.__doc__ + hpbasictext
 
 
 def hpvxminp(kwdict={},**kw):
@@ -584,8 +570,7 @@ def hpvxminp(kwdict={},**kw):
     kw['titlet']="Minimum value of Vx"
     kw['titlel']="(m/s)"
     hpbasic('hvxminp',kw)
-if sys.version[:5] != "1.5.1":
-    hpvxminp.__doc__ = hpvxminp.__doc__ + hpbasictext
+hpvxminp.__doc__ = hpvxminp.__doc__ + hpbasictext
 
 
 def hpvymaxp(kwdict={},**kw):
@@ -594,8 +579,7 @@ def hpvymaxp(kwdict={},**kw):
     kw['titlet']="Maximum value of Vy"
     kw['titlel']="(m/s)"
     hpbasic('hvymaxp',kw)
-if sys.version[:5] != "1.5.1":
-    hpvymaxp.__doc__ = hpvymaxp.__doc__ + hpbasictext
+hpvymaxp.__doc__ = hpvymaxp.__doc__ + hpbasictext
 
 
 def hpvyminp(kwdict={},**kw):
@@ -604,8 +588,7 @@ def hpvyminp(kwdict={},**kw):
     kw['titlet']="Minimum value of Vy"
     kw['titlel']="(m/s)"
     hpbasic('hvyminp',kw)
-if sys.version[:5] != "1.5.1":
-    hpvyminp.__doc__ = hpvyminp.__doc__ + hpbasictext
+hpvyminp.__doc__ = hpvyminp.__doc__ + hpbasictext
 
 
 def hpvzmaxp(kwdict={},**kw):
@@ -614,8 +597,7 @@ def hpvzmaxp(kwdict={},**kw):
     kw['titlet']="Maximum value of Vz"
     kw['titlel']="(m/s)"
     hpbasic('hvzmaxp',kw)
-if sys.version[:5] != "1.5.1":
-    hpvzmaxp.__doc__ = hpvzmaxp.__doc__ + hpbasictext
+hpvzmaxp.__doc__ = hpvzmaxp.__doc__ + hpbasictext
 
 
 def hpvzminp(kwdict={},**kw):
@@ -624,8 +606,7 @@ def hpvzminp(kwdict={},**kw):
     kw['titlet']="Minimum value of Vz"
     kw['titlel']="(m/s)"
     hpbasic('hvzminp',kw)
-if sys.version[:5] != "1.5.1":
-    hpvzminp.__doc__ = hpvzminp.__doc__ + hpbasictext
+hpvzminp.__doc__ = hpvzminp.__doc__ + hpbasictext
 
 
 def hpnpinject(kwdict={},**kw):
@@ -634,8 +615,7 @@ def hpnpinject(kwdict={},**kw):
     kw['titlet']="Number of particles injected"
     kw['titlel']="#"
     hpbasic('hnpinject',kw)
-if sys.version[:5] != "1.5.1":
-    hpnpinject.__doc__ = hpnpinject.__doc__ + hpbasictext
+hpnpinject.__doc__ = hpnpinject.__doc__ + hpbasictext
 
 
 def hpekinz(iw=0,kwdict={},**kw):
@@ -653,8 +633,7 @@ def hpekinz(iw=0,kwdict={},**kw):
     else:
         e = 0.5*aion*amu*hvzbar**2/jperev
     hpbasicwin(e*1.e-6,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpekinz.__doc__ = hpekinz.__doc__ + hpbasicwintext
+hpekinz.__doc__ = hpekinz.__doc__ + hpbasicwintext
 
 
 def hpekin(iw=0,kwdict={},**kw):
@@ -675,8 +654,7 @@ def hpekin(iw=0,kwdict={},**kw):
         u = hvxbar**2 + hvybar**2 + hvzbar**2
         e = 0.5*aion*amu*u/jperev
     hpbasicwin(e*1.e-6,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpekin.__doc__ = hpekin.__doc__ + hpbasicwintext
+hpekin.__doc__ = hpekin.__doc__ + hpbasicwintext
 
 
 def hpepsx(iw=0,kwdict={},**kw):
@@ -685,8 +663,7 @@ def hpepsx(iw=0,kwdict={},**kw):
     kw['titlet']="X emittance"
     kw['titlel']="(!p-m-rad)"
     hpbasicwin('hepsx',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsx.__doc__ = hpepsx.__doc__ + hpbasicwintext
+hpepsx.__doc__ = hpepsx.__doc__ + hpbasicwintext
 
 
 def hpepsy(iw=0,kwdict={},**kw):
@@ -695,8 +672,7 @@ def hpepsy(iw=0,kwdict={},**kw):
     kw['titlet']="Y emittance"
     kw['titlel']="(!p-m-rad)"
     hpbasicwin('hepsy',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsy.__doc__ = hpepsy.__doc__ + hpbasicwintext
+hpepsy.__doc__ = hpepsy.__doc__ + hpbasicwintext
 
 
 def hpepsz(iw=0,kwdict={},**kw):
@@ -705,8 +681,7 @@ def hpepsz(iw=0,kwdict={},**kw):
     kw['titlet']="Z emittance"
     kw['titlel']="(!p-m-rad)"
     hpbasicwin('hepsz',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsz.__doc__ = hpepsz.__doc__ + hpbasicwintext
+hpepsz.__doc__ = hpepsz.__doc__ + hpbasicwintext
 
 
 def hpepsnx(iw=0,kwdict={},**kw):
@@ -715,8 +690,7 @@ def hpepsnx(iw=0,kwdict={},**kw):
     kw['titlet']="X normalized emittance"
     kw['titlel']="(!p-mm-mrad)"
     hpbasicwin('hepsnx',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsnx.__doc__ = hpepsnx.__doc__ + hpbasicwintext
+hpepsnx.__doc__ = hpepsnx.__doc__ + hpbasicwintext
 
 
 def hpepsny(iw=0,kwdict={},**kw):
@@ -725,8 +699,7 @@ def hpepsny(iw=0,kwdict={},**kw):
     kw['titlet']="Y normalized emittance"
     kw['titlel']="(!p-mm-mrad)"
     hpbasicwin('hepsny',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsny.__doc__ = hpepsny.__doc__ + hpbasicwintext
+hpepsny.__doc__ = hpepsny.__doc__ + hpbasicwintext
 
 
 def hpepsnz(iw=0,kwdict={},**kw):
@@ -735,8 +708,7 @@ def hpepsnz(iw=0,kwdict={},**kw):
     kw['titlet']="Z normalized emittance"
     kw['titlel']="(!p-m-rad)"
     hpbasicwin('hepsnz',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsnz.__doc__ =  hpepsnz.__doc__ + hpbasicwintext
+hpepsnz.__doc__ =  hpepsnz.__doc__ + hpbasicwintext
 
 
 def hpepsr(iw=0,kwdict={},**kw):
@@ -745,8 +717,7 @@ def hpepsr(iw=0,kwdict={},**kw):
     kw['titlet']="Generalized axisymmetric emittance"
     kw['titlel']="(!p-m-rad)"
     hpbasicwin('hepsr',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsr.__doc__ = hpepsr.__doc__ + hpbasicwintext
+hpepsr.__doc__ = hpepsr.__doc__ + hpbasicwintext
 
 
 def hpepsg(iw=0,kwdict={},**kw):
@@ -755,8 +726,7 @@ def hpepsg(iw=0,kwdict={},**kw):
     kw['titlet']="Generalized emittance"
     kw['titlel']="(!p-m-rad)"
     hpbasicwin('hepsg',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsg.__doc__ = hpepsg.__doc__ + hpbasicwintext
+hpepsg.__doc__ = hpepsg.__doc__ + hpbasicwintext
 
 
 def hpepsh(iw=0,kwdict={},**kw):
@@ -765,8 +735,7 @@ def hpepsh(iw=0,kwdict={},**kw):
     kw['titlet']="Generalized emittance"
     kw['titlel']="(!p-m-rad)"
     hpbasicwin('hepsh',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsh.__doc__ = hpepsh.__doc__ + hpbasicwintext
+hpepsh.__doc__ = hpepsh.__doc__ + hpbasicwintext
 
 
 def hpepsnr(iw=0,kwdict={},**kw):
@@ -775,8 +744,7 @@ def hpepsnr(iw=0,kwdict={},**kw):
     kw['titlet']="Generalized axisymmetric normalized emittance"
     kw['titlel']="(!p-mm-mrad)"
     hpbasicwin('hepsnr',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsnr.__doc__ = hpepsnr.__doc__ + hpbasicwintext
+hpepsnr.__doc__ = hpepsnr.__doc__ + hpbasicwintext
 
 
 def hpepsng(iw=0,kwdict={},**kw):
@@ -785,8 +753,7 @@ def hpepsng(iw=0,kwdict={},**kw):
     kw['titlet']="Generalized normalized emittance"
     kw['titlel']="(!p-mm-mrad)"
     hpbasicwin('hepsng',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsng.__doc__ = hpepsng.__doc__ + hpbasicwintext
+hpepsng.__doc__ = hpepsng.__doc__ + hpbasicwintext
 
 
 def hpepsnh(iw=0,kwdict={},**kw):
@@ -795,8 +762,7 @@ def hpepsnh(iw=0,kwdict={},**kw):
     kw['titlet']="Generalized normalized emittance"
     kw['titlel']="(!p-mm-mrad)"
     hpbasicwin('hepsnh',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsnh.__doc__ = hpepsnh.__doc__ + hpbasicwintext
+hpepsnh.__doc__ = hpepsnh.__doc__ + hpbasicwintext
 
 
 def hppnum(iw=0,kwdict={},**kw):
@@ -805,8 +771,7 @@ def hppnum(iw=0,kwdict={},**kw):
     kw['titlet']="Number of particles"
     kw['titlel']=""
     hpbasicwin('hpnum',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hppnum.__doc__ = hppnum.__doc__ + hpbasicwintext
+hppnum.__doc__ = hppnum.__doc__ + hpbasicwintext
 
 
 def hprhomid(iw=0,kwdict={},**kw):
@@ -816,8 +781,7 @@ def hprhomid(iw=0,kwdict={},**kw):
     kw['titlel']="(C/m^3)"
     kw['perspecies'] = 0
     hpbasicwin('hrhomid',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hprhomid.__doc__ = hprhomid.__doc__ + hpbasicwintext
+hprhomid.__doc__ = hprhomid.__doc__ + hpbasicwintext
 
 
 def hprhomax(iw=0,kwdict={},**kw):
@@ -827,8 +791,7 @@ def hprhomax(iw=0,kwdict={},**kw):
     kw['titlel']="(C/m^3)"
     kw['perspecies'] = 0
     hpbasicwin('hrhomax',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hprhomax.__doc__ = hprhomax.__doc__ + hpbasicwintext
+hprhomax.__doc__ = hprhomax.__doc__ + hpbasicwintext
 
 
 def hpxbar(iw=0,kwdict={},**kw):
@@ -837,8 +800,7 @@ def hpxbar(iw=0,kwdict={},**kw):
     kw['titlet']="True mean x"
     kw['titlel']="(m)"
     hpbasicwin('hxbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxbar.__doc__ = hpxbar.__doc__ + hpbasicwintext
+hpxbar.__doc__ = hpxbar.__doc__ + hpbasicwintext
 
 
 def hpybar(iw=0,kwdict={},**kw):
@@ -847,8 +809,7 @@ def hpybar(iw=0,kwdict={},**kw):
     kw['titlet']="True mean y"
     kw['titlel']="(m)"
     hpbasicwin('hybar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpybar.__doc__ = hpybar.__doc__ + hpbasicwintext
+hpybar.__doc__ = hpybar.__doc__ + hpbasicwintext
 
 
 def hpxybar(iw=0,kwdict={},**kw):
@@ -857,8 +818,7 @@ def hpxybar(iw=0,kwdict={},**kw):
     kw['titlet']="True mean xy"
     kw['titlel']="(m^2)"
     hpbasicwin('hxybar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxybar.__doc__ = hpxybar.__doc__ + hpbasicwintext
+hpxybar.__doc__ = hpxybar.__doc__ + hpbasicwintext
 
 
 def hpzbar(iw=0,kwdict={},**kw):
@@ -867,8 +827,7 @@ def hpzbar(iw=0,kwdict={},**kw):
     kw['titlet']="True mean z"
     kw['titlel']="(m)"
     hpbasicwin('hzbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxbar.__doc__ = hpxbar.__doc__ + hpbasicwintext
+hpxbar.__doc__ = hpxbar.__doc__ + hpbasicwintext
 
 
 def hpxrms(iw=0,kwdict={},**kw):
@@ -877,8 +836,7 @@ def hpxrms(iw=0,kwdict={},**kw):
     kw['titlet']="True RMS x"
     kw['titlel']="(m)"
     hpbasicwin('hxrms',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxrms.__doc__ = hpxrms.__doc__ + hpbasicwintext
+hpxrms.__doc__ = hpxrms.__doc__ + hpbasicwintext
 
 
 def hpyrms(iw=0,kwdict={},**kw):
@@ -887,8 +845,7 @@ def hpyrms(iw=0,kwdict={},**kw):
     kw['titlet']="True RMS y"
     kw['titlel']="(m)"
     hpbasicwin('hyrms',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpyrms.__doc__ = hpyrms.__doc__ + hpbasicwintext
+hpyrms.__doc__ = hpyrms.__doc__ + hpbasicwintext
 
 
 def hprrms(iw=0,kwdict={},**kw):
@@ -897,8 +854,7 @@ def hprrms(iw=0,kwdict={},**kw):
     kw['titlet']="True RMS r"
     kw['titlel']="(m)"
     hpbasicwin('hrrms',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hprrms.__doc__ = hprrms.__doc__ + hpbasicwintext
+hprrms.__doc__ = hprrms.__doc__ + hpbasicwintext
 
 
 def hpzrms(iw=0,kwdict={},**kw):
@@ -907,8 +863,7 @@ def hpzrms(iw=0,kwdict={},**kw):
     kw['titlet']="True RMS z"
     kw['titlel']="(m)"
     hpbasicwin('hzrms',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxrms.__doc__ = hpxrms.__doc__ + hpbasicwintext
+hpxrms.__doc__ = hpxrms.__doc__ + hpbasicwintext
 
 
 def hpxprms(iw=0,kwdict={},**kw):
@@ -917,8 +872,7 @@ def hpxprms(iw=0,kwdict={},**kw):
     kw['titlet']="True RMS x'"
     kw['titlel']="(rad)"
     hpbasicwin('hxprms',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxprms.__doc__ = hpxprms.__doc__ + hpbasicwintext
+hpxprms.__doc__ = hpxprms.__doc__ + hpbasicwintext
 
 
 def hpyprms(iw=0,kwdict={},**kw):
@@ -927,8 +881,7 @@ def hpyprms(iw=0,kwdict={},**kw):
     kw['titlet']="True RMS y'"
     kw['titlel']="(rad)"
     hpbasicwin('hyprms',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpyprms.__doc__ = hpyprms.__doc__ + hpbasicwintext
+hpyprms.__doc__ = hpyprms.__doc__ + hpbasicwintext
 
 
 def hpxsqbar(iw=0,kwdict={},**kw):
@@ -937,8 +890,7 @@ def hpxsqbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean x squared"
     kw['titlel']="(m^2)"
     hpbasicwin('hxsqbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxsqbar.__doc__ = hpxsqbar.__doc__ + hpbasicwintext
+hpxsqbar.__doc__ = hpxsqbar.__doc__ + hpbasicwintext
 
 
 def hpysqbar(iw=0,kwdict={},**kw):
@@ -947,8 +899,7 @@ def hpysqbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean y squared"
     kw['titlel']="(m^2)"
     hpbasicwin('hysqbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpysqbar.__doc__ = hpysqbar.__doc__ + hpbasicwintext
+hpysqbar.__doc__ = hpysqbar.__doc__ + hpbasicwintext
 
 
 def hpvxbar(iw=0,kwdict={},**kw):
@@ -957,8 +908,7 @@ def hpvxbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean vx"
     kw['titlel']="(m/s)"
     hpbasicwin('hvxbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpvxbar.__doc__ = hpvxbar.__doc__ + hpbasicwintext
+hpvxbar.__doc__ = hpvxbar.__doc__ + hpbasicwintext
 
 
 def hpvybar(iw=0,kwdict={},**kw):
@@ -967,8 +917,7 @@ def hpvybar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean vy"
     kw['titlel']="(m/s)"
     hpbasicwin('hvybar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpvybar.__doc__ = hpvybar.__doc__ + hpbasicwintext
+hpvybar.__doc__ = hpvybar.__doc__ + hpbasicwintext
 
 
 # --- plot mean z velocity in beam or lab frame vs time
@@ -987,8 +936,7 @@ def hpvzbar(iw=0,beamframe=1,kwdict={},**kw):
     else:
         kw['titlet']="Mean Z Velocity"
         hpbasicwin('hvzbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpvzbar.__doc__ = hpvzbar.__doc__ + hpbasicwintext
+hpvzbar.__doc__ = hpvzbar.__doc__ + hpbasicwintext
 
 
 def hpxpbar(iw=0,kwdict={},**kw):
@@ -997,8 +945,7 @@ def hpxpbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean x'"
     kw['titlel']="(rad)"
     hpbasicwin('hxpbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxpbar.__doc__ = hpxpbar.__doc__ + hpbasicwintext
+hpxpbar.__doc__ = hpxpbar.__doc__ + hpbasicwintext
 
 
 def hpypbar(iw=0,kwdict={},**kw):
@@ -1007,8 +954,7 @@ def hpypbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean y'"
     kw['titlel']="(rad)"
     hpbasicwin('hypbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpypbar.__doc__ = hpypbar.__doc__ + hpbasicwintext
+hpypbar.__doc__ = hpypbar.__doc__ + hpbasicwintext
 
 
 def hpvxrms(iw=0,kwdict={},**kw):
@@ -1017,8 +963,7 @@ def hpvxrms(iw=0,kwdict={},**kw):
     kw['titlet']="True RMS vx"
     kw['titlel']="(m/s)"
     hpbasicwin('hvxrms',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpvxrms.__doc__ = hpvxrms.__doc__ + hpbasicwintext
+hpvxrms.__doc__ = hpvxrms.__doc__ + hpbasicwintext
 
 
 def hpvyrms(iw=0,kwdict={},**kw):
@@ -1027,8 +972,7 @@ def hpvyrms(iw=0,kwdict={},**kw):
     kw['titlet']="True RMS vy"
     kw['titlel']="(m/s)"
     hpbasicwin('hvyrms',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpvyrms.__doc__ = hpvyrms.__doc__ + hpbasicwintext
+hpvyrms.__doc__ = hpvyrms.__doc__ + hpbasicwintext
 
 
 def hpvzrms(iw=0,kwdict={},**kw):
@@ -1037,8 +981,7 @@ def hpvzrms(iw=0,kwdict={},**kw):
     kw['titlet']="True RMS vz"
     kw['titlel']="(m/s)"
     hpbasicwin('hvzrms',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpvzrms.__doc__ = hpvzrms.__doc__ + hpbasicwintext
+hpvzrms.__doc__ = hpvzrms.__doc__ + hpbasicwintext
 
 
 def hpxpsqbar(iw=0,kwdict={},**kw):
@@ -1047,8 +990,7 @@ def hpxpsqbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean x' squared"
     kw['titlel']="(rad^2)"
     hpbasicwin('hxpsqbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxpsqbar.__doc__ = hpxpsqbar.__doc__ + hpbasicwintext
+hpxpsqbar.__doc__ = hpxpsqbar.__doc__ + hpbasicwintext
 
 
 def hpypsqbar(iw=0,kwdict={},**kw):
@@ -1057,8 +999,7 @@ def hpypsqbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean y' squared"
     kw['titlel']="(rad^2)"
     hpbasicwin('hypsqbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpypsqbar.__doc__ = hpypsqbar.__doc__ + hpbasicwintext
+hpypsqbar.__doc__ = hpypsqbar.__doc__ + hpbasicwintext
 
 
 def hpxxpbar(iw=0,kwdict={},**kw):
@@ -1067,8 +1008,7 @@ def hpxxpbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean x*x'"
     kw['titlel']="(m-rad)"
     hpbasicwin('hxxpbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxxpbar.__doc__ = hpxxpbar.__doc__ + hpbasicwintext
+hpxxpbar.__doc__ = hpxxpbar.__doc__ + hpbasicwintext
 
 
 def hpyypbar(iw=0,kwdict={},**kw):
@@ -1077,8 +1017,7 @@ def hpyypbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean y*y'"
     kw['titlel']="(m-rad)"
     hpbasicwin('hyypbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpyypbar.__doc__ = hpyypbar.__doc__ + hpbasicwintext
+hpyypbar.__doc__ = hpyypbar.__doc__ + hpbasicwintext
 
 
 def hpxvxbar(iw=0,kwdict={},**kw):
@@ -1087,8 +1026,7 @@ def hpxvxbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean x*vx"
     kw['titlel']="(m-rad)"
     hpbasicwin('hxvxbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxvxbar.__doc__ = hpxvxbar.__doc__ + hpbasicwintext
+hpxvxbar.__doc__ = hpxvxbar.__doc__ + hpbasicwintext
 
 
 def hpyvybar(iw=0,kwdict={},**kw):
@@ -1097,8 +1035,7 @@ def hpyvybar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean y*vy"
     kw['titlel']="(m-rad)"
     hpbasicwin('hyvybar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpyvybar.__doc__ = hpyvybar.__doc__ + hpbasicwintext
+hpyvybar.__doc__ = hpyvybar.__doc__ + hpbasicwintext
 
 
 def hpxypbar(iw=0,kwdict={},**kw):
@@ -1107,8 +1044,7 @@ def hpxypbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean x*y'"
     kw['titlel']="(m-rad)"
     hpbasicwin('hxypbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxypbar.__doc__ = hpxypbar.__doc__ + hpbasicwintext
+hpxypbar.__doc__ = hpxypbar.__doc__ + hpbasicwintext
 
 
 def hpyxpbar(iw=0,kwdict={},**kw):
@@ -1117,8 +1053,7 @@ def hpyxpbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean y*x'"
     kw['titlel']="(m^2)"
     hpbasicwin('hyxpbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpyxpbar.__doc__ = hpyxpbar.__doc__ + hpbasicwintext
+hpyxpbar.__doc__ = hpyxpbar.__doc__ + hpbasicwintext
 
 
 def hpxpypbar(iw=0,kwdict={},**kw):
@@ -1127,8 +1062,7 @@ def hpxpypbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean x'*y'"
     kw['titlel']="(rad^2)"
     hpbasicwin('hxpypbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxpypbar.__doc__ = hpxpypbar.__doc__ + hpbasicwintext
+hpxpypbar.__doc__ = hpxpypbar.__doc__ + hpbasicwintext
 
 
 def hpxvybar(iw=0,kwdict={},**kw):
@@ -1137,8 +1071,7 @@ def hpxvybar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean x*vy"
     kw['titlel']="(m-rad)"
     hpbasicwin('hxvybar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxvybar.__doc__ = hpxvybar.__doc__ + hpbasicwintext
+hpxvybar.__doc__ = hpxvybar.__doc__ + hpbasicwintext
 
 
 def hpyvxbar(iw=0,kwdict={},**kw):
@@ -1147,8 +1080,7 @@ def hpyvxbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean y*vx"
     kw['titlel']="(m^2)"
     hpbasicwin('hyvxbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpyvxbar.__doc__ = hpyvxbar.__doc__ + hpbasicwintext
+hpyvxbar.__doc__ = hpyvxbar.__doc__ + hpbasicwintext
 
 
 def hpvxvybar(iw=0,kwdict={},**kw):
@@ -1157,8 +1089,7 @@ def hpvxvybar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean vx*vy"
     kw['titlel']="(rad^2)"
     hpbasicwin('hvxvybar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpvxvybar.__doc__ = hpvxvybar.__doc__ + hpbasicwintext
+hpvxvybar.__doc__ = hpvxvybar.__doc__ + hpbasicwintext
 
 
 def hpxvzbar(iw=0,kwdict={},**kw):
@@ -1167,8 +1098,7 @@ def hpxvzbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean x*vz"
     kw['titlel']="(m-m/s)"
     hpbasicwin('hxvzbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxvzbar.__doc__ = hpxvzbar.__doc__ + hpbasicwintext
+hpxvzbar.__doc__ = hpxvzbar.__doc__ + hpbasicwintext
 
 
 def hpyvzbar(iw=0,kwdict={},**kw):
@@ -1177,8 +1107,7 @@ def hpyvzbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean y*vz"
     kw['titlel']="(m-m/s)"
     hpbasicwin('hyvzbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpyvzbar.__doc__ = hpyvzbar.__doc__ + hpbasicwintext
+hpyvzbar.__doc__ = hpyvzbar.__doc__ + hpbasicwintext
 
 
 def hpvxvzbar(iw=0,kwdict={},**kw):
@@ -1187,8 +1116,7 @@ def hpvxvzbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean vx*vz"
     kw['titlel']="((m/s)^2)"
     hpbasicwin('hvxvzbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpvxvzbar.__doc__ = hpvxvzbar.__doc__ + hpbasicwintext
+hpvxvzbar.__doc__ = hpvxvzbar.__doc__ + hpbasicwintext
 
 
 def hpvyvzbar(iw=0,kwdict={},**kw):
@@ -1197,8 +1125,7 @@ def hpvyvzbar(iw=0,kwdict={},**kw):
     kw['titlet']="Mean vy*vz"
     kw['titlel']="((m/s)^2)"
     hpbasicwin('hvyvzbar',iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpvyvzbar.__doc__ = hpvyvzbar.__doc__ + hpbasicwintext
+hpvyvzbar.__doc__ = hpvyvzbar.__doc__ + hpbasicwintext
 
 
 def hplinechg(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1209,8 +1136,7 @@ def hplinechg(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw['titlet']="Line charge density"
     kw['perspecies'] = 0
     hpzarray('hlinechg',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hplinechg.__doc__ = hplinechg.__doc__ + hpzarraytext
+hplinechg.__doc__ = hplinechg.__doc__ + hpzarraytext
 
 
 def hpvzofz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1222,8 +1148,7 @@ def hpvzofz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw['titlet']="Vz versus space and time"
     kw['perspecies'] = 0
     hpzarray('hvzofz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpvzofz.__doc__ = hpvzofz.__doc__ + hpzarraytext
+hpvzofz.__doc__ = hpvzofz.__doc__ + hpzarraytext
 
 
 # --- Plots of current
@@ -1243,8 +1168,7 @@ def hpcurr(contour=0,overlay=0,iz=None,kwdict={},**kw):
         hlinechg = _extractvarkw('hlinechg',kw)
         hvzofz = _extractvarkw('hvzofz',kw)
         hpzarray(hlinechg*hvzofz,contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpcurr.__doc__ = hpcurr.__doc__ + hpzarraytext
+hpcurr.__doc__ = hpcurr.__doc__ + hpzarraytext
 
 
 def hpepsxz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1254,8 +1178,7 @@ def hpepsxz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="X emittance"
     hpzarray('hepsxz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsxz.__doc__ = hpepsxz.__doc__ + hpzarraytext
+hpepsxz.__doc__ = hpepsxz.__doc__ + hpzarraytext
 
 
 def hpepsyz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1265,8 +1188,7 @@ def hpepsyz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Y emittance"
     hpzarray('hepsyz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsyz.__doc__ = hpepsyz.__doc__ + hpzarraytext
+hpepsyz.__doc__ = hpepsyz.__doc__ + hpzarraytext
 
 
 def hpepsnxz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1276,8 +1198,7 @@ def hpepsnxz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="X normalized emittance"
     hpzarray('hepsnxz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsnxz.__doc__ = hpepsnxz.__doc__ + hpzarraytext
+hpepsnxz.__doc__ = hpepsnxz.__doc__ + hpzarraytext
 
 
 def hpepsnyz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1287,8 +1208,7 @@ def hpepsnyz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Y normalized emittance"
     hpzarray('hepsnyz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsnyz.__doc__ = hpepsnyz.__doc__ + hpzarraytext
+hpepsnyz.__doc__ = hpepsnyz.__doc__ + hpzarraytext
 
 
 def hpepsrz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1298,8 +1218,7 @@ def hpepsrz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Generalized axisymmetric emittance"
     hpzarray('hepsrz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsrz.__doc__ = hpepsrz.__doc__ + hpzarraytext
+hpepsrz.__doc__ = hpepsrz.__doc__ + hpzarraytext
 
 
 def hpepsgz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1309,8 +1228,7 @@ def hpepsgz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Generalized emittance"
     hpzarray('hepsgz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsgz.__doc__ = hpepsgz.__doc__ + hpzarraytext
+hpepsgz.__doc__ = hpepsgz.__doc__ + hpzarraytext
 
 
 def hpepshz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1320,8 +1238,7 @@ def hpepshz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Generalized emittance"
     hpzarray('hepshz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpepshz.__doc__ = hpepshz.__doc__ + hpzarraytext
+hpepshz.__doc__ = hpepshz.__doc__ + hpzarraytext
 
 
 def hpepsnrz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1331,8 +1248,7 @@ def hpepsnrz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Generalized axisymmetric normalized emittance"
     hpzarray('hepsnrz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsnrz.__doc__ = hpepsnrz.__doc__ + hpzarraytext
+hpepsnrz.__doc__ = hpepsnrz.__doc__ + hpzarraytext
 
 
 def hpepsngz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1342,8 +1258,7 @@ def hpepsngz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Generalized normalized emittance"
     hpzarray('hepsngz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsngz.__doc__ = hpepsngz.__doc__ + hpzarraytext
+hpepsngz.__doc__ = hpepsngz.__doc__ + hpzarraytext
 
 
 def hpepsnhz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1353,8 +1268,7 @@ def hpepsnhz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Generalized normalized emittance"
     hpzarray('hepsnhz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsnhz.__doc__ = hpepsnhz.__doc__ + hpzarraytext
+hpepsnhz.__doc__ = hpepsnhz.__doc__ + hpzarraytext
 
 
 def hpxbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1364,8 +1278,7 @@ def hpxbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="X bar"
     hpzarray('hxbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxbarz.__doc__ = hpxbarz.__doc__ + hpzarraytext
+hpxbarz.__doc__ = hpxbarz.__doc__ + hpzarraytext
 
 
 def hpybarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1375,8 +1288,7 @@ def hpybarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Y bar"
     hpzarray('hybarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpybarz.__doc__ = hpybarz.__doc__ + hpzarraytext
+hpybarz.__doc__ = hpybarz.__doc__ + hpzarraytext
 
 
 def hpxybarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1386,8 +1298,7 @@ def hpxybarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="XY bar"
     hpzarray('hxybarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxybarz.__doc__ = hpxybarz.__doc__ + hpzarraytext
+hpxybarz.__doc__ = hpxybarz.__doc__ + hpzarraytext
 
 
 def hpxrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1397,8 +1308,7 @@ def hpxrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="X rms"
     hpzarray('hxrmsz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxrmsz.__doc__ = hpxrmsz.__doc__ + hpzarraytext
+hpxrmsz.__doc__ = hpxrmsz.__doc__ + hpzarraytext
 
 
 def hpyrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1408,8 +1318,7 @@ def hpyrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Y rms"
     hpzarray('hyrmsz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpyrmsz.__doc__ = hpyrmsz.__doc__ + hpzarraytext
+hpyrmsz.__doc__ = hpyrmsz.__doc__ + hpzarraytext
 
 
 def hprrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1419,8 +1328,7 @@ def hprrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="R rms"
     hpzarray('hrrmsz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hprrmsz.__doc__ = hprrmsz.__doc__ + hpzarraytext
+hprrmsz.__doc__ = hprrmsz.__doc__ + hpzarraytext
 
 
 def hpxprmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1430,8 +1338,7 @@ def hpxprmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="X' rms"
     hpzarray('hxprmsz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxprmsz.__doc__ = hpxprmsz.__doc__ + hpzarraytext
+hpxprmsz.__doc__ = hpxprmsz.__doc__ + hpzarraytext
 
 
 def hpyprmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1441,8 +1348,7 @@ def hpyprmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Y' rms"
     hpzarray('hyprmsz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpyprmsz.__doc__ = hpyprmsz.__doc__ + hpzarraytext
+hpyprmsz.__doc__ = hpyprmsz.__doc__ + hpzarraytext
 
 
 def hpxsqbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1452,8 +1358,7 @@ def hpxsqbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="X^2 bar"
     hpzarray('hxsqbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxsqbarz.__doc__ = hpxsqbarz.__doc__ + hpzarraytext
+hpxsqbarz.__doc__ = hpxsqbarz.__doc__ + hpzarraytext
 
 
 def hpysqbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1463,8 +1368,7 @@ def hpysqbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Y^2 bar"
     hpzarray('hysqbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpysqbarz.__doc__ = hpysqbarz.__doc__ + hpzarraytext
+hpysqbarz.__doc__ = hpysqbarz.__doc__ + hpzarraytext
 
 
 def hpvxbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1474,8 +1378,7 @@ def hpvxbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Vx bar"
     hpzarray('hvxbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpvxbarz.__doc__ = hpvxbarz.__doc__ + hpzarraytext
+hpvxbarz.__doc__ = hpvxbarz.__doc__ + hpzarraytext
 
 
 def hpvybarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1485,8 +1388,7 @@ def hpvybarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Vy bar"
     hpzarray('hvybarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpvybarz.__doc__ = hpvybarz.__doc__ + hpzarraytext
+hpvybarz.__doc__ = hpvybarz.__doc__ + hpzarraytext
 
 
 def hpvzbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1496,8 +1398,7 @@ def hpvzbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Vz bar"
     hpzarray('hvzbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpvzbarz.__doc__ = hpvzbarz.__doc__ + hpzarraytext
+hpvzbarz.__doc__ = hpvzbarz.__doc__ + hpzarraytext
 
 
 def hpxpbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1507,8 +1408,7 @@ def hpxpbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="X' bar"
     hpzarray('hxpbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxpbarz.__doc__ = hpxpbarz.__doc__ + hpzarraytext
+hpxpbarz.__doc__ = hpxpbarz.__doc__ + hpzarraytext
 
 
 def hpypbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1518,8 +1418,7 @@ def hpypbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Y' bar"
     hpzarray('hypbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpypbarz.__doc__ = hpypbarz.__doc__ + hpzarraytext
+hpypbarz.__doc__ = hpypbarz.__doc__ + hpzarraytext
 
 
 def hpvxrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1529,8 +1428,7 @@ def hpvxrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Vx rms"
     hpzarray('hvxrmsz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpvxrmsz.__doc__ = hpvxrmsz.__doc__ + hpzarraytext
+hpvxrmsz.__doc__ = hpvxrmsz.__doc__ + hpzarraytext
 
 
 def hpvyrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1540,8 +1438,7 @@ def hpvyrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Vy rms"
     hpzarray('hvyrmsz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpvyrmsz.__doc__ = hpvyrmsz.__doc__ + hpzarraytext
+hpvyrmsz.__doc__ = hpvyrmsz.__doc__ + hpzarraytext
 
 
 def hpvzrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1551,8 +1448,7 @@ def hpvzrmsz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Vz rms"
     hpzarray('hvzrmsz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpvzrmsz.__doc__ = hpvzrmsz.__doc__ + hpzarraytext
+hpvzrmsz.__doc__ = hpvzrmsz.__doc__ + hpzarraytext
 
 
 def hpxpsqbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1562,8 +1458,7 @@ def hpxpsqbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="X'^2 bar"
     hpzarray('hxpsqbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxpsqbarz.__doc__ = hpxpsqbarz.__doc__ + hpzarraytext
+hpxpsqbarz.__doc__ = hpxpsqbarz.__doc__ + hpzarraytext
 
 
 def hpypsqbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1573,8 +1468,7 @@ def hpypsqbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="Y'^2 bar"
     hpzarray('hypsqbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpypsqbarz.__doc__ = hpypsqbarz.__doc__ + hpzarraytext
+hpypsqbarz.__doc__ = hpypsqbarz.__doc__ + hpzarraytext
 
 
 def hpxxpbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1584,8 +1478,7 @@ def hpxxpbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="XX' bar"
     hpzarray('hxxpbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxxpbarz.__doc__ = hpxxpbarz.__doc__ + hpzarraytext
+hpxxpbarz.__doc__ = hpxxpbarz.__doc__ + hpzarraytext
 
 
 def hpyypbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1595,8 +1488,7 @@ def hpyypbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="YY' bar"
     hpzarray('hyypbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpyypbarz.__doc__ = hpyypbarz.__doc__ + hpzarraytext
+hpyypbarz.__doc__ = hpyypbarz.__doc__ + hpzarraytext
 
 
 def hpxvxbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1606,8 +1498,7 @@ def hpxvxbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="XVx bar"
     hpzarray('hxvxbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxvxbarz.__doc__ = hpxvxbarz.__doc__ + hpzarraytext
+hpxvxbarz.__doc__ = hpxvxbarz.__doc__ + hpzarraytext
 
 
 def hpyypbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1617,8 +1508,7 @@ def hpyypbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="YY' bar"
     hpzarray('hyypbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpyypbarz.__doc__ = hpyypbarz.__doc__ + hpzarraytext
+hpyypbarz.__doc__ = hpyypbarz.__doc__ + hpzarraytext
 
 
 def hpxypbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1628,8 +1518,7 @@ def hpxypbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="XY' bar"
     hpzarray('hxypbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxypbarz.__doc__ = hpxypbarz.__doc__ + hpzarraytext
+hpxypbarz.__doc__ = hpxypbarz.__doc__ + hpzarraytext
 
 
 def hpyxpbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1639,8 +1528,7 @@ def hpyxpbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="YX' bar"
     hpzarray('hyxpbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpyxpbarz.__doc__ = hpyxpbarz.__doc__ + hpzarraytext
+hpyxpbarz.__doc__ = hpyxpbarz.__doc__ + hpzarraytext
 
 
 def hpxpypbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1650,8 +1538,7 @@ def hpxpypbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="X'Y' bar"
     hpzarray('hxpypbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxpypbarz.__doc__ = hpxpypbarz.__doc__ + hpzarraytext
+hpxpypbarz.__doc__ = hpxpypbarz.__doc__ + hpzarraytext
 
 
 def hpxvybarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1661,8 +1548,7 @@ def hpxvybarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="XVy bar"
     hpzarray('hxvybarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxvybarz.__doc__ = hpxvybarz.__doc__ + hpzarraytext
+hpxvybarz.__doc__ = hpxvybarz.__doc__ + hpzarraytext
 
 
 def hpyvxbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1672,8 +1558,7 @@ def hpyvxbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="YVx bar"
     hpzarray('hyvxbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpyvxbarz.__doc__ = hpyvxbarz.__doc__ + hpzarraytext
+hpyvxbarz.__doc__ = hpyvxbarz.__doc__ + hpzarraytext
 
 
 def hpvxvybarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1683,8 +1568,7 @@ def hpvxvybarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="VxVy bar"
     hpzarray('hvxvybarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpvxvybarz.__doc__ = hpvxvybarz.__doc__ + hpzarraytext
+hpvxvybarz.__doc__ = hpvxvybarz.__doc__ + hpzarraytext
 
 
 def hpxvzbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1694,8 +1578,7 @@ def hpxvzbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="XVz bar"
     hpzarray('hxvzbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpxvzbarz.__doc__ = hpxvzbarz.__doc__ + hpzarraytext
+hpxvzbarz.__doc__ = hpxvzbarz.__doc__ + hpzarraytext
 
 
 def hpyvzbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1705,8 +1588,7 @@ def hpyvzbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="YVz bar"
     hpzarray('hyvzbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpyvzbarz.__doc__ = hpyvzbarz.__doc__ + hpzarraytext
+hpyvzbarz.__doc__ = hpyvzbarz.__doc__ + hpzarraytext
 
 
 def hpvxvzbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1716,8 +1598,7 @@ def hpvxvzbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="VxVz bar"
     hpzarray('hvxvzbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpvxvzbarz.__doc__ = hpvxvzbarz.__doc__ + hpzarraytext
+hpvxvzbarz.__doc__ = hpvxvzbarz.__doc__ + hpzarraytext
 
 
 def hpvyvzbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
@@ -1727,8 +1608,7 @@ def hpvyvzbarz(contour=0,overlay=0,iz=None,kwdict={},**kw):
     kw.update(kwdict)
     kw['titlet']="VyVz bar"
     hpzarray('hvyvzbarz',contour,overlay,iz,kw)
-if sys.version[:5] != "1.5.1":
-    hpvyvzbarz.__doc__ = hpvyvzbarz.__doc__ + hpzarraytext
+hpvyvzbarz.__doc__ = hpvyvzbarz.__doc__ + hpzarraytext
 
 
 def hptotalke(kwdict={},**kw):
@@ -1766,8 +1646,7 @@ def hpthermale(iw=0,kwdict={},**kw):
     hpnum = _extractvarkw('hpnum',kw)
     hvzrms = _extractvarkw('hvzrms',kw)
     hpbasicwin(0.5*sum(sm*sw*sp_fract)*hpnum*hvzrms**2,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpthermale.__doc__ = hpthermale.__doc__ + hpbasicwintext
+hpthermale.__doc__ = hpthermale.__doc__ + hpbasicwintext
 
 
 def hpeps6d(iw=0,kwdict={},**kw):
@@ -1780,8 +1659,7 @@ def hpeps6d(iw=0,kwdict={},**kw):
     hepsy = _extractvarkw('hepsy',kw)
     hepsz = _extractvarkw('hepsz',kw)
     hpbasicwin(hepsx*hepsy*hepsz,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpeps6d.__doc__ = hpeps6d.__doc__ + hpbasicwintext
+hpeps6d.__doc__ = hpeps6d.__doc__ + hpbasicwintext
 
 
 def hpepst(iw=0,kwdict={},**kw):
@@ -1793,8 +1671,7 @@ def hpepst(iw=0,kwdict={},**kw):
     hepsx = _extractvarkw('hepsx',kw)
     hepsy = _extractvarkw('hepsy',kw)
     hpbasicwin(sqrt(hepsx*hepsy),iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepst.__doc__ = hpepst.__doc__ + hpbasicwintext
+hpepst.__doc__ = hpepst.__doc__ + hpbasicwintext
 
 
 def hpepsnt(iw=0,kwdict={},**kw):
@@ -1806,8 +1683,7 @@ def hpepsnt(iw=0,kwdict={},**kw):
     hepsnx = _extractvarkw('hepsnx',kw)
     hepsny = _extractvarkw('hepsny',kw)
     hpbasicwin(sqrt(hepsnx*hepsny),iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpepsnt.__doc__ = hpepsnt.__doc__ + hpbasicwintext
+hpepsnt.__doc__ = hpepsnt.__doc__ + hpbasicwintext
 
 
 def hpxedge(iw=0,kwdict={},**kw):
@@ -1818,8 +1694,7 @@ def hpxedge(iw=0,kwdict={},**kw):
     kw['titlel']="(m)"
     hxrms = _extractvarkw('hxrms',kw)
     hpbasicwin(2.*hxrms,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxedge.__doc__ = hpxedge.__doc__ + hpbasicwintext
+hpxedge.__doc__ = hpxedge.__doc__ + hpbasicwintext
 
 
 def hpxpedge(iw=0,kwdict={},**kw):
@@ -1834,8 +1709,7 @@ def hpxpedge(iw=0,kwdict={},**kw):
     hxrms = _extractvarkw('hxrms',kw)
     xpedge = (hxxpbar-hxbar*hxpbar)/where(greater(hxrms,0.),hxrms,1.)
     hpbasicwin(xpedge,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxpedge.__doc__ = hpxpedge.__doc__ + hpbasicwintext
+hpxpedge.__doc__ = hpxpedge.__doc__ + hpbasicwintext
 
 
 def hpyedge(iw=0,kwdict={},**kw):
@@ -1846,8 +1720,7 @@ def hpyedge(iw=0,kwdict={},**kw):
     kw['titlel']="(m)"
     hyrms = _extractvarkw('hyrms',kw)
     hpbasicwin(2.*hyrms,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpyedge.__doc__ = hpyedge.__doc__ + hpbasicwintext
+hpyedge.__doc__ = hpyedge.__doc__ + hpbasicwintext
 
 
 def hpypedge(iw=0,kwdict={},**kw):
@@ -1862,8 +1735,7 @@ def hpypedge(iw=0,kwdict={},**kw):
     hyrms = _extractvarkw('hyrms',kw)
     ypedge = (hyypbar-hybar*hypbar)/where(greater(hyrms,0.),hyrms,1.)
     hpbasicwin(ypedge,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpypedge.__doc__ = hpypedge.__doc__ + hpbasicwintext
+hpypedge.__doc__ = hpypedge.__doc__ + hpbasicwintext
 
 
 def hpredge(iw=0,kwdict={},**kw):
@@ -1874,8 +1746,7 @@ def hpredge(iw=0,kwdict={},**kw):
     kw['titlel']="(m)"
     hrrms = _extractvarkw('hrrms',kw)
     hpbasicwin(sqrt(2.)*hrrms,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpredge.__doc__ = hpredge.__doc__ + hpbasicwintext
+hpredge.__doc__ = hpredge.__doc__ + hpbasicwintext
 
 
 def hpxedges(iw=0,kwdict={},**kw):
@@ -1888,8 +1759,7 @@ def hpxedges(iw=0,kwdict={},**kw):
     hxbar = _extractvarkw('hxbar',kw)
     hpbasicwin(+2.*hxrms+hxbar,iw,kw)
     hpbasicwin(-2.*hxrms+hxbar,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxedge.__doc__ = hpxedge.__doc__ + hpbasicwintext
+hpxedge.__doc__ = hpxedge.__doc__ + hpbasicwintext
 
 
 def hpyedges(iw=0,kwdict={},**kw):
@@ -1902,8 +1772,7 @@ def hpyedges(iw=0,kwdict={},**kw):
     hybar = _extractvarkw('hybar',kw)
     hpbasicwin(+2.*hyrms+hybar,iw,kw)
     hpbasicwin(-2.*hyrms+hybar,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpyedge.__doc__ = hpyedge.__doc__ + hpbasicwintext
+hpyedge.__doc__ = hpyedge.__doc__ + hpbasicwintext
 
 
 def hpredges(iw=0,kwdict={},**kw):
@@ -1915,8 +1784,7 @@ def hpredges(iw=0,kwdict={},**kw):
     hrrms = _extractvarkw('hrrms',kw)
     hpbasicwin(+sqrt(2.)*hrrms,iw,kw)
     hpbasicwin(-sqrt(2.)*hrrms,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpredge.__doc__ = hpredge.__doc__ + hpbasicwintext
+hpredge.__doc__ = hpredge.__doc__ + hpbasicwintext
 
 
 def hpxxpslope(iw=0,kwdict={},**kw):
@@ -1931,8 +1799,7 @@ def hpxxpslope(iw=0,kwdict={},**kw):
     hxxpbar = _extractvarkw('hxxpbar',kw)
     xxpslope = (hxxpbar - hxbar*hxpbar)/where(greater(hxrms,0.),hxrms**2,1.)
     hpbasicwin(xxpslope,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpxxpslope.__doc__ = hpxxpslope.__doc__ + hpbasicwintext
+hpxxpslope.__doc__ = hpxxpslope.__doc__ + hpbasicwintext
 
 
 def hpyypslope(iw=0,kwdict={},**kw):
@@ -1947,8 +1814,7 @@ def hpyypslope(iw=0,kwdict={},**kw):
     hyypbar = _extractvarkw('hyypbar',kw)
     yypslope = (hyypbar - hybar*hypbar)/where(greater(hyrms,0.),hyrms**2,1.)
     hpbasicwin(yypslope,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpyypslope.__doc__ = hpyypslope.__doc__ + hpbasicwintext
+hpyypslope.__doc__ = hpyypslope.__doc__ + hpbasicwintext
 
 
 def hpenvx(iw=0,kwdict={},**kw):
@@ -1959,8 +1825,7 @@ def hpenvx(iw=0,kwdict={},**kw):
     kw['titlel']="(m)"
     hxrms = _extractvarkw('hxrms',kw)
     hpbasicwin(2.*hxrms,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpenvx.__doc__ = hpenvx.__doc__ + hpbasicwintext
+hpenvx.__doc__ = hpenvx.__doc__ + hpbasicwintext
 
 
 def hpenvy(iw=0,kwdict={},**kw):
@@ -1971,8 +1836,8 @@ def hpenvy(iw=0,kwdict={},**kw):
     kw['titlel']="(m)"
     hyrms = _extractvarkw('hyrms',kw)
     hpbasicwin(2.*hyrms,iw,kw)
-if sys.version[:5] != "1.5.1":
-    hpenvy.__doc__ = hpenvy.__doc__ + hpbasicwintext
+hpenvy.__doc__ = hpenvy.__doc__ + hpbasicwintext
+
 
 def hzzbeam(kwdict={},**kw):
     'Same as plot with prefix of hp but lhzbeam defaults to true'
