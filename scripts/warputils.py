@@ -463,7 +463,11 @@ def getdatafromtextfile(filename,nskip=0,dims=None,dtype='d',fortranordering=Tru
     if dims[-1] is None:
         ndata = len(data)
         ndims = product(dims[:-1])
-        nlast = int(ndata/ndims)
+        # --- If file is empty, ndims will be zero.
+        if ndims > 0:
+            nlast = int(ndata/ndims)
+        else:
+            nlast = 0
         assert nlast*ndims == ndata,"Amount of data does not conform to dims"
         dims[-1] = nlast
 
