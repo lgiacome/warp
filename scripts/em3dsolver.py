@@ -130,15 +130,15 @@ class EM3D(SubcycledPoissonSolver):
         self.alpha_smooth  = array(self.alpha_smooth)
         self.stride_smooth  = array(self.stride_smooth)
 #    minguards = array([1+aint(top.depos_order.max(1)/2),self.npass_smooth.sum(1)]).max(0)
-        minguards = 0+2+aint(top.depos_order.max(1)/2)+(self.npass_smooth*self.stride_smooth).sum(1)
+        minguards = 2+aint(top.depos_order.max(1)/2)+(self.npass_smooth*self.stride_smooth).sum(1)
         if self.nxguard==1 and self.norderx is not None:
-            minguards[0] = max(minguards[0],self.norderx/2+1)
+            minguards[0] += self.norderx/2+1
             self.nxguard = minguards[0]
         if self.nyguard==1 and self.nordery is not None:
-	        minguards[1] = max(minguards[1],self.nordery/2+1)
+	        minguards[1] += self.nordery/2+1
         	self.nyguard = minguards[1]
         if self.nzguard==1 and self.norderz is not None:
-	        minguards[2] = max(minguards[2],self.norderz/2+1)
+	        minguards[2] += self.norderz/2+1
         	self.nzguard = minguards[2]
         if self.stencil>0:
             if self.nxguard<2:self.nxguard=2
@@ -750,8 +750,8 @@ class EM3D(SubcycledPoissonSolver):
         self.block.core.yf.E_inz_vel=self.laser_source_v
         if 1:#self.laser_source_z>self.zmmin+self.zgrid and self.laser_source_z<=self.zmmax+self.zgrid:
             self.block.core.yf.E_inz_pos = self.laser_source_z-self.zgrid
-            if self.laser_focus_z is not None:self.laser_focus_z+=self.laser_focus_v*top.dt/self.ncyclesperstep
-            self.laser_source_z+=self.laser_source_v*top.dt/self.ncyclesperstep
+            if self.laser_focus_z is not None:self.laser_focus_z+=self.laser_focus_v*top.dt#/self.ncyclesperstep
+            self.laser_source_z+=self.laser_source_v*top.dt#/self.ncyclesperstep
         else:
             return
 
@@ -1655,8 +1655,14 @@ class EM3D(SubcycledPoissonSolver):
         if any(self.npass_smooth>0):self.smoothdensity()
         # -- add laser if laser_mode==2
         if self.laser_mode==2:self.add_laser(self.block.core.yf)
+        if self.l_nodalgrid:self.Jyee2node3d()
         self.applysourceboundaryconditions()
         if self.l_verbose:print 'finalizesourcep done'
+
+    def Jyee2node3d(self):
+        Jyee2node3d(self.block.core.yf)
+        if self.refinement is not None:
+            self.__class__.__bases__[1].Jyee2node3d(self.field_coarse)
 
     def apply_rho_bc(self,block):
         # --- point Rho to first slice of Rhoarray
@@ -2740,7 +2746,7 @@ class EM3D(SubcycledPoissonSolver):
                             doautocolormap=False
                             color = transpose(array([rp,gp,bp])/255.)
                             ncolor = shape(color)[0]
-                            colormap,opacity = Opyndx.DXColormap(data=colordata,ncolors=ncolor,
+                            colormap,opacities = Opyndx.DXColormap(data=colordata,ncolors=ncolor,
                                                             colors=color,min=cmin,max=cmax,
                                                             opacitystart=opacitystart,
                                                             opacityend=opacityend,
@@ -2764,7 +2770,7 @@ class EM3D(SubcycledPoissonSolver):
                                 color.append(g+r*((i*4./ncolor)-2.))
                             else:
                                 color.append(g*(4.-(i*4./ncolor))+r)
-                        colormap,opacity  = Opyndx.DXColormap(data=colordata,
+                        colormap,opacities  = Opyndx.DXColormap(data=colordata,
                                                        ncolors=ncolor,
                                                        colors=color,
                                                        opacitystart=opacitystart,
@@ -2779,6 +2785,10 @@ class EM3D(SubcycledPoissonSolver):
                     dei = (isomax-isomin)/niso
                     isos = isomin+arange(niso)*dei+dei/2
                 # --- renders isosurfaces
+                if opacities is None:
+                  opac = opacity
+                else:
+                  opac = opacities
                 e3d,colorbar = Opyndx.viewisosurface1(data,isos,color=color,display=0,
                                 origins=origins,
                                 deltas=deltas,
