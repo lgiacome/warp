@@ -9710,7 +9710,7 @@ IF(ngrids>1 .and. .not.l_get_injphi_from_base) then
     igrid = 1
     g => basegrid
     r = SQRT(xp(i)*xp(i)+yp(i)*yp(i))
-    IF(r<g%rmin.or.r>=g%rmax.or.zp(i)<g%zmin+zgrid.or.zp(i)>=g%zmax+zgrid) cycle
+    IF(r<g%rmin.or.r>g%rmax.or.zp(i)<g%zmin+zgrid.or.zp(i)>g%zmax+zgrid) cycle
     ingrid=.false.
     rpos = (r-g%rmin)*g%invdr
     zpos = (zp(i)-g%zminp-zgrid)*g%invdz
@@ -9723,7 +9723,7 @@ IF(ngrids>1 .and. .not.l_get_injphi_from_base) then
         igridold=igrid
         igrid = g%loc_part_fd(jn,ln)
         g=>grids_ptr(igrid)%grid
-        IF(r<g%rmin.or.r>=g%rmax.or.zp(i)<g%zmin+zgrid.or.zp(i)>=g%zmax+zgrid) then
+        IF(r<g%rmin.or.r>g%rmax.or.zp(i)<g%zmin+zgrid.or.zp(i)>g%zmax+zgrid) then
           ingrid=.true.
           igrid=igridold
         else
@@ -9746,7 +9746,7 @@ IF(ngrids>1 .and. .not.l_get_injphi_from_base) then
 else
   do i = 1, np
     rpos = SQRT(xp(i)*xp(i)+yp(i)*yp(i))
-    IF(rpos<basegrid%rmin.or.rpos>=basegrid%rmax.or.zp(i)<basegrid%zmin+zgrid.or.zp(i)>=basegrid%zmax+zgrid) cycle
+    IF(rpos<basegrid%rmin.or.rpos>basegrid%rmax.or.zp(i)<basegrid%zmin+zgrid.or.zp(i)>basegrid%zmax+zgrid) cycle
     ingrid=.false.
     rpos = (rpos-basegrid%rmin)*basegrid%invdr
     zpos = (zp(i)-basegrid%zmin-zgrid)*basegrid%invdz
@@ -9788,7 +9788,7 @@ IF(ngrids>1 .and. .not.l_get_injphi_from_base) then
     igrid = 1
     g => basegrid
     x = xp(i)
-    IF(x<g%rmin.or.x>=g%rmax.or.zp(i)<g%zmin+zgrid.or.zp(i)>=g%zmax+zgrid) cycle
+    IF(x<g%rmin.or.x>g%rmax.or.zp(i)<g%zmin+zgrid.or.zp(i)>g%zmax+zgrid) cycle
     ingrid=.false.
     xpos = (x-g%rmin)*g%invdr
     zpos = (zp(i)-g%zminp-zgrid)*g%invdz
@@ -9801,7 +9801,7 @@ IF(ngrids>1 .and. .not.l_get_injphi_from_base) then
         igridold=igrid
         igrid = g%loc_part_fd(jn,ln)
         g=>grids_ptr(igrid)%grid
-        IF(x<g%rmin.or.x>=g%rmax.or.zp(i)<g%zmin+zgrid.or.zp(i)>=g%zmax+zgrid) then
+        IF(x<g%rmin.or.x>g%rmax.or.zp(i)<g%zmin+zgrid.or.zp(i)>g%zmax+zgrid) then
           ingrid=.true.
           igrid=igridold
         else
@@ -9824,7 +9824,7 @@ IF(ngrids>1 .and. .not.l_get_injphi_from_base) then
 else
   do i = 1, np
     xpos = xp(i)
-    IF(xpos<basegrid%rmin.or.xpos>=basegrid%rmax.or.zp(i)<basegrid%zmin+zgrid.or.zp(i)>=basegrid%zmax+zgrid) cycle
+    IF(xpos<basegrid%rmin.or.xpos>basegrid%rmax.or.zp(i)<basegrid%zmin+zgrid.or.zp(i)>basegrid%zmax+zgrid) cycle
     ingrid=.false.
     xpos = (xpos-basegrid%rmin)*basegrid%invdr
     zpos = (zp(i)-basegrid%zmin-zgrid)*basegrid%invdz
@@ -9885,7 +9885,7 @@ IF(ngrids>1 .and. .not.l_get_injphi_from_base) then
 else
   do i = 1, np
     zpos = (zp(i)-basegrid%zmin-zgrid)
-    IF(zpos<basegrid%zmin+zgrid.or.zpos>=basegrid%zmax+zgrid) cycle
+    IF(zpos<basegrid%zmin+zgrid.or.zpos>basegrid%zmax+zgrid) cycle
     zpos = zpos*basegrid%invdz
     ln = 1+INT(zpos)
     ddz = zpos-REAL(ln-1)
@@ -9924,7 +9924,7 @@ IF(ngrids>1 .and. .not.l_get_injphi_from_base) then
     r = rmin+j*dr
     igrid = 1
     g => basegrid
-!    IF(r<g%rmin.or.r>=g%rmax.or.z<g%zmin.or.z>=g%zmax) cycle
+!    IF(r<g%rmin.or.r>g%rmax.or.z<g%zmin.or.z>g%zmax) cycle
     ingrid=.false.
     rpos = (r-g%rmin)*g%invdr
     zpos = (z-g%zmin)*g%invdz
@@ -9942,7 +9942,7 @@ IF(ngrids>1 .and. .not.l_get_injphi_from_base) then
           ingrid=.true.
         else
           g=>grids_ptr(igrid)%grid
-!          IF(r<g%rmin.or.r>=g%rmax.or.z<g%zmin.or.z>=g%zmax) cycle
+!          IF(r<g%rmin.or.r>g%rmax.or.z<g%zmin.or.z>g%zmax) cycle
           rpos = (r-g%rmin)*g%invdr
           zpos = (z-g%zminp)*g%invdz
           jn = 1+int(rpos)
@@ -9968,7 +9968,7 @@ else
    z = zmin+l*dz
    do j = 0, nr
     r = rmin+j*dr
-    IF(r<basegrid%rmin.or.r>=basegrid%rmax.or.z<basegrid%zmin.or.z>=basegrid%zmax) cycle
+    IF(r<basegrid%rmin.or.r>basegrid%rmax.or.z<basegrid%zmin.or.z>basegrid%zmax) cycle
     ingrid=.false.
     rpos = (r-basegrid%rmin)*basegrid%invdr
     zpos = (z-basegrid%zmin)*basegrid%invdz

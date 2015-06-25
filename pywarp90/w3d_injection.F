@@ -3578,7 +3578,7 @@ c=============================================================================
       use Subtimersw3d
       use InjectVars
       use InjectVars3d
-      use InGen3d,Only: solvergeom,RZgeom,l2symtry,l4symtry
+      use InGen3d,Only: solvergeom,RZgeom,XZgeom,Zgeom,l2symtry,l4symtry
       use Picglb,Only: xpminlocal,xpmaxlocal,ypminlocal,ypmaxlocal,
      &                 zpminlocal,zpmaxlocal,zgrid
 
@@ -3679,9 +3679,21 @@ c       --- process.
         do ii=i1,i2
           if (solvergeom == RZgeom) then
             rr = xx(ii)**2 + yy(ii)**2
-            if (rr < xpminlocal**2 .or. rr >= xpmaxlocal**2 .or.
+            if (rr < xpminlocal**2 .or. rr > xpmaxlocal**2 .or.
      &          zz(ii) < zpminlocal+zgrid .or.
      &          zz(ii) >= zpmaxlocal+zgrid) cycle
+          elseif (solvergeom == XZgeom) then
+            if (l4symtry) then
+              xm = abs(xx(ii))
+            else
+              xm = xx(ii)
+            endif
+            if (xm < xpminlocal .or. xm > xpmaxlocal .or.
+     &          zz(ii) < zpminlocal+zgrid .or.
+     &          zz(ii) > zpmaxlocal+zgrid) cycle
+          elseif (solvergeom == Zgeom) then
+            if (zz(ii) < zpminlocal+zgrid .or.
+     &          zz(ii) > zpmaxlocal+zgrid) cycle
           else
             if (l4symtry) then
               xm = abs(xx(ii))
@@ -3693,10 +3705,10 @@ c       --- process.
               xm = xx(ii)
               ym = yy(ii)
             endif
-            if (xm < xpminlocal .or. xm >= xpmaxlocal .or.
-     &          ym < ypminlocal .or. ym >= ypmaxlocal .or.
+            if (xm < xpminlocal .or. xm > xpmaxlocal .or.
+     &          ym < ypminlocal .or. ym > ypmaxlocal .or.
      &          zz(ii) < zpminlocal+zgrid .or.
-     &          zz(ii) >= zpmaxlocal+zgrid) cycle
+     &          zz(ii) > zpmaxlocal+zgrid) cycle
           endif
           if (nn < ii) then
             xi(nn) = xi(ii)

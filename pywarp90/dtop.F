@@ -2890,25 +2890,27 @@ c         --- find location on grid, taking into account any symmetries.
           if (ny > 0) gy = (yy    - ymin)*dyi
           if (nz > 0) gz = (z(ip) - zmin)*dzi
 
+          if (nx > 0) then
+            ix = int(gx)
+            ixp1 = ix + 1
+            wx = gx - ix
+          endif
+          if (ny > 0) then
+            iy = int(gy)
+            iyp1 = iy + 1
+            wy = gy - iy
+          endif
+          if (nz > 0) then
+            iz = int(gz)
+            izp1 = iz + 1
+            wz = gz - iz
+          endif
+
 c         --- if within grid, gather
           if (0. <= gx .and. gx < nx .and.
      &        0. <= gy .and. gy < ny .and.
      &        0. <= gz .and. gz < nz) then
-            if (nx > 0) then
-              ix = int(gx)
-              ixp1 = ix + 1
-              wx = gx - ix
-            endif
-            if (ny > 0) then
-              iy = int(gy)
-              iyp1 = iy + 1
-              wy = gy - iy
-            endif
-            if (nz > 0) then
-              iz = int(gz)
-              izp1 = iz + 1
-              wz = gz - iz
-            endif
+
             f(ip) = grid(ix  ,iy  ,iz  )*(1. - wx)*(1. - wy)*(1. - wz) +
      &              grid(ixp1,iy  ,iz  )*      wx *(1. - wy)*(1. - wz) +
      &              grid(ix  ,iyp1,iz  )*(1. - wx)*      wy *(1. - wz) +
@@ -2917,6 +2919,31 @@ c         --- if within grid, gather
      &              grid(ixp1,iy  ,izp1)*      wx *(1. - wy)*      wz  +
      &              grid(ix  ,iyp1,izp1)*(1. - wx)*      wy *      wz  +
      &              grid(ixp1,iyp1,izp1)*      wx *      wy *      wz
+
+          elseif (0. <= gx .and. gx <= nx .and.
+     &            0. <= gy .and. gy <= ny .and.
+     &            0. <= gz .and. gz <= nz) then
+
+            f(ip) = grid(ix  ,iy  ,iz  )*(1. - wx)*(1. - wy)*(1. - wz)
+            if (gx < nx) then
+              f(ip) = f(ip) + grid(ixp1,iy  ,iz  )*      wx *(1. - wy)*(1. - wz)
+              if (gy < ny) then
+                f(ip) = f(ip) + grid(ixp1,iyp1,iz  )*      wx *      wy *(1. - wz)
+              endif
+              if (gz < nz) then
+                f(ip) = f(ip) + grid(ixp1,iy  ,izp1)*      wx *(1. - wy)*      wz 
+              endif
+            endif
+            if (gy < ny) then
+              f(ip) = f(ip) + grid(ix  ,iyp1,iz  )*(1. - wx)*      wy *(1. - wz)
+              if (gz < nz) then
+                f(ip) = f(ip) + grid(ix  ,iyp1,izp1)*(1. - wx)*      wy *      wz 
+              endif
+            endif
+            if (gz < nz) then
+              f(ip) = f(ip) + grid(ix  ,iy  ,izp1)*(1. - wx)*(1. - wy)*      wz 
+            endif
+            !f(ip) = f(ip) + grid(ixp1,iyp1,izp1)*      wx *      wy *      wz
           endif
 
         enddo
@@ -2940,23 +2967,38 @@ c         --- find location on grid, taking into account any symmetries.
           if (nx > 0) gx = (xx    - xmin)*dxi
           if (nz > 0) gz = (z(ip) - zmin)*dzi
 
+          if (nx > 0) then
+            ix = int(gx)
+            ixp1 = ix + 1
+            wx = gx - ix
+          endif
+          if (nz > 0) then
+            iz = int(gz)
+            izp1 = iz + 1
+            wz = gz - iz
+          endif
+
 c         --- if within grid, gather
           if (0. <= gx .and. gx < nx .and.
      &        0. <= gz .and. gz < nz) then
-            if (nx > 0) then
-              ix = int(gx)
-              ixp1 = ix + 1
-              wx = gx - ix
-            endif
-            if (nz > 0) then
-              iz = int(gz)
-              izp1 = iz + 1
-              wz = gz - iz
-            endif
+
             f(ip) = grid(ix  ,iy  ,iz  )*(1. - wx)*(1. - wz) +
      &              grid(ixp1,iy  ,iz  )*      wx *(1. - wz) +
      &              grid(ix  ,iy  ,izp1)*(1. - wx)*      wz  +
      &              grid(ixp1,iy  ,izp1)*      wx *      wz
+
+          elseif (0. <= gx .and. gx <= nx .and.
+     &            0. <= gz .and. gz <= nz) then
+
+            f(ip) = grid(ix  ,iy  ,iz  )*(1. - wx)*(1. - wz)
+            if (gx < nx) then
+              f(ip) = f(ip) + grid(ixp1,iy  ,iz  )*      wx *(1. - wz)
+            endif
+            if (gz < nz) then
+              f(ip) = f(ip) + grid(ix  ,iy  ,izp1)*(1. - wx)*      wz 
+            endif
+            !f(ip) = f(ip) + grid(ixp1,iy  ,izp1)*      wx *      wz
+
           endif
 
         enddo
