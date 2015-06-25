@@ -216,6 +216,7 @@ class Quasistatic(SubcycledPoissonSolver):
     self.pgelec.gchange()
     top.pgroup = self.pgelec
     self.electrons = Species(type=backgroundtype)
+    self.backgroundtype=backgroundtype
     if sec is not None:
       for cond in conductors:
         sec.add(incident_species=self.electrons,
@@ -2222,8 +2223,11 @@ class Quasistatic(SubcycledPoissonSolver):
 #            xe=getx(bcast=0,gather=0,pgroup=self.pgelec);ye=gety(bcast=0,gather=0,pgroup=self.pgelec)
 #            print 'pea:iz,xe,ye',self.iz,ave(xe),std(xe),ave(ye),std(ye)
             pg.zp[il:iu]-=w3d.dz
-#            pli(frz.basegrid.phi);refresh()
-#            ppxy(pgroup=pg,js=js,color=red,msize=2);refresh()
+#            window(2)
+#            ppg(frz.basegrid.phi);refresh()
+#            fma();ppxy(pgroup=pg,js=js,color=red,msize=2);refresh()
+#            print pg.nps
+#            window(0)
 #            window(3);ppzvx(js=1,msize=2);window(0)
 
           if not self.l_posinst_track_electrons:
@@ -2259,9 +2263,12 @@ class Quasistatic(SubcycledPoissonSolver):
             if pg.nps[js]==0:continue
             pp_warp2pos()
             pos.dtim=self.dt
-            reset_tl(self.dt)
-            pos.bfield=top.by0
-            pos.om0=(pos.clight**2/pos.emass)*pos.bfield
+            reset_tl()
+            pos.Bfunifx=top.bx0
+            pos.Bfunify=top.by0
+            pos.Bfunifz=top.bz0
+            if pos.clight==0.:pos.define_physical_constants()
+#            pos.om0=(pos.clight**2/pos.emass)*pos.
             pytrack_electrons()
             pos.time+=self.dt
             pp_pos2warp(0)
