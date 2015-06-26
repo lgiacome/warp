@@ -3877,8 +3877,16 @@ c the extra guard cells should alway be zero.
             enddo
           endif
         else if (lzerodirichlet) then
-          if (bounds(0) == 0) u(-nxguard:-1,:,:,:)   = 0.
-          if (bounds(1) == 0) u(nx+1:nx+nxguard,:,:,:) = 0.
+          if (bounds(0) == 0) then
+            do ix=-1,-nxguard,-1
+              u(ix,0:ny,0:nz,:)   = u(0,0:ny,0:nz,:)
+            enddo
+          endif
+          if (bounds(1) == 0) then
+            do ix=nx+1,nx+nxguard
+              u(ix,0:ny,0:nz,:) = u(nx,0:ny,0:nz,:)
+            enddo
+          endif
         endif
         if (bounds(0) == 1) then
           u(-nxguard:-1,0:ny,0:nz,:) = u(nxguard:1:-1,0:ny,0:nz,:)
@@ -3905,8 +3913,16 @@ c the extra guard cells should alway be zero.
             enddo
           endif
         else if (lzerodirichlet) then
-          if (bounds(2) == 0) u(:,-nyguard:-1,:,:)   = 0.
-          if (bounds(3) == 0) u(:,ny+1:ny+nyguard,:,:) = 0.
+          if (bounds(2) == 0) then
+            do iy=-1,-nyguard,-1
+              u(:,iy,0:nz,:) = u(:,0,0:nz,:)
+            enddo
+          endif
+          if (bounds(3) == 0) then
+            do iy=ny+1,ny+nyguard
+              u(:,iy,0:nz,:) = u(:,ny,0:nz,:)
+            enddo
+          endif
         endif
         if (bounds(2) == 1) then
           u(:,-nyguard:-1,0:nz,:)   = u(:,nyguard:1:-1,0:nz,:)
@@ -3933,8 +3949,16 @@ c the extra guard cells should alway be zero.
             enddo
           endif
         else if (lzerodirichlet) then
-          if (bounds(4) == 0) u(:,:,-nzguard:-1,:)   = 0.
-          if (bounds(5) == 0) u(:,:,nz+1:nz+nzguard,:) = 0.
+          if (bounds(4) == 0) then
+            do iz=-1,-nzguard,-1
+              u(:,:,iz,:)   = u(:,:,0,:)
+            enddo
+          endif
+          if (bounds(5) == 0) then
+            do iz=nz+1,nz+nzguard
+              u(:,:,iz,:) = u(:,:,nz,:)
+            enddo
+          endif
         endif
         if (bounds(4) == 1) then
           u(:,:,-nzguard:-1,:)   = u(:,:,nzguard:1:-1,:)

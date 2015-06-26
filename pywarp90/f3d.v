@@ -413,8 +413,8 @@ residual2d(nxlocal:integer,nzlocal:integer,
            nxguardrho:integer,nzguardrho:integer,
            nxguardres:integer,nzguardres:integer,
            dxsqi:real,dzsqi:real,
-           xminodx:real,lrz:logical,phi:real,rho:real,res:real,
-           mglevel:integer,bounds(0:5):integer,
+           xminodx:real,lrz:logical,lmagnetostatic:logical,phi:real,rho:real,res:real,
+           mglevel:integer,bounds(0:5):integer,mgform:integer,mgform2init:integer,
            lcndbndy:logical,icndbndy:integer,conductors:ConductorType)
    subroutine
    # Calculates the residual for 2d arrays

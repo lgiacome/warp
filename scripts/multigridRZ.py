@@ -495,17 +495,65 @@ class MultiGrid2D(MultiGrid3D):
         res = zeros(shape(self._phi),'d')
         dxsqi  = 1./self.dx**2
         dzsqi  = 1./self.dz**2
-        reps0c = self.mgparam/(eps0*2.*(dxsqi+dysqi+dzsqi))
-        rho = self._rho*reps0c
+        xminodx = self.xmminlocal/self.dx
+        rho = self._rho/eps0
         conductorobject = self.getconductorobject()
-        residual2d(self.nxlocal,self.nzlocal,dxsqi,dzsqi,xminodx,lrz,
+        residual2d(self.nxlocal,self.nzlocal,
                    self.nxguardphi,self.nzguardphi,
                    self.nxguardrho,self.nzguardrho,
                    self.nxguardphi,self.nzguardphi,
+                   dxsqi,dzsqi,xminodx,self.solvergeom==w3d.RZgeom,false,
                    self._phi[:,self.nyguardphi,:],rho[:,self.nyguardrho,:],
                    res[:,self.nyguardphi,:],0,self.bounds,
-                   self.lcndbndy,self.icndbndy,conductorobject)
+                   self.mgform,true,self.lcndbndy,self.icndbndy,conductorobject)
         return res
+
+    def getimagecharges(self, includeboundaries=False, iselfb=0):
+        """This calculates the image charges inside of any conductors.
+        This is a bit of a hack. It calculates the residual, but turning off
+        the zeroing out of the residual inside any conductors and on the boundaries."""
+        if includeboundaries:
+            # --- Normally, with Dirichlet boundaries, the phi is linearly extrapolated into
+            # --- the guard cells since this gives better behavior when fetching the E fields.
+            # --- However, this makes the residual zero. This call fills the guard cells with the
+            # --- potential on the boundary. Also set bounds so that no boundary conditions are
+            # --- applied to the residual.
+            applyboundaryconditions3d(self.nxlocal,self.nylocal,self.nzlocal,
+                                      self.nxguardphi,self.nyguardphi,self.nzguardphi,
+                                      self._phi,1,self.bounds,false,true)
+            bounds = [-1,-1,-1,-1,-1,-1]
+        else:
+            bounds = self.bounds
+
+        conductorobject = self.getconductorobject(top.pgroup.fselfb[iselfb])
+        istartsave = conductorobject.interior.istart.copy()
+        conductorobject.interior.istart = 1
+
+        dxsqi  = 1./self.dx**2
+        dzsqi  = 1./self.dz**2
+        xminodx = self.xmminlocal/self.dx
+        rho = self._rho/eps0
+        result = zeros(shape(self._phi),'d')
+        residual2d(self.nxlocal,self.nzlocal,
+                   self.nxguardphi,self.nzguardphi,
+                   self.nxguardrho,self.nzguardrho,
+                   self.nxguardphi,self.nzguardphi,
+                   dxsqi,dzsqi,xminodx,self.solvergeom==w3d.RZgeom,false,
+                   self._phi[:,self.nyguardphi,:],rho[:,self.nyguardrho,:],
+                   result[:,self.nyguardphi,:],0,bounds,
+                   self.mgform,true,self.lcndbndy,self.icndbndy,conductorobject)
+
+        conductorobject.interior.istart[:] = istartsave
+        if includeboundaries:
+            # --- Undo the applyboundaryconditions3d from above.
+            applyboundaryconditions3d(self.nxlocal,self.nylocal,self.nzlocal,
+                                      self.nxguardphi,self.nyguardphi,self.nzguardphi,
+                                      self._phi,1,self.bounds,true,false)
+
+        # --- Remove the premultiplying factor
+        result *= eps0
+        return result
+
 
 ##############################################################################
 ##############################################################################
