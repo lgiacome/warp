@@ -68,9 +68,8 @@ class TraceParticle(object):
                       enforceinitboundaries=true,lsavefields=false):
         assert js < top.ns,"species must be already existing"
 
-        # --- This may be bad to do, but is needed so that the particle
-        # --- position and velocity are at the same time when collected.
-        top.allspecl = true
+        # --- store value of allspecl
+        self.allspecl = top.allspecl
 
         # --- Save some if the input
         self.js = js
@@ -293,7 +292,13 @@ class TraceParticle(object):
         """Saves data"""
         self.checklive()
         if not self.savedata: return
+        # --- set top.allspecl to true to ensure that v and x are synchronized at next time step
+        if (top.it+1 - self.startit) % self.savedata == 0:
+           self.allspecl = top.allspecl
+           top.allspecl = 1
+
         if (top.it - self.startit) % self.savedata != 0: return
+        top.allspecl = self.allspecl
         for i in range(self.nn):
             ii = selectparticles(js=self.js,ssn=self.ssn[i])
             np = globalsum(len(ii))
