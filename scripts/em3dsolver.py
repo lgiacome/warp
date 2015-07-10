@@ -95,7 +95,9 @@ class EM3D(SubcycledPoissonSolver):
             self.l_2dxz=True
             self.l_1dz=True
         if self.l_2dxz: w3d.solvergeom=w3d.XZgeom
-        if self.l_2drz: w3d.solvergeom=w3d.RZgeom
+        if self.l_2drz: 
+        	w3d.solvergeom=w3d.RZgeom
+        	self.l_2dxz=True
         if self.l_1dz:
             w3d.solvergeom=w3d.Zgeom
             self.stencil=0
@@ -124,13 +126,15 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_2drz == False :
             self.type_rz_depose = 0 
 
-        # --- set number of guard cells to appropriate value depending on order of
-        # --- current deposition, smoothing and stencil.
+		# --- smoothing lists to arrays if needed
         self.npass_smooth  = array(self.npass_smooth)
         self.alpha_smooth  = array(self.alpha_smooth)
         self.stride_smooth  = array(self.stride_smooth)
-#    minguards = array([1+aint(top.depos_order.max(1)/2),self.npass_smooth.sum(1)]).max(0)
+
+        # --- set number of guard cells to appropriate value depending on order of
+        # --- current deposition, smoothing and stencil.
         minguards = 2+aint(top.depos_order.max(1)/2)+(self.npass_smooth*self.stride_smooth).sum(1)
+        # --- add guards cells for larger stencils
         if self.nxguard==1 and self.norderx is not None:
             minguards[0] += self.norderx/2+1
             self.nxguard = minguards[0]
@@ -140,18 +144,22 @@ class EM3D(SubcycledPoissonSolver):
         if self.nzguard==1 and self.norderz is not None:
 	        minguards[2] += self.norderz/2+1
         	self.nzguard = minguards[2]
+        # --- ensures that there is at least 2 guard cells with stencil>0
         if self.stencil>0:
             if self.nxguard<2:self.nxguard=2
             if self.nyguard<2:self.nyguard=2
             if self.nzguard<2:self.nzguard=2
-#      self.npass_smooth = where(self.npass_smooth==0,1,self.npass_smooth)
-        if self.l_2drz:self.l_2dxz=True
+        # --- sets number of cells and guards to 0 along unused dimension
         if self.l_2dxz:
             self.nyguard=self.nylocal=self.ny=self.nyp=0
         if self.l_1dz:
             self.l_2dxz = True
             self.nxguard=self.nxlocal=self.nx=self.nxp=0
             self.nyguard=self.nylocal=self.ny=self.nyp=0
+		# --- enforces number of guards cells to not go over the number of local cells
+        self.nxguard = min(self.nxguard,self.nxlocal)
+        self.nyguard = min(self.nyguard,self.nylocal)
+        self.nzguard = min(self.nzguard,self.nzlocal)
 
         # --- bounds is special since it will sometimes be set from the
         # --- variables bound0, boundnz, boundxy, l2symtry, and l4symtry
@@ -6390,14 +6398,17 @@ def pyinit_3dem_block(nx, ny, nz,
 
     f.gchange()
 
-    if l_nodalgrid:
-        f.xcoefs[:] = FD_weights(0.,f.norderx+1,1)[-1,f.norderx/2+1:]
-        f.ycoefs[:] = FD_weights(0.,f.nordery+1,1)[-1,f.nordery/2+1:]
-        f.zcoefs[:] = FD_weights(0.,f.norderz+1,1)[-1,f.norderz/2+1:]
-    else:
-        f.xcoefs[:] = FD_weights(0.5,f.norderx+1,1)[-1,f.norderx/2+1:]
-        f.ycoefs[:] = FD_weights(0.5,f.nordery+1,1)[-1,f.nordery/2+1:]
-        f.zcoefs[:] = FD_weights(0.5,f.norderz+1,1)[-1,f.norderz/2+1:]
+#    if l_nodalgrid:
+#        f.xcoefs[:] = FD_weights(0.,f.norderx+1,1)[-1,f.norderx/2+1:]
+#        f.ycoefs[:] = FD_weights(0.,f.nordery+1,1)[-1,f.nordery/2+1:]
+#        f.zcoefs[:] = FD_weights(0.,f.norderz+1,1)[-1,f.norderz/2+1:]
+#    else:
+#        f.xcoefs[:] = FD_weights(0.5,f.norderx+1,1)[-1,f.norderx/2+1:]
+#        f.ycoefs[:] = FD_weights(0.5,f.nordery+1,1)[-1,f.nordery/2+1:]
+#        f.zcoefs[:] = FD_weights(0.5,f.norderz+1,1)[-1,f.norderz/2+1:]
+    f.xcoefs[:] = FD_weights_hvincenti(f.norderx,l_staggered=not l_nodalgrid)
+    f.ycoefs[:] = FD_weights_hvincenti(f.nordery,l_staggered=not l_nodalgrid)
+    f.zcoefs[:] = FD_weights_hvincenti(f.norderz,l_staggered=not l_nodalgrid)
 
     if excoef is not None:
         # --- sets field deposition transformation stencil
@@ -7035,6 +7046,22 @@ def FD_weights(z,n,m):
 
     return c
 
+def FD_weights_hvincenti(p,l_staggered=False):
+    # --- from Henri Vincenti's formulas
+    factorial = math.factorial
+
+    c = zeros(p/2)
+    for i in range(p/2):
+        l=i+1
+        if l_staggered:
+            lognumer = math.log(16.)*(1.-p/2.)+math.log(factorial(p-1.))*2
+            logdenom = math.log(2.*l-1.)*2.+math.log(factorial(p/2.+l-1.))+math.log(factorial(p/2.-l))+2*math.log(factorial(p/2.-1.))
+        else:
+            lognumer = math.log(factorial(p/2.))*2
+            logdenom = math.log(factorial(p/2.+l))+math.log(factorial(p/2.-l))+math.log(l)
+        c[i] = (-1.)**(l+1)*exp(lognumer-logdenom)
+    return c
+    
 
 
 ##############################################################################
