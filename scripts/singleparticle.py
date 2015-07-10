@@ -617,7 +617,10 @@ class SingleParticle:
     def __init__(self,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=None,
                       maxsteps=1000,savedata=1,zerophi=0,resettime=0,js=0):
         # --- Do some global initialization
-        top.allspecl = true
+
+        # --- store value of allspecl
+        self.allspecl = top.allspecl
+
         self.js = js
         if js not in SingleParticle._instance_dict:
             SingleParticle._instance_dict[js] = 1
@@ -864,7 +867,13 @@ class SingleParticle:
         """Saves data"""
         self.checklive()
         if not self.savedata: return
+        # --- set top.allspecl to true to ensure that v and x are synchronized at next time step
+        if (top.it+1 - self.startit) % self.savedata == 0:
+           self.allspecl = top.allspecl
+           top.allspecl = 1
+
         if (top.it - self.startit) % self.savedata != 0: return
+        top.allspecl = self.allspecl
         for i in range(self.nn):
             if self.live[i]:
                 self.spt[i].append(top.time)
