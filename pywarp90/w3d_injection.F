@@ -441,9 +441,9 @@ c             --- Save the particle data
                 pgroup%uxp(ii) = vzinj*(apinj*pgroup%xp(ii)*ainji + xpinj) + vtx*uxt(ip)
                 pgroup%uyp(ii) = vzinj*(bpinj*pgroup%yp(ii)*binji + ypinj) + vty*uyt(ip)
                 if(l_inj_addtempz_abs) then
-                  pgroup%uzp(ii) = vzinj + abs(0.5*vthz_s(jsid+1)*uzt(ip))
+                  pgroup%uzp(ii) = vzinj + abs(vthz_s(jsid+1)*uzt(ip))
                 else
-                  pgroup%uzp(ii) = vzinj + 0.5*vthz_s(jsid+1)*uzt(ip)
+                  pgroup%uzp(ii) = vzinj + vthz_s(jsid+1)*uzt(ip)
                 endif
               endif
 
