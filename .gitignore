@@ -8,6 +8,7 @@
 # Ignore files created during the build
 Makefile
 build
+build3
 buildparallel
 *.o
 *.so
@@ -16,5 +17,6 @@ ranffortran.c
 
 # Ignore local definitions for building
 Makefile.local
+Makefile.local3
 Makefile.local.pympi
 setup.local.py
