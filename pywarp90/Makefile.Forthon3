@@ -5,20 +5,21 @@ SO = so
 VERBOSE = #-v
 FORTHON = Forthon3
 PYTHON = python3
-BUILDBASEDIR = build
+BUILDBASEDIR = build3
 INSTALL = --install
 INSTALLOPTIONS = #--user
 -include Makefile.local3
-INSTALLARGS = --pkgbase warp $(INSTALL) $(INSTALLOPTIONS)
+BUILDBASE = --build-base $(BUILDBASEDIR)
+INSTALLARGS = --pkgbase warp $(BUILDBASE) $(INSTALL) $(INSTALLOPTIONS)
 
 install: installso
-	(cd ../scripts;$(PYTHON) setup.py install $(INSTALLOPTIONS))
+	(cd ../scripts;$(PYTHON) setup.py build $(BUILDBASE) install $(INSTALLOPTIONS))
 
 installso: toppy.$(SO) envpy.$(SO) w3dpy.$(SO) f3dpy.$(SO) wxypy.$(SO) fxypy.$(SO) wrzpy.$(SO) frzpy.$(SO) herpy.$(SO) cirpy.$(SO) chopy.$(SO) em2dpy.$(SO) em3dpy.$(SO) ranffortran.c
-	$(PYTHON) setup.py $(FCOMP) build install $(INSTALLOPTIONS)
+	$(PYTHON) setup.py $(FCOMP) build $(BUILDBASE) install $(INSTALLOPTIONS)
 
 build: toppy.$(SO) envpy.$(SO) w3dpy.$(SO) f3dpy.$(SO) wxypy.$(SO) fxypy.$(SO) wrzpy.$(SO) frzpy.$(SO) herpy.$(SO) cirpy.$(SO) chopy.$(SO) em2dpy.$(SO) em3dpy.$(SO) ranffortran.c
-	$(PYTHON) setup.py $(FCOMP) build
+	$(PYTHON) setup.py $(FCOMP) build $(BUILDBASE)
 
 toppy.$(SO): top.F top_lattice.F top_fsl.F dtop.F util.F top.v
 	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) top top_lattice.F top_fsl.F dtop.F util.F
