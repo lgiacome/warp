@@ -5750,7 +5750,7 @@ if (n > 0) then
   ! Send and receive the real part of the array
   if (zl==otherproc) then
      call mpi_packbuffer_init(size(f(:,nzguard-n+1:nzguard,:)),ibuf)
-     call mympi_pack(dble(realpart(f(:,nzguard-n+1:nzguard,:))),ibuf)
+     call mympi_pack(dble(f(:,nzguard-n+1:nzguard,:)),ibuf)
      call mpi_send_pack(procneighbors(0,2),0,ibuf)
   end if    
   if (zr==otherproc) then
@@ -5762,7 +5762,7 @@ if (n > 0) then
  ! Send and receive the imaginary part of the array
   if (zl==otherproc) then
      call mpi_packbuffer_init(size(f(:,nzguard-n+1:nzguard,:)),ibuf)
-     call mympi_pack(dble(imagpart(f(:,nzguard-n+1:nzguard,:))),ibuf)
+     call mympi_pack(dimag(f(:,nzguard-n+1:nzguard,:)),ibuf)
      call mpi_send_pack(procneighbors(0,2),0,ibuf)
   end if    
   if (zr==otherproc) then
@@ -5781,7 +5781,7 @@ else if (n < 0) then
   ! Send and receive the real part of the array
   if (zl==otherproc) then
      call mpi_packbuffer_init(size(f(:,nz-nzguard:nz-nzguard-n-1,:)),ibuf)
-     call mympi_pack(dble(realpart(f(:,nz-nzguard:nz-nzguard-n-1,:))),ibuf)
+     call mympi_pack(dble(f(:,nz-nzguard:nz-nzguard-n-1,:)),ibuf)
      call mpi_send_pack(procneighbors(0,2),0,ibuf)
   end if
   if (zr==otherproc) then
@@ -5793,7 +5793,7 @@ else if (n < 0) then
  ! Send and receive the imaginary part of the array
   if (zl==otherproc) then
      call mpi_packbuffer_init(size(f(:,nz-nzguard:nz-nzguard-n-1,:)),ibuf)
-     call mympi_pack(dble(imagpart(f(:,nz-nzguard:nz-nzguard-n-1,:))),ibuf)
+     call mympi_pack(dimag(f(:,nz-nzguard:nz-nzguard-n-1,:)),ibuf)
      call mpi_send_pack(procneighbors(0,2),0,ibuf)
   end if
   if (zr==otherproc) then
