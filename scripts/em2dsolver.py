@@ -467,7 +467,6 @@ class EM2D(object):
        for ii in range(shape(self.field.J[:,:,i])[1]):
          self.field.J[:,ii,i] = J
 
-
   def apply_current_bc(self):
     # --- apply periodic BC
     if self.field.xlbound==periodic:
@@ -481,24 +480,24 @@ class EM2D(object):
     # --- exchange slices of Jarray among processors along z
     if npes>1:
       if me>0:
-        comm_world.send(self.field.Jarray[0:4,:,0:3,0],me-1)
+        mpisend(self.field.Jarray[0:4,:,0:3,0], dest = me-1)
       if me<npes-1:
-        recv,status=comm_world.recv(me+1)
-        comm_world.send(self.field.Jarray[-4:-2,:,0:3,0],me+1)
+        recv = mpirecv(source = me+1)
+        mpisend(self.field.Jarray[-4:-2,:,0:3,0], dest = me+1)
         self.field.Jarray[-4:,:,0:3,0]+=recv
       if me>0:
-        recv,status=comm_world.recv(me-1)
+        recv = mpirecv(source = me-1)
         self.field.Jarray[0:2,:,0:3,0]+=recv
     return
     if npes>1:
       if me>0:
-        comm_world.send(self.field.Jarray[0:2,:,2,0],me-1)
+        mpisend(self.field.Jarray[0:2,:,2,0], dest = me-1)
       if me<npes-1:
-        recv,status=comm_world.recv(me+1)
-        comm_world.send(self.field.Jarray[-4:-2,:,2,0],me+1)
+        recv = mpirecv(source = me+1)
+        mpisend(self.field.Jarray[-4:-2,:,2,0], dest = me+1)
         self.field.Jarray[-5:-3,:,2,0]+=recv
       if me>0:
-        recv,status=comm_world.recv(me-1)
+        recv = mpirecv(source = me-1)
         self.field.Jarray[0:2,:,2,0]+=recv
 
   def apply_current_bc_old(self):
@@ -514,24 +513,24 @@ class EM2D(object):
     # --- exchange slices of Jarray among processors along z
     if npes>1:
       if me>0:
-        comm_world.send(self.field.Jarray[0:4,:,0:3,:],me-1)
+        mpisend(self.field.Jarray[0:4,:,0:3,:], dest = me-1)
       if me<npes-1:
-        recv,status=comm_world.recv(me+1)
-        comm_world.send(self.field.Jarray[-4:-2,:,0:3,:],me+1)
+        recv = mpirecv(source = me+1)
+        mpisend(self.field.Jarray[-4:-2,:,0:3,:], dest = me+1)
         self.field.Jarray[-4:,:,0:3,:]+=recv
       if me>0:
-        recv,status=comm_world.recv(me-1)
+        recv = mpirecv(source = me-1)
         self.field.Jarray[0:2,:,0:3,:]+=recv
     return
     if npes>1:
       if me>0:
-        comm_world.send(self.field.Jarray[0:2,:,2,:],me-1)
+        mpisend(self.field.Jarray[0:2,:,2,:], dest = me-1)
       if me<npes-1:
-        recv,status=comm_world.recv(me+1)
-        comm_world.send(self.field.Jarray[-4:-2,:,2,:],me+1)
+        recv = mpirecv(source = me+1)
+        mpisend(self.field.Jarray[-4:-2,:,2,:], dest = me+1)
         self.field.Jarray[-5:-3,:,2,:]+=recv
       if me>0:
-        recv,status=comm_world.recv(me-1)
+        recv = mpirecv(source = me-1)
         self.field.Jarray[0:2,:,2,:]+=recv
 
   def smoothdensity(self):

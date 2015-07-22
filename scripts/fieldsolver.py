@@ -2105,7 +2105,7 @@ def setdecomposedarray(arr,val,ix=None,iy=None,iz=None,local=0,solver=None):
                         ppplist.append(ppp[sss[0],sss[1],sss[2]])
 
         # --- Send the data to each of the processors
-        ppp = comm_world.scatter(ppplist)[0]
+        ppp = mpiscatter(ppplist)[0]
 
         # --- Get the local extent of each processor.
         my_ixpp = decomp.ix[decomp.ixproc]
