@@ -617,46 +617,46 @@ class MeshRefinement(VisualizableClass):
 
             # --- Exchange lists with processes neighboring along X
             if self.ixproc > 0 and neighborpes[0] >= 0:
-                comm_world.send(dummyblocklists,neighborpes[0])
+                mpisend(dummyblocklists, dest = neighborpes[0])
             if self.ixproc < self.nxprocs-1 and neighborpes[1] >= 0:
-                blocklistsxp = comm_world.recv(neighborpes[1])[0]
+                blocklistsxp = mpirecv(source = neighborpes[1])[0]
             else:
                 blocklistsxp = NMAXLEVELS*[[]]
 
             if self.ixproc < self.nxprocs-1 and neighborpes[1] >= 0:
-                comm_world.send(dummyblocklists,neighborpes[1])
+                mpisend(dummyblocklists, dest = neighborpes[1])
             if self.ixproc > 0 and neighborpes[0] >= 0:
-                blocklistsxm = comm_world.recv(neighborpes[0])[0]
+                blocklistsxm = mpirecv(source = neighborpes[0])[0]
             else:
                 blocklistsxm = NMAXLEVELS*[[]]
 
             # --- Exchange lists with processes neighboring along Y
             if self.iyproc > 0 and neighborpes[2] >= 0:
-                comm_world.send(dummyblocklists,neighborpes[2])
+                mpisend(dummyblocklists, dest = neighborpes[2])
             if self.iyproc < self.nyprocs-1 and neighborpes[3] >= 0:
-                blocklistsyp = comm_world.recv(neighborpes[3])[0]
+                blocklistsyp = mpirecv(source = neighborpes[3])[0]
             else:
                 blocklistsyp = NMAXLEVELS*[[]]
 
             if self.iyproc < self.nyprocs-1 and neighborpes[3] >= 0:
-                comm_world.send(dummyblocklists,neighborpes[3])
+                mpisend(dummyblocklists, dest = neighborpes[3])
             if self.iyproc > 0 and neighborpes[2] >= 0:
-                blocklistsym = comm_world.recv(neighborpes[2])[0]
+                blocklistsym = mpirecv(source = neighborpes[2])[0]
             else:
                 blocklistsym = NMAXLEVELS*[[]]
 
             # --- Exchange lists with processes neighboring along Z
             if self.izproc > 0 and neighborpes[4] >= 0:
-                comm_world.send(dummyblocklists,neighborpes[4])
+                mpisend(dummyblocklists, dest = neighborpes[4])
             if self.izproc < self.nzprocs-1 and neighborpes[5] >= 0:
-                blocklistszp = comm_world.recv(neighborpes[5])[0]
+                blocklistszp = mpirecv(source = neighborpes[5])[0]
             else:
                 blocklistszp = NMAXLEVELS*[[]]
 
             if self.izproc < self.nzprocs-1 and neighborpes[5] >= 0:
-                comm_world.send(dummyblocklists,neighborpes[5])
+                mpisend(dummyblocklists, dest = neighborpes[5])
             if self.izproc > 0 and neighborpes[4] >= 0:
-                blocklistszm = comm_world.recv(neighborpes[4])[0]
+                blocklistszm = mpirecv(source = neighborpes[4])[0]
             else:
                 blocklistszm = NMAXLEVELS*[[]]
 
@@ -1010,12 +1010,12 @@ class MeshRefinement(VisualizableClass):
             # --- operations are blocking.
             for parity in [0,1]:
                 if (self.ixproc+self.iyproc+self.izproc)%2 == parity:
-                    if pel in senddictsleft:  comm_world.send(senddictsleft[pel],pel)
-                    if per in senddictsright: comm_world.send(senddictsright[per],per)
+                    if pel in senddictsleft:  mpisend(senddictsleft[pel], dest = pel)
+                    if per in senddictsright: mpisend(senddictsright[per], dest = per)
                 else:
-                    if per in senddictsright: dictfromright = comm_world.recv(per)[0]
+                    if per in senddictsright: dictfromright = mpirecv(source = per)[0]
                     else:                     dictfromright = {}
-                    if pel in senddictsleft:  dictfromleft = comm_world.recv(pel)[0]
+                    if pel in senddictsleft:  dictfromleft = mpirecv(source = pel)[0]
                     else:                     dictfromleft = {}
 
             # --- Create a list of the blocks that receive data.
