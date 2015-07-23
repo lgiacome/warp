@@ -41,27 +41,24 @@ except:
 lparallel = (npes > 1)
 
 if lmpi4pyactive:
-    import sys
-    globalvar = sys._getframe().f_globals
-    #-------------------------------------------------------------------------------
-    # synchronizeQueuedOutput 
-    # (mpi4pywork around... not synchronized, but only PE=0 prints to the console)
-    #-------------------------------------------------------------------------------
-    def synchronizeQueuedOutput_mpi4py(out = True, error = False):
-        if out == False:
-            exec("sys.stdout = sys.__stdout__", globalvar)
-        else:
+    def synchronizeQueuedOutput_mpi4py( out=True, error=False):
+        """mpi4py work around
+        When True, only PE0 writes output.
+        When False, all PEs write output, but output not synchronized.
+        """
+        import sys
+        import os
+        if out:
             if me > 0:
-                exec("""__mpi_stdoutfile__ = open("/dev/null", "w"); sys.stdout = __mpi_stdoutfile__""",
-                    globalvar)
+                sys.stdout = open(os.devnull, 'w')
+        else :
+            sys.stdout = sys.__stdout__
 
-        if error == False:
-            exec("sys.stderr = sys.__stderr__", globalvar)
-        else:
+        if error:
             if me > 0:
-                exec("""__mpi_stderrfile__ = open("/dev/null", "w"); sys.stderr = __mpi_stderrfile__""",
-                    globalvar)
-        return
+                sys.stderr = open(os.devnull, 'w')
+        else:
+            sys.stderr = sys.__stderr__
 
 def setdefaultcomm_world(comm):
     global comm_world,me,npes
@@ -116,7 +113,7 @@ def mpisend(data = None, dest = 0, tag = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.send(data, dest, tag)
-    elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
+    elif lmpi4pyactive and isinstance(data, ndarray) :
         data_shape, data_dtype = shape(data), data.dtype
         if data_dtype is not dtype('object'):
             comm.send((data_shape, data_dtype), dest = dest, tag = (tag + 99))
@@ -133,7 +130,7 @@ def mpiisend(data = None, dest = 0, tag = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.isend(data, dest, tag)
-    elif lmpi4pyactive and (type(data).__module__ == 'numpy'):
+    elif lmpi4pyactive and isinstance(data, ndarray):
         data_shape, data_dtype = shape(data), data.dtype
         if data_dtype is not dtype('object'):
             comm.isend((data_shape, data_dtype), dest = dest, tag = (tag + 99))
@@ -150,7 +147,7 @@ def mpibcast(data = None, root = 0, comm = None):
     if lpyMPIactive:
         result = comm.bcast(data, root)
     if lmpi4pyactive:
-        if comm.Get_rank() == root and (type(data).__module__ == 'numpy'):
+        if comm.Get_rank() == root and isinstance(data, ndarray):
             if data.dtype is not dtype('object'):
                 is_numpy = True
                 data_shape, data_dtype = shape(data), data.dtype
@@ -196,7 +193,7 @@ def mpiscatter(data = None, root = 0, comm = None):
     if lpyMPIactive:
         result = comm.scatter(data, root)
     if lmpi4pyactive:
-        if comm.Get_rank() == root and (type(data).__module__ == 'numpy'):
+        if comm.Get_rank() == root and isinstance(data, ndarray):
             if data.dtype is not dtype('object'):
                 is_numpy = True
                 data_shape, data_dtype = shape(data), data.dtype
