@@ -113,34 +113,26 @@ def mpisend(data = None, dest = 0, tag = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.send(data, dest, tag)
-    elif lmpi4pyactive and isinstance(data, ndarray) :
-        data_shape, data_dtype = shape(data), data.dtype
-        if data_dtype is not dtype('object'):
-            comm.send((data_shape, data_dtype), dest = dest, tag = (tag + 99))
+    elif lmpi4pyactive:
+        if isinstance(data, ndarray) and data.dtype is not dtype('object'):
+            comm.send((shape(data), data.dtype), dest = dest, tag = (tag + 99))
             result = comm.Send(data, dest = dest, tag = tag)
         else:
-            comm.send((None, None), dest = dest, tag = (tag + 99))
+            comm.send((None, None), dest = dest, tag = (tag + 99)) 
             result = comm.send(data, dest = dest, tag = tag)
-    else:
-        comm.send((None, None), dest = dest, tag = (tag + 99))
-        result = comm.send(data, dest = dest, tag = tag)
     return result
 
 def mpiisend(data = None, dest = 0, tag = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.isend(data, dest, tag)
-    elif lmpi4pyactive and isinstance(data, ndarray):
-        data_shape, data_dtype = shape(data), data.dtype
-        if data_dtype is not dtype('object'):
-            comm.isend((data_shape, data_dtype), dest = dest, tag = (tag + 99))
-            result = comm.Isend(data, dest = dest, tag = tag)
+    elif lmpi4pyactive:
+        if isinstance(data, ndarray) and data.dtype is not dtype('object'):
+            comm.isend((shape(data), data.dtype), dest = dest, tag = (tag + 99))
+            result = comm.ISend(data, dest = dest, tag = tag)
         else:
             comm.isend((None, None), dest = dest, tag = (tag + 99))
-            result = comm.send(data, dest = dest, tag = tag)
-    else:
-        comm.isend((None, None), dest = dest, tag = (tag + 99))
-        result = comm.isend(data, dest = dest, tag = tag)
+            result = comm.isend(data, dest = dest, tag = tag)
 
 def mpibcast(data = None, root = 0, comm = None):
     if comm is None: comm = comm_world
