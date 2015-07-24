@@ -309,14 +309,17 @@ class FieldSolver3dBase(object):
     def makerhoperiodic_parallel(self):
         tag = 70
         if me == self.nzprocs-1:
-            request = comm_world.isend(self.rho[:,:,nzlocal],0,tag)
-            self.rho[:,:,nzlocal],status = comm_world.recv(0,tag)
+            request = mpiisend(data = self.rho[:,:,nzlocal], dest = 0, tag = tag)
+            self.rho[:,:,nzlocal] = mpirecv(source = 0, tag = tag)
         elif me == 0:
-            rhotemp,status = comm_world.recv(self.nzprocs-1,tag)
+            rhotemp = mpirecv(source = self.nzprocs-1, tag = tag)
             self.rho[:,:,0] = self.rho[:,:,0] + rhotemp
-            request = comm_world.isend(self.rho[:,:,0],self.nzprocs-1,tag)
+            request = mpiisend(data = self.rho[:,:,0], dest = self.nzprocs-1, tag = tag)
         if me == 0 or me == self.nzprocs-1:
-            status = request.wait()
+            try:
+                status = request.wait()
+            except:
+                status = request.Wait()
 
     def fetche(self):
         self.fetchefrompositions(w3d.jsfsapi,w3d.xfsapi,w3d.yfsapi,w3d.zfsapi,
