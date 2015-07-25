@@ -619,14 +619,14 @@ class MeshRefinement(VisualizableClass):
             if self.ixproc > 0 and neighborpes[0] >= 0:
                 mpisend(dummyblocklists, dest = neighborpes[0])
             if self.ixproc < self.nxprocs-1 and neighborpes[1] >= 0:
-                blocklistsxp = mpirecv(source = neighborpes[1])[0]
+                blocklistsxp = mpirecv(source = neighborpes[1])
             else:
                 blocklistsxp = NMAXLEVELS*[[]]
 
             if self.ixproc < self.nxprocs-1 and neighborpes[1] >= 0:
                 mpisend(dummyblocklists, dest = neighborpes[1])
             if self.ixproc > 0 and neighborpes[0] >= 0:
-                blocklistsxm = mpirecv(source = neighborpes[0])[0]
+                blocklistsxm = mpirecv(source = neighborpes[0])
             else:
                 blocklistsxm = NMAXLEVELS*[[]]
 
@@ -634,14 +634,14 @@ class MeshRefinement(VisualizableClass):
             if self.iyproc > 0 and neighborpes[2] >= 0:
                 mpisend(dummyblocklists, dest = neighborpes[2])
             if self.iyproc < self.nyprocs-1 and neighborpes[3] >= 0:
-                blocklistsyp = mpirecv(source = neighborpes[3])[0]
+                blocklistsyp = mpirecv(source = neighborpes[3])
             else:
                 blocklistsyp = NMAXLEVELS*[[]]
 
             if self.iyproc < self.nyprocs-1 and neighborpes[3] >= 0:
                 mpisend(dummyblocklists, dest = neighborpes[3])
             if self.iyproc > 0 and neighborpes[2] >= 0:
-                blocklistsym = mpirecv(source = neighborpes[2])[0]
+                blocklistsym = mpirecv(source = neighborpes[2])
             else:
                 blocklistsym = NMAXLEVELS*[[]]
 
@@ -649,14 +649,14 @@ class MeshRefinement(VisualizableClass):
             if self.izproc > 0 and neighborpes[4] >= 0:
                 mpisend(dummyblocklists, dest = neighborpes[4])
             if self.izproc < self.nzprocs-1 and neighborpes[5] >= 0:
-                blocklistszp = mpirecv(source = neighborpes[5])[0]
+                blocklistszp = mpirecv(source = neighborpes[5])
             else:
                 blocklistszp = NMAXLEVELS*[[]]
 
             if self.izproc < self.nzprocs-1 and neighborpes[5] >= 0:
                 mpisend(dummyblocklists, dest = neighborpes[5])
             if self.izproc > 0 and neighborpes[4] >= 0:
-                blocklistszm = mpirecv(source = neighborpes[4])[0]
+                blocklistszm = mpirecv(source = neighborpes[4])
             else:
                 blocklistszm = NMAXLEVELS*[[]]
 
@@ -1013,9 +1013,9 @@ class MeshRefinement(VisualizableClass):
                     if pel in senddictsleft:  mpisend(senddictsleft[pel], dest = pel)
                     if per in senddictsright: mpisend(senddictsright[per], dest = per)
                 else:
-                    if per in senddictsright: dictfromright = mpirecv(source = per)[0]
+                    if per in senddictsright: dictfromright = mpirecv(source = per)
                     else:                     dictfromright = {}
-                    if pel in senddictsleft:  dictfromleft = mpirecv(source = pel)[0]
+                    if pel in senddictsleft:  dictfromleft = mpirecv(source = pel)
                     else:                     dictfromleft = {}
 
             # --- Create a list of the blocks that receive data.
