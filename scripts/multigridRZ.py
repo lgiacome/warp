@@ -328,7 +328,7 @@ class MultiGrid2D(MultiGrid3D):
         getgrid2d(n,r,z,potential,nxlocal,nzlocal,self.potential[:,0,:],
                   xmminlocal,xmmaxlocal,zmminlocal,zmmaxlocal)
 
-    def dosolve(self,iwhich=0,pgroups=None*args):
+    def dosolve(self,iwhich=0,pgroups=None,*args):
         self.dosolvemultigrid(iwhich,pgroups,*args)
         #self.dosolvesuperlu(iwhich,*args)
 
