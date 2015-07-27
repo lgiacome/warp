@@ -1569,7 +1569,7 @@ class SubcycledPoissonSolver(FieldSolver):
     def dosolveonpotential(self,iwhich,isourcepndtscopies,indts,iselfb,pgroups=None):
         "points source and potential appropriately and call the solving routine"
         self.setarraysforfieldsolve(isourcepndtscopies,indts,iselfb)
-        self.dosolve(iwhich,isourcepndtscopies,indts,iselfb,pgroups)
+        self.dosolve(iwhich,pgroups,isourcepndtscopies,indts,iselfb)
         self.getpotentialpforparticles(isourcepndtscopies,indts,iselfb)
 
     def solve(self,iwhich=0,pgroups=None):

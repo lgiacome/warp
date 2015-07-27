@@ -328,18 +328,18 @@ class MultiGrid2D(MultiGrid3D):
         getgrid2d(n,r,z,potential,nxlocal,nzlocal,self.potential[:,0,:],
                   xmminlocal,xmmaxlocal,zmminlocal,zmmaxlocal)
 
-    def dosolve(self,iwhich=0,*args):
-        self.dosolvemultigrid(iwhich,*args)
+    def dosolve(self,iwhich=0,pgroups=None*args):
+        self.dosolvemultigrid(iwhich,pgroups,*args)
         #self.dosolvesuperlu(iwhich,*args)
 
-    def dosolvemultigrid(self,iwhich=0,*args):
+    def dosolvemultigrid(self,iwhich=0,pgroups=None,*args):
         if not self.l_internal_dosolve: return
         # --- set for longitudinal relativistic contraction
         iselfb = args[2]
         beta = top.pgroup.fselfb[iselfb]/clight
         zfact = 1./sqrt((1.-beta)*(1.+beta))
 
-        if len(args) > 3:
+        if pgroups is not None:
           pgroup = args[3]
           n = pgroup.getn()
           gaminv = pgroup.getgaminv()

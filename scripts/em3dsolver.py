@@ -5723,7 +5723,10 @@ class EM3D(SubcycledPoissonSolver):
            yl+ylguard:yu-yrguard,
            zl+zlguard:zu-zrguard]=self.blocknumber
 
-    def initstaticfields(self,rel_beam=0,pgroups=None):
+    def initstaticfields(self,rel_pgroups=None):
+
+        # rel_pgroups: particle group input needed for relativistic beam initialization
+        # if particle group is passed, use relativistic modification
 
             # --- This is needed because of the order in which things are imported in warp.py.
             # --- There, MagnetostaticMG is imported after em3dsolver.
@@ -5750,10 +5753,10 @@ class EM3D(SubcycledPoissonSolver):
 
         esolver.conductordatalist = self.conductordatalist
         # check if used for calculation of relativistic beam
-        if rel_beam == 1:
+        if rel_pgroups is not None:
           # pass particle group to density deposition and poisson solver
-          esolver.loadrho(pgroups=[pgroups.pgroup])
-          esolver.solve(iwhich=0,pgroups=pgroups)
+          esolver.loadrho(pgroups=[rel_pgroups.pgroup])
+          esolver.solve(iwhich=0,pgroups=rel_pgroups)
         else:
           esolver.loadrho()
           esolver.solve()
@@ -5795,7 +5798,7 @@ class EM3D(SubcycledPoissonSolver):
         # --- Calculate the fields on the Yee mesh by direct finite differences
         # --- of the potential (which is on a node centered grid)
 
-        if rel_beam == 0:
+        if rel_pgroups==None:
           zfact = 1.
           Ax = bsolver.potential[0,...]
           Ay = bsolver.potential[1,...]
@@ -5805,7 +5808,7 @@ class EM3D(SubcycledPoissonSolver):
         # get Lorentz factor of used particle group
         # then use A calculated from phi according to J.-L. Vay, Phys. Plasmas 15, 056701 (2008)
         else:
-          gaminv = pgroups.getgaminv()
+          gaminv = rel_pgroups.getgaminv()
           zfact = numpy.mean(1./gaminv)
           beta = sqrt(1.-1./zfact/zfact)
           Ax = zeros_like(esolver.phi)
