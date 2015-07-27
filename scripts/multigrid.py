@@ -850,6 +850,13 @@ class MultiGrid3D(SubcycledPoissonSolver):
         beta = top.pgroup.fselfb[iselfb]/clight
         zfact = 1./sqrt((1.-beta)*(1.+beta))
 
+        if len(args) > 3:
+          pgroup = args[3]
+          n = pgroup.getn()
+          gaminv = pgroup.getgaminv()
+          zfact = numpy.mean(1./gaminv)
+          beta = sqrt(1.-1./zfact/zfact)
+
         # --- This is only done for convenience.
         self._phi = self.potential
         self._rho = self.source
