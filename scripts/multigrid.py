@@ -851,9 +851,8 @@ class MultiGrid3D(SubcycledPoissonSolver):
         zfact = 1./sqrt((1.-beta)*(1.+beta))
 
         if pgroups is not None:
-          pgroup = args[3]
-          n = pgroup.getn()
-          gaminv = pgroup.getgaminv()
+          n = pgroups.getn()
+          gaminv = pgroups.getgaminv()
           zfact = numpy.mean(1./gaminv)
           beta = sqrt(1.-1./zfact/zfact)
 
