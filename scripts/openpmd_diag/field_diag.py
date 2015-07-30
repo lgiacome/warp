@@ -4,7 +4,6 @@ This file defines the class FieldDiagnostic
 import os
 import h5py
 import numpy as np
-from scipy import constants
 from generic_diag import OpenPMDDiagnostic
 from parallel import gatherarray
 
@@ -74,7 +73,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         self.em = em
         self.fieldtypes = fieldtypes
 
-    def setup_openpmd_meshespath( self, dset ) :
+    def setup_openpmd_meshesgroup( self, dset ) :
         """
         Set the attributes that are specific to the mesh path
         
@@ -110,14 +109,18 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         ---------
         dset : an h5py.Dataset or h5py.Group object
         """
+        # Generic record attributes
+        self.setup_openpmd_record( dset )
+        
         # Geometry parameters
         if (self.em.l_2dxz==True) and (self.em.l_2drz==False) :
-            self.geometry = "cartesian"
-            self.gridSpacing = np.array([ self.em.dx, self.em.dz ])
+            dset.attrs['geometry'] = "cartesian"
+            dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dz ])
         elif (self.em.l_2drz==True) :
-            self.geometry = "thetaMode"
-            self.geometryParameters = "m=%d;imag=+" %(self.em.circ_m + 1)
-            self.gridSpacing = np.array([ self.em.dx, self.em.dz ])
+            dset.attrs['geometry']  = "thetaMode"
+            dset.attrs['geometryParameters'] = \
+              "m=%d;imag=+" %(self.em.circ_m + 1)
+            dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dz ])
         dset.attrs["gridUnitSI"] = 1.
         dset.attrs["gridGlobalOffset"] = \
           np.array([0., self.top.zgrid + self.w3d.zmmin])
@@ -187,12 +190,12 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             this_rank_writes = True
         else:
             f = None
-            this_rank_writes = True
+            this_rank_writes = False
 
         # Setup the fields group
         if this_rank_writes :
             f.require_group("/fields")
-            self.setup_openpmd_meshespath(f["/fields"])
+            self.setup_openpmd_meshesgroup(f["/fields"])
 
         # Determine the components to be written (Cartesian or cylindrical)
         if (self.em.l_2drz == True) :

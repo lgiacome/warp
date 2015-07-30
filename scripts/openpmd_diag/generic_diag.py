@@ -127,7 +127,8 @@ class OpenPMDDiagnostic(object) :
         # TimeSeries attributes
         f.attrs["timeStepEncoding"] = "fileBased"
         f.attrs["timeStepFormat"] = "data%T.h5"
-                
+        f.attrs["centeredTime"] = self.top.time
+        
     def setup_openpmd_record( self, dset ) :
         """
         Sets the attributes of a record, that comply with OpenPMD
