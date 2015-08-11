@@ -386,16 +386,16 @@ class Assembly(VisualizableClass):
         zcent += zshift
         z = array(z) + zcent
         r = array(r)
-        if color is not None:
-            plg(xcent+r,z,color=color,**kw)
-            if fullplane:
-                plg(xcent-array(r),z,color=color,**kw)
         if filled is not None:
             if filled == 'condid': filled = self.condid
             c = array([filled]).astype(ubyte)
             plfp(c,xcent+r,z,[len(r)],**kw)
             if fullplane:
                 plfp(c,xcent-array(r),z,[len(r)],**kw)
+        if color is not None:
+            plg(xcent+r,z,color=color,**kw)
+            if fullplane:
+                plg(xcent-array(r),z,color=color,**kw)
 
     def get_energy_histogram(self,js=0,n=1000):
         """
