@@ -1741,6 +1741,7 @@ dzmi             real [1/m] /0./ # Moments grid cell size inverse
 numzmmnt         integer /NUMZMMNT/ # Number of moments calculated
 zmmntdtextmax    real /LARGEPOS/ # Cutoff of time step for extrapolation of
                                  # particles, in units of top.dt.
+l_extrapolated_moments logical /.true./ # When true, particles are extrapolated to the moment z locations
 l_momentum_moments logical /.false./ # When true, the massless momentum,
                                      # gamma*v, is used when calculating the
                                      # moments instead of velocity. Defaults
