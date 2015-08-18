@@ -127,7 +127,9 @@ class OpenPMDDiagnostic(object) :
         # TimeSeries attributes
         f.attrs["timeStepEncoding"] = "fileBased"
         f.attrs["timeStepFormat"] = "data%T.h5"
-        f.attrs["centeredTime"] = self.top.time
+        f.attrs["time"] = self.top.time
+        f.attrs["dt"] = self.top.dt
+        f.attrs["timeUnitSI"] = 1.
         
     def setup_openpmd_record( self, dset ) :
         """
@@ -138,8 +140,10 @@ class OpenPMDDiagnostic(object) :
         dset : an h5py.Dataset or h5py.Group object
         """
         dset.attrs["unitSI"] = 1.
-        dset.attrs["time"] = self.top.time
-        dset.attrs["timeUnitSI"] = 1.
+        # Here for simplification the timeOffset is set to 0
+        # but in fact, for a staggered code, this should
+        # depend on the actual quantity that is used.
+        dset.attrs["timeOffset"] = 0.
 
 
 
