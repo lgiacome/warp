@@ -146,9 +146,10 @@ class OpenPMDDiagnostic(object) :
         quantity : string
            The name of the record considered
         """
-        dset.attrs["timeOffset"] = 0.
         dset.attrs["unitDimension"] = unit_dimension_dict[quantity]
-
+        # timeOffset is set to zero (approximation)
+        dset.attrs["timeOffset"] = 0.        
+        
     def setup_openpmd_component( self, dset ) :
         """
         Sets the attributes of a component, that comply with OpenPMD

@@ -83,29 +83,40 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         
         Parameter
         ---------
-        dset : an h5py.Group object
+        grp : an h5py.Group object
             Contains all the species
     
         species : a Warp species.Species object
         """
-        dset.attrs["particleShape"] = float( self.top.depos_order[0][0] )
-        dset.attrs["currentDeposition"] = "Esirkepov"
-        dset.attrs["particleSmoothing"] = "none"
+        # Generic attributes
+        grp.attrs["particleShape"] = float( self.top.depos_order[0][0] )
+        grp.attrs["currentDeposition"] = "Esirkepov"
+        grp.attrs["particleSmoothing"] = "none"
         # Particle pusher
         if self.top.pgroup.lebcancel_pusher==True :
-            dset.attrs["particlePush"] = "Vay"
+            grp.attrs["particlePush"] = "Vay"
         else :
-            dset.attrs["particlePush"] = "Boris"
+            grp.attrs["particlePush"] = "Boris"
         # Particle shape
         if np.all( self.top.efetch==1 ) :
-            dset.attrs["particleInterpolation"] = "momentumConserving"
+            grp.attrs["particleInterpolation"] = "momentumConserving"
         elif np.all( self.top.efetch==4 ) :
-            dset.attrs["particleInterpolation"] = "energyConserving"
+            grp.attrs["particleInterpolation"] = "energyConserving"
         
-        # Particle attributes
-        dset.attrs["charge"] = species.charge
-        dset.attrs["mass"] = species.mass
-
+        # Setup constant datasets
+        for quantity in ["charge", "mass", "positionOffset"] :
+            grp.create_group(quantity)
+            self.setup_openpmd_particle_record( grp[quantity], quantity )
+        for quantity in ["charge", "mass", "positionOffset/x",
+                            "positionOffset/y", "positionOffset/z"] :
+            grp.require_group(quantity)
+            self.setup_openpmd_particle_component( grp[quantity], quantity )
+        # Set the corresponding values
+        grp["charge"].attrs["value"] = species.charge
+        grp["mass"].attrs["value"] = species.mass
+        grp["positionOffset/x"].attrs["value"] = 0.
+        grp["positionOffset/y"].attrs["value"] = 0.
+        grp["positionOffset/z"].attrs["value"] = 0.
 
     def write_hdf5( self, iteration ) :
         """
@@ -141,9 +152,10 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         # particle quantities that should be written
         for species_name in self.species_dict :
             
-            if self.species_dict[species_name] is None :
-                continue
             species = self.species_dict[species_name]
+            if species is None :
+                # Immediately go to the next species_name
+                continue
 
             # Setup the species group
             if this_rank_writes :
@@ -177,7 +189,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                                         quantity, n_rank, N, select_array )
                     if this_rank_writes :
                         self.setup_openpmd_record( f[path] )
-
+                        
                 elif particle_var == "momentum" :
                     for coord in ["x", "y", "z"] :
                         path = "/particles/%s/%s" %(species_name, particle_var)

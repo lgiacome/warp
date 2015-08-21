@@ -6,15 +6,8 @@ import h5py
 import numpy as np
 from generic_diag import OpenPMDDiagnostic
 from parallel import gatherarray
-
-# Correspondance between the names in OpenPMD and the names in Warp
-circ_dict_quantity = { 'rho':'Rho', 'Er':'Exp', 'Et':'Eyp', 'Ez':'Ezp', 
-                        'Br':'Bxp', 'Bt':'Byp', 'Bz':'Bzp' }
-cart_dict_quantity = { 'rho':'Rho', 'Ex':'Exp', 'Ey':'Eyp', 'Ez':'Ezp', 
-                        'Bx':'Bxp', 'By':'Byp', 'Bz':'Bzp' }
-circ_dict_Jindex = { 'Jr':0, 'Jt':1, 'Jz':2 }
-cart_dict_Jindex = { 'Jx':0, 'Jy':1, 'Jz':2 }
-    
+from data_dict import circ_dict_quantity, cart_dict_quantity, \
+     circ_dict_Jindex, cart_dict_Jindex
 
 class FieldDiagnostic(OpenPMDDiagnostic) :
     """
@@ -73,7 +66,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         self.em = em
         self.fieldtypes = fieldtypes
 
-    def setup_openpmd_meshesgroup( self, dset ) :
+    def setup_openpmd_meshes_group( self, dset ) :
         """
         Set the attributes that are specific to the mesh path
         
@@ -116,19 +109,24 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         self.setup_openpmd_record( dset, quantity )
         
         # Geometry parameters
+        # - Cartesian
         if (self.em.l_2dxz==True) and (self.em.l_2drz==False) :
             dset.attrs['geometry'] = "cartesian"
             dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dz ])
+            dset.attrs['axisLabels'] = np.array([ 'x', 'z' ])
+        # - thetaMode
         elif (self.em.l_2drz==True) :
             dset.attrs['geometry']  = "thetaMode"
             dset.attrs['geometryParameters'] = \
               "m=%d;imag=+" %(self.em.circ_m + 1)
             dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dz ])
-        dset.attrs["gridUnitSI"] = 1.
-        dset.attrs["gridGlobalOffset"] = \
-          np.array([0., self.top.zgrid + self.w3d.zmmin])
+            dset.attrs['axisLabels'] = np.array([ 'r', 'z' ])
+            
+        # Generic attributes
         dset.attrs["dataOrder"] = "C"
-        # Field Smoothing
+        dset.attrs["gridUnitSI"] = 1.
+        dset.attrs["gridGlobalOffset"] = np.array([
+            self.w3d.xmmin, self.top.zgrid + self.w3d.zmmin])
         dset.attrs["fieldSmoothing"] = "none"
 
     def setup_openpmd_mesh_component( self, dset, quantity ) :
@@ -153,7 +151,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             positions[1] = 0. 
         elif quantity in ["Ez", "Jz", "Br", "Bx", "Bt", "By" ] :
             # These fields are staggered along the longitudinal direction
-            positions[1] = 0.5
+            positions[1] = 0.5 
         else :
             raise ValueError("Unknown field quantity: %s" %quantity)
         if quantity in ["rho", "Et", "Ey", "Ez", "Jt", "Jy", "Jz", "Br", "Bx"] :
@@ -201,7 +199,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         # Setup the fields group
         if this_rank_writes :
             f.require_group("/fields")
-            self.setup_openpmd_meshesgroup(f["/fields"])
+            self.setup_openpmd_meshes_group(f["/fields"])
 
         # Determine the components to be written (Cartesian or cylindrical)
         if (self.em.l_2drz == True) :

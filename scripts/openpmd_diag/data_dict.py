@@ -18,3 +18,11 @@ unit_dimension_dict = {
     "position" : np.array([1., 0., 0., 0., 0., 0., 0.]),
     "positionOffset" : np.array([1., 0., 0., 0., 0., 0., 0.]),
     "momentum" : np.array([1., 1.,-1., 0., 0., 0., 0.]) }
+
+# Correspondance between the names in OpenPMD and the names in Warp
+circ_dict_quantity = { 'rho':'Rho', 'Er':'Exp', 'Et':'Eyp', 'Ez':'Ezp', 
+                        'Br':'Bxp', 'Bt':'Byp', 'Bz':'Bzp' }
+cart_dict_quantity = { 'rho':'Rho', 'Ex':'Exp', 'Ey':'Eyp', 'Ez':'Ezp', 
+                        'Bx':'Bxp', 'By':'Byp', 'Bz':'Bzp' }
+circ_dict_Jindex = { 'Jr':0, 'Jt':1, 'Jz':2 }
+cart_dict_Jindex = { 'Jx':0, 'Jy':1, 'Jz':2 }
