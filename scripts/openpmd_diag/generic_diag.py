@@ -6,6 +6,10 @@ and FieldDiagnostic inherit
 """
 import os
 import datetime
+import numpy as np
+
+# Dictionaries of correspondance for openPMD
+from data_dict import unit_dimension_dict
 
 class OpenPMDDiagnostic(object) :
     """
@@ -116,38 +120,43 @@ class OpenPMDDiagnostic(object) :
         # Set the attributes of the HDF5 file
     
         # General attributes
-        f.attrs["software"] = "warp circ"
+        f.attrs["openPMD"] = "1.0.0"
+        f.attrs["openPMDextension"] = np.uint32(1)
+        f.attrs["software"] = "warp"
         today = datetime.datetime.now()
         f.attrs["date"] = today.strftime("%Y-%m-%d %H:%M:%S")
-        f.attrs["openPMD"] = "1.0.0"    # OpenPMD version
-        f.attrs["openPMDextension"] = 1 # The PIC extension
         f.attrs["basePath"] = "/"
         f.attrs["meshesPath"] = "fields/"
         f.attrs["particlesPath"] = "particles/"
         # TimeSeries attributes
-        f.attrs["timeStepEncoding"] = "fileBased"
-        f.attrs["timeStepFormat"] = "data%T.h5"
+        f.attrs["iterationEncoding"] = "fileBased"
+        f.attrs["iterationFormat"] = "data%T.h5"
         f.attrs["time"] = self.top.time
         f.attrs["dt"] = self.top.dt
         f.attrs["timeUnitSI"] = 1.
         
-    def setup_openpmd_record( self, dset ) :
+    def setup_openpmd_record( self, dset, quantity ) :
         """
         Sets the attributes of a record, that comply with OpenPMD
     
         Parameter
         ---------
         dset : an h5py.Dataset or h5py.Group object
+        
+        quantity : string
+           The name of the record considered
+        """
+        dset.attrs["timeOffset"] = 0.
+        dset.attrs["unitDimension"] = unit_dimension_dict[quantity]
+
+    def setup_openpmd_component( self, dset ) :
+        """
+        Sets the attributes of a component, that comply with OpenPMD
+    
+        Parameter
+        ---------
+        dset : an h5py.Dataset or h5py.Group object
         """
         dset.attrs["unitSI"] = 1.
-        # Here for simplification the timeOffset is set to 0
-        # but in fact, for a staggered code, this should
-        # depend on the actual quantity that is used.
-        dset.attrs["timeOffset"] = 0.
-
-
-
-
-    
 
     

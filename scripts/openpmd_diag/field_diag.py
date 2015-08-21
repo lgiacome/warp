@@ -101,16 +101,19 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         # Charge correction
         dset.attrs["chargeCorrection"] = "none"
         
-    def setup_openpmd_meshrecord( self, dset ) :
+    def setup_openpmd_mesh_record( self, dset, quantity ) :
         """
         Sets the attributes that are specific to a mesh record
         
         Parameter
         ---------
         dset : an h5py.Dataset or h5py.Group object
+
+        quantity : string
+           The name of the record (e.g. "rho", "J", "E" or "B")
         """
         # Generic record attributes
-        self.setup_openpmd_record( dset )
+        self.setup_openpmd_record( dset, quantity )
         
         # Geometry parameters
         if (self.em.l_2dxz==True) and (self.em.l_2drz==False) :
@@ -128,9 +131,9 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         # Field Smoothing
         dset.attrs["fieldSmoothing"] = "none"
 
-    def setup_openpmd_scalarrecord( self, dset, quantity ) :
+    def setup_openpmd_mesh_component( self, dset, quantity ) :
         """
-        Set up the attributes of a scalar record
+        Set up the attributes of a mesh component
     
         Parameter
         ---------
@@ -139,6 +142,9 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         quantity : string
             The field that is being written
         """
+        # Generic setup of the component
+        self.setup_openpmd_component( dset )
+        
         # Field positions
         positions = np.array([0., 0.])
         if quantity in ["rho", "Er", "Ex", "Et", "Ey",
@@ -209,7 +215,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             if fieldtype == "rho" :
                 self.write_dataset( f, "/fields/rho", "rho", this_rank_writes )
                 if this_rank_writes :
-                    self.setup_openpmd_meshrecord( f["/fields/rho"] )
+                    self.setup_openpmd_mesh_record( f["/fields/rho"], "rho" )
             # Vector field
             elif fieldtype in ["E", "B", "J"] :
                 for coord in coords :
@@ -217,7 +223,8 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
                     path = "/fields/%s/%s" %(fieldtype, coord)
                     self.write_dataset( f, path, quantity, this_rank_writes )
                 if this_rank_writes :
-                    self.setup_openpmd_meshrecord( f["/fields/%s" %fieldtype] )
+                    self.setup_openpmd_mesh_record(
+                        f["/fields/%s" %fieldtype], fieldtype )
             else :
                 raise ValueError("Invalid string in fieldtypes: %s" %fieldtype)
         
@@ -265,7 +272,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             # and then the imaginary part of the mode 1
             datashape = (3, self.em.nx+1, self.em.nz+1)
             dset = f.require_dataset( path, datashape, dtype='f' )
-            self.setup_openpmd_scalarrecord( dset, quantity )
+            self.setup_openpmd_mesh_component( dset, quantity )
             
         # Fill the dataset with these quantities
         # Gathering mode
@@ -304,7 +311,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             # and then the imaginary part of the mode 1
             datashape = (self.em.nx+1, self.em.nz+1)
             dset = f.require_dataset( path, datashape, dtype='f' )
-            self.setup_openpmd_scalarrecord( dset, quantity )
+            self.setup_openpmd_mesh_component( dset, quantity )
             
         # Fill the dataset with these quantities
         # Gathering mode
