@@ -91,7 +91,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         """
         # Generic attributes
         grp.attrs["particleShape"] = float( self.top.depos_order[0][0] )
-        grp.attrs["currentDeposition"] = "Esirkepov"
+        grp.attrs["currentDeposition"] = np.string_("Esirkepov")
         grp.attrs["particleSmoothing"] = "none"
         # Particle pusher
         if self.top.pgroup.lebcancel_pusher==True :
@@ -112,6 +112,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                             "positionOffset/y", "positionOffset/z"] :
             grp.require_group(quantity)
             self.setup_openpmd_species_component( grp[quantity], quantity )
+            grp[quantity].attrs["shape"] = np.array([1], dtype=np.uint64)
+            # Required. Since it is not really used, the shape is 1 here.
         # Set the corresponding values
         grp["charge"].attrs["value"] = species.charge
         grp["mass"].attrs["value"] = species.mass
@@ -192,9 +194,12 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
             # Setup the species group
             if this_rank_writes :
-                species_path = "/particles/%s" %species_name
+                species_path = "/data/%d/particles/%s" %(iteration,
+                                                         species_name)
+                # Create and setup the h5py.Group species_grp
                 f.require_group( species_path )
-                self.setup_openpmd_species_group( f[species_path], species )
+                species_grp = f[species_path]
+                self.setup_openpmd_species_group( species_grp, species )
 
             # Select the particles that will be written
             select_array = self.apply_selection( species )
@@ -211,24 +216,22 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 N = n
 
             # Write the datasets for each particle datatype
-            self.write_particles( f, species_name, species,
+            self.write_particles( species_grp, species,
                          n_rank, N, select_array, this_rank_writes )
         
         # Close the file
         if self.lparallel_output == True or self.rank == 0 :      
             f.close()
 
-    def write_particles( self, f, species_name, species,
+    def write_particles( self, species_grp, species,
                          n_rank, N, select_array, this_rank_writes ) :
         """
         Write all the particle data sets for one given species
-
-        f : an h5py.File object
     
-        species_name : string
-            The name of the species
+        species_grp : an h5py.Group
+            The group where to write the species considered
 
-        species : a Species object
+        species : a warp Species object
         	The species object to get the particle data from 
 
         n_rank: an array with dtype = int of size = n_procs
@@ -249,35 +252,35 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 
             if particle_var == "position" :
                 for coord in ["x", "y", "z"] :
-                    path = "/particles/%s/%s" %(species_name, particle_var)
                     quantity = coord
-                    quantity_path = "%s/%s" %(path, coord)
-                    self.write_dataset( f, quantity_path, species,
+                    quantity_path = "%s/%s" %(particle_var, coord)
+                    self.write_dataset( species_grp, species, particle_var,
                         quantity, n_rank, N, select_array )
                 if this_rank_writes :
-                    self.setup_openpmd_species_record( f[path], particle_var )
+                    self.setup_openpmd_species_record( species_grp,
+                                                       particle_var )
                         
             elif particle_var == "momentum" :
                 for coord in ["x", "y", "z"] :
-                    path = "/particles/%s/%s" %(species_name, particle_var)
                     quantity = "u%s" %(coord)
-                    quantity_path = "%s/%s" %(path, coord)
-                    self.write_dataset( f, quantity_path, species,
+                    quantity_path = "%s/%s" %(particle_var, coord)
+                    self.write_dataset( species_grp, species, particle_var,
                                         quantity, n_rank, N, select_array )
                 if this_rank_writes :
-                    self.setup_openpmd_species_record( f[path], particle_var )
+                    self.setup_openpmd_species_record( species_grp,
+                                                       particle_var )
                         
             elif particle_var == "weighting" :
                 quantity = "w"
-                path = "/particles/%s/%s" %(species_name, particle_var)
-                self.write_dataset( f, path,  species, quantity,
-                                            n_rank, N, select_array )
+                self.write_dataset( species_grp, species, particle_var,
+                                    quantity, n_rank, N, select_array )
                 if this_rank_writes :
-                    self.setup_openpmd_species_record( f[path], particle_var )
+                    self.setup_openpmd_species_record( species_grp,
+                                                       particle_var )
                 
             else :
-                raise ValueError("Invalid string in %s of species %s" 
-                    				 %(particle_var, species_name))
+                raise ValueError("Invalid string in %s of species" 
+                    				 %(particle_var))
 
     def apply_selection( self, species ) :
         """
@@ -317,20 +320,21 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         return( select_array )
 
         
-    def write_dataset( self, f, path, species, quantity,
+    def write_dataset( self, species_grp, species, path, quantity,
                        n_rank, N, select_array ) :
         """
         Write a given dataset
     
         Parameters
         ----------
-        f : an h5py.File object
-    
+        species_grp : an h5py.Group
+            The group where to write the species considered
+        
+        species : a warp Species object
+        	The species object to get the particle data from
+
         path : string
             The path where to write the dataset, inside the file f
-
-        species : a Species object
-        	The species object to get the particle data from 
 
         quantity : string
             Describes which quantity is written
@@ -350,7 +354,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         # Create the dataset and setup its attributes
         if self.lparallel_output == True or self.rank == 0 :
             datashape = (N, )
-            dset = f.require_dataset( path, datashape, dtype='f')
+            dset = species_grp.require_dataset( path, datashape, dtype='f')
             self.setup_openpmd_species_component( dset, quantity )
         else :
             dset = None

@@ -6,6 +6,7 @@ and FieldDiagnostic inherit
 """
 import os
 import datetime
+from dateutil.tz import tzlocal
 import numpy as np
 
 # Dictionaries of correspondance for openPMD
@@ -120,17 +121,18 @@ class OpenPMDDiagnostic(object) :
         # Set the attributes of the HDF5 file
     
         # General attributes
-        f.attrs["openPMD"] = "1.0.0"
+        f.attrs["openPMD"] = np.string_("1.0.0")
         f.attrs["openPMDextension"] = np.uint32(1)
-        f.attrs["software"] = "warp"
+        f.attrs["software"] = np.string_("warp")
         today = datetime.datetime.now()
-        f.attrs["date"] = today.strftime("%Y-%m-%d %H:%M:%S")
-        f.attrs["basePath"] = "/"
-        f.attrs["meshesPath"] = "fields/"
-        f.attrs["particlesPath"] = "particles/"
+        f.attrs["date"] = np.string_(
+            datetime.datetime.now(tzlocal()).strftime('%Y-%m-%d %H:%M:%S %z'))
+        f.attrs["basePath"] = np.string_("/data/%d/" %self.top.it)
+        f.attrs["meshesPath"] = np.string_("fields/")
+        f.attrs["particlesPath"] = np.string_("particles/")
         # TimeSeries attributes
-        f.attrs["iterationEncoding"] = "fileBased"
-        f.attrs["iterationFormat"] = "data%T.h5"
+        f.attrs["iterationEncoding"] = np.string_("fileBased")
+        f.attrs["iterationFormat"] =  np.string_("data%T.h5")
         f.attrs["time"] = self.top.time
         f.attrs["dt"] = self.top.dt
         f.attrs["timeUnitSI"] = 1.
