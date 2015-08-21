@@ -6,8 +6,7 @@ import h5py
 import numpy as np
 from generic_diag import OpenPMDDiagnostic
 from parallel import gatherarray
-from data_dict import circ_dict_quantity, cart_dict_quantity, \
-     circ_dict_Jindex, cart_dict_Jindex
+from data_dict import *
 
 class FieldDiagnostic(OpenPMDDiagnostic) :
     """
@@ -75,22 +74,25 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         dset : an h5py.Group object that contains all the mesh quantities
         """
         # Field Solver
-        if self.em.stencil == 0 :
-            dset.attrs["fieldSolver"] = "Yee"
-            dset.attrs["fieldSolverOrder"] = 2
-        elif self.em.stencil in [1,2] :
-            dset.attrs["fieldSolver"] = "CK"
-            dset.attrs["fieldSolverOrder"] = 2
-        elif self.em.stencil == 3 :
-            dset.attrs["fieldSolver"] = "Lehe"
-            dset.attrs["fieldSolverOrder"] = 2
+        dset.attrs["fieldSolver"] = field_solver_dict[ self.em.stencil ]
+        # Field boundary
+        dset.attrs["fieldBoundary"] = np.array([
+            field_boundary_dict[ self.w3d.boundxy ],
+            field_boundary_dict[ self.w3d.boundxy ],
+            field_boundary_dict[ self.w3d.bound0 ],
+            field_boundary_dict[ self.w3d.boundnz ] ])
+        # Particle boundary
+        dset.attrs["particleBoundary"] = np.array([
+            particle_boundary_dict[ self.top.pboundxy ],
+            particle_boundary_dict[ self.top.pboundxy ],
+            particle_boundary_dict[ self.top.pbound0 ],
+            particle_boundary_dict[ self.top.pboundnz ] ])
         # Current Smoothing
         if np.all( self.em.npass_smooth == 0 ) :
             dset.attrs["currentSmoothing"] = "none"
         else :
-            dset.attrs["currentSmoothing"] = "digital"
-            dset.attrs["currentSmoothingParameters"] = \
-                str(self.em.npass_smooth)
+            dset.attrs["currentSmoothing"] = "Binomial"
+            dset.attrs["currentSmoothingParameters"] = str(self.em.npass_smooth)
         # Charge correction
         dset.attrs["chargeCorrection"] = "none"
         
