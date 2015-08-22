@@ -92,17 +92,17 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         # Generic attributes
         grp.attrs["particleShape"] = float( self.top.depos_order[0][0] )
         grp.attrs["currentDeposition"] = np.string_("Esirkepov")
-        grp.attrs["particleSmoothing"] = "none"
+        grp.attrs["particleSmoothing"] = np.string_("none")
         # Particle pusher
         if self.top.pgroup.lebcancel_pusher==True :
-            grp.attrs["particlePush"] = "Vay"
+            grp.attrs["particlePush"] = np.string_("Vay")
         else :
-            grp.attrs["particlePush"] = "Boris"
+            grp.attrs["particlePush"] = np.string_("Boris")
         # Particle shape
         if np.all( self.top.efetch==1 ) :
-            grp.attrs["particleInterpolation"] = "momentumConserving"
+            grp.attrs["particleInterpolation"]= np.string_("momentumConserving")
         elif np.all( self.top.efetch==4 ) :
-            grp.attrs["particleInterpolation"] = "energyConserving"
+            grp.attrs["particleInterpolation"]= np.string_("energyConserving")
         
         # Setup constant datasets
         for quantity in ["charge", "mass", "positionOffset"] :
@@ -128,9 +128,12 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         Parameter
         ---------
         grp : an h5py.Group object or h5py.Dataset
+            The group that correspond to `quantity`
+            (in particular, its path must end with "/<quantity>")
     
         quantity : string
-            The name of the record
+            The name of the record being setup
+            e.g. "position", "momentum"
         """
         # Generic setup
         self.setup_openpmd_record( grp, quantity )
@@ -197,8 +200,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 species_path = "/data/%d/particles/%s" %(iteration,
                                                          species_name)
                 # Create and setup the h5py.Group species_grp
-                f.require_group( species_path )
-                species_grp = f[species_path]
+                species_grp = f.require_group( species_path )
                 self.setup_openpmd_species_group( species_grp, species )
 
             # Select the particles that will be written
@@ -254,29 +256,30 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 for coord in ["x", "y", "z"] :
                     quantity = coord
                     quantity_path = "%s/%s" %(particle_var, coord)
-                    self.write_dataset( species_grp, species, particle_var,
+                    self.write_dataset( species_grp, species, quantity_path,
                         quantity, n_rank, N, select_array )
                 if this_rank_writes :
-                    self.setup_openpmd_species_record( species_grp,
-                                                       particle_var )
+                    self.setup_openpmd_species_record(
+                        species_grp[particle_var], particle_var )
                         
             elif particle_var == "momentum" :
                 for coord in ["x", "y", "z"] :
                     quantity = "u%s" %(coord)
                     quantity_path = "%s/%s" %(particle_var, coord)
-                    self.write_dataset( species_grp, species, particle_var,
+                    self.write_dataset( species_grp, species, quantity_path,
                                         quantity, n_rank, N, select_array )
                 if this_rank_writes :
-                    self.setup_openpmd_species_record( species_grp,
-                                                       particle_var )
+                    self.setup_openpmd_species_record( 
+                        species_grp[particle_var], particle_var )
                         
             elif particle_var == "weighting" :
                 quantity = "w"
-                self.write_dataset( species_grp, species, particle_var,
+                quantity_path = "weighting"
+                self.write_dataset( species_grp, species, quantity_path,
                                     quantity, n_rank, N, select_array )
                 if this_rank_writes :
-                    self.setup_openpmd_species_record( species_grp,
-                                                       particle_var )
+                    self.setup_openpmd_species_record( 
+                        species_grp[particle_var], particle_var )
                 
             else :
                 raise ValueError("Invalid string in %s of species" 
@@ -334,7 +337,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         	The species object to get the particle data from
 
         path : string
-            The path where to write the dataset, inside the file f
+            The relative path where to write the dataset, inside the species_grp
 
         quantity : string
             Describes which quantity is written
@@ -433,11 +436,11 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         elif quantity == "z" :
             quantity_array = species.getz(gather=False)
         elif quantity == "ux" :
-            quantity_array = species.getux(gather=False)/constants.c
+            quantity_array = species.getux(gather=False) * species.mass
         elif quantity == "uy" :
-            quantity_array = species.getuy(gather=False)/constants.c
+            quantity_array = species.getuy(gather=False) * species.mass
         elif quantity == "uz" :
-            quantity_array = species.getuz(gather=False)/constants.c
+            quantity_array = species.getuz(gather=False) * species.mass
         elif quantity == "w" :
             quantity_array = species.getweights(gather=False)
 

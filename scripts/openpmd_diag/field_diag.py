@@ -89,12 +89,12 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             particle_boundary_dict[ self.top.pboundnz ] ])
         # Current Smoothing
         if np.all( self.em.npass_smooth == 0 ) :
-            dset.attrs["currentSmoothing"] = "none"
+            dset.attrs["currentSmoothing"] = np.string_("none")
         else :
-            dset.attrs["currentSmoothing"] = "Binomial"
+            dset.attrs["currentSmoothing"] = np.string_("Binomial")
             dset.attrs["currentSmoothingParameters"] = str(self.em.npass_smooth)
         # Charge correction
-        dset.attrs["chargeCorrection"] = "none"
+        dset.attrs["chargeCorrection"] = np.string_("none")
         
     def setup_openpmd_mesh_record( self, dset, quantity ) :
         """
@@ -113,23 +113,23 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         # Geometry parameters
         # - Cartesian
         if (self.em.l_2dxz==True) and (self.em.l_2drz==False) :
-            dset.attrs['geometry'] = "cartesian"
+            dset.attrs['geometry'] = np.string_("cartesian")
             dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dz ])
             dset.attrs['axisLabels'] = np.array([ 'x', 'z' ])
         # - thetaMode
         elif (self.em.l_2drz==True) :
-            dset.attrs['geometry']  = "thetaMode"
+            dset.attrs['geometry']  = np.string_("thetaMode")
             dset.attrs['geometryParameters'] = \
               "m=%d;imag=+" %(self.em.circ_m + 1)
             dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dz ])
             dset.attrs['axisLabels'] = np.array([ 'r', 'z' ])
             
         # Generic attributes
-        dset.attrs["dataOrder"] = "C"
+        dset.attrs["dataOrder"] = np.string_("C")
         dset.attrs["gridUnitSI"] = 1.
         dset.attrs["gridGlobalOffset"] = np.array([
             self.w3d.xmmin, self.top.zgrid + self.w3d.zmmin])
-        dset.attrs["fieldSmoothing"] = "none"
+        dset.attrs["fieldSmoothing"] = np.string_("none")
 
     def setup_openpmd_mesh_component( self, dset, quantity ) :
         """
@@ -200,8 +200,9 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
 
         # Setup the fields group
         if this_rank_writes :
-            f.require_group("/fields")
-            self.setup_openpmd_meshes_group(f["/fields"])
+            field_path = "/data/%d/fields/" %iteration
+            field_grp = f.require_group(field_path)
+            self.setup_openpmd_meshes_group( field_grp )
 
         # Determine the components to be written (Cartesian or cylindrical)
         if (self.em.l_2drz == True) :
@@ -213,18 +214,19 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         for fieldtype in self.fieldtypes :
             # Scalar field
             if fieldtype == "rho" :
-                self.write_dataset( f, "/fields/rho", "rho", this_rank_writes )
+                self.write_dataset( field_grp, "rho", "rho", this_rank_writes )
                 if this_rank_writes :
-                    self.setup_openpmd_mesh_record( f["/fields/rho"], "rho" )
+                    self.setup_openpmd_mesh_record( field_grp["rho"], "rho" )
             # Vector field
             elif fieldtype in ["E", "B", "J"] :
                 for coord in coords :
                     quantity = "%s%s" %(fieldtype, coord)
-                    path = "/fields/%s/%s" %(fieldtype, coord)
-                    self.write_dataset( f, path, quantity, this_rank_writes )
+                    path = "%s/%s" %(fieldtype, coord)
+                    self.write_dataset( field_grp, path, quantity,
+                                        this_rank_writes )
                 if this_rank_writes :
                     self.setup_openpmd_mesh_record(
-                        f["/fields/%s" %fieldtype], fieldtype )
+                        field_grp[fieldtype], fieldtype )
             else :
                 raise ValueError("Invalid string in fieldtypes: %s" %fieldtype)
         
@@ -232,16 +234,17 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         if this_rank_writes :      
             f.close()
 
-    def write_dataset( self, f, path, quantity, this_rank_writes ) :
+    def write_dataset( self, field_grp, path, quantity, this_rank_writes ) :
         """
         Write a given dataset
     
         Parameters
         ----------
-        f : an h5py.File object
-    
+        field_grp : an h5py.Group object
+            The group that corresponds to the path indicated in meshesPath
+        
         path : string
-            The path where to write the dataset, inside the file f
+            The relative path where to write the dataset, in field_grp
 
         quantity : string
             Describes which field is being written.
@@ -254,13 +257,16 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         """
         # 2D Cartesian case
         if (self.em.l_2dxz==True) and (self.em.l_2drz==False) :
-            self.write_cart_dataset( f, path, quantity, this_rank_writes )
+            self.write_cart_dataset( field_grp, path, quantity,
+                                     this_rank_writes )
         # Circ case
         if (self.em.l_2drz==True) :
-            self.write_circ_dataset( f, path, quantity, this_rank_writes )
+            self.write_circ_dataset( field_grp, path, quantity,
+                                     this_rank_writes )
 
         
-    def write_circ_dataset( self, f, path, quantity, this_rank_writes ) :
+    def write_circ_dataset( self, field_grp, path, quantity,
+                            this_rank_writes ) :
         """
         Write a dataset in Circ coordinates
         
@@ -271,7 +277,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             # Shape of the data : first write the real part mode 0
             # and then the imaginary part of the mode 1
             datashape = (3, self.em.nx+1, self.em.nz+1)
-            dset = f.require_dataset( path, datashape, dtype='f' )
+            dset = field_grp.require_dataset( path, datashape, dtype='f' )
             self.setup_openpmd_mesh_component( dset, quantity )
             
         # Fill the dataset with these quantities
@@ -299,7 +305,8 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
                          bounds[0,1]:bounds[1,1] ] = F_circ[:,:,0].imag
 
 
-    def write_cart_dataset( self, f, path, quantity, this_rank_writes ) :
+    def write_cart_dataset( self, field_grp, path, quantity,
+                            this_rank_writes ) :
         """
         Write a dataset in Cartesian coordinates
         
@@ -310,7 +317,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             # Shape of the data : first write the real part mode 0
             # and then the imaginary part of the mode 1
             datashape = (self.em.nx+1, self.em.nz+1)
-            dset = f.require_dataset( path, datashape, dtype='f' )
+            dset = field_grp.require_dataset( path, datashape, dtype='f' )
             self.setup_openpmd_mesh_component( dset, quantity )
             
         # Fill the dataset with these quantities

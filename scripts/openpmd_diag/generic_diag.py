@@ -124,18 +124,22 @@ class OpenPMDDiagnostic(object) :
         f.attrs["openPMD"] = np.string_("1.0.0")
         f.attrs["openPMDextension"] = np.uint32(1)
         f.attrs["software"] = np.string_("warp")
+        f.attrs["softwareVersion"] = np.string_("4")
         today = datetime.datetime.now()
         f.attrs["date"] = np.string_(
             datetime.datetime.now(tzlocal()).strftime('%Y-%m-%d %H:%M:%S %z'))
-        f.attrs["basePath"] = np.string_("/data/%d/" %self.top.it)
         f.attrs["meshesPath"] = np.string_("fields/")
         f.attrs["particlesPath"] = np.string_("particles/")
-        # TimeSeries attributes
         f.attrs["iterationEncoding"] = np.string_("fileBased")
         f.attrs["iterationFormat"] =  np.string_("data%T.h5")
-        f.attrs["time"] = self.top.time
-        f.attrs["dt"] = self.top.dt
-        f.attrs["timeUnitSI"] = 1.
+
+        # Setup the basePath
+        base_path = "/data/%d/" %self.top.it
+        f.attrs["basePath"] = np.string_(base_path)
+        bp = f.require_group( base_path )
+        bp.attrs["time"] = self.top.time
+        bp.attrs["dt"] = self.top.dt
+        bp.attrs["timeUnitSI"] = 1.
         
     def setup_openpmd_record( self, dset, quantity ) :
         """

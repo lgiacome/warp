@@ -27,19 +27,19 @@ unit_dimension_dict = {
 
 # Typical weighting of different particle properties
 macro_weighted_dict = {
-    "charge" : 0,
-    "mass" : 0,
-    "weighting" : 1,
-    "position" : 0,
-    "positionOffset" : 0,
-    "momentum" : 0 }
+    "charge": np.uint32(0),
+    "mass": np.uint32(0),
+    "weighting": np.uint32(1),
+    "position": np.uint32(0),
+    "positionOffset": np.uint32(0),
+    "momentum": np.uint32(0) }
 weighting_power_dict = {
-    "charge" : 1,
-    "mass" : 1,
-    "weighting" : 1,
-    "position" : 0,
-    "positionOffset" : 0,
-    "momentum" : 1 }
+    "charge": 1.,
+    "mass": 1.,
+    "weighting": 1.,
+    "position": 0.,
+    "positionOffset": 0.,
+    "momentum": 1. }
 
 # Correspondance between the names in OpenPMD and the names in Warp
 circ_dict_quantity = { 'rho':'Rho', 'Er':'Exp', 'Et':'Eyp', 'Ez':'Ezp', 
@@ -52,17 +52,17 @@ cart_dict_Jindex = { 'Jx':0, 'Jy':1, 'Jz':2 }
 # Correspondance between the boundary conditions in Warp,
 # and the corresponding representative integer
 field_boundary_dict = {
-    0: "reflecting",
-    1: "reflecting",
-    2: "periodic",
-    3: "openbc" }
+    0: np.string_("reflecting"),
+    1: np.string_("reflecting"),
+    2: np.string_("periodic"),
+    3: np.string_("openbc") }
 particle_boundary_dict = {
-    0: "absorbing",
-    1: "reflecting",
-    2: "periodic" }
+    0: np.string_("absorbing"),
+    1: np.string_("reflecting"),
+    2: np.string_("periodic") }
 # Correspondance between the field solver in Warp,
 # and the corresponding representative integer
 field_solver_dict = {
-    0: "Yee",
-    1: "CK",
-    2: "Lehe" }
+    0: np.string_("Yee"),
+    1: np.string_("CK"),
+    2: np.string_("Lehe") }
