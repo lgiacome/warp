@@ -27,19 +27,19 @@ unit_dimension_dict = {
 
 # Typical weighting of different particle properties
 macro_weighted_dict = {
-    "charge" : 0,
-    "mass" : 0,
-    "weighting" : 1,
-    "position" : 0,
-    "positionOffset" : 0,
-    "momentum" : 0 }
+    "charge": np.uint32(0),
+    "mass": np.uint32(0),
+    "weighting": np.uint32(1),
+    "position": np.uint32(0),
+    "positionOffset": np.uint32(0),
+    "momentum" : np.uint32(0) }
 weighting_power_dict = {
-    "charge" : 1,
-    "mass" : 1,
-    "weighting" : 1,
-    "position" : 0,
-    "positionOffset" : 0,
-    "momentum" : 1 }
+    "charge": 1.,
+    "mass": 1.,
+    "weighting": 1.,
+    "position": 0.,
+    "positionOffset": 0.,
+    "momentum": 1. }
 
 # Correspondance between the names in OpenPMD and the names in Warp
 circ_dict_quantity = { 'rho':'Rho', 'Er':'Exp', 'Et':'Eyp', 'Ez':'Ezp', 

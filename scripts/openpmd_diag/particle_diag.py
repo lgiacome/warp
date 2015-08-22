@@ -128,9 +128,12 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         Parameter
         ---------
         grp : an h5py.Group object or h5py.Dataset
+            The group that correspond to `quantity`
+            (in particular, its path must end with "/<quantity>")
     
         quantity : string
-            The name of the record
+            The name of the record being setup
+            e.g. "position", "momentum"
         """
         # Generic setup
         self.setup_openpmd_record( grp, quantity )
@@ -197,8 +200,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 species_path = "/data/%d/particles/%s" %(iteration,
                                                          species_name)
                 # Create and setup the h5py.Group species_grp
-                f.require_group( species_path )
-                species_grp = f[species_path]
+                species_grp = f.require_group( species_path )
                 self.setup_openpmd_species_group( species_grp, species )
 
             # Select the particles that will be written
@@ -254,29 +256,30 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 for coord in ["x", "y", "z"] :
                     quantity = coord
                     quantity_path = "%s/%s" %(particle_var, coord)
-                    self.write_dataset( species_grp, species, particle_var,
+                    self.write_dataset( species_grp, species, quantity_path,
                         quantity, n_rank, N, select_array )
                 if this_rank_writes :
-                    self.setup_openpmd_species_record( species_grp,
-                                                       particle_var )
+                    self.setup_openpmd_species_record(
+                        species_grp[particle_var], particle_var )
                         
             elif particle_var == "momentum" :
                 for coord in ["x", "y", "z"] :
                     quantity = "u%s" %(coord)
                     quantity_path = "%s/%s" %(particle_var, coord)
-                    self.write_dataset( species_grp, species, particle_var,
+                    self.write_dataset( species_grp, species, quantity_path,
                                         quantity, n_rank, N, select_array )
                 if this_rank_writes :
-                    self.setup_openpmd_species_record( species_grp,
-                                                       particle_var )
+                    self.setup_openpmd_species_record( 
+                        species_grp[particle_var], particle_var )
                         
             elif particle_var == "weighting" :
                 quantity = "w"
-                self.write_dataset( species_grp, species, particle_var,
+                quantity_path = "weighting"
+                self.write_dataset( species_grp, species, quantity_path,
                                     quantity, n_rank, N, select_array )
                 if this_rank_writes :
-                    self.setup_openpmd_species_record( species_grp,
-                                                       particle_var )
+                    self.setup_openpmd_species_record( 
+                        species_grp[particle_var], particle_var )
                 
             else :
                 raise ValueError("Invalid string in %s of species" 
@@ -334,7 +337,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         	The species object to get the particle data from
 
         path : string
-            The path where to write the dataset, inside the file f
+            The relative path where to write the dataset, inside the species_grp
 
         quantity : string
             Describes which quantity is written
