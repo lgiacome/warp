@@ -13,7 +13,6 @@ from numpy import *
 try:
     #Try to import pyMPI
     import mpi
-    mpi.synchronizeQueuedOutput(None)
     me = mpi.rank
     npes = mpi.procs
     comm_world = mpi.WORLD
@@ -23,8 +22,6 @@ except:
     try:
         #Try to import mpi4py
         from mpi4py import MPI as mpi 
-        #mpi.synchronizeQueuedOutput(None) 
-        #not available for mpi4py
         comm_world = mpi.COMM_WORLD    
         me = comm_world.Get_rank()
         npes = comm_world.Get_size()
@@ -39,6 +36,10 @@ except:
         lmpi4pyactive = False
 
 lparallel = (npes > 1)
+
+if not lparallel:
+    lpyMPIactive = False
+    lmpi4pyactive = False
 
 if lmpi4pyactive:
     def synchronizeQueuedOutput_mpi4py( out=True, error=False):
@@ -62,12 +63,11 @@ if lmpi4pyactive:
 
 def setdefaultcomm_world(comm):
     global comm_world,me,npes
-    if not lparallel: return
-    if lpyMPIactive: #check if pyMPI is used
+    if lpyMPIactive:
         comm_world = comm
         me = comm_world.rank
         npes = comm_world.procs
-    if lmpi4pyactive: #check if mpi4py is used
+    elif lmpi4pyactive:
         comm_world = comm
         me = comm_world.Get_rank()
         npes = comm_world.Get_size()
@@ -107,6 +107,8 @@ def mpirecv(source = 0, tag = 0, comm = None):
             result = data
         else:
             result = comm.recv(source = source, tag = tag)
+    else:
+        result = None
     return result
 
 def mpisend(data = None, dest = 0, tag = 0, comm = None):
@@ -114,12 +116,14 @@ def mpisend(data = None, dest = 0, tag = 0, comm = None):
     if lpyMPIactive:
         result = comm.send(data, dest, tag)
     elif lmpi4pyactive:
-        if isinstance(data, ndarray) and data.dtype is not dtype('object'):
+        if isinstance(data, ndarray) and data.dtype is not dtype('object') and (data.flags['C_CONTIGUOUS'] or data.flags['F_CONTIGUOUS']):
             comm.send((shape(data), data.dtype), dest = dest, tag = (tag + 99))
             result = comm.Send(data, dest = dest, tag = tag)
         else:
             comm.send((None, None), dest = dest, tag = (tag + 99)) 
             result = comm.send(data, dest = dest, tag = tag)
+    else:
+        result = None
     return result
 
 def mpiisend(data = None, dest = 0, tag = 0, comm = None):
@@ -127,18 +131,21 @@ def mpiisend(data = None, dest = 0, tag = 0, comm = None):
     if lpyMPIactive:
         result = comm.isend(data, dest, tag)
     elif lmpi4pyactive:
-        if isinstance(data, ndarray) and data.dtype is not dtype('object'):
+        if isinstance(data, ndarray) and data.dtype is not dtype('object') and (data.flags['C_CONTIGUOUS'] or data.flags['F_CONTIGUOUS']):
             comm.isend((shape(data), data.dtype), dest = dest, tag = (tag + 99))
             result = comm.ISend(data, dest = dest, tag = tag)
         else:
             comm.isend((None, None), dest = dest, tag = (tag + 99))
             result = comm.isend(data, dest = dest, tag = tag)
+    else:
+        result = None
+    return result
 
 def mpibcast(data = None, root = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.bcast(data, root)
-    if lmpi4pyactive:
+    elif lmpi4pyactive:
         if comm.Get_rank() == root and isinstance(data, ndarray):
             if data.dtype is not dtype('object'):
                 is_numpy = True
@@ -159,32 +166,43 @@ def mpibcast(data = None, root = 0, comm = None):
             result = recvbuffer
         else:
             result = comm.bcast(data, root = root)
+    else:
+        result = data
     return result
 
-def mpiallreduce(data = None, op = mpi.SUM, comm = None):
+def mpiallreduce(data = None, op = None, comm = None):
+    if op is None: op = mpi.SUM
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.allreduce(data, op)
     elif lmpi4pyactive:
         #"fast" version was removed because it produced bugs
-        result = comm.allreduce(data, op = op)
+        if isinstance(data, ndarray) and data.dtype is not dtype('object'):
+            result = empty_like(data)
+            comm.Allreduce(data, result, op = op)
+        else:
+            result = comm.allreduce(data, op = op)
+    else:
+        result = data
     return result
 
 def mpicommcreate(group = None, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
-        newcomm = comm.create(group)
-    if lmpi4pyactive:
+        result = comm.comm_create(group)
+    elif lmpi4pyactive:
         oldgroup = comm_world.Get_group()
         newgroup = oldgroup.Incl(ranks = group)
-        newcomm = comm.Create(newgroup)
-    return newcomm
+        result = comm.Create(newgroup)
+    else:
+        result = None
+    return result
 
 def mpiscatter(data = None, root = 0, comm = None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         result = comm.scatter(data, root)
-    if lmpi4pyactive:
+    elif lmpi4pyactive:
         if comm.Get_rank() == root and isinstance(data, ndarray):
             if data.dtype is not dtype('object'):
                 is_numpy = True
@@ -207,6 +225,8 @@ def mpiscatter(data = None, root = 0, comm = None):
             result = recvbuffer
         else:
             result = comm.scatter(data, root = root)
+    else:
+        result = data
     return result
 
 # ---------------------------------------------------------------------------
@@ -222,7 +242,7 @@ def number_of_PE(comm=None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         return comm.procs
-    else:
+    elif lmpi4pyactive:
         return comm.Get_size()
 
 def get_rank(comm=None):
@@ -230,48 +250,46 @@ def get_rank(comm=None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         return comm.rank
-    else:
+    elif lmpi4pyactive:
         return comm.Get_rank()
 
 # ---------------------------------------------------------------------------
 # Enable output from all processors
 def EnableAll():
-    if not lparallel: return
     if lpyMPIactive:
         mpi.synchronizeQueuedOutput(None)
-    if lmpi4pyactive:
+    elif lmpi4pyactive:
         synchronizeQueuedOutput_mpi4py(out = False, error = False)
 
 # ---------------------------------------------------------------------------
 # Disable output from all but processor 0
 def DisableAll():
-    if not lparallel: return
     if lpyMPIactive:
         mpi.synchronizeQueuedOutput('/dev/null')
-    if lmpi4pyactive:
+    elif lmpi4pyactive:
         synchronizeQueuedOutput_mpi4py(out = True, error = False)
 
 # ---------------------------------------------------------------------------
 # Print object on all processors
 def pprint(obj):
-    if not (lparallel and lpyMPIactive):
-        print str(obj)
-        return
     # Ignore all exceptions to make sure that there is not a lock up.
     try:
         ss = str(obj)
     except:
         ss = ''
-    mpi.synchronizedWrite(ss+'\n')
-    if mpi.rank == 0: print
+    if not lparallel:
+        print ss
+    elif lmpi4pyactive:
+        for result in gather(ss):
+            print result
+    elif lpyMPIactive:
+        mpi.synchronizedWrite(ss+'\n')
+        if mpi.rank == 0: print
 
 # ---------------------------------------------------------------------------
 # Print array (or list) from all processors
 def aprint(obj):
-    if not (lparallel and lpyMPIactive):
-        print str(obj)
-        return
-    mpi.synchronizedWrite(str(obj))
+    pprint(obj)
 
 # ---------------------------------------------------------------------------
 # Get address of processor
@@ -280,14 +298,13 @@ def self_address(comm=None):
     if comm is None: comm = comm_world
     if lpyMPIactive:
         return comm.rank
-    else:
+    elif lmpi4pyactive:
         return comm.Get_rank()
 
 # ---------------------------------------------------------------------------
 # Copy an array from processor i to processor 0
 def getarray(src,v,dest=0,comm=None):
     if not lparallel: return v
-    if comm is None: comm = comm_world
     if get_rank(comm = comm) == src:
         mpisend(data = v, dest = dest, comm = comm)
     elif get_rank(comm = comm) == dest:
@@ -298,7 +315,6 @@ def getarray(src,v,dest=0,comm=None):
 # Gather an object from all processors in a communicator (default comm_world) into a list
 def gather(obj,dest=0,comm=None):
     if not lparallel: return [obj]
-    if comm is None: comm = comm_world
     if get_rank(comm = comm) == dest:
         result = []
         for i in range(number_of_PE(comm = comm)):
@@ -316,7 +332,6 @@ def gather(obj,dest=0,comm=None):
 # eventually broadcasting result.
 def gatherlist(obj,dest=0,procs=None,bcast=0,comm=None):
     if not lparallel: return [obj]
-    if comm is None: comm = comm_world
     if procs is None:
         procs=range(number_of_PE(comm = comm))
     else:
@@ -344,7 +359,6 @@ def gatherlist(obj,dest=0,procs=None,bcast=0,comm=None):
 # between processors.
 def gatherlog(obj,dest=0,procs=None,bcast=0,comm=None):
     if not lparallel: return [obj]
-    if comm is None: comm = comm_world
     if procs is None:
         procs=range(number_of_PE(comm = comm))
     else:
@@ -377,25 +391,22 @@ def gatherlog(obj,dest=0,procs=None,bcast=0,comm=None):
 # ---------------------------------------------------------------------------
 # Define a barrier
 def barrier(comm=None):
-    if not lparallel: return
     if comm is None: comm = comm_world
     if lpyMPIactive:
         comm.barrier()
-    else:
+    elif lmpi4pyactive:
         comm.Barrier()
 
 # ---------------------------------------------------------------------------
 # Broadcast an object to all processors
 def broadcast(obj,root=0,comm=None):
     if not lparallel: return obj
-    if comm is None: comm = comm_world
     return mpibcast(data = obj, root = root, comm = comm)
 
 # ---------------------------------------------------------------------------
 # Gather an object from all processors into a list and scatter back to all
 def gatherall(obj,comm=None):
     if not lparallel: return [obj]
-    if comm is None: comm = comm_world
     obj = gather(obj, comm=comm)
     return mpibcast(data = obj, comm = comm)
 
@@ -404,7 +415,6 @@ def gatherall(obj,comm=None):
 # first dimension.
 def gatherarray(a,root=0,othersempty=0,bcast=0,comm=None):
     if not lparallel: return a
-    if comm is None: comm = comm_world
     # --- First check if input can be converted to an array
     isinputok = 1
     try:
@@ -473,11 +483,10 @@ def gatherarray(a,root=0,othersempty=0,bcast=0,comm=None):
 
 
 # ---------------------------------------------------------------------------
-# Find the nonzero value of array over all processors. This assumes that the
-# non-zero values for each index are the same for all processors.
-# Resulting data is broadcast to all processors.
 def parallelnonzeroarray(a,comm=None):
-    if comm is None: comm = comm_world
+    """Find the nonzero value of array over all processors. This assumes that the
+       non-zero values for each index are the same for all processors.
+       Resulting data is broadcast to all processors."""
     dmax = parallelmax(a,comm=comm)
     dmin = parallelmin(a,comm=comm)
     result = where(not_equal(dmax,0),dmax,dmin)
@@ -486,7 +495,6 @@ def parallelnonzeroarray(a,comm=None):
 # ---------------------------------------------------------------------------
 # Generic global operation on a distributed array.
 def globalop(a,localop,mpiop,defaultval,comm=None):
-    if comm is None: comm = comm_world
     if len(shape(a)) == 0:
         local = a
     elif len(a) > 0:
@@ -505,19 +513,15 @@ def globalop(a,localop,mpiop,defaultval,comm=None):
 # Specific operations on a distributed array.
 def globalmax(a,comm=None):
     def _max(a): return array(a,copy=False).max()
-    if comm is None: comm = comm_world
     return globalop(a,_max,"MAX",-1.e36,comm=comm)
 def globalmin(a,comm=None):
     def _min(a): return array(a,copy=False).min()
-    if comm is None: comm = comm_world
     return globalop(a,_min,"MIN",+1.e36,comm=comm)
 def globalsum(a,comm=None):
     def _sum(a): return array(a,copy=False).sum()
-    if comm is None: comm = comm_world
     return globalop(a,_sum,"SUM",0.,comm=comm)
 def globalave(a,comm=None):
     def _sum(a): return array(a,copy=False).sum()
-    if comm is None: comm = comm_world
     s = globalop(a,_sum,"SUM",0.,comm=comm)
     if len(shape(a)) == 0: a = [a]
     n = globalsum(len(a),comm=comm)
@@ -529,7 +533,6 @@ def globalave(a,comm=None):
 # --- Note that this is no long needed
 def parallelop(a,mpiop,comm=None):
     if not lparallel: return a
-    if comm is None: comm = comm_world
     if type(a) == type(array([])):
         a1d = ravel(a) + 0
         for i in range(len(a1d)):
@@ -542,23 +545,19 @@ def parallelop(a,mpiop,comm=None):
 # ---------------------------------------------------------------------------
 # Specific parallel element-by-element operations on a distributed array.
 def parallelmax(a,comm=None):
-    #return parallelop(a,"MAX")
     if not lparallel: return a
-    if comm is None: comm = comm_world
     if lpyMPIactive:
         return mpiallreduce(a, op = maximum, comm = comm)
-    else:
+    elif lmpi4pyactive:
         return mpiallreduce(a, op = mpi.MAX, comm = comm)
 
 def parallelmin(a,comm=None):
-    #return parallelop(a,"MIN")
     if not lparallel: return a
-    if comm is None: comm = comm_world
     if lpyMPIactive:
         return mpiallreduce(a, op = minimum, comm = comm)
-    else:
+    elif lmpi4pyactive:
         return mpiallreduce(a, op = mpi.MIN, comm = comm)
+
 def parallelsum(a,comm=None):
     if not lparallel: return a
-    if comm is None: comm = comm_world
     return mpiallreduce(a, op = mpi.SUM, comm = comm)

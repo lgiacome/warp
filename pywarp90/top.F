@@ -901,67 +901,111 @@ c       --- Adds in dtscale factor efficiently. Somewhat kludgy though.
 c       --- Now, accumulate moments onto Z grid.
         if (ifzmmnt == 2) then
 
-c         --- Extrapolate quantities onto grid points so all particles
-c         ---   contributing to a moment are at same z.
-c         --- dti and dtip1 calculated by assuming constant Vz and
-c         ---   computing times at which z crosses the two nearest grid points.
-c         --- V extrapolated using current and previous values of V
-c         ---   (this avoids having to use E and B to extrapolate V).
-c         --- X extrapolated assuming constant V (uses V at particle position).
-c         --- After extrapolation, data is linearly weighted onto grid by
-c         ---   particle's z location.  This has the effect that the less
-c         ---   accurately extrapolated particles, which are far from the
-c         ---   grid point, are weighted less, hopefully helping smoothness.
+          if (l_extrapolated_moments) then
+c           --- Extrapolate quantities onto grid points so all particles
+c           ---   contributing to a moment are at same z.
+c           --- dti and dtip1 calculated by assuming constant Vz and
+c           ---   computing times at which z crosses the two nearest grid points.
+c           --- V extrapolated using current and previous values of V
+c           ---   (this avoids having to use E and B to extrapolate V).
+c           --- X extrapolated assuming constant V (uses V at particle position).
+c           --- After extrapolation, data is linearly weighted onto grid by
+c           ---   particle's z location.  This has the effect that the less
+c           ---   accurately extrapolated particles, which are far from the
+c           ---   grid point, are weighted less, hopefully helping smoothness.
 
-c         --- extrapolate to two nearest cells
-          do ip=1,np
-            if (pp(0,ip) /= 0.) then
-              vzi = 1./(uzp(ip)*gaminv(ip)+SMALLPOS)
-              iz(ip)  = (zp(ip) - zbeam - zmmntmin)*dzmi
-              if (iz(ip) == nzmmnt) iz(ip) = nzmmnt - 1
-              dti = (iz(ip)*dzm-zp(ip)+zbeam+zmmntmin)*vzi
-              dti = max(-zmmntdtextmax*dt,min(zmmntdtextmax*dt,dti))
-              pp(3,ip) = uxp(ip)*(1. + dti*oneondt) - uxpo(ip)*dti*oneondt
-              pp(7,ip) = uyp(ip)*(1. + dti*oneondt) - uypo(ip)*dti*oneondt
-              pp(11,ip) = uzp(ip)*(1. + dti*oneondt) - uzpo(ip)*dti*oneondt
-              pp(1,ip) = xp(ip) + uxp(ip)*dti*gaminv(ip)
-              pp(5,ip) = yp(ip) + uyp(ip)*dti*gaminv(ip)
-              pp(9,ip) = zp(ip) + uzp(ip)*dti*gaminv(ip)
-c             pp(9,ip) = iz(ip)*dzm + zbeam + zmmntmin
+c           --- extrapolate to two nearest cells
+            do ip=1,np
+              if (pp(0,ip) /= 0.) then
+                vzi = 1./(uzp(ip)*gaminv(ip)+SMALLPOS)
+                iz(ip)  = (zp(ip) - zbeam - zmmntmin)*dzmi
+                if (iz(ip) == nzmmnt) iz(ip) = nzmmnt - 1
+                dti = (iz(ip)*dzm-zp(ip)+zbeam+zmmntmin)*vzi
+                dti = max(-zmmntdtextmax*dt,min(zmmntdtextmax*dt,dti))
+                pp(3,ip) = uxp(ip)*(1. + dti*oneondt) - uxpo(ip)*dti*oneondt
+                pp(7,ip) = uyp(ip)*(1. + dti*oneondt) - uypo(ip)*dti*oneondt
+                pp(11,ip) = uzp(ip)*(1. + dti*oneondt) - uzpo(ip)*dti*oneondt
+                pp(1,ip) = xp(ip) + uxp(ip)*dti*gaminv(ip)
+                pp(5,ip) = yp(ip) + uyp(ip)*dti*gaminv(ip)
+                pp(9,ip) = zp(ip) + uzp(ip)*dti*gaminv(ip)
+c               pp(9,ip) = iz(ip)*dzm + zbeam + zmmntmin
 
-              if (l_momentum_moments .or. .not. lrelativ) then
-                pp(18,ip) = 1.
+                if (l_momentum_moments .or. .not. lrelativ) then
+                  pp(18,ip) = 1.
+                else
+                  pp(18,ip) = 1./
+     &            sqrt(1. + (pp(3,ip)**2 + pp(7,ip)**2 + pp(11,ip)**2)/clight**2)
+                endif
+
+                dtip1=((iz(ip)+1)*dzm-zp(ip)+zbeam+zmmntmin)*vzi
+                dtip1 = max(-zmmntdtextmax*dt,min(zmmntdtextmax*dt,dtip1))
+                pp(4,ip) = uxp(ip)*(1. + dtip1*oneondt) - uxpo(ip)*dtip1*oneondt
+                pp(8,ip) = uyp(ip)*(1. + dtip1*oneondt) - uypo(ip)*dtip1*oneondt
+                pp(12,ip) = uzp(ip)*(1. + dtip1*oneondt) - uzpo(ip)*dtip1*oneondt
+                pp(2,ip) = xp(ip) + uxp(ip)*dtip1*gaminv(ip)
+                pp(6,ip) = yp(ip) + uyp(ip)*dtip1*gaminv(ip)
+                pp(10,ip) = zp(ip) + uzp(ip)*dtip1*gaminv(ip)
+c               pp(10,ip) = (iz(ip)+1)*dzm + zbeam + zmmntmin
+
+                if (l_momentum_moments .or. .not. lrelativ) then
+                  pp(13,ip) = 1.
+                else
+                  pp(13,ip) = 1./
+     &            sqrt(1. + (pp(4,ip)**2 + pp(8,ip)**2 + pp(12,ip)**2)/clight**2)
+                endif
+
+                pp(14,ip) = (1. - (zp(ip)-zbeam-zmmntmin)*dzmi + iz(ip))*dtscale
+                pp(15,ip) = ((zp(ip) - zbeam - zmmntmin)*dzmi - iz(ip))*dtscale
+                pp(16,ip) = dti
+                pp(17,ip) = dtip1
               else
-                pp(18,ip) = 1./
-     &          sqrt(1. + (pp(3,ip)**2 + pp(7,ip)**2 + pp(11,ip)**2)/clight**2)
+                iz(ip) = 0
+                pp(:,ip) = 0.
               endif
+            enddo
 
-              dtip1=((iz(ip)+1)*dzm-zp(ip)+zbeam+zmmntmin)*vzi
-              dtip1 = max(-zmmntdtextmax*dt,min(zmmntdtextmax*dt,dtip1))
-              pp(4,ip) = uxp(ip)*(1. + dtip1*oneondt) - uxpo(ip)*dtip1*oneondt
-              pp(8,ip) = uyp(ip)*(1. + dtip1*oneondt) - uypo(ip)*dtip1*oneondt
-              pp(12,ip) = uzp(ip)*(1. + dtip1*oneondt) - uzpo(ip)*dtip1*oneondt
-              pp(2,ip) = xp(ip) + uxp(ip)*dtip1*gaminv(ip)
-              pp(6,ip) = yp(ip) + uyp(ip)*dtip1*gaminv(ip)
-              pp(10,ip) = zp(ip) + uzp(ip)*dtip1*gaminv(ip)
-c             pp(10,ip) = (iz(ip)+1)*dzm + zbeam + zmmntmin
+          else
 
-              if (l_momentum_moments .or. .not. lrelativ) then
-                pp(13,ip) = 1.
+            do ip=1,np
+              if (pp(0,ip) /= 0.) then
+                iz(ip)  = (zp(ip) - zbeam - zmmntmin)*dzmi
+                if (iz(ip) == nzmmnt) iz(ip) = nzmmnt - 1
+                pp(3,ip) = uxp(ip)
+                pp(7,ip) = uyp(ip)
+                pp(11,ip) = uzp(ip)
+                pp(1,ip) = xp(ip)
+                pp(5,ip) = yp(ip)
+                pp(9,ip) = zp(ip)
+
+                if (l_momentum_moments .or. .not. lrelativ) then
+                  pp(18,ip) = 1.
+                else
+                  pp(18,ip) = 1./
+     &            sqrt(1. + (pp(3,ip)**2 + pp(7,ip)**2 + pp(11,ip)**2)/clight**2)
+                endif
+
+                pp(4,ip) = uxp(ip)
+                pp(8,ip) = uyp(ip)
+                pp(12,ip) = uzp(ip)
+                pp(2,ip) = xp(ip)
+                pp(6,ip) = yp(ip)
+                pp(10,ip) = zp(ip)
+
+                if (l_momentum_moments .or. .not. lrelativ) then
+                  pp(13,ip) = 1.
+                else
+                  pp(13,ip) = 1./
+     &            sqrt(1. + (pp(4,ip)**2 + pp(8,ip)**2 + pp(12,ip)**2)/clight**2)
+                endif
+
+                pp(14,ip) = (1. - (zp(ip)-zbeam-zmmntmin)*dzmi + iz(ip))*dtscale
+                pp(15,ip) = ((zp(ip) - zbeam - zmmntmin)*dzmi - iz(ip))*dtscale
               else
-                pp(13,ip) = 1./
-     &          sqrt(1. + (pp(4,ip)**2 + pp(8,ip)**2 + pp(12,ip)**2)/clight**2)
+                iz(ip) = 0
+                pp(:,ip) = 0.
               endif
-
-              pp(14,ip) = (1. - (zp(ip)-zbeam-zmmntmin)*dzmi + iz(ip))*dtscale
-              pp(15,ip) = ((zp(ip) - zbeam - zmmntmin)*dzmi - iz(ip))*dtscale
-              pp(16,ip) = dti
-              pp(17,ip) = dtip1
-            else
-              iz(ip) = 0
-              pp(:,ip) = 0.
-            endif
-          enddo
+            enddo
+          endif
 
 c-------------------------------------------------------------------------
 #ifdef J90
@@ -2065,68 +2109,115 @@ c       --- Adds in dtscale factor efficiently. Somewhat kludgy though.
 c       --- Now, accumulate moments onto Z grid.
         if (ifzmmnt == 2) then
 
-c         --- Extrapolate quantities onto grid points so all particles
-c         ---   contributing to a moment are at same z.
-c         --- dti and dtip1 calculated by assuming constant Vz and
-c         ---   computing times at which z crosses the two nearest grid points.
-c         --- V extrapolated using current and previous values of V
-c         ---   (this avoids having to use E and B to extrapolate V).
-c         --- X extrapolated assuming constant V (uses V at particle position).
-c         --- After extrapolation, data is linearly weighted onto grid by
-c         ---   particle's z location.  This has the effect that the less
-c         ---   accurately extrapolated particles, which are far from the
-c         ---   grid point, are weighted less, hopefully helping smoothness.
+          if (l_extrapolated_moments) then
+c           --- Extrapolate quantities onto grid points so all particles
+c           ---   contributing to a moment are at same z.
+c           --- dti and dtip1 calculated by assuming constant Vz and
+c           ---   computing times at which z crosses the two nearest grid points.
+c           --- V extrapolated using current and previous values of V
+c           ---   (this avoids having to use E and B to extrapolate V).
+c           --- X extrapolated assuming constant V (uses V at particle position).
+c           --- After extrapolation, data is linearly weighted onto grid by
+c           ---   particle's z location.  This has the effect that the less
+c           ---   accurately extrapolated particles, which are far from the
+c           ---   grid point, are weighted less, hopefully helping smoothness.
 
-c         --- extrapolate to two nearest cells
-          do ip=1,np
-            if (pp(0,ip) /= 0.) then
-              vzi = 1./(uzp(ip)*gaminv(ip)+SMALLPOS)
-              iz(ip)  = (zp(ip) - zbeam - zmmntmin)*dzmi
-              dti = (iz(ip)*dzm-zp(ip)+zbeam+zmmntmin)*vzi
-              dti = max(-zmmntdtextmax*dt,min(zmmntdtextmax*dt,dti))
-              pp(3,ip) = uxp(ip)*(1. + dti*oneondt) - uxpo(ip)*dti*oneondt
-              pp(7,ip) = uyp(ip)*(1. + dti*oneondt) - uypo(ip)*dti*oneondt
-              pp(11,ip) = uzp(ip)*(1. + dti*oneondt) - uzpo(ip)*dti*oneondt
-              pp(1,ip) = xp(ip) + uxp(ip)*dti*gaminv(ip)
-              pp(5,ip) = yp(ip) + uyp(ip)*dti*gaminv(ip)
-              pp(9,ip) = zp(ip) + uzp(ip)*dti*gaminv(ip)
-c             pp(9,ip) = iz(ip)*dzm + zbeam + zmmntmin
+c           --- extrapolate to two nearest cells
+            do ip=1,np
+              if (pp(0,ip) /= 0.) then
+                vzi = 1./(uzp(ip)*gaminv(ip)+SMALLPOS)
+                iz(ip)  = (zp(ip) - zbeam - zmmntmin)*dzmi
+                if (iz(ip) == nzmmnt) iz(ip) = nzmmnt - 1
+                dti = (iz(ip)*dzm-zp(ip)+zbeam+zmmntmin)*vzi
+                dti = max(-zmmntdtextmax*dt,min(zmmntdtextmax*dt,dti))
+                pp(3,ip) = uxp(ip)*(1. + dti*oneondt) - uxpo(ip)*dti*oneondt
+                pp(7,ip) = uyp(ip)*(1. + dti*oneondt) - uypo(ip)*dti*oneondt
+                pp(11,ip) = uzp(ip)*(1. + dti*oneondt) - uzpo(ip)*dti*oneondt
+                pp(1,ip) = xp(ip) + uxp(ip)*dti*gaminv(ip)
+                pp(5,ip) = yp(ip) + uyp(ip)*dti*gaminv(ip)
+                pp(9,ip) = zp(ip) + uzp(ip)*dti*gaminv(ip)
+c               pp(9,ip) = iz(ip)*dzm + zbeam + zmmntmin
 
-              if (l_momentum_moments .or. .not. lrelativ) then
-                pp(18,ip) = 1.
+                if (l_momentum_moments .or. .not. lrelativ) then
+                  pp(18,ip) = 1.
+                else
+                  pp(18,ip) = 1./
+     &            sqrt(1. + (pp(3,ip)**2 + pp(7,ip)**2 + pp(11,ip)**2)/clight**2)
+                endif
+
+                dtip1=((iz(ip)+1)*dzm-zp(ip)+zbeam+zmmntmin)*vzi
+                dtip1 = max(-zmmntdtextmax*dt,min(zmmntdtextmax*dt,dtip1))
+                pp(4,ip) = uxp(ip)*(1. + dtip1*oneondt) - uxpo(ip)*dtip1*oneondt
+                pp(8,ip) = uyp(ip)*(1. + dtip1*oneondt) - uypo(ip)*dtip1*oneondt
+                pp(12,ip) = uzp(ip)*(1. + dtip1*oneondt) - uzpo(ip)*dtip1*oneondt
+                pp(2,ip) = xp(ip) + uxp(ip)*dtip1*gaminv(ip)
+                pp(6,ip) = yp(ip) + uyp(ip)*dtip1*gaminv(ip)
+                pp(10,ip) = zp(ip) + uzp(ip)*dtip1*gaminv(ip)
+c               pp(10,ip) = (iz(ip)+1)*dzm + zbeam + zmmntmin
+
+                if (l_momentum_moments .or. .not. lrelativ) then
+                  pp(13,ip) = 1.
+                else
+                  pp(13,ip) = 1./
+     &            sqrt(1. + (pp(4,ip)**2 + pp(8,ip)**2 + pp(12,ip)**2)/clight**2)
+                endif
+
+                pp(14,ip) = (1. - (zp(ip)-zbeam-zmmntmin)*dzmi + iz(ip))*wp(ip)*
+     &                      dtscale
+                pp(15,ip) = ((zp(ip) - zbeam - zmmntmin)*dzmi - iz(ip))*wp(ip)*
+     &                      dtscale
+                pp(16,ip) = dti
+                pp(17,ip) = dtip1
               else
-                pp(18,ip) = 1./
-     &          sqrt(1. + (pp(3,ip)**2 + pp(7,ip)**2 + pp(11,ip)**2)/clight**2)
+                iz(ip) = 0
+                pp(:,ip) = 0.
               endif
+            enddo
 
-              dtip1=((iz(ip)+1)*dzm-zp(ip)+zbeam+zmmntmin)*vzi
-              dtip1 = max(-zmmntdtextmax*dt,min(zmmntdtextmax*dt,dtip1))
-              pp(4,ip) = uxp(ip)*(1. + dtip1*oneondt) - uxpo(ip)*dtip1*oneondt
-              pp(8,ip) = uyp(ip)*(1. + dtip1*oneondt) - uypo(ip)*dtip1*oneondt
-              pp(12,ip) = uzp(ip)*(1. + dtip1*oneondt) - uzpo(ip)*dtip1*oneondt
-              pp(2,ip) = xp(ip) + uxp(ip)*dtip1*gaminv(ip)
-              pp(6,ip) = yp(ip) + uyp(ip)*dtip1*gaminv(ip)
-              pp(10,ip) = zp(ip) + uzp(ip)*dtip1*gaminv(ip)
-c             pp(10,ip) = (iz(ip)+1)*dzm + zbeam + zmmntmin
+          else
 
-              if (l_momentum_moments .or. .not. lrelativ) then
-                pp(13,ip) = 1.
+            do ip=1,np
+              if (pp(0,ip) /= 0.) then
+                iz(ip)  = (zp(ip) - zbeam - zmmntmin)*dzmi
+                if (iz(ip) == nzmmnt) iz(ip) = nzmmnt - 1
+                pp(3,ip) = uxp(ip)
+                pp(7,ip) = uyp(ip)
+                pp(11,ip) = uzp(ip)
+                pp(1,ip) = xp(ip)
+                pp(5,ip) = yp(ip)
+                pp(9,ip) = zp(ip)
+
+                if (l_momentum_moments .or. .not. lrelativ) then
+                  pp(18,ip) = 1.
+                else
+                  pp(18,ip) = 1./
+     &            sqrt(1. + (pp(3,ip)**2 + pp(7,ip)**2 + pp(11,ip)**2)/clight**2)
+                endif
+
+                pp(4,ip) = uxp(ip)
+                pp(8,ip) = uyp(ip)
+                pp(12,ip) = uzp(ip)
+                pp(2,ip) = xp(ip)
+                pp(6,ip) = yp(ip)
+                pp(10,ip) = zp(ip)
+
+                if (l_momentum_moments .or. .not. lrelativ) then
+                  pp(13,ip) = 1.
+                else
+                  pp(13,ip) = 1./
+     &            sqrt(1. + (pp(4,ip)**2 + pp(8,ip)**2 + pp(12,ip)**2)/clight**2)
+                endif
+
+                pp(14,ip) = (1. - (zp(ip)-zbeam-zmmntmin)*dzmi + iz(ip))*wp(ip)*
+     &                      dtscale
+                pp(15,ip) = ((zp(ip) - zbeam - zmmntmin)*dzmi - iz(ip))*wp(ip)*
+     &                      dtscale
               else
-                pp(13,ip) = 1./
-     &          sqrt(1. + (pp(4,ip)**2 + pp(8,ip)**2 + pp(12,ip)**2)/clight**2)
+                iz(ip) = 0
+                pp(:,ip) = 0.
               endif
-
-              pp(14,ip) = (1. - (zp(ip)-zbeam-zmmntmin)*dzmi + iz(ip))*wp(ip)*
-     &                    dtscale
-              pp(15,ip) = ((zp(ip) - zbeam - zmmntmin)*dzmi - iz(ip))*wp(ip)*
-     &                    dtscale
-              pp(16,ip) = dti
-              pp(17,ip) = dtip1
-            else
-              iz(ip) = 0
-              pp(:,ip) = 0.
-            endif
-          enddo
+            enddo
+          endif
 
 c-------------------------------------------------------------------------
 #ifdef J90
