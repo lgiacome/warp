@@ -2659,7 +2659,7 @@ def pzxpedge(js=-1,zoffset=None,zscale=1.,scale=1.,color="fg",linetype="solid",
     xbarz = _extractvar('xbarz',varsuffix,'top',ff)[...,js]
     xpbarz = _extractvar('xpbarz',varsuffix,'top',ff)[...,js]
     xrmsz = _extractvar('xrmsz',varsuffix,'top',ff)[...,js]
-    xpedgez = (xxpbarz-xbarz*xpbarz)/ \
+    xpedgez = 2.*(xxpbarz-xbarz*xpbarz)/ \
               where(greater(xrmsz,0.),xrmsz,1.)*scale
     zmntmesh = _extractvar('zmntmesh',varsuffix,'top',ff)
     if zoffset is None: zoffset = _extractvar('zbeam',varsuffix,'top',ff)
@@ -2739,7 +2739,7 @@ def pzypedge(js=-1,zoffset=None,zscale=1.,scale=1.,color="fg",linetype="solid",
     ybarz = _extractvar('ybarz',varsuffix,'top',ff)[...,js]
     ypbarz = _extractvar('ypbarz',varsuffix,'top',ff)[...,js]
     yrmsz = _extractvar('yrmsz',varsuffix,'top',ff)[...,js]
-    ypedgez = (yypbarz-ybarz*ypbarz)/ \
+    ypedgez = 2.*(yypbarz-ybarz*ypbarz)/ \
               where(greater(yrmsz,0.),yrmsz,1.)*scale
     zmntmesh = _extractvar('zmntmesh',varsuffix,'top',ff)
     if zoffset is None: zoffset = _extractvar('zbeam',varsuffix,'top',ff)
@@ -2898,9 +2898,9 @@ def pzredges(js=-1,zoffset=None,zscale=1.,scale=1.,color="fg",linetype="solid",
     rrmsz = _extractvar('rrmsz',varsuffix,'top',ff)[...,js]*scale
     zmntmesh = _extractvar('zmntmesh',varsuffix,'top',ff)
     if zoffset is None: zoffset = _extractvar('zbeam',varsuffix,'top',ff)
-    plg(+2.*rrmsz,(zoffset+zmntmesh)/zscale,color=color,
+    plg(+sqrt(2.)*rrmsz,(zoffset+zmntmesh)/zscale,color=color,
         linetype=linetype,marks=marks,marker=marker,msize=msize,width=width)
-    plg(-2.*rrmsz,(zoffset+zmntmesh)/zscale,color=color,
+    plg(-sqrt(2.)*rrmsz,(zoffset+zmntmesh)/zscale,color=color,
         linetype=linetype,marks=marks,marker=marker,msize=msize,width=width)
     if titles:
         ptitles("Beam R edges (+-sqrt(2)*rms)",titleb,"(m)",

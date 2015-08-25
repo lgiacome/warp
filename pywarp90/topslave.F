@@ -144,8 +144,7 @@ c         --- into the regions of neighboring processors.
 
 c           --- If particle exited to the left, switch with lowest particle
 c           --- in the arrays.
-            if ((ztemp <= zpminlocal .and. pboundleft == absorb) .or.
-     &           ztemp < zpminlocal) then
+            if (ztemp < zpminlocal .or. (pboundleft == absorb .and. ztemp == zmmin)) then
               idest = pgroup%ins(is)
               pgroup%ins(is) = pgroup%ins(is) + 1
               pgroup%nps(is) = pgroup%nps(is) - 1
