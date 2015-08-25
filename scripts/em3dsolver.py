@@ -5723,13 +5723,22 @@ class EM3D(SubcycledPoissonSolver):
            yl+ylguard:yu-yrguard,
            zl+zlguard:zu-zrguard]=self.blocknumber
 
-    def initstaticfields(self,rel_pgroups=None):
+    def initstaticfields(self, relat_species=None):
+        """
+        Initialize the space charge fields of the object, using
+        a (possibly relativistic) Poisson solver.
 
-        # rel_pgroups: particle group input needed for relativistic beam initialization
-        # if particle group is passed, use relativistic modification
-
-            # --- This is needed because of the order in which things are imported in warp.py.
-            # --- There, MagnetostaticMG is imported after em3dsolver.
+        Parameter
+        ---------
+        relat_species: a Species object
+            A relativistic species.
+            If a species is given, it is assumed that all the fields
+            propagate at the same speed as this species, and a corresponding
+            electromagnetic, relativistic Poisson solver is used.
+        """
+        # --- This is needed because of the order in which things
+        # --- are imported in warp.py.
+        # --- There, MagnetostaticMG is imported after em3dsolver.
         from magnetostaticMG import MagnetostaticMG
 
         # --- This is needed to create the arrays.
@@ -5753,10 +5762,14 @@ class EM3D(SubcycledPoissonSolver):
 
         esolver.conductordatalist = self.conductordatalist
         # check if used for calculation of relativistic beam
-        if rel_pgroups is not None:
-          # pass particle group to density deposition and poisson solver
-          esolver.loadrho(pgroups=[rel_pgroups.pgroup])
-          esolver.solve(iwhich=0,pgroups=rel_pgroups)
+        if relat_species is not None:
+          # pass particle group to density deposition
+          esolver.loadrho(pgroups=[relat_species.pgroup])
+          # Calculate the relativistic contraction factor along z
+          gaminv = relat_species.getgaminv()
+          zfact = numpy.mean(1./gaminv)
+          # Call the relativisitic Poisson solver
+          esolver.solve(iwhich=0,zfact=zfact)
         else:
           esolver.loadrho()
           esolver.solve()
@@ -5798,17 +5811,17 @@ class EM3D(SubcycledPoissonSolver):
         # --- Calculate the fields on the Yee mesh by direct finite differences
         # --- of the potential (which is on a node centered grid)
 
-        if rel_pgroups==None:
+        if relat_species is None:
           zfact = 1.
           Ax = bsolver.potential[0,...]
           Ay = bsolver.potential[1,...]
           Az = bsolver.potential[2,...]
 
         # if relativistic beam:
-        # get Lorentz factor of used particle group
-        # then use A calculated from phi according to J.-L. Vay, Phys. Plasmas 15, 056701 (2008)
+        # get Lorentz factor of used particle group then use A calculated
+        # from phi according to J.-L. Vay, Phys. Plasmas 15, 056701 (2008)
         else:
-          gaminv = rel_pgroups.getgaminv()
+          gaminv = relat_species.getgaminv()
           zfact = numpy.mean(1./gaminv)
           beta = sqrt(1.-1./zfact/zfact)
           Ax = zeros_like(esolver.phi)
@@ -5883,8 +5896,6 @@ class EM3D(SubcycledPoissonSolver):
         if top.efetch[0] != 4:self.yee2node3d()
         if self.l_smooth_particle_fields and any(self.npass_smooth>0):
             self.smoothfields()
-
-        return (Ex,Ey,Ez,Bx,By,Bz)
 
     def set_num_Cherenkov_cor_coefs(self):
         if top.efetch[0]==1:self.gather_method="Momentum"

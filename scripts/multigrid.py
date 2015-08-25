@@ -843,18 +843,15 @@ class MultiGrid3D(SubcycledPoissonSolver):
             mgverbose = self.mgverbose
         return mgverbose
 
-    def dosolve(self,iwhich=0,pgroups=None,*args):
+    def dosolve(self,iwhich=0,zfact=None,*args):
         if not self.l_internal_dosolve: return
         # --- set for longitudinal relativistic contraction
         iselfb = args[2]
-        beta = top.pgroup.fselfb[iselfb]/clight
-        zfact = 1./sqrt((1.-beta)*(1.+beta))
-
-        if pgroups is not None:
-          n = pgroups.getn()
-          gaminv = pgroups.getgaminv()
-          zfact = numpy.mean(1./gaminv)
-          beta = sqrt(1.-1./zfact/zfact)
+        if zfact is None:
+            beta = top.pgroup.fselfb[iselfb]/clight
+            zfact = 1./sqrt((1.-beta)*(1.+beta))
+        else:
+          beta = sqrt( (1.-1./zfact)*(1.+1./zfact) )
 
         # --- This is only done for convenience.
         self._phi = self.potential
