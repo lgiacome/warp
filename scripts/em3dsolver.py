@@ -5723,10 +5723,22 @@ class EM3D(SubcycledPoissonSolver):
            yl+ylguard:yu-yrguard,
            zl+zlguard:zu-zrguard]=self.blocknumber
 
-    def initstaticfields(self):
+    def initstaticfields(self, relat_species=None):
+        """
+        Initialize the space charge fields of the object, using
+        a (possibly relativistic) Poisson solver.
 
-            # --- This is needed because of the order in which things are imported in warp.py.
-            # --- There, MagnetostaticMG is imported after em3dsolver.
+        Parameter
+        ---------
+        relat_species: a Species object
+            A relativistic species.
+            If a species is given, it is assumed that all the fields
+            propagate at the same speed as this species, and a corresponding
+            electromagnetic, relativistic Poisson solver is used.
+        """
+        # --- This is needed because of the order in which things
+        # --- are imported in warp.py.
+        # --- There, MagnetostaticMG is imported after em3dsolver.
         from magnetostaticMG import MagnetostaticMG
 
         # --- This is needed to create the arrays.
@@ -5749,8 +5761,18 @@ class EM3D(SubcycledPoissonSolver):
                           )
 
         esolver.conductordatalist = self.conductordatalist
-        esolver.loadrho()
-        esolver.solve()
+        # check if used for calculation of relativistic beam
+        if relat_species is not None:
+          # pass particle group to density deposition
+          esolver.loadrho(pgroups=[relat_species.pgroup])
+          # Calculate the relativistic contraction factor along z
+          gaminv = relat_species.getgaminv()
+          zfact = numpy.mean(1./gaminv)
+          # Call the relativisitic Poisson solver
+          esolver.solve(iwhich=0,zfact=zfact)
+        else:
+          esolver.loadrho()
+          esolver.solve()
 
         bsolver = MagnetostaticMG(luse2D=not(self.solvergeom == w3d.XYZgeom),
                                   nxguardphi=self.nxguard+1,
@@ -5789,14 +5811,28 @@ class EM3D(SubcycledPoissonSolver):
         # --- Calculate the fields on the Yee mesh by direct finite differences
         # --- of the potential (which is on a node centered grid)
 
+        if relat_species is None:
+          zfact = 1.
+          Ax = bsolver.potential[0,...]
+          Ay = bsolver.potential[1,...]
+          Az = bsolver.potential[2,...]
+
+        # if relativistic beam:
+        # get Lorentz factor of used particle group then use A calculated
+        # from phi according to J.-L. Vay, Phys. Plasmas 15, 056701 (2008)
+        else:
+          gaminv = relat_species.getgaminv()
+          zfact = numpy.mean(1./gaminv)
+          beta = sqrt(1.-1./zfact/zfact)
+          Ax = zeros_like(esolver.phi)
+          Ay = zeros_like(esolver.phi)
+          Az = esolver.phi*beta/clight
+
         if self.solvergeom == w3d.XYZgeom:
             Ex = (esolver.phi[ix1:ix2,iy1:iy2,iz1:iz2] - esolver.phi[ix1+1:ix2+1,iy1:iy2,iz1:iz2])/esolver.dx
             Ey = (esolver.phi[ix1:ix2,iy1:iy2,iz1:iz2] - esolver.phi[ix1:ix2,iy1+1:iy2+1,iz1:iz2])/esolver.dy
-            Ez = (esolver.phi[ix1:ix2,iy1:iy2,iz1:iz2] - esolver.phi[ix1:ix2,iy1:iy2,iz1+1:iz2+1])/esolver.dz
+            Ez = (esolver.phi[ix1:ix2,iy1:iy2,iz1:iz2] - esolver.phi[ix1:ix2,iy1:iy2,iz1+1:iz2+1])/esolver.dz/zfact/zfact
 
-            Ax = bsolver.potential[0,...]
-            Ay = bsolver.potential[1,...]
-            Az = bsolver.potential[2,...]
             Bx = 0.5*(-((Ay[ix1:ix2,iy1  :iy2  ,iz1+1:iz2+1] - Ay[ix1:ix2,iy1  :iy2  ,iz1:iz2]) +
                         (Ay[ix1:ix2,iy1+1:iy2+1,iz1+1:iz2+1] - Ay[ix1:ix2,iy1+1:iy2+1,iz1:iz2]))/bsolver.dz
                       +((Az[ix1:ix2,iy1+1:iy2+1,iz1  :iz2  ] - Az[ix1:ix2,iy1:iy2,iz1  :iz2  ]) +
@@ -5830,11 +5866,8 @@ class EM3D(SubcycledPoissonSolver):
         elif self.l_2dxz:
             Ex = (esolver.phi[ix1:ix2,:,iz1:iz2] - esolver.phi[ix1+1:ix2+1,:,iz1:iz2])/esolver.dx
             Ey = zeros_like(Ex)
-            Ez = (esolver.phi[ix1:ix2,:,iz1:iz2] - esolver.phi[ix1:ix2,:,iz1+1:iz2+1])/esolver.dz
+            Ez = (esolver.phi[ix1:ix2,:,iz1:iz2] - esolver.phi[ix1:ix2,:,iz1+1:iz2+1])/esolver.dz/zfact/zfact
 
-            Ax = bsolver.potential[0,...]
-            Ay = bsolver.potential[1,...]
-            Az = bsolver.potential[2,...]
             Bx =      -((Ay[ix1:ix2,:,iz1+1:iz2+1] - Ay[ix1:ix2,:,iz1:iz2]))/bsolver.dz
             By = 0.5*(-((Az[ix1+1:ix2+1,:,iz1  :iz2  ] - Az[ix1:ix2,:,iz1  :iz2  ]) +
                         (Az[ix1+1:ix2+1,:,iz1+1:iz2+1] - Az[ix1:ix2,:,iz1+1:iz2+1]))/bsolver.dx
