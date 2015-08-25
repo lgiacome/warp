@@ -89,12 +89,12 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             particle_boundary_dict[ self.top.pboundnz ] ])
         # Current Smoothing
         if np.all( self.em.npass_smooth == 0 ) :
-            dset.attrs["currentSmoothing"] = "none"
+            dset.attrs["currentSmoothing"] = np.string_("none")
         else :
-            dset.attrs["currentSmoothing"] = "Binomial"
+            dset.attrs["currentSmoothing"] = np.string_("Binomial")
             dset.attrs["currentSmoothingParameters"] = str(self.em.npass_smooth)
         # Charge correction
-        dset.attrs["chargeCorrection"] = "none"
+        dset.attrs["chargeCorrection"] = np.string_("none")
         
     def setup_openpmd_mesh_record( self, dset, quantity ) :
         """

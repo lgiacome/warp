@@ -32,7 +32,8 @@ macro_weighted_dict = {
     "weighting": np.uint32(1),
     "position": np.uint32(0),
     "positionOffset": np.uint32(0),
-    "momentum" : np.uint32(0) }
+    "momentum": np.uint32(0) }
+
 weighting_power_dict = {
     "charge": 1.,
     "mass": 1.,
@@ -52,17 +53,17 @@ cart_dict_Jindex = { 'Jx':0, 'Jy':1, 'Jz':2 }
 # Correspondance between the boundary conditions in Warp,
 # and the corresponding representative integer
 field_boundary_dict = {
-    0: "reflecting",
-    1: "reflecting",
-    2: "periodic",
-    3: "openbc" }
+    0: np.string_("reflecting"),
+    1: np.string_("reflecting"),
+    2: np.string_("periodic"),
+    3: np.string_("openbc") }
 particle_boundary_dict = {
-    0: "absorbing",
-    1: "reflecting",
-    2: "periodic" }
+    0: np.string_("absorbing"),
+    1: np.string_("reflecting"),
+    2: np.string_("periodic") }
 # Correspondance between the field solver in Warp,
 # and the corresponding representative integer
 field_solver_dict = {
-    0: "Yee",
-    1: "CK",
-    2: "Lehe" }
+    0: np.string_("Yee"),
+    1: np.string_("CK"),
+    2: np.string_("Lehe") }

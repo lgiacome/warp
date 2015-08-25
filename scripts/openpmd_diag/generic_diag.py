@@ -124,6 +124,7 @@ class OpenPMDDiagnostic(object) :
         f.attrs["openPMD"] = np.string_("1.0.0")
         f.attrs["openPMDextension"] = np.uint32(1)
         f.attrs["software"] = np.string_("warp")
+        f.attrs["softwareVersion"] = np.string_("4")
         today = datetime.datetime.now()
         f.attrs["date"] = np.string_(
             datetime.datetime.now(tzlocal()).strftime('%Y-%m-%d %H:%M:%S %z'))

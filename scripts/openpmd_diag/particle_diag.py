@@ -92,17 +92,17 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         # Generic attributes
         grp.attrs["particleShape"] = float( self.top.depos_order[0][0] )
         grp.attrs["currentDeposition"] = np.string_("Esirkepov")
-        grp.attrs["particleSmoothing"] = "none"
+        grp.attrs["particleSmoothing"] = np.string_("none")
         # Particle pusher
         if self.top.pgroup.lebcancel_pusher==True :
-            grp.attrs["particlePush"] = "Vay"
+            grp.attrs["particlePush"] = np.string_("Vay")
         else :
-            grp.attrs["particlePush"] = "Boris"
+            grp.attrs["particlePush"] = np.string_("Boris")
         # Particle shape
         if np.all( self.top.efetch==1 ) :
-            grp.attrs["particleInterpolation"] = "momentumConserving"
+            grp.attrs["particleInterpolation"]= np.string_("momentumConserving")
         elif np.all( self.top.efetch==4 ) :
-            grp.attrs["particleInterpolation"] = "energyConserving"
+            grp.attrs["particleInterpolation"]= np.string_("energyConserving")
         
         # Setup constant datasets
         for quantity in ["charge", "mass", "positionOffset"] :
@@ -436,11 +436,11 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         elif quantity == "z" :
             quantity_array = species.getz(gather=False)
         elif quantity == "ux" :
-            quantity_array = species.getux(gather=False)/constants.c
+            quantity_array = species.getux(gather=False) * species.mass
         elif quantity == "uy" :
-            quantity_array = species.getuy(gather=False)/constants.c
+            quantity_array = species.getuy(gather=False) * species.mass
         elif quantity == "uz" :
-            quantity_array = species.getuz(gather=False)/constants.c
+            quantity_array = species.getuz(gather=False) * species.mass
         elif quantity == "w" :
             quantity_array = species.getweights(gather=False)
 
