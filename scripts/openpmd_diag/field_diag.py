@@ -203,6 +203,8 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             field_path = "/data/%d/fields/" %iteration
             field_grp = f.require_group(field_path)
             self.setup_openpmd_meshes_group( field_grp )
+        else:
+            field_grp = None
 
         # Determine the components to be written (Cartesian or cylindrical)
         if (self.em.l_2drz == True) :

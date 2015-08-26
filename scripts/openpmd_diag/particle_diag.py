@@ -202,7 +202,9 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 # Create and setup the h5py.Group species_grp
                 species_grp = f.require_group( species_path )
                 self.setup_openpmd_species_group( species_grp, species )
-
+            else:
+                species_grp = None
+                
             # Select the particles that will be written
             select_array = self.apply_selection( species )
             # Get their total number
