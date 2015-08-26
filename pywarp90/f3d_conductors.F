@@ -10,12 +10,13 @@ c  with various geometrical objects.
 c=======================================================================
 c=======================================================================
       subroutine conductordelfromintercepts(intercepts,conductors,
-     &                                      dfill,fuzz)
+     &                                      dfill,fuzz,neumann)
       use ConductorInterceptTypeModule
       use ConductorTypeModule
       type(ConductorInterceptType):: intercepts
       type(ConductorType):: conductors
       real(kind=8):: dfill,fuzz
+      logical(kind=8):: neumann
 
 c Given information about the intercepts of grid lines with an object,
 c contained in the intercepts instance, generate the subgrid information
@@ -307,7 +308,7 @@ c                 --- Make sure that ix is outside the object
 c               --- Make sure that delx is not zero. Note that delx would
 c               --- never be negative. Also, skip points that are close
 c               --- to one.
-                if (0. < delx .and. delx < 1.-fuzz) then
+                if ((0. < delx .or. (neumann .and. delx == 0.)) .and. delx < 1.-fuzz) then
 
                   if (iouter == 1) then
                     if (mod(ix+ixlocal+iy+iylocal+iz+izlocal,2) == 0) then
@@ -360,7 +361,7 @@ c                       --- delmy
                         endif
                         idel = 2
                       endif
-                      if (0. < dely .and. dely < 1.-fuzz .and.
+                      if ((0. < dely .or. (neumann .and. dely == 0.)) .and. dely < 1.-fuzz .and.
      &                    dely < dels(idel)) then
                         dels(idel) = dely
                         volt(idel) = yvoltages((iy1+1)/2,ix,iz)
@@ -397,7 +398,7 @@ c                       --- delmz
                         endif
                         idel = 4
                       endif
-                      if (0. < delz .and. delz < 1.-fuzz .and.
+                      if ((0. < delz .or. (neumann .and. delz == 0.)) .and. delz < 1.-fuzz .and.
      &                    delz < dels(idel)) then
                         dels(idel) = delz
                         volt(idel) = zvoltages((iz1+1)/2,ix,iy)
@@ -501,7 +502,7 @@ c                   --- delmx
                   xside = -xside
                 enddo
 
-                if (0. < dely .and. dely < 1.-fuzz .and. delx >= 1.-fuzz) then
+                if ((0. < dely .or. (neumann .and. dely == 0.)) .and. dely < 1.-fuzz .and. delx >= 1.-fuzz) then
 
                   if (iouter == 1) then
                     if (mod(ix+ixlocal+iy+iylocal+iz+izlocal,2) == 0) then
@@ -546,7 +547,7 @@ c                       --- delmz
                         endif
                         idel = 4
                       endif
-                      if (0. < delz .and. delz < 1.-fuzz .and.
+                      if ((0. < delz .or. (neumann .and. delz == 0.)) .and. delz < 1.-fuzz .and.
      &                    delz < dels(idel)) then
                         dels(idel) = delz
                         volt(idel) = zvoltages((iz1+1)/2,ix,iy)
@@ -673,7 +674,7 @@ c                   --- delmy
                   yside = -yside
                 enddo
 
-                if (0. < delz .and. delz < 1.-fuzz .and.
+                if ((0. < delz .or. (neumann .and. delz == 0.)) .and. delz < 1.-fuzz .and.
      &              delx >= 1.-fuzz .and. dely >= 1.-fuzz) then
 
                   if (iouter == 1) then

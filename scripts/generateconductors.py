@@ -204,7 +204,7 @@ def installconductor(a,xmin=None,xmax=None,ymin=None,ymax=None,
         # Generate the conductor data
         g.getdatanew(a,dfill)
         # Then install it
-        g.installintercepts(installrz,gridmode,solvergeom,conductors,gridrz)
+        g.installintercepts(installrz,gridmode,solvergeom,conductors,gridrz,a.neumann)
     else:
         # --- This is the old method, and is now mostly obsolete...
         # Generate the conductor data
@@ -1850,7 +1850,58 @@ class GridIntercepts(object):
                 self.intercepts.ycondids = condid
                 self.intercepts.zcondids = condid
 
-    def installlist(interceptslist,installrz,solvergeom,conductors,gridrz):
+    def handleneumannboundaries(dels):
+        # --- This should be the same as what is in Delta.normalize
+        def _fixneumannzeros(i0, i1, fuzz):
+            # --- If a point is between -fuzz and 0, make sure it gets put on the
+            # --- conductor surface (i.e. set del = 0). Note that the direction
+            # --- of the point must be switched (between plus and minus) since
+            # --- the point is being moved from inside the surface to on the
+            # --- surface.
+            dels[i0,:] = where((-fuzz < dels[i1,:])&(dels[i1,:] < 0.), 0., dels[i0,:])
+            dels[i1,:] = where((-fuzz < dels[i1,:])&(dels[i1,:] < 0.), -2., dels[i1,:])
+
+        # --- For points that are within fuzz of 0 or 1, force them to be 0 or 1.
+        # --- For Neumann boundaries, dels=0 is a valid value and this deals
+        # --- with roundoff problems since a conductor that is aligned with the
+        # --- grid should be producing subgrid points (with dels=0) and not
+        # --- interior points, which would happen if dels=-fuzz. (The Neumann
+        # --- method ignores all interior points.)
+        # --- For points near 1, force them to one since they may be duplicating
+        # --- neighboring points with dels=0. Neumann ignores points with
+        # --- dels==1.
+        fuzz = 1.e-13
+        _fixneumannzeros(0, 1, fuzz)
+        _fixneumannzeros(1, 0, fuzz)
+        _fixneumannzeros(2, 3, fuzz)
+        _fixneumannzeros(3, 2, fuzz)
+        _fixneumannzeros(4, 5, fuzz)
+        _fixneumannzeros(5, 4, fuzz)
+        dels[:,:] = where((1.-fuzz < dels[:,:])&(dels[:,:] < 1.), 1., dels[:,:])
+        # --- This deals with points that straddle a surface, where some
+        # --- directions are inside and others outside. This ensures that all
+        # --- directions are inside in these cases by changing dels that are
+        # --- outside so that they are deep inside. This still doesn't seem to
+        # --- be enough to fix the problems with convergence.
+        delsmin = minimum.reduce(dels)
+        delsmax = maximum.reduce(dels)
+        ii = compress((delsmin < 0.)&(delsmax > 0.), range(dels.shape[1]))
+        for i in ii:
+            dels[:,i] = where(dels[:,i] > 0., -2., dels[:,i])
+        # --- This deals with special case points. It can sometimes happen that
+        # --- when a point is on a surface, one of the dels can be zero, but others
+        # --- can be between -1 and 0. This is an attempt to fix those points.
+        # --- It forces the dels which are between -1 and 0 to be deep inside the
+        # --- conductor, i.e., -2. If this is not done, then the normal Dirichlet
+        # --- subgrid algorithm would be applied, leading to serious errors.
+        # --- However, this fix doesn't seen to fix the whole problem since the
+        # --- code still has problems converging when there are points with dels=0.
+        delsmin = minimum.reduce(abs(dels))
+        for i in range(6):
+            ccc = where((-1+fuzz<dels[i,:])&(dels[i,:]<0.), -2., dels[i,:])
+            dels[i,:] = where(delsmin==0., ccc, dels[i,:])
+
+    def installlist(interceptslist,installrz,solvergeom,conductors,gridrz,neumann):
 
         # --- For each intercept, generate the conductor data in a separate
         # --- conductors instance.
@@ -1859,7 +1910,7 @@ class GridIntercepts(object):
         for intercepts,dfill in interceptslist:
             conductorslist.append(ConductorType())
             conductordelfromintercepts(intercepts.intercepts,
-                                       conductorslist[-1],dfill,fuzz)
+                                       conductorslist[-1],dfill,fuzz,neumann)
 
         # --- If the RZ solver is being used and the data is to be installed,
         # --- then clear out an existing conductor data in the database first.
@@ -1878,6 +1929,17 @@ class GridIntercepts(object):
             conductors.interior.n = 0
             conductors.evensubgrid.n = 0
             conductors.oddsubgrid.n = 0
+
+        if neumann:
+            delssign = -1.
+            for c in conductorslist:
+                c.interior.n = 0
+                if c.evensubgrid.n > 0:
+                    GridIntercepts.handleneumannboundaries(c.evensubgrid.dels)
+                if c.oddsubgrid.n > 0:
+                    GridIntercepts.handleneumannboundaries(c.oddsubgrid.dels)
+        else:
+            delssign = +1.
 
         # --- Count how much data needs to be installed.
         ncnew = 0
@@ -1919,7 +1981,7 @@ class GridIntercepts(object):
                 ne1 = conductors.evensubgrid.n
                 ne2 = conductors.evensubgrid.n + ne
                 conductors.evensubgrid.indx[:,ne1:ne2] = c.evensubgrid.indx[:,:ne]
-                conductors.evensubgrid.dels[:,ne1:ne2] = c.evensubgrid.dels[:,:ne]
+                conductors.evensubgrid.dels[:,ne1:ne2] = c.evensubgrid.dels[:,:ne]*delssign
                 conductors.evensubgrid.volt[:,ne1:ne2] = c.evensubgrid.volt[:,:ne]
                 conductors.evensubgrid.numb[:,ne1:ne2] = c.evensubgrid.numb[:,:ne]
                 conductors.evensubgrid.ilevel[ne1:ne2] = c.evensubgrid.ilevel[:ne]
@@ -1930,7 +1992,7 @@ class GridIntercepts(object):
                 no1 = conductors.oddsubgrid.n
                 no2 = conductors.oddsubgrid.n + no
                 conductors.oddsubgrid.indx[:,no1:no2] = c.oddsubgrid.indx[:,:no]
-                conductors.oddsubgrid.dels[:,no1:no2] = c.oddsubgrid.dels[:,:no]
+                conductors.oddsubgrid.dels[:,no1:no2] = c.oddsubgrid.dels[:,:no]*delssign
                 conductors.oddsubgrid.volt[:,no1:no2] = c.oddsubgrid.volt[:,:no]
                 conductors.oddsubgrid.numb[:,no1:no2] = c.oddsubgrid.numb[:,:no]
                 conductors.oddsubgrid.ilevel[no1:no2] = c.oddsubgrid.ilevel[:no]
@@ -1948,6 +2010,7 @@ class GridIntercepts(object):
 
     # --- Set so installlist can be called directly from GridIntercepts
     installlist = staticmethod(installlist)
+    handleneumannboundaries = staticmethod(handleneumannboundaries)
 
     def px(self,ii,xmin=None,xmax=None):
         if xmin is None:
@@ -2841,7 +2904,7 @@ class Grid:
             f3d.gridmode = gridmode
 
     def installintercepts(self,installrz=1,gridmode=1,solvergeom=None,
-                          conductors=f3d.conductors,gridrz=None):
+                          conductors=f3d.conductors,gridrz=None,neumann=False):
         """
     Installs the conductor data into the fortran database
         """
@@ -2856,7 +2919,7 @@ class Grid:
         conductors.levelly[:self.mglevels] = self.mglevelly[:self.mglevels]
         conductors.levellz[:self.mglevels] = self.mglevellz[:self.mglevels]
         GridIntercepts.installlist(self.interceptslist,
-                                   installrz,solvergeom,conductors,gridrz)
+                                   installrz,solvergeom,conductors,gridrz,neumann)
         self.interceptsinstalled += self.interceptslist
         self.interceptslist = []
         if gridmode is not None:
