@@ -3,7 +3,8 @@ Secondaries: class for generating secondaries
 """
 from warp import *
 from appendablearray import *
-from pos import *
+import pos
+from pos import pos as posC
 try:
   from txphysics import txigenelec, txstopping, txrand
   l_txphysics = 1
@@ -18,6 +19,10 @@ except:
   l_desorb = 0
 import time
 
+try:
+    pos_version = pos.__version__
+except AttributeError:
+    pos_version = '15p3'
 
 def secondariesdoc():
   import Secondaries
@@ -76,7 +81,7 @@ Class for generating secondaries
     self.set_params_user=set_params_user
     self.l_set_params_user_only=l_set_params_user_only
     self.mat_number=1
-    self.call_set_params_user(pos.maxsec,self.mat_number)
+    self.call_set_params_user(posC.maxsec,self.mat_number)
     self.min_age=min_age
     if self.min_age is not None:
       w3d.l_inj_rec_inittime=true
@@ -105,12 +110,14 @@ Class for generating secondaries
         top.sppid=nextpid()
         setuppgroup(top.pgroup)
     # set variables for secondary electrons routines
+    if pos_version >= '17p3':
+        pos.init_physical_constants()
     self.secelec_ns = zeros(1,'l')
-    self.secelec_un = zeros(pos.maxsec,'d')
-    self.secelec_ut = zeros(pos.maxsec,'d')
-    self.secelec_uz = zeros(pos.maxsec,'d')
-    self.secelec_ityps  = zeros(pos.maxsec,'l')
-    self.secelec_ekstot = zeros(pos.maxsec,'d')
+    self.secelec_un = zeros(posC.maxsec,'d')
+    self.secelec_ut = zeros(posC.maxsec,'d')
+    self.secelec_uz = zeros(posC.maxsec,'d')
+    self.secelec_ityps  = zeros(posC.maxsec,'l')
+    self.secelec_ekstot = zeros(posC.maxsec,'d')
     self.secelec_dele   = zeros(1,'d')
     self.secelec_delr   = zeros(1,'d')
     self.secelec_delts  = zeros(1,'d')
@@ -132,7 +139,7 @@ Class for generating secondaries
     self.power_dep=AppendableArray(typecode='d') # instantaneous power deposition [W] 
     self.power_emit=AppendableArray(typecode='d') # instantaneous power emission [W] 
     self.power_diff=AppendableArray(typecode='d') # instantaneous power deposition [W] 
-    if pos.nsteps_g==0:
+    if posC.nsteps_g==0:
       self.piditype=0
     else:
       self.piditype=nextpid()-1
@@ -1248,15 +1255,15 @@ Class for generating secondaries
              itype=self.inter[incident_species]['type'][ics]
              scale_factor=self.inter[incident_species]['scale_factor'][ics]
              if scale_factor is None:scale_factor=1.
-             self.prepare_secondaries(itype,pos.maxsec)
+             self.prepare_secondaries(itype,posC.maxsec)
              if top.wpid==0:weight=ones(n,'d')
-             xnew = zeros(n*pos.maxsec,'d')
-             ynew = zeros(n*pos.maxsec,'d')
-             znew = zeros(n*pos.maxsec,'d')
-             uxsec = zeros(n*pos.maxsec,'d')
-             uysec = zeros(n*pos.maxsec,'d')
-             uzsec = zeros(n*pos.maxsec,'d')
-             ns = array([n*pos.maxsec])
+             xnew = zeros(n*posC.maxsec,'d')
+             ynew = zeros(n*posC.maxsec,'d')
+             znew = zeros(n*posC.maxsec,'d')
+             uxsec = zeros(n*posC.maxsec,'d')
+             uysec = zeros(n*posC.maxsec,'d')
+             uzsec = zeros(n*posC.maxsec,'d')
+             ns = array([n*posC.maxsec])
              warpsecelec(n,e0,coseta,weight,ns,xnew,ynew,znew,uxsec,uysec,uzsec,
                          costheta,sintheta,sinphi,cosphi,n_unit0,xplost,yplost,zplost,vxplost,vyplost,vzplost,
                          top.pgroup.sm[js_new],Electron.mass,scale_factor,init_position_offset)
@@ -1662,307 +1669,310 @@ Class for generating secondaries
 
 # Set the values
 # maxsec must be ten or greater
-#       pos.th  = 0.
-#       pos.pn = 0.
-#       pos.pt = 0.
-#       pos.pz = 0.
-#       pos.ns = 0
-       pos.matsurf =3
-#       pos.ielswitch =1
-#       pos.iredswitch =1
-#       pos.itrueswitch =1
-#       pos.irelk =0
-#       pos.pmax =0.77939
-#       pos.range = 0.
-#       pos.freepath = 0.
-       pos.iprob = 4
-#       pos.ndelerm =0
-#       pos.ndeltspm =0
-#       pos.np0lt0 =0
-#       pos.np1gt1 =0
-#       pos.totsec1 =0.
-#       pos.totsec2 =0.
+#       posC.th  = 0.
+#       posC.pn = 0.
+#       posC.pt = 0.
+#       posC.pz = 0.
+#       posC.ns = 0
+       posC.matsurf =3
+#       posC.ielswitch =1
+#       posC.iredswitch =1
+#       posC.itrueswitch =1
+#       posC.irelk =0
+#       posC.pmax =0.77939
+#       posC.range = 0.
+#       posC.freepath = 0.
+       posC.iprob = 4
+#       posC.ndelerm =0
+#       posC.ndeltspm =0
+#       posC.np0lt0 =0
+#       posC.np1gt1 =0
+#       posC.totsec1 =0.
+#       posC.totsec2 =0.
 
 # Here we set material-dependent parameters...Cu (mat_num=1) is default
 
-       pos.enpar[0] = 1.5
-       pos.enpar[1] = 1.75
-       pos.enpar[2] = 1.
-       pos.enpar[3] = 3.75
-       pos.enpar[4] = 8.5
-       pos.enpar[5] = 11.5
-       pos.enpar[6] = 2.5
-       pos.enpar[7] = 3.0
-       pos.enpar[8] = 2.5
-       pos.enpar[9] = 3.0
+       posC.enpar[0] = 1.5
+       posC.enpar[1] = 1.75
+       posC.enpar[2] = 1.
+       posC.enpar[3] = 3.75
+       posC.enpar[4] = 8.5
+       posC.enpar[5] = 11.5
+       posC.enpar[6] = 2.5
+       posC.enpar[7] = 3.0
+       posC.enpar[8] = 2.5
+       posC.enpar[9] = 3.0
 
-       pos.pnpar[0] = 2.5
-       pos.pnpar[1] = 3.3
-       pos.pnpar[2] = 2.5
-       pos.pnpar[3] = 2.5
-       pos.pnpar[4] = 2.8
-       pos.pnpar[5] = 1.3
-       pos.pnpar[6] = 1.5
-       pos.pnpar[7] = 1.5
-       pos.pnpar[8] = 1.5
-       pos.pnpar[9] = 1.5
+       posC.pnpar[0] = 2.5
+       posC.pnpar[1] = 3.3
+       posC.pnpar[2] = 2.5
+       posC.pnpar[3] = 2.5
+       posC.pnpar[4] = 2.8
+       posC.pnpar[5] = 1.3
+       posC.pnpar[6] = 1.5
+       posC.pnpar[7] = 1.5
+       posC.pnpar[8] = 1.5
+       posC.pnpar[9] = 1.5
 
-       pos.dtspk = 1.8848
-       pos.dtotpk = 2.1
-       pos.pangsec =1.
-       pos.pr =0.5
-       pos.sige =2.
-       pos.Ecr =0.0409
-       pos.E0tspk =276.812
-       pos.E0epk = 0.
-       pos.E0w =60.8614
-       pos.rpar1 =0.26
-       pos.rpar2 =2.
-       pos.tpar1 =0.66
-       pos.tpar2 =0.8
-       pos.tpar3 =0.7
-       pos.tpar4 =1.
-       pos.tpar5 =0.
-       pos.tpar6 =0.
-       pos.epar1 =0.26
-       pos.epar2 =2.
-       pos.P1rinf =0.2
-       pos.P1einf =0.02
-       pos.P1epk =0.49623
-       pos.powts =1.54033
-       pos.powe =1.
-       pos.qr=0.104045
+       posC.dtspk = 1.8848
+       posC.dtotpk = 2.1
+       posC.pangsec =1.
+       posC.pr =0.5
+       posC.sige =2.
+       posC.Ecr =0.0409
+       posC.E0tspk =276.812
+       posC.E0epk = 0.
+       posC.E0w =60.8614
+       posC.rpar1 =0.26
+       posC.rpar2 =2.
+       posC.tpar1 =0.66
+       posC.tpar2 =0.8
+       posC.tpar3 =0.7
+       posC.tpar4 =1.
+       posC.tpar5 =0.
+       posC.tpar6 =0.
+       posC.epar1 =0.26
+       posC.epar2 =2.
+       posC.P1rinf =0.2
+       posC.P1einf =0.02
+       posC.P1epk =0.49623
+       posC.powts =1.54033
+       posC.powe =1.
+       posC.qr=0.104045
 
 
 # Now check for Stainless Steel
        if (mat_num == 2):
 
-         pos.enpar[0] = 3.9
-         pos.enpar[1] = 6.2
-         pos.enpar[2] = 13.
-         pos.enpar[3] = 8.8
-         pos.enpar[4] = 6.25
-         pos.enpar[5] = 2.25
-         pos.enpar[6] = 9.2
-         pos.enpar[7] = 5.3
-         pos.enpar[8] = 17.8
-         pos.enpar[9] = 10.
+         posC.enpar[0] = 3.9
+         posC.enpar[1] = 6.2
+         posC.enpar[2] = 13.
+         posC.enpar[3] = 8.8
+         posC.enpar[4] = 6.25
+         posC.enpar[5] = 2.25
+         posC.enpar[6] = 9.2
+         posC.enpar[7] = 5.3
+         posC.enpar[8] = 17.8
+         posC.enpar[9] = 10.
   
-         pos.pnpar[0] = 1.6
-         pos.pnpar[1] = 2.
-         pos.pnpar[2] = 1.8
-         pos.pnpar[3] = 4.7
-         pos.pnpar[4] = 1.8
-         pos.pnpar[5] = 2.4
-         pos.pnpar[6] = 1.8
-         pos.pnpar[7] = 1.8
-         pos.pnpar[8] = 2.3
-         pos.pnpar[9] = 1.8
+         posC.pnpar[0] = 1.6
+         posC.pnpar[1] = 2.
+         posC.pnpar[2] = 1.8
+         posC.pnpar[3] = 4.7
+         posC.pnpar[4] = 1.8
+         posC.pnpar[5] = 2.4
+         posC.pnpar[6] = 1.8
+         posC.pnpar[7] = 1.8
+         posC.pnpar[8] = 2.3
+         posC.pnpar[9] = 1.8
   
-         pos.pangsec =1.
-         pos.pr =0.4
-         pos.sige =1.9
-         pos.dtspk = 1.22
-         pos.dtotpk = 2.1
-         pos.Ecr =40.0
-         pos.E0tspk =310.
-         pos.E0epk = 0.
-         pos.E0w =100.
-         pos.rpar1 =0.26
-         pos.rpar2 =2.
-         pos.tpar1 =0.66
-         pos.tpar2 =0.8
-         pos.tpar3 =0.7
-         pos.tpar4 =1.
-         pos.tpar5 =0.
-         pos.tpar6 =0.
-         pos.epar1 =0.26
-         pos.epar2 =2.
-         pos.P1rinf =0.74
-         pos.P1einf =0.07
-         pos.P1epk =0.5
-         pos.powts =1.813
-         pos.powe =0.9
-         pos.qr=1.
+         posC.pangsec =1.
+         posC.pr =0.4
+         posC.sige =1.9
+         posC.dtspk = 1.22
+         posC.dtotpk = 2.1
+         posC.Ecr =40.0
+         posC.E0tspk =310.
+         posC.E0epk = 0.
+         posC.E0w =100.
+         posC.rpar1 =0.26
+         posC.rpar2 =2.
+         posC.tpar1 =0.66
+         posC.tpar2 =0.8
+         posC.tpar3 =0.7
+         posC.tpar4 =1.
+         posC.tpar5 =0.
+         posC.tpar6 =0.
+         posC.epar1 =0.26
+         posC.epar2 =2.
+         posC.P1rinf =0.74
+         posC.P1einf =0.07
+         posC.P1epk =0.5
+         posC.powts =1.813
+         posC.powe =0.9
+         posC.qr=1.
    
 # Now check for Ion->Au 
 # Because it is Ion, we set elastic and rediffused to zero
 # 
 # First we take H ion (data from Eder, Rev Sci Inst 68 1(1997))
        if (mat_num == 3):
-         pos.enpar[0] = 3.9
-         pos.enpar[1] = 6.2
-         pos.enpar[2] = 13.
-         pos.enpar[3] = 8.8
-         pos.enpar[4] = 6.25
-         pos.enpar[5] = 2.25
-         pos.enpar[6] = 9.2
-         pos.enpar[7] = 5.3
-         pos.enpar[8] = 17.8
-         pos.enpar[9] = 10.
+         posC.enpar[0] = 3.9
+         posC.enpar[1] = 6.2
+         posC.enpar[2] = 13.
+         posC.enpar[3] = 8.8
+         posC.enpar[4] = 6.25
+         posC.enpar[5] = 2.25
+         posC.enpar[6] = 9.2
+         posC.enpar[7] = 5.3
+         posC.enpar[8] = 17.8
+         posC.enpar[9] = 10.
   
-         pos.pnpar[0] = 1.6
-         pos.pnpar[1] = 2.
-         pos.pnpar[2] = 1.8
-         pos.pnpar[3] = 4.7
-         pos.pnpar[4] = 1.8
-         pos.pnpar[5] = 2.4
-         pos.pnpar[6] = 1.8
-         pos.pnpar[7] = 1.8
-         pos.pnpar[8] = 2.3
-         pos.pnpar[9] = 1.8
+         posC.pnpar[0] = 1.6
+         posC.pnpar[1] = 2.
+         posC.pnpar[2] = 1.8
+         posC.pnpar[3] = 4.7
+         posC.pnpar[4] = 1.8
+         posC.pnpar[5] = 2.4
+         posC.pnpar[6] = 1.8
+         posC.pnpar[7] = 1.8
+         posC.pnpar[8] = 2.3
+         posC.pnpar[9] = 1.8
   
-         pos.pangsec =1.
+         posC.pangsec =1.
 
-         pos.dtspk = 2.382
-         pos.dtotpk = 2.382
-         pos.E0tspk = 104624.0
-         pos.powts =1.44
-         pos.tpar1 =0.66
-         pos.tpar2 =0.8
-         pos.tpar3 =0.7
-         pos.tpar4 =1.
-         pos.tpar5 =0.
-         pos.tpar6 =0.
+         posC.dtspk = 2.382
+         posC.dtotpk = 2.382
+         posC.E0tspk = 104624.0
+         posC.powts =1.44
+         posC.tpar1 =0.66
+         posC.tpar2 =0.8
+         posC.tpar3 =0.7
+         posC.tpar4 =1.
+         posC.tpar5 =0.
+         posC.tpar6 =0.
 
-         pos.sige =0.0
-         pos.pr =0.0
-         pos.E0epk = 0.
-         pos.E0w =0.
-         pos.epar1 =0.0
-         pos.epar2 =0.
-         pos.P1einf =0.0
-         pos.P1epk =0.0
-         pos.powe =0.0
+         posC.sige =0.0
+         posC.pr =0.0
+         posC.E0epk = 0.
+         posC.E0w =0.
+         posC.epar1 =0.0
+         posC.epar2 =0.
+         posC.P1einf =0.0
+         posC.P1epk =0.0
+         posC.powe =0.0
 
-         pos.Ecr =0.0
-         pos.rpar1 =0.0
-         pos.rpar2 =0.
-         pos.P1rinf =0.0
-         pos.qr=0.
+         posC.Ecr =0.0
+         posC.rpar1 =0.0
+         posC.rpar2 =0.
+         posC.P1rinf =0.0
+         posC.qr=0.
 
 # Now we take He ion (data from Eder, Rev Sci Inst 68 1(1997))
        if (mat_num == 4):
-         pos.enpar[0] = 3.9
-         pos.enpar[1] = 6.2
-         pos.enpar[2] = 13.
-         pos.enpar[3] = 8.8
-         pos.enpar[4] = 6.25
-         pos.enpar[5] = 2.25
-         pos.enpar[6] = 9.2
-         pos.enpar[7] = 5.3
-         pos.enpar[8] = 17.8
-         pos.enpar[9] = 10.
+         posC.enpar[0] = 3.9
+         posC.enpar[1] = 6.2
+         posC.enpar[2] = 13.
+         posC.enpar[3] = 8.8
+         posC.enpar[4] = 6.25
+         posC.enpar[5] = 2.25
+         posC.enpar[6] = 9.2
+         posC.enpar[7] = 5.3
+         posC.enpar[8] = 17.8
+         posC.enpar[9] = 10.
   
-         pos.pnpar[0] = 1.6
-         pos.pnpar[1] = 2.
-         pos.pnpar[2] = 1.8
-         pos.pnpar[3] = 4.7
-         pos.pnpar[4] = 1.8
-         pos.pnpar[5] = 2.4
-         pos.pnpar[6] = 1.8
-         pos.pnpar[7] = 1.8
-         pos.pnpar[8] = 2.3
-         pos.pnpar[9] = 1.8
+         posC.pnpar[0] = 1.6
+         posC.pnpar[1] = 2.
+         posC.pnpar[2] = 1.8
+         posC.pnpar[3] = 4.7
+         posC.pnpar[4] = 1.8
+         posC.pnpar[5] = 2.4
+         posC.pnpar[6] = 1.8
+         posC.pnpar[7] = 1.8
+         posC.pnpar[8] = 2.3
+         posC.pnpar[9] = 1.8
   
-         pos.pangsec =1.
+         posC.pangsec =1.
 
-         pos.dtspk = 5.68
-         pos.dtotpk = 5.68
-         pos.E0tspk = 1410000.0
-         pos.powts =1.044
-         pos.tpar1 =0.66
-         pos.tpar2 =0.8
-         pos.tpar3 =0.7
-         pos.tpar4 =1.
-         pos.tpar5 =0.
-         pos.tpar6 =0.
+         posC.dtspk = 5.68
+         posC.dtotpk = 5.68
+         posC.E0tspk = 1410000.0
+         posC.powts =1.044
+         posC.tpar1 =0.66
+         posC.tpar2 =0.8
+         posC.tpar3 =0.7
+         posC.tpar4 =1.
+         posC.tpar5 =0.
+         posC.tpar6 =0.
 
-         pos.sige =0.0
-         pos.pr =0.0
-         pos.E0epk = 0.
-         pos.E0w =0.
-         pos.epar1 =0.0
-         pos.epar2 =0.
-         pos.P1einf =0.0
-         pos.P1epk =0.0
-         pos.powe =0.0
+         posC.sige =0.0
+         posC.pr =0.0
+         posC.E0epk = 0.
+         posC.E0w =0.
+         posC.epar1 =0.0
+         posC.epar2 =0.
+         posC.P1einf =0.0
+         posC.P1epk =0.0
+         posC.powe =0.0
 
-         pos.Ecr =0.0
-         pos.rpar1 =0.0
-         pos.rpar2 =0.
-         pos.P1rinf =0.0
-         pos.qr=0.
+         posC.Ecr =0.0
+         posC.rpar1 =0.0
+         posC.rpar2 =0.
+         posC.P1rinf =0.0
+         posC.qr=0.
 
          # This is K -> SS (see Phys. Rev. ST Accel. Beams 6, 054701 [2003])
        if (mat_num == 5):
-         pos.enpar[0] = 3.9
-         pos.enpar[1] = 6.2
-         pos.enpar[2] = 13.
-         pos.enpar[3] = 8.8
-         pos.enpar[4] = 6.25
-         pos.enpar[5] = 2.25
-         pos.enpar[6] = 9.2
-         pos.enpar[7] = 5.3
-         pos.enpar[8] = 17.8
-         pos.enpar[9] = 10.
+         posC.enpar[0] = 3.9
+         posC.enpar[1] = 6.2
+         posC.enpar[2] = 13.
+         posC.enpar[3] = 8.8
+         posC.enpar[4] = 6.25
+         posC.enpar[5] = 2.25
+         posC.enpar[6] = 9.2
+         posC.enpar[7] = 5.3
+         posC.enpar[8] = 17.8
+         posC.enpar[9] = 10.
          if (maxsec > 10):
-                pos.enpar[10:] = 5.
+                posC.enpar[10:] = 5.
  
-         pos.pnpar[0] = 1.6
-         pos.pnpar[1] = 2.
-         pos.pnpar[2] = 1.8
-         pos.pnpar[3] = 4.7
-         pos.pnpar[4] = 1.8
-         pos.pnpar[5] = 2.4
-         pos.pnpar[6] = 1.8
-         pos.pnpar[7] = 1.8
-         pos.pnpar[8] = 2.3
-         pos.pnpar[9] = 1.8
+         posC.pnpar[0] = 1.6
+         posC.pnpar[1] = 2.
+         posC.pnpar[2] = 1.8
+         posC.pnpar[3] = 4.7
+         posC.pnpar[4] = 1.8
+         posC.pnpar[5] = 2.4
+         posC.pnpar[6] = 1.8
+         posC.pnpar[7] = 1.8
+         posC.pnpar[8] = 2.3
+         posC.pnpar[9] = 1.8
          if (maxsec > 10):
-                pos.pnpar[10:] = 2.
+                posC.pnpar[10:] = 2.
  
-         pos.pangsec =1.
+         posC.pangsec =1.
 
-         pos.dtspk = 55.
-         pos.dtotpk = 2.382
-         pos.E0tspk = 5.9e7
-         pos.powts =1.25
-         pos.tpar1 =0.66
-         pos.tpar2 =0.8
-         pos.tpar3 =0.7
-         pos.tpar4 =1.
-         pos.tpar5 =0.
-         pos.tpar6 =0.
+         posC.dtspk = 55.
+         posC.dtotpk = 2.382
+         posC.E0tspk = 5.9e7
+         posC.powts =1.25
+         posC.tpar1 =0.66
+         posC.tpar2 =0.8
+         posC.tpar3 =0.7
+         posC.tpar4 =1.
+         posC.tpar5 =0.
+         posC.tpar6 =0.
 
-         pos.sige =0.0
-         pos.pr =0.0
-         pos.E0epk = 0.
-         pos.E0w =0.
-         pos.epar1 =0.0
-         pos.epar2 =0.
-         pos.P1einf =0.0
-         pos.P1epk =0.0
-         pos.powe =0.0
+         posC.sige =0.0
+         posC.pr =0.0
+         posC.E0epk = 0.
+         posC.E0w =0.
+         posC.epar1 =0.0
+         posC.epar2 =0.
+         posC.P1einf =0.0
+         posC.P1epk =0.0
+         posC.powe =0.0
 
-         pos.Ecr =0.0
-         pos.rpar1 =0.0
-         pos.rpar2 =0.
-         pos.P1rinf =0.0
-         pos.qr=0.
+         posC.Ecr =0.0
+         posC.rpar1 =0.0
+         posC.rpar2 =0.
+         posC.P1rinf =0.0
+         posC.qr=0.
 
-         pos.tpar1 = -1.
-         pos.tpar2 = -1.
-         pos.tpar3 = 0.
-         pos.tpar4 = 0.
+         posC.tpar1 = -1.
+         posC.tpar2 = -1.
+         posC.tpar3 = 0.
+         posC.tpar4 = 0.
 
 
   def prepare_secondaries(self,itype,maxsec):
 
-   if(maxsec != pos.maxsec):
-    pos.maxsec = maxsec
-    pos.gchange("bincoeff")
-    init_pascal_triangle(pos.nbc,pos.maxsec)
+   if(maxsec != posC.maxsec):
+    posC.maxsec = maxsec
+    posC.gchange("bincoeff")
+    if pos_version >= '17p3':
+        pos.init_pascal_triangle()
+    else:
+        pos.init_pascal_triangle(posC.nbc,posC.maxsec)
  
    if  itype != self.mat_number:
     self.mat_number=itype
@@ -1999,32 +2009,40 @@ components of the secondaries (dimensionless).
    np0lt0=0
    np1gt1=0
    if scale_factor is None:     
-     pos.secelec(Ek0,costheta,weight, #in
+     if pos_version >= '17p3':
+       pos.secelec(Ek0,costheta,weight, #in
+            self.secelec_ns,self.secelec_un,self.secelec_ut,self.secelec_uz,self.secelec_ityps,
+            self.secelec_ekstot,self.secelec_dele,self.secelec_delr,self.secelec_delts)
+     else:
+       pos.secelec(Ek0,costheta,weight, #in
           self.secelec_ns,self.secelec_un,self.secelec_ut,self.secelec_uz,self.secelec_ityps,
           self.secelec_ekstot,self.secelec_dele,self.secelec_delr,self.secelec_delts,
-          maxsec,pos.enpar,pos.pnpar,pos.matsurf,
-          pos.pangsec,pos.pmax,pos.pr,pos.sige,
-          pos.iprob,ndelerm,ndeltspm,np0lt0,np1gt1,
-          pos.dtspk,pos.Ecr,pos.E0tspk,pos.E0epk,pos.E0w,
-          pos.rpar1,pos.rpar2,pos.tpar1,pos.tpar2,pos.tpar3,
-          pos.tpar4,pos.tpar5,pos.tpar6,pos.epar1,pos.epar2,
-          pos.P1rinf,pos.P1einf,pos.P1epk,pos.powts,pos.powe,pos.qr,pos.nbc,
-          pos.rp0lt0,pos.rp1gt1,pos.rdeltspm,pos.rdelerm)
+          maxsec,posC.enpar,posC.pnpar,posC.matsurf,
+          posC.pangsec,posC.pmax,posC.pr,posC.sige,
+          posC.iprob,ndelerm,ndeltspm,np0lt0,np1gt1,
+          posC.dtspk,posC.Ecr,posC.E0tspk,posC.E0epk,posC.E0w,
+          posC.rpar1,posC.rpar2,posC.tpar1,posC.tpar2,posC.tpar3,
+          posC.tpar4,posC.tpar5,posC.tpar6,posC.epar1,posC.epar2,
+          posC.P1rinf,posC.P1einf,posC.P1epk,posC.powts,posC.powe,posC.qr,posC.nbc,
+          posC.rp0lt0,posC.rp1gt1,posC.rdeltspm,posC.rdelerm)
    else:
-     pos.secelec(Ek0,costheta,weight, #in
+     if pos_version >= '17p3':
+       raise Exception('this should call scale_SEY_params')
+     else:
+       pos.secelec(Ek0,costheta,weight, #in
           self.secelec_ns,self.secelec_un,self.secelec_ut,self.secelec_uz,self.secelec_ityps,
           self.secelec_ekstot,self.secelec_dele,self.secelec_delr,self.secelec_delts,
-          maxsec,pos.enpar,pos.pnpar,pos.matsurf,
-          pos.pangsec,pos.pmax,pos.pr,pos.sige,
-          pos.iprob,ndelerm,ndeltspm,np0lt0,np1gt1,
-          scale_factor*pos.dtspk,pos.Ecr,pos.E0tspk,pos.E0epk,pos.E0w,
-          pos.rpar1,pos.rpar2,pos.tpar1,pos.tpar2,pos.tpar3,
-          pos.tpar4,pos.tpar5,pos.tpar6,pos.epar1,pos.epar2,
-          scale_factor*pos.P1rinf,
-          scale_factor*pos.P1einf,
-          scale_factor*pos.P1epk,
-          pos.powts,pos.powe,pos.qr,pos.nbc,
-          pos.rp0lt0,pos.rp1gt1,pos.rdeltspm,pos.rdelerm)
+          maxsec,posC.enpar,posC.pnpar,posC.matsurf,
+          posC.pangsec,posC.pmax,posC.pr,posC.sige,
+          posC.iprob,ndelerm,ndeltspm,np0lt0,np1gt1,
+          scale_factor*posC.dtspk,posC.Ecr,posC.E0tspk,posC.E0epk,posC.E0w,
+          posC.rpar1,posC.rpar2,posC.tpar1,posC.tpar2,posC.tpar3,
+          posC.tpar4,posC.tpar5,posC.tpar6,posC.epar1,posC.epar2,
+          scale_factor*posC.P1rinf,
+          scale_factor*posC.P1einf,
+          scale_factor*posC.P1epk,
+          posC.powts,posC.powe,posC.qr,posC.nbc,
+          posC.rp0lt0,posC.rp1gt1,posC.rdeltspm,posC.rdelerm)
 #	call secelec(Ek0,costheta,chm(n),ns,vgns,vgts,vgzs,ityps,ens,
 #     + dele,delr,delts,
 #     + maxsec,enpar,pnpar,matsurf,
@@ -2038,28 +2056,31 @@ components of the secondaries (dimensionless).
 
   def getP1elast(self,E0,costheta,material,maxsec=10):
     self.set_params(maxsec,material)
-    return P1elast(E0,costheta,pos.P1einf,pos.P1epk,
- 	           pos.E0epk,pos.E0w,pos.powe,pos.epar1,pos.epar2)
+    return P1elast(E0,costheta,posC.P1einf,posC.P1epk,
+ 	           posC.E0epk,posC.E0w,posC.powe,posC.epar1,posC.epar2)
 
   def getP1rediff(self,E0,costheta,material,maxsec=10):
     self.set_params(maxsec,material)
-    return P1rediff(E0,costheta,pos.Ecr,pos.rpar1,pos.rpar2,pos.qr,pos.P1rinf)
+    return P1rediff(E0,costheta,posC.Ecr,posC.rpar1,posC.rpar2,posC.qr,posC.P1rinf)
 
   def getdeltats(self,E0,costheta,material,maxsec=10):
     self,set_params(maxsec,material)
-    return deltats(E0,costheta,pos.dtspk,pos.E0tspk,
-                   pos.powts,pos.tpar1,pos.tpar2,pos.tpar3,
-                   pos.tpar4,pos.tpar5,pos.tpar6)
+    return deltats(E0,costheta,posC.dtspk,posC.E0tspk,
+                   posC.powts,posC.tpar1,posC.tpar2,posC.tpar3,
+                   posC.tpar4,posC.tpar5,posC.tpar6)
 
   def generate_probabilities(self,mye0,mycostheta,mymaterial,maxsec=10,iprob=4):
 
-    if(maxsec != pos.maxsec):
-      pos.maxsec = maxsec
-      pos.gchange("bincoeff")
-      init_pascal_triangle(pos.nbc,pos.maxsec)
+    if(maxsec != posC.maxsec):
+      posC.maxsec = maxsec
+      posC.gchange("bincoeff")
+      if pos_version >= '17p3':
+        pos.init_pascal_triangle()
+      else:
+        pos.init_pascal_triangle(posC.nbc,posC.maxsec)
   
-#    pos.enpar = zeros(maxsec,float64)
-#    pos.pnpar = zeros(maxsec,float64)
+#    posC.enpar = zeros(maxsec,float64)
+#    posC.pnpar = zeros(maxsec,float64)
 
  # Initialize all parameters  #
   # 1 = Cu (default)
@@ -2069,8 +2090,8 @@ components of the secondaries (dimensionless).
   
     self.set_params(maxsec,mat_number)
  
-#  if pos.ielswitch or pos.iredswitch:   
-#    pos.dtspk=pos.dtotpk-pos.P1einf-pos.P1rinf
+#  if posC.ielswitch or posC.iredswitch:   
+#    posC.dtspk=posC.dtotpk-posC.P1einf-posC.P1rinf
   
   # Seed random number generator
 #  semod.rnset(0)
@@ -2078,7 +2099,7 @@ components of the secondaries (dimensionless).
 # define inputs
     Ek0 = mye0 # energy in eV
     costheta=mycostheta # cosine of the angle; costheta = 1. is normal incidence
-    pos.iprob = iprob
+    posC.iprob = iprob
   
 # define outputs
     dele   = zeros(1,'d')
@@ -2087,13 +2108,13 @@ components of the secondaries (dimensionless).
     prob = zeros(maxsec+1,float64)
     probts = zeros(maxsec+1,float64)
   
-    pos.gen_prob(Ek0,costheta,dele,delr,delts, #in
-            maxsec,pos.iprob,prob,probts,
-            pos.ndelerm,pos.ndeltspm,pos.pmax,pos.np0lt0,pos.np1gt1,
-            pos.dtspk,pos.Ecr,pos.E0tspk,pos.E0epk,pos.E0w,
-            pos.rpar1,pos.rpar2,pos.tpar1,pos.tpar2,pos.tpar3,
-            pos.tpar4,pos.tpar5,pos.tpar6,pos.epar1,pos.epar2,
-            pos.P1rinf,pos.P1einf,pos.P1epk,pos.powts,pos.powe,pos.qr,pos.nbc)
+    posC.gen_prob(Ek0,costheta,dele,delr,delts, #in
+            maxsec,posC.iprob,prob,probts,
+            posC.ndelerm,posC.ndeltspm,posC.pmax,posC.np0lt0,posC.np1gt1,
+            posC.dtspk,posC.Ecr,posC.E0tspk,posC.E0epk,posC.E0w,
+            posC.rpar1,posC.rpar2,posC.tpar1,posC.tpar2,posC.tpar3,
+            posC.tpar4,posC.tpar5,posC.tpar6,posC.epar1,posC.epar2,
+            posC.P1rinf,posC.P1einf,posC.P1epk,posC.powts,posC.powe,posC.qr,posC.nbc)
   # The result 'res' is a list of 4 things
   # Here I just assign them to more useful names
     return  prob,probts
@@ -2101,13 +2122,16 @@ components of the secondaries (dimensionless).
   def sey2(self,energy):
     maxsec=10
 
-    if(maxsec != pos.maxsec):
-      pos.maxsec = maxsec
-      pos.gchange("bincoeff")
-      init_pascal_triangle(pos.nbc,pos.maxsec)
+    if(maxsec != posC.maxsec):
+      posC.maxsec = maxsec
+      posC.gchange("bincoeff")
+      if pos_version >= '17p3':
+        pos.init_pascal_triangle()
+      else:
+        pos.init_pascal_triangle(posC.nbc,posC.maxsec)
   
-#    pos.enpar = zeros(maxsec,float64)
-#    pos.pnpar = zeros(maxsec,float64)
+#    posC.enpar = zeros(maxsec,float64)
+#    posC.pnpar = zeros(maxsec,float64)
     n=shape(energy)[0]
     s1=zeros(n,float64)
     s2=zeros(n,float64)
@@ -2304,10 +2328,10 @@ Class for generating photo-electrons
 #     for i in range(self.nz+1):
      for i in range(max(1,self.nz)):
        if self.nz<1:
-         rhel = self.Lambda*pos.queffp*pos.photpbppm*clight*top.dt/weightemit
+         rhel = self.Lambda*posC.queffp*posC.photpbppm*clight*top.dt/weightemit
        else:
-         rhel = self.Lambda[i]*pos.queffp*pos.photpbppm*clight*top.dt*self.dz/weightemit
-#       rhel*=pos.slength
+         rhel = self.Lambda[i]*posC.queffp*posC.photpbppm*clight*top.dt*self.dz/weightemit
+#       rhel*=posC.slength
        # rhel is the number of photoelectrons created at each timestep
        # queffp  is the  quantum efficiency (photoelectrons produced per
                # photon)  Miguel says queffp is between 0.1 and 1.0.  Real
@@ -2317,27 +2341,27 @@ Class for generating photo-electrons
        if ranf()<rhel-n:n+=1  # randomly add one electrons based on rhel fractional part
        if self.l_verbose:print ' *** i,rhel,nemit= ',i,rhel,n
        if n==0:continue
-       pos.nphel[0]=n   # tells Posinst to emit n photoelectrons
+       posC.nphel[0]=n   # tells Posinst to emit n photoelectrons
        gen_photoelectrons(1) # number of beam slice in POSINST =1. Use only 1.
-       if self.l_verbose:print 'nlast',pos.nlast,"nphel=",pos.nphel[0]
+       if self.l_verbose:print 'nlast',posC.nlast,"nphel=",posC.nphel[0]
 
        if self.l_xmirror:
          # put photons on both sides of the vacuum chamber
-         xran = ranf(pos.x[:pos.nlast])
+         xran = ranf(posC.x[:posC.nlast])
          xran = where(xran>0.5,1.,-1.)
-         pos.x[:pos.nlast] = pos.x[:pos.nlast]*xran
-         pos.vgx[:pos.nlast] = pos.vgx[:pos.nlast]*xran
+         posC.x[:posC.nlast] = posC.x[:posC.nlast]*xran
+         posC.vgx[:posC.nlast] = posC.vgx[:posC.nlast]*xran
 
-       if self.l_verbose:print "min and max of photoelectrons=",min((pos.z[:pos.nlast]/pos.slength)*self.dz+i*self.dz),\
-                                                                max((pos.z[:pos.nlast]/pos.slength)*self.dz+i*self.dz)
-       ns = pos.nlast
+       if self.l_verbose:print "min and max of photoelectrons=",min((posC.z[:posC.nlast]/posC.slength)*self.dz+i*self.dz),\
+                                                                max((posC.z[:posC.nlast]/posC.slength)*self.dz+i*self.dz)
+       ns = posC.nlast
        js_new=emitted_species.jslist[0]
-       x = pos.x[:pos.nlast]
-       y = pos.y[:pos.nlast]
-       z = pos.z[:pos.nlast]
-       ux = pos.vgx[:pos.nlast]
-       uy = pos.vgy[:pos.nlast]
-       uz = pos.vgz[:pos.nlast]
+       x = posC.x[:posC.nlast]
+       y = posC.y[:posC.nlast]
+       z = posC.z[:posC.nlast]
+       ux = posC.vgx[:posC.nlast]
+       uy = posC.vgy[:posC.nlast]
+       uz = posC.vgz[:posC.nlast]
        if self.xfloor is not None:
          x=where(x>self.xfloor,x,self.xfloor)
        if self.xceiling is not None:
@@ -2351,12 +2375,12 @@ Class for generating photo-electrons
        gaminv = 1./sqrt(1. + usq)
        if self.l_switchyz:
          x = x+dt*ux*gaminv
-         y = (z/pos.slength)*self.dy+i*self.dy+self.ymin
+         y = (z/posC.slength)*self.dy+i*self.dy+self.ymin
          z = y+dt*uy*gaminv
        else:
          x = x+dt*ux*gaminv
          y = y+dt*uy*gaminv
-         z = (z/pos.slength)*self.dz+i*self.dz+self.zmin
+         z = (z/posC.slength)*self.dz+i*self.dz+self.zmin
        xc = logical_and(x>=top.xpminlocal,x<top.xpmaxlocal)
        yc = logical_and(y>=top.ypminlocal,y<top.ypmaxlocal)
        ii = compress(logical_and(xc,yc),arange(ns))
@@ -2376,7 +2400,7 @@ Class for generating photo-electrons
          self.addpart(np,x,y,z,ux,uz,uy,gaminv,js_new,weights)
        else:
          self.addpart(np,x,y,z,ux,uy,uz,gaminv,js_new,weights)
-       pos.nlast=0
+       posC.nlast=0
 
     # --- make sure that all particles are added
     for js in self.x:
