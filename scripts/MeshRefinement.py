@@ -1208,7 +1208,7 @@ class MeshRefinement(VisualizableClass):
     # --- Methods to carry out the field solve
     #--------------------------------------------------------------------------
 
-    def dosolve(self,iwhich=0,*args):
+    def dosolve(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         # --- Make sure that the final setup was done.
         self.finalize()
 
@@ -1221,21 +1221,21 @@ class MeshRefinement(VisualizableClass):
         # --- boundary conditions and the interior values as the initial
         # --- value.
         if self.l_internal_dosolve:self.setpotentialfromparents()
-        self.__class__.__bases__[1].dosolve(self,iwhich,*args)
+        self.__class__.__bases__[1].dosolve(self,iwhich,zfact,isourcepndtscopies,indts,iselfb)
 
         # --- solve for children, using the routine which does the correct
         # --- referencing for subcycling and self-B correction
         for child in self.children:
-            child.dosolveonpotential(iwhich,*args)
+            child.dosolveonpotential(iwhich,zfact,isourcepndtscopies,indts,iselfb)
 
         """
         if self == self.root:
-          self.__class__.__bases__[1].dosolve(self,iwhich)
+          self.__class__.__bases__[1].dosolve(self,iwhich,zfact,isourcepndtscopies,indts,iselfb)
           for blocklist in self.blocklists[1:]:
             if len(blocklist) == 0: break
             tlist = []
             for block in blocklist:
-              t = threading.Thread(target=block.dosolveonpotential,args=tuple([iwhich]+list(args)))
+              t = threading.Thread(target=block.dosolveonpotential,args=tuple([iwhich,zfact,isourcepndtscopies,indts,iselfb]))
               t.start()
               tlist.append(t)
               print self.blocknumber,len(tlist)
@@ -1243,7 +1243,7 @@ class MeshRefinement(VisualizableClass):
               t.join()
         else:
           self.setpotentialfromparents()
-          self.__class__.__bases__[1].dosolve(self,iwhich)
+          self.__class__.__bases__[1].dosolve(self,iwhich,zfact,isourcepndtscopies,indts,iselfb)
         """
 
     def setpotentialfromparents(self):
