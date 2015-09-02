@@ -391,7 +391,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             bounds[0,1] = int((em.block.zmin - em.zmmin) / em.dz)
             bounds[1,1] = bounds[0,1] + nz
         else :
-        	bounds = None
+            bounds = None
 
         return( F, F_circ, bounds )
 
@@ -441,6 +441,6 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             bounds[0,1] = int((em.block.zmin - em.zmmin) / em.dz)
             bounds[1,1] = bounds[0,1] + nz
         else :
-        	bounds = None
+            bounds = None
 
         return( F, bounds )
