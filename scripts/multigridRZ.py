@@ -187,12 +187,8 @@ class MultiGridRZ(MultiGrid3D):
             else:
                 setconductorvoltagerz_id_grid(self.grid,condid,voltage)
 
-    def dosolve(self,iwhich=0,*args):
+    def dosolve(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         if not self.l_internal_dosolve: return
-        # --- set for longitudinal relativistic contraction
-        iselfb = args[2]
-        beta = top.pgroup.fselfb[iselfb]/clight
-        zfact = 1./sqrt((1.-beta)*(1.+beta))
 
         # --- This is only done for convenience.
         self._phi = self.potential
@@ -328,14 +324,13 @@ class MultiGrid2D(MultiGrid3D):
         getgrid2d(n,r,z,potential,nxlocal,nzlocal,self.potential[:,0,:],
                   xmminlocal,xmmaxlocal,zmminlocal,zmmaxlocal)
 
-    def dosolve(self,iwhich=0,zfact=None,*args):
-        self.dosolvemultigrid(iwhich,zfact,*args)
+    def dosolve(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
+        self.dosolvemultigrid(iwhich,zfact,isourcepndtscopies,indts,iselfb)
         #self.dosolvesuperlu(iwhich,*args)
 
-    def dosolvemultigrid(self,iwhich=0,zfact=None,*args):
+    def dosolvemultigrid(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         if not self.l_internal_dosolve: return
         # --- set for longitudinal relativistic contraction
-        iselfb = args[2]
         if zfact is None:
             beta = top.pgroup.fselfb[iselfb]/clight
             zfact = 1./sqrt((1.-beta)*(1.+beta))
@@ -376,13 +371,9 @@ class MultiGrid2D(MultiGrid3D):
         self.mgiters = mgiters[0]
         self.mgerror = mgerror[0]
 
-    def dosolvesuperlu(self,iwhich=0,*args):
+    def dosolvesuperlu(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         "Solver using the SuperLU matrix solver instead of multigrid"
         if not self.l_internal_dosolve: return
-        # --- set for longitudinal relativistic contraction
-        iselfb = args[2]
-        beta = top.pgroup.fselfb[iselfb]/clight
-        zfact = 1./sqrt((1.-beta)*(1.+beta))
 
         # --- This is only done for convenience.
         self._phi = self.potential
@@ -575,14 +566,16 @@ class MultiGrid2DDielectric(MultiGrid2D):
         else:
             self.epsilon = epsilon
 
-    def dosolve(self,iwhich=0,*args):
+    def dosolve(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         if not self.l_internal_dosolve: return
         assert self.epsilon is not None,"epsilon must be defined"
 
         # --- set for longitudinal relativistic contraction
-        iselfb = args[2]
-        beta = top.pgroup.fselfb[iselfb]/clight
-        zfact = 1./sqrt((1.-beta)*(1.+beta))
+        if zfact is None:
+            beta = top.pgroup.fselfb[iselfb]/clight
+            zfact = 1./sqrt((1.-beta)*(1.+beta))
+        else:
+            beta =  sqrt( (1.-1./zfact)*(1.+1./zfact) )
 
         # --- This is only done for convenience.
         self._phi = self.potential
@@ -858,17 +851,19 @@ class MultiGridImplicit2D(MultiGrid3D):
               +(phi[:-2,1:-1] - 2.*phi[1:-1,1:-1] + phi[2:,1:-1])/self.dx**2
               +(phi[1:-1,:-2] - 2.*phi[1:-1,1:-1] + phi[1:-1,2:])/self.dz**2)
 
-    def dosolve(self,iwhich=0,*args):
+    def dosolve(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         if not self.l_internal_dosolve: return
         # --- Do the solve, including chi
         #self.dosolvesuperlu(iwhich,*args)
-        self.dosolvemg(iwhich,*args)
+        self.dosolvemg(iwhich,isourcepndtscopies,indts,iselfb)
 
-    def dosolvemg(self,iwhich=0,*args):
+    def dosolvemg(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         # --- set for longitudinal relativistic contraction
-        iselfb = args[2]
-        beta = top.pgroup.fselfb[iselfb]/clight
-        zfact = 1./sqrt((1.-beta)*(1.+beta))
+        if zfact is None:
+            beta = top.pgroup.fselfb[iselfb]/clight
+            zfact = 1./sqrt((1.-beta)*(1.+beta))
+        else:
+            beta =  sqrt( (1.-1./zfact)*(1.+1./zfact) )
 
         # --- This is only done for convenience.
         self._phi = self.potential
@@ -920,7 +915,7 @@ class MultiGridImplicit2D(MultiGrid3D):
         self.mgiters = mgiters[0]
         self.mgerror = mgerror[0]
 
-    def dosolvesuperlu(self,iwhich=0,*args):
+    def dosolvesuperlu(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         "Note that this does not actually include the implicit susecptibility"
         #self.grid.rho = self.source
         #self.grid.phi = self.potential

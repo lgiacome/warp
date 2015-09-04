@@ -1018,7 +1018,7 @@ zcondids((nzicpt+1)/2,0:nx,0:ny) _integer
 ******** ConductorGeometryGenerators:
 conductordelfromintercepts(intercepts:ConductorInterceptType,
                            conductors:ConductorType,
-                           dfill:real,fuzz:real) subroutine
+                           dfill:real,fuzz:real,neumann:logical) subroutine
 intercepts_or(ileft:ConductorInterceptType,iright:ConductorInterceptType,
               iresult:ConductorInterceptType) subroutine
 intercepts_and(ileft:ConductorInterceptType,iright:ConductorInterceptType,

@@ -7145,16 +7145,16 @@ c           --- Compute linear correlations
                   d=1./d
                   xvxslope = (c1*d3x-d1x*c3)*d
                   yvxslope = 0.
-                  zvxslope = -(a3*xvxslope+d3x)/c3
+                  if (abs(c3)>SMALLPOS) zvxslope = -(a3*xvxslope+d3x)/c3
                   xvyslope = (c1*d3y-d1y*c3)*d
                   yvyslope = 0.
-                  zvyslope = -(a3*xvyslope+d3y)/c3
+                  if (abs(c3)>SMALLPOS) zvyslope = -(a3*xvyslope+d3y)/c3
                   xvzslope = (c1*d3z-d1z*c3)*d
                   yvzslope = 0.
-                  zvzslope = -(a3*xvzslope+d3z)/c3
+                  if (abs(c3)>SMALLPOS) zvzslope = -(a3*xvzslope+d3z)/c3
                   xkeslope = (c1*d3ke-d1ke*c3)*d
                   ykeslope = 0.
-                  zkeslope = -(a3*xkeslope+d3ke)/c3
+                  if (abs(c3)>SMALLPOS) zkeslope = -(a3*xkeslope+d3ke)/c3
                  end if
                 else
                  d = ((a1*c2-a2*c1)*(b2*c3-b3*c2)-(a2*c3-a3*c2)*(b1*c2-b2*c1))

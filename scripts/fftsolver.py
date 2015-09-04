@@ -7,12 +7,14 @@ from lattice import addnewbgrd,addnewbsqgrad
 
 ##############################################################################
 class FFTSolver3D(MultiGrid3D):
-    def dosolve(self,iwhich=0,*args):
+    def dosolve(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         if not self.l_internal_dosolve: return
         # --- set for longitudinal relativistic contraction.
-        iselfb = args[2]
-        beta = top.pgroup.fselfb[iselfb]/clight
-        zfact = 1./sqrt((1.-beta)*(1.+beta))
+        if zfact is None:
+            beta = top.pgroup.fselfb[iselfb]/clight
+            zfact = 1./sqrt((1.-beta)*(1.+beta))
+        else:
+          beta = sqrt( (1.-1./zfact)*(1.+1./zfact) )
 
         # --- This is only done for convenience.
         self._phi = self.potential
@@ -42,12 +44,14 @@ class FFTSolver3D(MultiGrid3D):
 
 ##############################################################################
 class FFTSolver2D(MultiGrid3D):
-    def dosolve(self,iwhich=0,*args):
+    def dosolve(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         if not self.l_internal_dosolve: return
         # --- set for longitudinal relativistic contraction.
-        iselfb = args[2]
-        beta = top.pgroup.fselfb[iselfb]/clight
-        zfact = 1./sqrt((1.-beta)*(1.+beta))
+        if zfact is None:
+            beta = top.pgroup.fselfb[iselfb]/clight
+            zfact = 1./sqrt((1.-beta)*(1.+beta))
+        else:
+          beta = sqrt( (1.-1./zfact)*(1.+1./zfact) )
 
         # --- This is only done for convenience.
         self._phi = self.potential

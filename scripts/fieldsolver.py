@@ -1566,7 +1566,7 @@ class SubcycledPoissonSolver(FieldSolver):
         self.setpotentialpforparticles(None,indts,iselfb)
         self.fetchpotentialfrompositions(x,y,z,potential)
 
-    def dosolveonpotential(self,iwhich,isourcepndtscopies,indts,iselfb,zfact=None):
+    def dosolveonpotential(self,iwhich,zfact,isourcepndtscopies,indts,iselfb):
         "points source and potential appropriately and call the solving routine"
         self.setarraysforfieldsolve(isourcepndtscopies,indts,iselfb)
         self.dosolve(iwhich,zfact,isourcepndtscopies,indts,iselfb)
@@ -1591,7 +1591,7 @@ class SubcycledPoissonSolver(FieldSolver):
             # --- Note that the field solve is done even if there are no species
             # --- (i.e. when top.nsselfb==0)
             for iselfb in range(max(1,top.nsselfb)-1,-1,-1):
-                self.dosolveonpotential(iwhich,top.nrhopndtscopies-1,indts,iselfb,zfact)
+                self.dosolveonpotential(iwhich,zfact,top.nrhopndtscopies-1,indts,iselfb)
 
         # --- Is this still needed? It seems to slow things down alot.
         #gc.collect()
