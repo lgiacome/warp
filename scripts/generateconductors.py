@@ -293,7 +293,7 @@ class Assembly(VisualizableClass):
         assert len(kw) == 0,"Invalid keyword arguments "+str(kw.keys())
 
         self.lostparticles_data  = AppendableArray(typecode='d',unitshape=[4])
-        self.emitparticles_data  = AppendableArray(typecode='d',unitshape=[4])
+        self.emitparticles_data  = AppendableArray(typecode='d',unitshape=[5])
         self.imageparticles_data = AppendableArray(typecode='d',unitshape=[2])
         self.lostparticles_angles    = {}
         self.lostparticles_energies  = {}
