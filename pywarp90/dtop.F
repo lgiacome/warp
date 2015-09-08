@@ -323,17 +323,23 @@ c=============================================================================
       use Io
       integer(ISZ):: iunit,it
       real(kind=8):: time,pz,ese,ek
+      integer(ISZ):: it_len
+      character*(128):: o_fmt
       character*(240)::o_line
-
 
 c  Summarize the state of the system in one line
 
 c     --- return if line is not requested
       if (verbosity .lt. 2) return
 
-      write (o_line,901) it,time,pz,ese,ek,ese+ek
- 901  format("it =",i6," time =",1pe11.4," pz =",1pe11.4,
-     & " ese =",1pe11.4," ek =",1pe11.4," et  =",1pe11.4)
+      it_len = max(6, int(log10(1.*it) + 1))
+
+      write(o_fmt,'("(''it = '',i",i3,",'' time ='',1pe11.4,'//
+     &''' pz ='',1pe11.4,'' ese ='',1pe11.4,'//
+     &''' ek ='',1pe11.4,'' et ='',1pe11.4)")') it_len
+
+      write (o_line,o_fmt) it,time,pz,ese,ek,ese+ek
+
       call remark(trim(o_line))
 
       return

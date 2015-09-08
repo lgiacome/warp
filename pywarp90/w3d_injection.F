@@ -312,12 +312,13 @@ c               --- routine wrandomgauss must be called in the correct order.
               endif
 
 c             --- Axial thermal spread
-              if (lhalfmaxwellinject(is)==1) then
+              if (lhalfmaxwellinject(is) .ne. 0.) then
 c             inject vz*Maxwellian so f is half-maxwellian
+c             lhalfmaxwellinject can be negative to allow left going injection
                 uztempfloor = 1.e-14
                 do ip = 1,nn
                    uztemp = max(uztempfloor,wranf())
-                   uzt(ip) = sqrt(2.*log(1./uztemp))
+                   uzt(ip) = lhalfmaxwellinject(is)*sqrt(2.*log(1./uztemp))
                 enddo
               else
 c               default: injection rate is shifted Maxwellian
