@@ -135,6 +135,9 @@ class Secondaries:
         self.ek0av=AppendableArray(typecode='d')     # average collision kinetic energy [eV]
         self.ek0max=AppendableArray(typecode='d')    # maximum collision kinetic energy [eV]
         self.costhav=AppendableArray(typecode='d')   # average collision angle
+        self.pxsum=AppendableArray(typecode='d')     # x momentum deposited per step
+        self.pysum=AppendableArray(typecode='d')     # y momentum deposited per step
+        self.pzsum=AppendableArray(typecode='d')     # z momentum deposited per step
         self.power_dep=AppendableArray(typecode='d') # instantaneous power deposition [W]
         self.power_emit=AppendableArray(typecode='d') # instantaneous power emission [W]
         self.power_diff=AppendableArray(typecode='d') # instantaneous power deposition [W]
@@ -188,7 +191,8 @@ class Secondaries:
         self.__dict__.update(dict)
 
     def add(self,incident_species=None,conductor=None,emitted_species=None,material=None,interaction_type=None,
-                 scale_factor=None,scale_factor_velocity=1.,forced_yield=None,init_position_offset=0.):
+                 scale_factor=None,scale_factor_velocity=1.,forced_yield=None,init_position_offset=0.,
+                 specular_fraction=None,conductor_temperature=None):
         if material is None: material = conductor.material
         if interaction_type is None and incident_species.type is Electron:
             if material=='Cu' and incident_species.type is Electron: interaction_type=1
@@ -206,7 +210,7 @@ class Secondaries:
             self.inter[isinc]={}
             for key in ['emitted','absorbed','condids','issec','conductors','type','isneut','incident_species', \
                         'emitted_species','material','scale_factor','scale_factor_velocity','forced_yield', \
-                        'init_position_offset']:
+                        'init_position_offset','specular_fraction','conductor_temperature']:
                 self.inter[isinc][key]=[]
             self.inter[isinc]['incident_species']=incident_species
         self.inter[isinc]['condids']               += [conductor.condid]
@@ -224,6 +228,8 @@ class Secondaries:
         self.inter[isinc]['scale_factor_velocity'] += [scale_factor_velocity]
         self.inter[isinc]['forced_yield']          += [forced_yield]
         self.inter[isinc]['init_position_offset']  += [init_position_offset]
+        self.inter[isinc]['specular_fraction']     += [specular_fraction]
+        self.inter[isinc]['conductor_temperature'] += [conductor_temperature]
         for e in emitted_species:
             js=e.jslist[0]
             if js not in self.x:
@@ -252,6 +258,10 @@ class Secondaries:
                 installafterscraper(self.generate)
 
     def addpart(self,nn,x,y,z,ux,uy,uz,js,weight=None,itype=None,ssnparent=None):
+        if top.npid > self.pid[js].shape[1]:
+            if self.nps[js] > 0:
+                raise Exception('top.npid changed so existing particle pid data is corrupted')
+            self.allocate_temps(js)
         if self.nps[js]+nn>self.npmax[js]:self.flushpart(js)
         if self.nps[js]+nn>self.npmax[js]:
             self.npmax[js] = nint(nn*1.2)
@@ -295,14 +305,11 @@ class Secondaries:
         if self.nps[js]>0:
             nn=self.nps[js]
             self.totalcount += nn
-            if self.piditype==0:
-                pid = 0.
-            else:
+            if top.npid > 0:
+                # --- Note that this includes the weights (wpid)
                 pid = self.pid[js][:nn,:]
-            if top.wpid==0:
-                weights=1.
             else:
-                weights=self.pid[js][:nn,top.wpid-1]
+                pid = 0.
             ux=self.ux[js][:nn]
             uy=self.uy[js][:nn]
             uz=self.uz[js][:nn]
@@ -321,7 +328,6 @@ class Secondaries:
                          vz=uz,
                          gi=gi,
                          pid=pid,
-                         w=weights,
                          js=js,
                          lmomentum=true,
                          lallindomain=true)
@@ -400,10 +406,13 @@ class Secondaries:
 
         # --- initializes history quantities
         weighttot=0.
-        ek0av=0.
-        costhav=0.
+        ek0sum=0.
+        costhsum=0.
         ek0max=0.
-        ek0emitav=0.
+        ek0emitsum=0.
+        pxsum = 0.
+        pysum = 0.
+        pzsum = 0.
         if self.l_record_timing:t2 = time.clock()
         tinit=tgen=tprepadd=tadd=0.
         # --- compute number of secondaries and create them
@@ -477,8 +486,8 @@ class Secondaries:
                         raise Exception('Error in Secondaries, one should have lmode=1 or 2, but have lmode=%g'%self.lmode)
                     # --- set energy of incident particle in eV
                     e0 = where(gaminvlost==1., \
-                               0.5*top.pgroup.sm[js]*(uxplost**2+uyplost**2+uzplost**2)/top.echarge,
-                               (1./gaminvlost-1.)*top.pgroup.sm[js]*clight**2/top.echarge)
+                               0.5*top.pgroup.sm[js]*(uxplost**2+uyplost**2+uzplost**2)/jperev,
+                               (1./gaminvlost-1.)*top.pgroup.sm[js]*clight**2/jperev)
                     if self.l_verbose:
                         print 'xplost',xplost
                         print 'yplost',yplost
@@ -500,13 +509,19 @@ class Secondaries:
                     n_unit0 = array([sintheta*cosphi,sintheta*sinphi,costheta])
                     coseta = -sum(v*n_unit0,axis=0)/sqrt(sum(v*v,axis=0))
                     if top.wpid==0:
-                        ek0av+=sum(e0)*top.pgroup.sw[js]
-                        costhav+=sum(abs(coseta))*top.pgroup.sw[js]
+                        ek0sum+=sum(e0)*top.pgroup.sw[js]
+                        costhsum+=sum(abs(coseta))*top.pgroup.sw[js]
                         weighttot+=n*top.pgroup.sw[js]
+                        pxsum += sum(uxplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
+                        pysum += sum(uyplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
+                        pzsum += sum(uzplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
                     else:
-                        ek0av+=sum(weight*e0)*top.pgroup.sw[js]
-                        costhav+=sum(weight*abs(coseta))*top.pgroup.sw[js]
+                        ek0sum+=sum(weight*e0)*top.pgroup.sw[js]
+                        costhsum+=sum(weight*abs(coseta))*top.pgroup.sw[js]
                         weighttot+=sum(weight)*top.pgroup.sw[js]
+                        pxsum += sum(weight*uxplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
+                        pysum += sum(weight*uyplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
+                        pzsum += sum(weight*uzplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
                     ek0max=max(max(e0),ek0max)
                     if 1:#cond.lcollectlpdata:
                         if js not in cond.lostparticles_angles:
@@ -822,40 +837,100 @@ class Secondaries:
                                             ssnparent = None
                                         if top.wpid==0:
                                             e0emit = 0.5*top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*(uxsec*uxsec+uysec*uysec+uzsec*uzsec)
+                                            pxsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*uxsec)
+                                            pysum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*uysec)
+                                            pzsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*uzsec)
                                             self.addpart(ns,xnew,ynew,znew,uxsec,uysec,uzsec,js_new,itype=itype,ssnparent=ssnparent)
                                         else:
                                             e0emit = 0.5*top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*(uxsec*uxsec+uysec*uysec+uzsec*uzsec)
+                                            pxsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*uxsec)
+                                            pysum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*uysec)
+                                            pzsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*uzsec)
                                             self.addpart(ns,xnew,ynew,znew,uxsec,uysec,uzsec,js_new,ones(ns)*weight[i],itype,ssnparent=ssnparent)
-                                        ek0emitav += sum(e0emit)
+                                        ek0emitsum += sum(e0emit)
 
                             elif hasattr(emitted_species,'charge_state') and emitted_species.charge_state==0:
-                                ########################
-                                # emission of neutrals #
-                                ########################
-                                my_yield=1.+1.82e-4*exp(0.09*180./pi*arccos(coseta[i]))
-                                scale_factor = self.inter[incident_species]['scale_factor'][ics]
-                                if not (scale_factor is None or scale_factor==1.):
-                                    my_yield*=scale_factor
-                                ns = int(my_yield)
-                                # --- The ns+1 is only a temporary fix to avoid an array out of
-                                # --- bounds errors. Once the desorb routine is fixed, this
-                                # --- code should be updated. Note that as the code is now,
-                                # --- in some cases, a desorbed particle will be thrown out.
-                                vx = desorb.floatArray(ns+1)
-                                vy = desorb.floatArray(ns+1)
-                                vz = desorb.floatArray(ns+1)
-                                vxnew = zeros(ns,'d')
-                                vynew = zeros(ns,'d')
-                                vznew = zeros(ns,'d')
+                                specular_fraction = self.inter[incident_species]['specular_fraction'][ics]
+                                if incident_species.sq == 0. or specular_fraction is not None:
+                                    ###################################################
+                                    # emission of neutral from neutral or ion impact #
+                                    ###################################################
+                                    # --- This uses a model where a fraction is specularly reflected and the rest
+                                    # --- are reemitted at the temperature of the conductor. An ion that impacts is
+                                    # --- always neutralized before being emitted. One neutral is always emitted
+                                    # --- for each incident ion or neutral.
+                                    ns = 1
+                                    if random.random() < specular_fraction:
+                                        # --- Specular reflection
+                                        vgt = cosphi[i]*costheta[i]*vxplost[i] + sinphi[i]*costheta[i]*vyplost[i] - sintheta[i]*vzplost[i]
+                                        vgz =            -sinphi[i]*vxplost[i] +             cosphi[i]*vyplost[i]
+                                        vgn = cosphi[i]*sintheta[i]*vxplost[i] + sinphi[i]*sintheta[i]*vyplost[i] + costheta[i]*vzplost[i]
+                                        vt0 = vgt
+                                        vz0 = vgz
+                                        vn0 = -vgn
+                                    else:
+                                        # --- Thermal emission
+                                        conductor_temperature = self.inter[incident_species]['conductor_temperature'][ics]
+                                        vth = sqrt(2.*conductor_temperature*jperev/emitted_species.mass)
+                                        vmag = vth*sqrt(2.*log(1./max(1.e-14, random.random())))
+                                        thnew = pi/2.*random.random()
+                                        phnew = 2.*pi*random.random()
+                                        vgt = vmag*sin(thnew)*sin(phnew)
+                                        vgn = vmag*cos(thnew)
+                                        vgz = vmag*sin(thnew)*cos(phnew)
+                                        if costheta[i] < 1.-1.e-10:
+                                            z_unit0 = array([-sinphi[i],cosphi[i],0.])
+                                            z = -array([vzplost[i]*n_unit0[1][i]-vyplost[i]*n_unit0[2][i],
+                                                        vxplost[i]*n_unit0[2][i]-vzplost[i]*n_unit0[0][i],
+                                                        vyplost[i]*n_unit0[0][i]-vxplost[i]*n_unit0[1][i]])
+                                            z_unit  = z/sqrt(sum(z*z))
+                                            cospsi  = sum(z_unit*z_unit0)
+                                            sinpsi  = sqrt(max(0.,1.-cospsi*cospsi))
+                                            vt0 = -(cospsi*vgt - sinpsi*vgz)
+                                            vz0 = -(sinpsi*vgt + cospsi*vgz)
+                                            vn0 = vgn
+                                        else:
+                                            vt0 = vgt
+                                            vz0 = vgz
+                                            vn0 = vgn
 
-                                # --- compute the desorbed neutrals
-                                # --- note that the gamma0 (1.) and rel_weight (top.pgroup.sw[js_new]/top.pgroup.sw[js]) are actually not used
-                                desorb.desorb(my_yield,v[0][i],v[1][i],v[2][i],theta[i],phi[i],1.,0.4,top.pgroup.sm[js],top.pgroup.sw[js_new]/top.pgroup.sw[js],vx,vy,vz)
-                                scale_factor_velocity = self.inter[incident_species]['scale_factor_velocity'][ics]
-                                for ivnew in range(ns):
-                                    vxnew[ivnew]=vx[ivnew]*scale_factor_velocity
-                                    vynew[ivnew]=vy[ivnew]*scale_factor_velocity
-                                    vznew[ivnew]=vz[ivnew]*scale_factor_velocity
+                                    vxnew = cosphi[i]*costheta[i]*vt0 - sinphi[i]*vz0 + cosphi[i]*sintheta[i]*vn0
+                                    vynew = sinphi[i]*costheta[i]*vt0 + cosphi[i]*vz0 + sinphi[i]*sintheta[i]*vn0
+                                    vznew =          -sintheta[i]*vt0                 +           costheta[i]*vn0
+
+                                elif incident_species.sq != 0.:
+                                    ########################################
+                                    # emission of neutrals from ion impact #
+                                    ########################################
+                                    # --- This is used for high energy incident ion.
+                                    my_yield=1.+1.82e-4*exp(0.09*180./pi*arccos(coseta[i]))
+                                    scale_factor = self.inter[incident_species]['scale_factor'][ics]
+                                    if not (scale_factor is None or scale_factor==1.):
+                                        my_yield*=scale_factor
+                                    ns = int(my_yield)
+                                    # --- The ns+1 is only a temporary fix to avoid an array out of
+                                    # --- bounds errors. Once the desorb routine is fixed, this
+                                    # --- code should be updated. Note that as the code is now,
+                                    # --- in some cases, a desorbed particle will be thrown out.
+                                    vx = desorb.floatArray(ns+1)
+                                    vy = desorb.floatArray(ns+1)
+                                    vz = desorb.floatArray(ns+1)
+                                    vxnew = zeros(ns,'d')
+                                    vynew = zeros(ns,'d')
+                                    vznew = zeros(ns,'d')
+
+                                    # --- compute the desorbed neutrals
+                                    # --- note that the gamma0 (1.) and rel_weight (top.pgroup.sw[js_new]/top.pgroup.sw[js]) are actually not used
+                                    desorb.desorb(my_yield,v[0][i],v[1][i],v[2][i],theta[i],phi[i],1.,0.4,top.pgroup.sm[js],top.pgroup.sw[js_new]/top.pgroup.sw[js],vx,vy,vz)
+                                    scale_factor_velocity = self.inter[incident_species]['scale_factor_velocity'][ics]
+                                    for ivnew in range(ns):
+                                        vxnew[ivnew]=vx[ivnew]*scale_factor_velocity
+                                        vynew[ivnew]=vy[ivnew]*scale_factor_velocity
+                                        vznew[ivnew]=vz[ivnew]*scale_factor_velocity
+
+                                self.inter[incident_species]['emitted'][ics][ie] += ns*top.pgroup.sq[js_new]*top.pgroup.sw[js_new]
+                                self.inter[incident_species]['absorbed'][ics][ie] += top.pgroup.sq[js]*top.pgroup.sw[js]
+
                                 init_position_offset = self.inter[incident_species]['init_position_offset'][ics]
                                 if init_position_offset>0.:
                                     xnew = xplost[i]+n_unit0[0][i]*init_position_offset
@@ -892,11 +967,17 @@ class Secondaries:
                                         ssnparent = None
                                     if top.wpid==0:
                                         e0emit = 0.5*top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*(vxnew*vxnew+vynew*vynew+vznew*vznew)
+                                        pxsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*vxnew)
+                                        pysum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*vynew)
+                                        pzsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*vznew)
                                         self.addpart(ns,xnew,ynew,znew,vxnew,vynew,vznew,js_new,itype=None,ssnparent=ssnparent)
                                     else:
                                         e0emit = 0.5*top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight*(vxnew*vxnew+vynew*vynew+vznew*vznew)
+                                        pxsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*vxnew)
+                                        pysum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*vynew)
+                                        pzsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*vznew)
                                         self.addpart(ns,xnew,ynew,znew,vxnew,vynew,vznew,js_new,ones(ns)*weight[i],None,ssnparent=ssnparent)
-                                    ek0emitav += sum(e0emit)
+                                    ek0emitsum += sum(e0emit)
 
                         if self.l_record_timing:
                             tadd+=wtime()-tstart
@@ -942,18 +1023,24 @@ class Secondaries:
         # --- append history arrays
         if l_accumulate_hist:
             weighttot = globalsum(weighttot)
-            ek0av = globalsum(ek0av)
-            costhav = globalsum(costhav)
+            ek0sum = globalsum(ek0sum)
+            costhsum = globalsum(costhsum)
             ek0max = globalmax(ek0max)
+            pxsum = globalsum(pxsum)
+            pysum = globalsum(pysum)
+            pzsum = globalsum(pzsum)
             if me==0:
                 if weighttot != 0.:
                     self.htime.append(top.time)
-                    self.ek0av.append(ek0av/weighttot)      # cummulative collision kinetic energy [eV] this step
+                    self.ek0av.append(ek0sum/weighttot)      # cummulative collision kinetic energy [eV] this step
                     self.ek0max.append(ek0max)      # maximum collision kinetic energy [eV]
-                    self.costhav.append(costhav/weighttot)
-                    self.power_dep.append(ek0av*echarge/top.dt)
-                    self.power_emit.append(ek0emitav/top.dt)
-                    self.power_diff.append((ek0av*echarge-ek0emitav)/top.dt)
+                    self.costhav.append(costhsum/weighttot)
+                    self.pxsum.append(pxsum)
+                    self.pysum.append(pysum)
+                    self.pzsum.append(pzsum)
+                    self.power_dep.append(ek0sum*jperev/top.dt)
+                    self.power_emit.append(ek0emitsum/top.dt)
+                    self.power_diff.append((ek0sum*jperev-ek0emitsum)/top.dt)
         # w3d.lcallscraper=0
         # particleboundaries3d(top.pgroup,-1,false)
         # w3d.lcallscraper=1
@@ -997,10 +1084,13 @@ class Secondaries:
 
         # --- initializes history quantities
         weighttot=0.
-        ek0av=0.
-        costhav=0.
+        ek0sum=0.
+        costhsum=0.
         ek0max=0.
-        ek0emitav=0.
+        ek0emitsum=0.
+        pxsum = 0.
+        pysum = 0.
+        pzsum = 0.
         if self.l_record_timing:t2 = time.clock()
         tinit=tgen=tprepadd=tadd=0.
         # compute number of secondaries and create them
@@ -1074,8 +1164,8 @@ class Secondaries:
                         raise Exception('Error in Secondaries, one should have lmode=1 or 2, but have lmode=%g'%self.lmode)
                     # set energy of incident particle in eV
                     e0 = where(gaminvlost==1., \
-                               0.5*top.pgroup.sm[js]*(uxplost**2+uyplost**2+uzplost**2)/top.echarge,
-                               (1./gaminvlost-1.)*top.pgroup.sm[js]*clight**2/top.echarge)
+                               0.5*top.pgroup.sm[js]*(uxplost**2+uyplost**2+uzplost**2)/jperev,
+                               (1./gaminvlost-1.)*top.pgroup.sm[js]*clight**2/jperev)
                     if self.l_verbose:
                         print 'xplost',xplost
                         print 'yplost',yplost
@@ -1097,13 +1187,19 @@ class Secondaries:
                     n_unit0 = array([sintheta*cosphi,sintheta*sinphi,costheta])
                     coseta = -sum(v*n_unit0,axis=0)/sqrt(sum(v*v,axis=0))
                     if top.wpid==0:
-                        ek0av+=sum(e0)*top.pgroup.sw[js]
-                        costhav+=sum(abs(coseta))*top.pgroup.sw[js]
+                        ek0sum+=sum(e0)*top.pgroup.sw[js]
+                        costhsum+=sum(abs(coseta))*top.pgroup.sw[js]
                         weighttot+=n*top.pgroup.sw[js]
+                        pxsum += sum(uxplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
+                        pysum += sum(uyplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
+                        pzsum += sum(uzplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
                     else:
-                        ek0av+=sum(weight*e0)*top.pgroup.sw[js]
-                        costhav+=sum(weight*abs(coseta))*top.pgroup.sw[js]
+                        ek0sum+=sum(weight*e0)*top.pgroup.sw[js]
+                        costhsum+=sum(weight*abs(coseta))*top.pgroup.sw[js]
                         weighttot+=sum(weight)*top.pgroup.sw[js]
+                        pxsum += sum(weight*uxplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
+                        pysum += sum(weight*uyplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
+                        pzsum += sum(weight*uzplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
                     ek0max=max(max(e0),ek0max)
                     if 1:#cond.lcollectlpdata:
                         if js not in cond.lostparticles_angles:
@@ -1459,11 +1555,17 @@ class Secondaries:
                                     ssnparent = None
                                 if top.wpid==0:
                                     e0emit = 0.5*top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*(uxsec*uxsec+uysec*uysec+uzsec*uzsec)
+                                    pxsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*uxsec)
+                                    pysum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*uysec)
+                                    pzsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*uzsec)
                                     self.addparticles(ns,xnew,ynew,znew,uxsec,uysec,uzsec,js_new,itype=itypes,ssnparent=ssnparent)
                                 else:
                                     e0emit = 0.5*top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*(uxsec*uxsec+uysec*uysec+uzsec*uzsec)
+                                    pxsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*uxsec)
+                                    pysum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*uysec)
+                                    pzsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*uzsec)
                                     self.addparticles(ns,xnew,ynew,znew,uxsec,uysec,uzsec,js_new,ones(ns)*weight[i],itypes,ssnparent=ssnparent)
-                                ek0emitav += sum(e0emit)
+                                ek0emitsum += sum(e0emit)
 
                             if self.l_record_timing:
                                 tadd+=wtime()-tstart
@@ -1473,31 +1575,89 @@ class Secondaries:
                             ########################
                             # emission of neutrals #
                             ########################
+                            specular_fraction = self.inter[incident_species]['specular_fraction'][ics]
                             for i in range(n):
-                                my_yield=1.+1.82e-4*exp(0.09*180./pi*arccos(coseta[i]))
-                                scale_factor = self.inter[incident_species]['scale_factor'][ics]
-                                if not (scale_factor is None or scale_factor==1.):
-                                    my_yield*=scale_factor
-                                ns = int(my_yield)
-                                # --- The ns+1 is only a temporary fix to avoid an array out of
-                                # --- bounds errors. Once the desorb routine is fixed, this
-                                # --- code should be updated. Note that as the code is now,
-                                # --- in some cases, a desorbed particle will be thrown out.
-                                vx = desorb.floatArray(ns+1)
-                                vy = desorb.floatArray(ns+1)
-                                vz = desorb.floatArray(ns+1)
-                                vxnew = zeros(ns,'d')
-                                vynew = zeros(ns,'d')
-                                vznew = zeros(ns,'d')
+                                if incident_species.sq == 0. or specular_fraction is not None:
+                                    ##################################################
+                                    # emission of neutral from neutral or ion impact #
+                                    ##################################################
+                                    # --- This uses a model where a fraction is specularly reflected and the rest
+                                    # --- are reemitted at the temperature of the conductor. An ion that impacts is
+                                    # --- always neutralized before being emitted. One neutral is always emitted
+                                    # --- for each incident ion or neutral.
+                                    ns = 1
+                                    if random.random() < specular_fraction:
+                                        # --- Specular reflection
+                                        vgt = cosphi[i]*costheta[i]*vxplost[i] + sinphi[i]*costheta[i]*vyplost[i] - sintheta[i]*vzplost[i]
+                                        vgz =            -sinphi[i]*vxplost[i] +             cosphi[i]*vyplost[i]
+                                        vgn = cosphi[i]*sintheta[i]*vxplost[i] + sinphi[i]*sintheta[i]*vyplost[i] + costheta[i]*vzplost[i]
+                                        vt0 = vgt
+                                        vz0 = vgz
+                                        vn0 = -vgn
+                                    else:
+                                        # --- Thermal emission
+                                        conductor_temperature = self.inter[incident_species]['conductor_temperature'][ics]
+                                        vth = sqrt(2.*conductor_temperature*jperev/emitted_species.mass)
+                                        vmag = vth*sqrt(2.*log(1./max(1.e-14, random.random())))
+                                        thnew = pi/2.*random.random()
+                                        phnew = 2.*pi*random.random()
+                                        vgt = vmag*sin(thnew)*sin(phnew)
+                                        vgn = vmag*cos(thnew)
+                                        vgz = vmag*sin(thnew)*cos(phnew)
+                                        if costheta[i] < 1.-1.e-10:
+                                            z_unit0 = array([-sinphi[i],cosphi[i],0.])
+                                            z = -array([vzplost[i]*n_unit0[1][i]-vyplost[i]*n_unit0[2][i],
+                                                        vxplost[i]*n_unit0[2][i]-vzplost[i]*n_unit0[0][i],
+                                                        vyplost[i]*n_unit0[0][i]-vxplost[i]*n_unit0[1][i]])
+                                            z_unit  = z/sqrt(sum(z*z))
+                                            cospsi  = sum(z_unit*z_unit0)
+                                            sinpsi  = sqrt(max(0.,1.-cospsi*cospsi))
+                                            vt0 = -(cospsi*vgt - sinpsi*vgz)
+                                            vz0 = -(sinpsi*vgt + cospsi*vgz)
+                                            vn0 = vgn
+                                        else:
+                                            vt0 = vgt
+                                            vz0 = vgz
+                                            vn0 = vgn
 
-                                # --- compute the desorbed neutrals
-                                # --- note that the gamma0 (1.) and rel_weight (top.pgroup.sw[js_new]/top.pgroup.sw[js]) are actually not used
-                                desorb.desorb(my_yield,v[0][i],v[1][i],v[2][i],theta[i],phi[i],1.,0.4,top.pgroup.sm[js],top.pgroup.sw[js_new]/top.pgroup.sw[js],vx,vy,vz)
-                                scale_factor_velocity = self.inter[incident_species]['scale_factor_velocity'][ics]
-                                for ivnew in range(ns):
-                                    vxnew[ivnew]=vx[ivnew]*scale_factor_velocity
-                                    vynew[ivnew]=vy[ivnew]*scale_factor_velocity
-                                    vznew[ivnew]=vz[ivnew]*scale_factor_velocity
+                                    vxnew = cosphi[i]*costheta[i]*vt0 - sinphi[i]*vz0 + cosphi[i]*sintheta[i]*vn0
+                                    vynew = sinphi[i]*costheta[i]*vt0 + cosphi[i]*vz0 + sinphi[i]*sintheta[i]*vn0
+                                    vznew =          -sintheta[i]*vt0                 +           costheta[i]*vn0
+
+                                elif incident_species.sq != 0.:
+                                    ############################################
+                                    # emission of neutrals from neutral impact #
+                                    ############################################
+                                    # --- This is used for high energy incident ion.
+                                    my_yield=1.+1.82e-4*exp(0.09*180./pi*arccos(coseta[i]))
+                                    scale_factor = self.inter[incident_species]['scale_factor'][ics]
+                                    if not (scale_factor is None or scale_factor==1.):
+                                        my_yield*=scale_factor
+                                    ns = int(my_yield)
+                                    # --- The ns+1 is only a temporary fix to avoid an array out of
+                                    # --- bounds errors. Once the desorb routine is fixed, this
+                                    # --- code should be updated. Note that as the code is now,
+                                    # --- in some cases, a desorbed particle will be thrown out.
+                                    vx = desorb.floatArray(ns+1)
+                                    vy = desorb.floatArray(ns+1)
+                                    vz = desorb.floatArray(ns+1)
+                                    vxnew = zeros(ns,'d')
+                                    vynew = zeros(ns,'d')
+                                    vznew = zeros(ns,'d')
+
+                                    # --- compute the desorbed neutrals
+                                    # --- note that the gamma0 (1.) and rel_weight (top.pgroup.sw[js_new]/top.pgroup.sw[js]) are actually not used
+                                    desorb.desorb(my_yield,v[0][i],v[1][i],v[2][i],theta[i],phi[i],1.,0.4,top.pgroup.sm[js],top.pgroup.sw[js_new]/top.pgroup.sw[js],vx,vy,vz)
+                                    scale_factor_velocity = self.inter[incident_species]['scale_factor_velocity'][ics]
+                                    for ivnew in range(ns):
+                                        vxnew[ivnew]=vx[ivnew]*scale_factor_velocity
+                                        vynew[ivnew]=vy[ivnew]*scale_factor_velocity
+                                        vznew[ivnew]=vz[ivnew]*scale_factor_velocity
+
+
+                                self.inter[incident_species]['emitted'][ics][ie] += ns*top.pgroup.sq[js_new]*top.pgroup.sw[js_new]
+                                self.inter[incident_species]['absorbed'][ics][ie] += top.pgroup.sq[js]*top.pgroup.sw[js]
+
                                 init_position_offset = self.inter[incident_species]['init_position_offset'][ics]
                                 if init_position_offset>0.:
                                     xnew = xplost[i]+n_unit0[0][i]*init_position_offset
@@ -1534,11 +1694,17 @@ class Secondaries:
                                         ssnparent = None
                                     if top.wpid==0:
                                         e0emit = 0.5*top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*(vxnew*vxnew+vynew*vynew+vznew*vznew)
+                                        pxsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*vxnew)
+                                        pysum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*vynew)
+                                        pzsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*vznew)
                                         self.addpart(ns,xnew,ynew,znew,vxnew,vynew,vznew,js_new,itype=None,ssnparent=ssnparent)
                                     else:
                                         e0emit = 0.5*top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight*(vxnew*vxnew+vynew*vynew+vznew*vznew)
+                                        pxsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*vxnew)
+                                        pysum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*vynew)
+                                        pzsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*vznew)
                                         self.addpart(ns,xnew,ynew,znew,vxnew,vynew,vznew,js_new,ones(ns)*weight[i],None,ssnparent=ssnparent)
-                                    ek0emitav += sum(e0emit)
+                                    ek0emitsum += sum(e0emit)
 
                             # if self.l_record_timing:
                             #   tadd+=wtime()-tstart
@@ -1584,18 +1750,24 @@ class Secondaries:
         # --- append history arrays
         if l_accumulate_hist:
             weighttot = globalsum(weighttot)
-            ek0av = globalsum(ek0av)
-            costhav = globalsum(costhav)
+            ek0sum = globalsum(ek0sum)
+            costhsum = globalsum(costhsum)
             ek0max = globalmax(ek0max)
+            pxsum = globalsum(pxsum)
+            pysum = globalsum(pysum)
+            pzsum = globalsum(pzsum)
             if me==0:
                 if weighttot != 0.:
                     self.htime.append(top.time)
-                    self.ek0av.append(ek0av/weighttot)      #cummulative collision kinetic energy [eV] this step
+                    self.ek0av.append(ek0sum/weighttot)      #cummulative collision kinetic energy [eV] this step
                     self.ek0max.append(ek0max)      #maximum collision kinetic energy [eV]
-                    self.costhav.append(costhav/weighttot)
-                    self.power_dep.append(ek0av*echarge/top.dt)
-                    self.power_emit.append(ek0emitav/top.dt)
-                    self.power_diff.append((ek0av*echarge-ek0emitav)/top.dt)
+                    self.costhav.append(costhsum/weighttot)
+                    self.pxsum.append(pxsum)
+                    self.pysum.append(pysum)
+                    self.pzsum.append(pzsum)
+                    self.power_dep.append(ek0sum*jperev/top.dt)
+                    self.power_emit.append(ek0emitsum/top.dt)
+                    self.power_diff.append((ek0sum*jperev-ek0emitsum)/top.dt)
         # w3d.lcallscraper=0
         # particleboundaries3d(top.pgroup,-1,false)
         # w3d.lcallscraper=1
