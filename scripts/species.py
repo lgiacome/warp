@@ -636,10 +636,13 @@ class Species(object):
                         density[:,0] += density[:,-1]; density[:,-1]=density[:,0]
                     if w3d.solvergeom==w3d.RZgeom:
                         dr = (xmax-xmin)/nx
-                        r = arange(nx+1)*dr
+                        r = xmin + arange(nx+1)*dr
+                        if xmin == 0.:
+                            density[0,:] /= pi*dr/2
+                        else:
+                            density[0,:] /= 2.*pi*r[0]
                         for j in range(1,nx+1):
                             density[j,:] /= 2.*pi*r[j]
-                        density[0,:] /= pi*dr/2
             else:
                 if l_dividebyvolume:
                     density*=nx*ny*nz/((xmax-xmin)*(ymax-ymin)*(zmax-zmin))
