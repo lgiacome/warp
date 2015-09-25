@@ -6570,13 +6570,26 @@ c=============================================================================
       integer(ISZ):: np,nx
       real(kind=8):: x(np),n(0:nx)
       real(kind=8):: dx
+      integer(ISZ):: ip
+      real(kind=8):: rnrev
+      do ip=1,np
+        x(ip) = rnrev(ip, 2)
+      enddo
+      call load1drandom(np,x,nx,n,dx)
+      return
+      end
+c=============================================================================
+      subroutine load1drandom(np,x,nx,n,dx)
+      integer(ISZ):: np,nx
+      real(kind=8):: x(np),n(0:nx)
+      real(kind=8):: dx
 
 c Load particles onto a one dimensional distribution.  This load is only
 c approximate in that when the resulting particles are loaded back onto
 c the same 1-D grid from which the distribution is taken, the distribution
 c is not exactly reproduced. (The exact version is still under development.)
+c The x needs to be filled with uniformly spaced numbers between 0 and 1.
 
-      real(kind=8):: rnrev
       integer(ISZ):: i,ip,ix,di
       real(kind=8):: nnorm(0:nx),n1x(0:nx),sumn
       real(kind=8):: nintx(0:nx)
@@ -6604,9 +6617,10 @@ c     --- When the distribution has a nearly uniform section, a modified
 c     --- expression is required.
       do ip=1,np
 
+c       --- x needs to be prefilled in this version
 c       --- Initialize xp with a uniform load
 c       x(ip) = .5/np + wranf()*(np-1.)/np
-        x(ip) = rnrev(ip,2)
+c       x(ip) = wrandom(method,ip,2,1958,252)
 
 c       --- Linear search
 c       i=0

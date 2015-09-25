@@ -1405,7 +1405,8 @@ def getvzrange(kwdict={}):
 #-------------------------------------------------------------------------
 #-------------------------------------------------------------------------
 def addparticles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
-                 pid=0.,w=1.,js=0,sid=None,lallindomain=None,
+                 pid=0.,w=1.,ux=None,uy=None,uz=None,
+                 js=0,sid=None,lallindomain=None,
                  xmmin=None,xmmax=None,
                  ymmin=None,ymmax=None,
                  zmmin=None,zmmax=None,
@@ -1424,6 +1425,8 @@ def addparticles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
                          particles. Any that are unsupplied default to zero,
                          except gi, which defaults to 1. (gi is 1/gamma, the
                          relatistic paramter)
+    - ux, uy, uz: Instead of vx,vy,vz, these can be used, passing in momentums.
+                  The flag lmomentum will be set to true.
     - pid: additional particle information, such as an ID number or weight.
     - pidpairs=None: Allows setting specific pid columns. Argument must be a
                      list of lists, each having the format [id,pidvalue]. The
@@ -1480,6 +1483,14 @@ def addparticles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
     # --- Set the sid if it hasn't already be done
     if sid is None: sid = js
     if top.pgroup.sid[js] == -1: top.pgroup.sid[js] = sid
+
+    # --- Use momentum quantities if specified. These take
+    # --- precedence over vx, vy, and vz.
+    if ux is not None or uy is not None or uz is not None:
+        lmomentum = true
+        if ux is not None: vx = ux
+        if uy is not None: vy = uy
+        if uz is not None: vz = uz
 
     # --- Get length of arrays, set to one for scalars
     try:              lenx = len(x)
