@@ -115,7 +115,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         if (self.em.l_2drz==True) :
             dset.attrs['geometry']  = np.string_("thetaMode")
             dset.attrs['geometryParameters'] = \
-              "m=%d;imag=+" %(self.em.circ_m + 1)
+              np.string_("m=%d;imag=+" %(self.em.circ_m + 1))
             dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dz ])
             dset.attrs['axisLabels'] = np.array([ 'r', 'z' ])
             dset.attrs["gridGlobalOffset"] = np.array([
@@ -161,13 +161,15 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         else:
             positions = np.array([0.,0.,0.])
         # Along x
-        position[0] = x_offset_dict[ quantity ]
+        positions[0] = x_offset_dict[ quantity ]
         # Along y (3D Cartesian only)
-        if (l_2dxz==False) :
-            position[1] = y_offset_dict[quantity]
+        if (self.em.l_2dxz==False) :
+            positions[1] = y_offset_dict[quantity]
         # Along z
         positions[-1] = z_offset_dict[ quantity ]
 
+        dset.attrs['position'] = positions
+        
     def write_hdf5( self, iteration ) :
         """
         Write an HDF5 file that complies with the OpenPMD standard
@@ -321,8 +323,6 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         """
         # Create the dataset and setup its attributes
         if this_rank_writes :
-            # Shape of the data : first write the real part mode 0
-            # and then the imaginary part of the mode 1
             datashape = (self.em.nx+1, self.em.nz+1)
             dset = field_grp.require_dataset( path, datashape, dtype='f' )
             self.setup_openpmd_mesh_component( dset, quantity )
@@ -336,8 +336,10 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         # Parallel mode
         else:
             F, bounds = self.get_cart_dataset( quantity, False )
-            dset[ 0, bounds[0,0]:bounds[1,0],
+            dset[ bounds[0,0]:bounds[1,0],
                      bounds[0,1]:bounds[1,1] ] = F
+
+
                      
     def get_circ_dataset( self, quantity, lgather) :
         """
@@ -403,7 +405,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         
     def get_cart_dataset( self, quantity, lgather) :
         """
-        Get a given quantity in Cartisian coordinates
+        Get a given quantity in Cartesian coordinates
 
         Parameters
         ----------
