@@ -75,18 +75,36 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         """
         # Field Solver
         dset.attrs["fieldSolver"] = field_solver_dict[ self.em.stencil ]
-        # Field boundary
-        dset.attrs["fieldBoundary"] = np.array([
-            field_boundary_dict[ self.w3d.boundxy ],
-            field_boundary_dict[ self.w3d.boundxy ],
-            field_boundary_dict[ self.w3d.bound0 ],
-            field_boundary_dict[ self.w3d.boundnz ] ])
-        # Particle boundary
-        dset.attrs["particleBoundary"] = np.array([
-            particle_boundary_dict[ self.top.pboundxy ],
-            particle_boundary_dict[ self.top.pboundxy ],
-            particle_boundary_dict[ self.top.pbound0 ],
-            particle_boundary_dict[ self.top.pboundnz ] ])
+        # Field and particle boundary
+        # - 2D and Circ
+        if self.em.l_2dxy:
+            dset.attrs["fieldBoundary"] = np.array([
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.bound0 ],
+                field_boundary_dict[ self.w3d.boundnz ] ])
+            dset.attrs["particleBoundary"] = np.array([
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pbound0 ],
+                particle_boundary_dict[ self.top.pboundnz ] ])
+        # - 3D
+        else:
+            dset.attrs["fieldBoundary"] = np.array([
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.bound0 ],
+                field_boundary_dict[ self.w3d.boundnz ] ])
+            dset.attrs["particleBoundary"] = np.array([
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pbound0 ],
+                particle_boundary_dict[ self.top.pboundnz ] ])
+
         # Current Smoothing
         if np.all( self.em.npass_smooth == 0 ) :
             dset.attrs["currentSmoothing"] = np.string_("none")
@@ -337,9 +355,33 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         else:
             F, bounds = self.get_cart_dataset( quantity, False )
             dset[ bounds[0,0]:bounds[1,0],
-                     bounds[0,1]:bounds[1,1] ] = F
+                    bounds[0,1]:bounds[1,1] ] = F
 
-
+    def write_cart3d_dataset( self, field_grp, path, quantity,
+                            this_rank_writes ) :
+        """
+        Write a dataset in Cartesian coordinates
+        
+        See the docstring of write_dataset for the parameters
+        """
+        # Create the dataset and setup its attributes
+        if this_rank_writes :
+            datashape = (self.em.nx+1, self.em.ny+1, self.em.nz+1)
+            dset = field_grp.require_dataset( path, datashape, dtype='f' )
+            self.setup_openpmd_mesh_component( dset, quantity )
+            
+        # Fill the dataset with these quantities
+        # Gathering mode
+        if self.lparallel_output == False :
+            F, _ = self.get_cart_dataset( quantity, True )
+            if self.rank == 0:
+    	        dset[:,:,:] = F
+        # Parallel mode
+        else:
+            F, bounds = self.get_cart_dataset( quantity, False )
+            dset[ bounds[0,0]:bounds[1,0],
+                  bounds[0,1]:bounds[1,1],
+                  bounds[0,2]:bounds[1,2] ] = F
                      
     def get_circ_dataset( self, quantity, lgather) :
         """
@@ -441,12 +483,22 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         # Get global positions (indices) of local domain
         # Only needed for parallel output
         if lgather == False :
-            nx, nz = np.shape(F)
-            bounds = np.zeros([2,2], dtype = np.int)
-            bounds[0,0] = int((em.block.xmin - em.xmmin) / em.dx)
-            bounds[1,0] = bounds[0,0] + nx
-            bounds[0,1] = int((em.block.zmin - em.zmmin) / em.dz)
-            bounds[1,1] = bounds[0,1] + nz
+            if F.ndim == 2:
+                nx, nz = np.shape(F)
+                bounds = np.zeros([2,2], dtype = np.int)
+                bounds[0,0] = int((em.block.xmin - em.xmmin) / em.dx)
+                bounds[1,0] = bounds[0,0] + nx
+                bounds[0,1] = int((em.block.zmin - em.zmmin) / em.dz)
+                bounds[1,1] = bounds[0,1] + nz
+            elif F.ndim == 3:
+                nx, ny, nz = np.shape(F)
+                bounds = np.zeros([2,3], dtype = np.int)
+                bounds[0,0] = int((em.block.xmin - em.xmmin) / em.dx)
+                bounds[1,0] = bounds[0,0] + nx
+                bounds[0,1] = int((em.block.ymin - em.ymmin) / em.dy)
+                bounds[1,1] = bounds[0,1] + ny
+                bounds[0,2] = int((em.block.zmin - em.zmmin) / em.dz)
+                bounds[1,2] = bounds[0,2] + nz
         else :
             bounds = None
 
