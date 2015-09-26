@@ -77,7 +77,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         dset.attrs["fieldSolver"] = field_solver_dict[ self.em.stencil ]
         # Field and particle boundary
         # - 2D and Circ
-        if self.em.l_2dxy:
+        if self.em.l_2dxz:
             dset.attrs["fieldBoundary"] = np.array([
                 field_boundary_dict[ self.w3d.boundxy ],
                 field_boundary_dict[ self.w3d.boundxy ],
