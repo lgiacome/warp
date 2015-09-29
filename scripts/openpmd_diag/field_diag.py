@@ -435,9 +435,9 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         if lgather == False :
             nx, nz = np.shape(F)
             bounds = np.zeros([2,2], dtype = np.int)
-            bounds[0,0] = int((em.block.xmin - em.xmmin) / em.dx)
+            bounds[0,0] = int(round((em.block.xmin - em.xmmin) / em.dx))
             bounds[1,0] = bounds[0,0] + nx
-            bounds[0,1] = int((em.block.zmin - em.zmmin) / em.dz)
+            bounds[0,1] = int(round((em.block.zmin - em.zmmin) / em.dz))
             bounds[1,1] = bounds[0,1] + nz
         else :
             bounds = None
@@ -486,18 +486,18 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             if F.ndim == 2:
                 nx, nz = np.shape(F)
                 bounds = np.zeros([2,2], dtype = np.int)
-                bounds[0,0] = int((em.block.xmin - em.xmmin) / em.dx)
+                bounds[0,0] = int(round((em.block.xmin - em.xmmin) / em.dx))
                 bounds[1,0] = bounds[0,0] + nx
-                bounds[0,1] = int((em.block.zmin - em.zmmin) / em.dz)
+                bounds[0,1] = int(round((em.block.zmin - em.zmmin) / em.dz))
                 bounds[1,1] = bounds[0,1] + nz
             elif F.ndim == 3:
                 nx, ny, nz = np.shape(F)
                 bounds = np.zeros([2,3], dtype = np.int)
-                bounds[0,0] = int((em.block.xmin - em.xmmin) / em.dx)
+                bounds[0,0] = int(round((em.block.xmin - em.xmmin) / em.dx))
                 bounds[1,0] = bounds[0,0] + nx
-                bounds[0,1] = int((em.block.ymin - em.ymmin) / em.dy)
+                bounds[0,1] = int(round((em.block.ymin - em.ymmin) / em.dy))
                 bounds[1,1] = bounds[0,1] + ny
-                bounds[0,2] = int((em.block.zmin - em.zmmin) / em.dz)
+                bounds[0,2] = int(round((em.block.zmin - em.zmmin) / em.dz))
                 bounds[1,2] = bounds[0,2] + nz
         else :
             bounds = None
