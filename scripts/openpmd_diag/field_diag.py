@@ -75,18 +75,36 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         """
         # Field Solver
         dset.attrs["fieldSolver"] = field_solver_dict[ self.em.stencil ]
-        # Field boundary
-        dset.attrs["fieldBoundary"] = np.array([
-            field_boundary_dict[ self.w3d.boundxy ],
-            field_boundary_dict[ self.w3d.boundxy ],
-            field_boundary_dict[ self.w3d.bound0 ],
-            field_boundary_dict[ self.w3d.boundnz ] ])
-        # Particle boundary
-        dset.attrs["particleBoundary"] = np.array([
-            particle_boundary_dict[ self.top.pboundxy ],
-            particle_boundary_dict[ self.top.pboundxy ],
-            particle_boundary_dict[ self.top.pbound0 ],
-            particle_boundary_dict[ self.top.pboundnz ] ])
+        # Field and particle boundary
+        # - 2D and Circ
+        if self.em.l_2dxz:
+            dset.attrs["fieldBoundary"] = np.array([
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.bound0 ],
+                field_boundary_dict[ self.w3d.boundnz ] ])
+            dset.attrs["particleBoundary"] = np.array([
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pbound0 ],
+                particle_boundary_dict[ self.top.pboundnz ] ])
+        # - 3D
+        else:
+            dset.attrs["fieldBoundary"] = np.array([
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.boundxy ],
+                field_boundary_dict[ self.w3d.bound0 ],
+                field_boundary_dict[ self.w3d.boundnz ] ])
+            dset.attrs["particleBoundary"] = np.array([
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pboundxy ],
+                particle_boundary_dict[ self.top.pbound0 ],
+                particle_boundary_dict[ self.top.pboundnz ] ])
+
         # Current Smoothing
         if np.all( self.em.npass_smooth == 0 ) :
             dset.attrs["currentSmoothing"] = np.string_("none")
@@ -111,24 +129,34 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         self.setup_openpmd_record( dset, quantity )
         
         # Geometry parameters
-        # - Cartesian
-        if (self.em.l_2dxz==True) and (self.em.l_2drz==False) :
+        # - thetaMode
+        if (self.em.l_2drz==True) :
+            dset.attrs['geometry']  = np.string_("thetaMode")
+            dset.attrs['geometryParameters'] = \
+              np.string_("m=%d;imag=+" %(self.em.circ_m + 1))
+            dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dz ])
+            dset.attrs['axisLabels'] = np.array([ 'r', 'z' ])
+            dset.attrs["gridGlobalOffset"] = np.array([
+                self.w3d.xmmin, self.top.zgrid + self.w3d.zmmin])
+        # - 2D Cartesian
+        elif (self.em.l_2dxz==True) :
             dset.attrs['geometry'] = np.string_("cartesian")
             dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dz ])
             dset.attrs['axisLabels'] = np.array([ 'x', 'z' ])
-        # - thetaMode
-        elif (self.em.l_2drz==True) :
-            dset.attrs['geometry']  = np.string_("thetaMode")
-            dset.attrs['geometryParameters'] = \
-              "m=%d;imag=+" %(self.em.circ_m + 1)
-            dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dz ])
-            dset.attrs['axisLabels'] = np.array([ 'r', 'z' ])
+            dset.attrs["gridGlobalOffset"] = np.array([
+                self.w3d.xmmin, self.top.zgrid + self.w3d.zmmin])
+        # - 3D Cartesian
+        else :
+            dset.attrs['geometry'] = np.string_("cartesian")
+            dset.attrs['gridSpacing'] = np.array(
+                [ self.em.dx, self.em.dy, self.em.dz ])
+            dset.attrs['axisLabels'] = np.array([ 'x', 'y', 'z' ])
+            dset.attrs["gridGlobalOffset"] = np.array([ self.w3d.xmmin,
+                        self.w3d.ymmin, self.top.zgrid + self.w3d.zmmin])
             
         # Generic attributes
         dset.attrs["dataOrder"] = np.string_("C")
         dset.attrs["gridUnitSI"] = 1.
-        dset.attrs["gridGlobalOffset"] = np.array([
-            self.w3d.xmmin, self.top.zgrid + self.w3d.zmmin])
         dset.attrs["fieldSmoothing"] = np.string_("none")
 
     def setup_openpmd_mesh_component( self, dset, quantity ) :
@@ -146,27 +174,20 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         self.setup_openpmd_component( dset )
         
         # Field positions
-        positions = np.array([0., 0.])
-        if quantity in ["rho", "Er", "Ex", "Et", "Ey",
-                        "Jr", "Jx", "Jt", "Jy", "Bz" ] :
-            # These fields are centered along the longitudinal direction
-            positions[1] = 0. 
-        elif quantity in ["Ez", "Jz", "Br", "Bx", "Bt", "By" ] :
-            # These fields are staggered along the longitudinal direction
-            positions[1] = 0.5 
-        else :
-            raise ValueError("Unknown field quantity: %s" %quantity)
-        if quantity in ["rho", "Et", "Ey", "Ez", "Jt", "Jy", "Jz", "Br", "Bx"] :
-            # These fields are centered along the transverse direction
-            positions[0] = 0.
-        elif quantity in ["Er", "Ex", "Jr", "Jx", "Bt", "By", "Bz" ] :
-            # These fields are staggered along the transverse direction
-            positions[0] = 0.5
-        else :
-            raise ValueError("Unknown field quantity: %s" %quantity)
-        dset.attrs["position"] = positions[:]
+        if (self.em.l_2dxz==True) :
+            positions = np.array([0., 0.])
+        else:
+            positions = np.array([0.,0.,0.])
+        # Along x
+        positions[0] = x_offset_dict[ quantity ]
+        # Along y (3D Cartesian only)
+        if (self.em.l_2dxz==False) :
+            positions[1] = y_offset_dict[quantity]
+        # Along z
+        positions[-1] = z_offset_dict[ quantity ]
 
-
+        dset.attrs['position'] = positions
+        
     def write_hdf5( self, iteration ) :
         """
         Write an HDF5 file that complies with the OpenPMD standard
@@ -257,13 +278,17 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
             Parallel mode (lparallel_output=True) : all proc write
             Gathering mode : only the first proc writes
         """
-        # 2D Cartesian case
-        if (self.em.l_2dxz==True) and (self.em.l_2drz==False) :
-            self.write_cart_dataset( field_grp, path, quantity,
-                                     this_rank_writes )
         # Circ case
-        if (self.em.l_2drz==True) :
+        if (self.em.l_2drz==True):
             self.write_circ_dataset( field_grp, path, quantity,
+                                     this_rank_writes )
+        # 2D Cartesian case
+        elif (self.em.l_2dxz==True):
+            self.write_cart2d_dataset( field_grp, path, quantity,
+                                     this_rank_writes )
+        # 3D Cartesian case
+        else:
+            self.write_cart3d_dataset( field_grp, path, quantity,
                                      this_rank_writes )
 
         
@@ -307,7 +332,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
                          bounds[0,1]:bounds[1,1] ] = F_circ[:,:,0].imag
 
 
-    def write_cart_dataset( self, field_grp, path, quantity,
+    def write_cart2d_dataset( self, field_grp, path, quantity,
                             this_rank_writes ) :
         """
         Write a dataset in Cartesian coordinates
@@ -316,8 +341,6 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         """
         # Create the dataset and setup its attributes
         if this_rank_writes :
-            # Shape of the data : first write the real part mode 0
-            # and then the imaginary part of the mode 1
             datashape = (self.em.nx+1, self.em.nz+1)
             dset = field_grp.require_dataset( path, datashape, dtype='f' )
             self.setup_openpmd_mesh_component( dset, quantity )
@@ -331,8 +354,34 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         # Parallel mode
         else:
             F, bounds = self.get_cart_dataset( quantity, False )
-            dset[ 0, bounds[0,0]:bounds[1,0],
-                     bounds[0,1]:bounds[1,1] ] = F
+            dset[ bounds[0,0]:bounds[1,0],
+                    bounds[0,1]:bounds[1,1] ] = F
+
+    def write_cart3d_dataset( self, field_grp, path, quantity,
+                            this_rank_writes ) :
+        """
+        Write a dataset in Cartesian coordinates
+        
+        See the docstring of write_dataset for the parameters
+        """
+        # Create the dataset and setup its attributes
+        if this_rank_writes :
+            datashape = (self.em.nx+1, self.em.ny+1, self.em.nz+1)
+            dset = field_grp.require_dataset( path, datashape, dtype='f' )
+            self.setup_openpmd_mesh_component( dset, quantity )
+            
+        # Fill the dataset with these quantities
+        # Gathering mode
+        if self.lparallel_output == False :
+            F, _ = self.get_cart_dataset( quantity, True )
+            if self.rank == 0:
+    	        dset[:,:,:] = F
+        # Parallel mode
+        else:
+            F, bounds = self.get_cart_dataset( quantity, False )
+            dset[ bounds[0,0]:bounds[1,0],
+                  bounds[0,1]:bounds[1,1],
+                  bounds[0,2]:bounds[1,2] ] = F
                      
     def get_circ_dataset( self, quantity, lgather) :
         """
@@ -386,9 +435,9 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         if lgather == False :
             nx, nz = np.shape(F)
             bounds = np.zeros([2,2], dtype = np.int)
-            bounds[0,0] = int((em.block.xmin - em.xmmin) / em.dx)
+            bounds[0,0] = int(round((em.block.xmin - em.xmmin) / em.dx))
             bounds[1,0] = bounds[0,0] + nx
-            bounds[0,1] = int((em.block.zmin - em.zmmin) / em.dz)
+            bounds[0,1] = int(round((em.block.zmin - em.zmmin) / em.dz))
             bounds[1,1] = bounds[0,1] + nz
         else :
             bounds = None
@@ -398,7 +447,7 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         
     def get_cart_dataset( self, quantity, lgather) :
         """
-        Get a given quantity in Cartisian coordinates
+        Get a given quantity in Cartesian coordinates
 
         Parameters
         ----------
@@ -434,12 +483,22 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         # Get global positions (indices) of local domain
         # Only needed for parallel output
         if lgather == False :
-            nx, nz = np.shape(F)
-            bounds = np.zeros([2,2], dtype = np.int)
-            bounds[0,0] = int((em.block.xmin - em.xmmin) / em.dx)
-            bounds[1,0] = bounds[0,0] + nx
-            bounds[0,1] = int((em.block.zmin - em.zmmin) / em.dz)
-            bounds[1,1] = bounds[0,1] + nz
+            if F.ndim == 2:
+                nx, nz = np.shape(F)
+                bounds = np.zeros([2,2], dtype = np.int)
+                bounds[0,0] = int(round((em.block.xmin - em.xmmin) / em.dx))
+                bounds[1,0] = bounds[0,0] + nx
+                bounds[0,1] = int(round((em.block.zmin - em.zmmin) / em.dz))
+                bounds[1,1] = bounds[0,1] + nz
+            elif F.ndim == 3:
+                nx, ny, nz = np.shape(F)
+                bounds = np.zeros([2,3], dtype = np.int)
+                bounds[0,0] = int(round((em.block.xmin - em.xmmin) / em.dx))
+                bounds[1,0] = bounds[0,0] + nx
+                bounds[0,1] = int(round((em.block.ymin - em.ymmin) / em.dy))
+                bounds[1,1] = bounds[0,1] + ny
+                bounds[0,2] = int(round((em.block.zmin - em.zmmin) / em.dz))
+                bounds[1,2] = bounds[0,2] + nz
         else :
             bounds = None
 

@@ -8,7 +8,8 @@ import numpy as np
 __all__ = [ 'unit_dimension_dict', 'circ_dict_quantity', 'cart_dict_quantity',
             'circ_dict_Jindex', 'cart_dict_Jindex', 'field_boundary_dict',
             'particle_boundary_dict', 'field_solver_dict',
-            'macro_weighted_dict', 'weighting_power_dict' ]
+            'macro_weighted_dict', 'weighting_power_dict',
+            'x_offset_dict', 'y_offset_dict', 'z_offset_dict']
 
 # Correspondance between quantity and corresponding dimensions
 # As specified in the openPMD standard, the arrays represent the
@@ -25,6 +26,21 @@ unit_dimension_dict = {
     "positionOffset" : np.array([1., 0., 0., 0., 0., 0., 0.]),
     "momentum" : np.array([1., 1.,-1., 0., 0., 0., 0.]) }
 
+# Spatial offset of the different fields
+x_offset_dict = {
+    "rho":0., "Et":0., "Ey":0., "Ez":0., "Jt":0., "Jy":0., "Jz":0.,
+    "Br":0., "Bx":0., "Er":0.5, "Ex":0.5, "Jr":0.5, "Jx":0.5, "Bt":0.5,
+    "By":0.5, "Bz":0.5 }
+y_offset_dict = {
+    "rho":0., "Ex":0., "Ez":0., "Jx":0., "Jz":0., "By":0., 
+    "Ey":0.5, "Jy":0.5, "Bx":0.5, "Bz":0.5  }
+z_offset_dict = {
+    "rho":0., "Er":0., "Ex":0., "Et":0., "Ey":0.,
+    "Jr":0., "Jx":0., "Jt":0., "Jy":0., "Bz":0.,
+    "Ez":0.5, "Jz":0.5, "Br":0.5, "Bx":0.5, "Bt":0.5, "By":0.5 }
+
+
+    
 # Typical weighting of different particle properties
 macro_weighted_dict = {
     "charge": np.uint32(0),
