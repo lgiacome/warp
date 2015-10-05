@@ -5849,11 +5849,8 @@ class EM3D(SubcycledPoissonSolver):
         elif self.l_2drz:
             Ex = (esolver.phi[ix1:ix2,:,iz1:iz2] - esolver.phi[ix1+1:ix2+1,:,iz1:iz2])/esolver.dx
             Ey = zeros_like(Ex)
-            Ez = (esolver.phi[ix1:ix2,:,iz1:iz2] - esolver.phi[ix1:ix2,:,iz1+1:iz2+1])/esolver.dz
+            Ez = (esolver.phi[ix1:ix2,:,iz1:iz2] - esolver.phi[ix1:ix2,:,iz1+1:iz2+1])/esolver.dz/zfact/zfact
 
-            Ax = bsolver.potential[0,...]
-            Ay = bsolver.potential[1,...]
-            Az = bsolver.potential[2,...]
             Bx =      -((Ay[ix1:ix2,:,iz1+1:iz2+1] - Ay[ix1:ix2,:,iz1:iz2]))/bsolver.dz
             By = 0.5*(-((Az[ix1+1:ix2+1,:,iz1  :iz2  ] - Az[ix1:ix2,:,iz1  :iz2  ]) +
                         (Az[ix1+1:ix2+1,:,iz1+1:iz2+1] - Az[ix1:ix2,:,iz1+1:iz2+1]))/bsolver.dx
