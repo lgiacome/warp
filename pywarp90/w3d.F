@@ -3913,20 +3913,20 @@ c       --- the axis of symmetry.
         if (l4symtry) sx = -1.
 
 c       --- special loop symmetry is used
-        inext = (abs(xp(1)) - xmmin)*dxi
+        inext = (abs(xp(1) - xmmin))*dxi
         knext = (zp(1) - zgrid - zmmin)*dzi
         do ip = 1, np
 
           i = inext
           k = knext
           if (ip < np) then
-            inext = (abs(xp(ip+1)) - xmmin)*dxi
+            inext = (abs(xp(ip+1) - xmmin))*dxi
             knext = (zp(ip+1) - zgrid - zmmin)*dzi
           endif
 
           ind0 = i + k*nnx
 
-          u1 = (abs(xp(ip)) - xmmin)*dxi - i
+          u1 = (abs(xp(ip) - xmmin))*dxi - i
           w1 = (zp(ip) - zgrid - zmmin)*dzi - k
 
           u0 = 1. - u1
@@ -4122,8 +4122,8 @@ c       --- the axis of symmetry.
         if (l4symtry) sx = -1.
 
 c       --- special loop symmetry is used
-        inext = (abs(xp(1)) - xmmin)*dxi
-        jnext = (abs(yp(1)) - ymmin)*dyi
+        inext = (abs(xp(1) - xmmin))*dxi
+        jnext = (abs(yp(1) - ymmin))*dyi
         knext = (zp(1) - zgrid - zmmin)*dzi
         do ip = 1, np
 
@@ -4131,15 +4131,15 @@ c       --- special loop symmetry is used
           j = jnext
           k = knext
           if (ip < np) then
-            inext = (abs(xp(ip+1)) - xmmin)*dxi
-            jnext = (abs(yp(ip+1)) - ymmin)*dyi
+            inext = (abs(xp(ip+1) - xmmin))*dxi
+            jnext = (abs(yp(ip+1) - ymmin))*dyi
             knext = (zp(ip+1) - zgrid - zmmin)*dzi
           endif
 
           ind0 = i + j*nnx + k*nnxy
 
-          u1 = (abs(xp(ip)) - xmmin)*dxi - i
-          v1 = (abs(yp(ip)) - ymmin)*dyi - j
+          u1 = (abs(xp(ip) - xmmin))*dxi - i
+          v1 = (abs(yp(ip) - ymmin))*dyi - j
           w1 = (zp(ip) - zgrid - zmmin)*dzi - k
 
           u0 = 1. - u1
@@ -4307,7 +4307,7 @@ c       --- the axis of symmetry.
         if (l4symtry) sx = -1.
 
 c       --- special loop symmetry is used
-        xinext = (abs(xp(1)) - xmmin)*dxi
+        xinext = (abs(xp(1) - xmmin))*dxi
         zknext = (zp(1) - zgrid - zmmin)*dzi
         inext = xinext
         knext = zknext
@@ -4320,7 +4320,7 @@ c       --- special loop symmetry is used
           k = knext
 
           if (ip < np) then
-            xinext = (abs(xp(ip+1)) - xmmin)*dxi
+            xinext = (abs(xp(ip+1) - xmmin))*dxi
             zknext = (zp(ip+1) - zgrid - zmmin)*dzi
             inext = xinext
             knext = zknext
@@ -4478,8 +4478,8 @@ c       --- the axis of symmetry.
         if (l4symtry) sx = -1.
 
 c       --- special loop symmetry is used
-        xinext = (abs(xp(1)) - xmmin)*dxi
-        yjnext = (abs(yp(1)) - ymmin)*dyi
+        xinext = (abs(xp(1) - xmmin))*dxi
+        yjnext = (abs(yp(1) - ymmin))*dyi
         zknext = (zp(1) - zgrid - zmmin)*dzi
         inext = xinext
         jnext = yjnext
@@ -4495,8 +4495,8 @@ c       --- special loop symmetry is used
           k = knext
 
           if (ip < np) then
-            xinext = (abs(xp(ip+1)) - xmmin)*dxi
-            yjnext = (abs(yp(ip+1)) - ymmin)*dyi
+            xinext = (abs(xp(ip+1) - xmmin))*dxi
+            yjnext = (abs(yp(ip+1) - ymmin))*dyi
             zknext = (zp(ip+1) - zgrid - zmmin)*dzi
             inext = xinext
             jnext = yjnext
@@ -4681,20 +4681,20 @@ c       --- the axis of symmetry.
         if (l4symtry) sx = -1.
 
 c       --- special loop symmetry is used
-        inext = (abs(xp(1)) - xmmin)*dxi
+        inext = (abs(xp(1) - xmmin))*dxi
         knext = (zp(1) - zgrid - zmmin)*dzi
         do ip = 1, np
 
           i = inext
           k = knext
           if (ip < np) then
-            inext = (abs(xp(ip+1)) - xmmin)*dxi
+            inext = (abs(xp(ip+1) - xmmin))*dxi
             knext = (zp(ip+1) - zgrid - zmmin)*dzi
           endif
 
           ind0 = i + k*nnx
 
-          u1 = (abs(xp(ip)) - xmmin)*dxi - i
+          u1 = (abs(xp(ip) - xmmin))*dxi - i
           w1 = (zp(ip) - zgrid - zmmin)*dzi - k
 
           u0 = 1. - u1
@@ -4844,8 +4844,8 @@ c       --- the axis of symmetry.
         if (l4symtry) sx = -1.
 
 c       --- special loop symmetry is used
-        inext = (abs(xp(1)) - xmmin)*dxi
-        jnext = (abs(yp(1)) - ymmin)*dyi
+        inext = (abs(xp(1) - xmmin))*dxi
+        jnext = (abs(yp(1) - ymmin))*dyi
         knext = (zp(1) - zgrid - zmmin)*dzi
         do ip = 1, np
 
@@ -4853,15 +4853,15 @@ c       --- special loop symmetry is used
           j = jnext
           k = knext
           if (ip < np) then
-            inext = (abs(xp(ip+1)) - xmmin)*dxi
-            jnext = (abs(yp(ip+1)) - ymmin)*dyi
+            inext = (abs(xp(ip+1) - xmmin))*dxi
+            jnext = (abs(yp(ip+1) - ymmin))*dyi
             knext = (zp(ip+1) - zgrid - zmmin)*dzi
           endif
 
           ind0 = i + j*nnx + k*nnxy
 
-          u1 = (abs(xp(ip)) - xmmin)*dxi - i
-          v1 = (abs(yp(ip)) - ymmin)*dyi - j
+          u1 = (abs(xp(ip) - xmmin))*dxi - i
+          v1 = (abs(yp(ip) - ymmin))*dyi - j
           w1 = (zp(ip) - zgrid - zmmin)*dzi - k
 
           u0 = 1. - u1
@@ -5089,14 +5089,14 @@ c       --- the axis of symmetry.
         if (l4symtry) sx = -1.
 
 c       --- special loop symmetry is used
-        inext = nint((abs(xp(1)) - xmmin)*dxi)
+        inext = nint((abs(xp(1) - xmmin))*dxi)
         knext = nint((zp(1) - zgrid - zmmin)*dzi)
         do ip = 1, np
 
           i = inext
           k = knext
           if (ip < np) then
-            inext = nint((abs(xp(ip+1)) - xmmin)*dxi)
+            inext = nint((abs(xp(ip+1) - xmmin))*dxi)
             knext = nint((zp(ip+1) - zgrid - zmmin)*dzi)
           endif
 
@@ -5324,8 +5324,8 @@ c       --- the axis of symmetry.
         if (l4symtry) sx = -1.
 
 c       --- special loop symmetry is used
-        inext = nint((abs(xp(1)) - xmmin)*dxi)
-        jnext = nint((abs(yp(1)) - ymmin)*dyi)
+        inext = nint((abs(xp(1) - xmmin))*dxi)
+        jnext = nint((abs(yp(1) - ymmin))*dyi)
         knext = nint((zp(1) - zgrid - zmmin)*dzi)
         do ip = 1, np
 
@@ -5333,8 +5333,8 @@ c       --- special loop symmetry is used
           j = jnext
           k = knext
           if (ip < np) then
-            inext = nint((abs(xp(ip+1)) - xmmin)*dxi)
-            jnext = nint((abs(yp(ip+1)) - ymmin)*dyi)
+            inext = nint((abs(xp(ip+1) - xmmin))*dxi)
+            jnext = nint((abs(yp(ip+1) - ymmin))*dyi)
             knext = nint((zp(ip+1) - zgrid - zmmin)*dzi)
           endif
 
@@ -5630,7 +5630,7 @@ c       --- the axis of symmetry.
         if (l4symtry) sx = -1.
 
 c       --- special loop symmetry is used
-        inext = nint((abs(xp(1)) - xmmin)*dxi)
+        inext = nint((abs(xp(1) - xmmin))*dxi)
         knext = nint((zp(1) - zgrid - zmmin)*dzi)
 
         do ip = 1, np
@@ -5638,7 +5638,7 @@ c       --- special loop symmetry is used
           i = inext
           k = knext
           if (ip < np) then
-            inext = nint((abs(xp(ip+1)) - xmmin)*dxi)
+            inext = nint((abs(xp(ip+1) - xmmin))*dxi)
             knext = nint((zp(ip+1) - zgrid - zmmin)*dzi)
           endif
 
@@ -5875,8 +5875,8 @@ c       --- the axis of symmetry.
         if (l4symtry) sx = -1.
 
 c       --- special loop symmetry is used
-        inext = nint((abs(xp(1)) - xmmin)*dxi)
-        jnext = nint((abs(yp(1)) - ymmin)*dyi)
+        inext = nint((abs(xp(1) - xmmin))*dxi)
+        jnext = nint((abs(yp(1) - ymmin))*dyi)
         knext = nint((zp(1) - zgrid - zmmin)*dzi)
         do ip = 1, np
 
@@ -5884,13 +5884,13 @@ c       --- special loop symmetry is used
           j = jnext
           k = knext
           if (ip < np) then
-            inext = nint((abs(xp(ip+1)) - xmmin)*dxi)
-            jnext = nint((abs(yp(ip+1)) - ymmin)*dyi)
+            inext = nint((abs(xp(ip+1) - xmmin))*dxi)
+            jnext = nint((abs(yp(ip+1) - ymmin))*dyi)
             knext = nint((zp(ip+1) - zgrid - zmmin)*dzi)
           endif
 
-          wx = (xp(ip) - xmmin)*dxi - i
-          wy = (yp(ip) - ymmin)*dyi - j
+          wx = abs(xp(ip) - xmmin)*dxi - i
+          wy = abs(yp(ip) - ymmin)*dyi - j
           wz = (zp(ip) - zgrid - zmmin)*dzi - k
 
           u10 = wx - 0.5
