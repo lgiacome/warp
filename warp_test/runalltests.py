@@ -2,13 +2,13 @@
 This will run all files that have a name with the format *_test.py.
 It will print out each file name and whether all of the tests passed or not.
 """
-import os
 import glob
+from subprocess import Popen, PIPE
 
 # --- Run each of the files independently.
 for f in glob.glob('*_test.py'):
-    fin,fout,ferr = os.popen3('python %s'%f)
-    serr = ferr.readlines()
+    p = Popen(["python", f], stdout=PIPE, stderr=PIPE, close_fds=True)
+    serr = p.stderr.readlines()
     if serr[-1] == 'OK\n':
         print('%s OK\n'%f)
     else:
