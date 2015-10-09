@@ -78,6 +78,14 @@ except ImportError:
         warnings.warn("there was an error importing gist; if this is a problem, restart python and type 'import gist' for details, otherwise Warp will run OK but with no graphics")
     from gistdummy import *
 
+if sys.hexversion >= 0x03000000:
+    # --- With Python3, the so files of each Fortran package are imported
+    # --- separately. The dlopen flag needs to be set so that cross references
+    # --- among the packages can be satisfied.
+    import ctypes
+    #sys.setdlopenflags(ctypes.RTLD_LAZY + ctypes.RTLD_GLOBAL)
+    sys.setdlopenflags(1 + ctypes.RTLD_GLOBAL)
+
 # Import the warpC shared object which contains all of Warp
 # --- If python had been built statically, then warpCparallel is linked
 # --- in under the name warpC.
@@ -87,14 +95,6 @@ if lparallel and not lstatic_python:
 else:
     import warpC
     from warpC import *
-
-if sys.hexversion >= 0x03000000:
-    # --- With Python3, the so files of each Fortran package are imported
-    # --- separately. The dlopen flag needs to be set so that cross references
-    # --- among the packages can be satisfied.
-    import ctypes
-    #sys.setdlopenflags(ctypes.RTLD_LAZY + ctypes.RTLD_GLOBAL)
-    sys.setdlopenflags(1 + ctypes.RTLD_GLOBAL)
 
 from Forthon import *
 from warputils import *
