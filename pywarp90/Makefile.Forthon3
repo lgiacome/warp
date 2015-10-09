@@ -10,7 +10,7 @@ INSTALL = --install
 INSTALLOPTIONS = #--user
 -include Makefile.local3
 BUILDBASE = --build-base $(BUILDBASEDIR)
-INSTALLARGS = --pkgbase warp $(BUILDBASE) $(INSTALL) $(INSTALLOPTIONS)
+INSTALLARGS = --pkgbase warp $(BUILDBASE) $(INSTALL)
 
 install: installso
 	(cd ../scripts;$(PYTHON) setup.py build $(BUILDBASE) install $(INSTALLOPTIONS))
@@ -22,43 +22,43 @@ build: toppy.$(SO) envpy.$(SO) w3dpy.$(SO) f3dpy.$(SO) wxypy.$(SO) fxypy.$(SO) w
 	$(PYTHON) setup.py $(FCOMP) build $(BUILDBASE)
 
 toppy.$(SO): top.F top_lattice.F top_fsl.F dtop.F util.F top.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) top top_lattice.F top_fsl.F dtop.F util.F
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) top top_lattice.F top_fsl.F dtop.F util.F $(INSTALLOPTIONS)
 
 envpy.$(SO): toppy.$(SO) env.F env.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) env
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) env $(INSTALLOPTIONS)
 
 w3dpy.$(SO): toppy.$(SO) w3d.F dw3d.F w3d_injection.F w3d_interp.F w3d_collisions.F w3d_utilities.F w3d_load.F w3d.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) --macros top.v w3d dw3d.F w3d_injection.F w3d_interp.F w3d_collisions.F w3d_load.F w3d_utilities.F
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) --macros top.v w3d dw3d.F w3d_injection.F w3d_interp.F w3d_collisions.F w3d_load.F w3d_utilities.F $(INSTALLOPTIONS)
 
 f3dpy.$(SO): toppy.$(SO) w3dpy.$(SO) f3d.F f3d_mgrid.F f3d_ImplicitES.F f3d_mgrid_be.F f3d_bfield.F f3d_conductors.F fft.F f3d.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) --macros top.v f3d f3d_mgrid.F f3d_ImplicitES.F f3d_mgrid_be.F f3d_bfield.F f3d_conductors.F fft.F
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) --macros top.v f3d f3d_mgrid.F f3d_ImplicitES.F f3d_mgrid_be.F f3d_bfield.F f3d_conductors.F fft.F $(INSTALLOPTIONS)
 
 wxypy.$(SO): toppy.$(SO) wxy.F wxy.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) wxy
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) wxy $(INSTALLOPTIONS)
 
 fxypy.$(SO): toppy.$(SO) fxy.F fxy_mgrid.F fxy.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) fxy fxy_mgrid.F
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) fxy fxy_mgrid.F $(INSTALLOPTIONS)
 
 wrzpy.$(SO): toppy.$(SO) wrz.F dwrz.F wrz.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) --macros top.v wrz dwrz.F
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) --macros top.v wrz dwrz.F $(INSTALLOPTIONS)
 
 frzpy.$(SO): toppy.$(SO) w3dpy.$(SO) frz.F frz_mgrid.F90 frz_mgrid_be.F frz_ImplicitES.F frz.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) frz frz_mgrid.F90 frz_mgrid_be.F frz_ImplicitES.F
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) frz frz_mgrid.F90 frz_mgrid_be.F frz_ImplicitES.F $(INSTALLOPTIONS)
 
 herpy.$(SO): toppy.$(SO) her.F her.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) her
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) her $(INSTALLOPTIONS)
 
 cirpy.$(SO): toppy.$(SO) cir.F cir.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) cir
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) cir $(INSTALLOPTIONS)
 
 chopy.$(SO): toppy.$(SO) cho.F cho.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) cho
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) cho $(INSTALLOPTIONS)
 
 em2dpy.$(SO): toppy.$(SO) em2d.F90 em2d_apml.F90 em2d_apml_cummer.F90 em2d_maxwell.F90 em2d.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) em2d em2d_apml.F90 em2d_apml_cummer.F90 em2d_maxwell.F90
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) em2d em2d_apml.F90 em2d_apml_cummer.F90 em2d_maxwell.F90 $(INSTALLOPTIONS)
 
 em3dpy.$(SO): toppy.$(SO) em3d.F90 em3d_maxwell.F90 em3d.v
-	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) em3d em3d_maxwell.F90
+	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) em3d em3d_maxwell.F90 $(INSTALLOPTIONS)
 
 ranffortran.c: ranffortran.m
 	$(PYTHON) -c "from Forthon.preprocess import main;main()" ranffortran.m ranffortran.c
