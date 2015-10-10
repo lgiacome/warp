@@ -1733,7 +1733,7 @@ class MeshRefinement(VisualizableClass):
     def getfieldslice(self,lower=None,upper=None,comp=slice(None),r=[1,1,1]):
         if lower is None: lower = self.lower
         if upper is None: upper = self.upper
-        if type(comp) == StringType:
+        if isinstance(comp, basestring):
             ic = ['x','y','z'].index(comp)
         else:
             ic = comp
