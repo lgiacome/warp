@@ -5,22 +5,23 @@ It will print out each file name and whether all of the tests passed or not.
 import glob
 from subprocess import Popen, PIPE
 
-try:
-    from termcolor import colored
-except:
-    def colored(a, b):
-        return a
+textRed = '\033[0;31m'    # Red
+textGreen = '\033[0;32m'  # Green
+textColor_Off = '\033[0m' # Text Reset
+
+def colored(text, textcolor):
+    return textcolor + text + textColor_Off
 
 # --- Run each of the files independently.
 for f in glob.glob('*_test.py'):
     p = Popen(["python", f], stdout=PIPE, stderr=PIPE, close_fds=True)
     serr = p.stderr.readlines()
     if serr[-1] == 'OK\n':
-        print('%s %s'%(f, colored('OK', 'green')))
+        print('%s %s'%(f, colored('OK', textGreen)))
     else:
-        print(colored(f, 'red'))
+        print(colored(f, textRed))
         for e in serr[:-1]:
             print(e)
         # --- Use ASCII codes to print this is red
-        print('%s %s'%(colored(f, 'red'), colored(serr[-1], 'red')))
+        print('%s %s'%(colored(f, textRed), colored(serr[-1], textRed)))
 
