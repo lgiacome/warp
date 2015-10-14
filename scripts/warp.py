@@ -312,6 +312,8 @@ def versionstext():
     except AttributeError:
         r += '# %s\n'%'warpC built in'
     r += '# %s\n'%time.ctime(top.starttime)
+    if lparallel:
+        r += '# %d processors\n'%npes
     return r
 
 #=============================================================================
@@ -1120,7 +1122,7 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
 ##############################################################################
 
 ##############################################################################
-def printtimers(file=None,lminmax=0,mintime=0.,icontrollers=0):
+def printtimers(file=None,lminmax=0,mintime=0.,icontrollers=2):
     """
   Print timers in a nice annotated format
     - file=None: Optional input file. If it is not include, stdout is used. It can
