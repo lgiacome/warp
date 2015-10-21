@@ -1285,18 +1285,19 @@ class Secondaries:
                             # print 'coseta',coseta[i]
                             l_warning=0
                             l_infinity=0
-                            if coseta[i]<0.:
+                            if any(coseta < 0.):
                                 l_warning=1
                                 swarn = 'WARNING issued by Secondaries.generate: coseta<0.'
-                                coseta[i]=-coseta[i]
-                                n_unit0[0][i]=-n_unit0[0][i]
-                                n_unit0[1][i]=-n_unit0[1][i]
-                                n_unit0[2][i]=-n_unit0[2][i]
-                                costheta[i] = cos(pi+theta[i])
-                                sintheta[i] = sin(pi+theta[i])
+                                inegative = (coseta < 0.)
+                                coseta[inegative]=-coseta[inegative]
+                                n_unit0[0][inegative]=-n_unit0[0][inegative]
+                                n_unit0[1][inegative]=-n_unit0[1][inegative]
+                                n_unit0[2][inegative]=-n_unit0[2][inegative]
+                                costheta[inegative] = cos(pi+theta[inegative])
+                                sintheta[inegative] = sin(pi+theta[inegative])
                                 # print 'coseta 1,2 :',coseta[i],-sum(u[i]*n_unit0[i])/sqrt(sum(u[i]*u[i]))
                                 # print 'n 1, 2',n_unit0[0][i],n_unit0[1][i],n_unit0[2][i],sintheta[i]*cosphi[i],sintheta[i]*sinphi[i],costheta[i]
-                            if xplost[i]==largepos or yplost[i]==largepos or zplost[i]==largepos:
+                            if any(xplost==largepos) or any(yplost==largepos) or any(zplost==largepos):
                                 l_warning=1
                                 l_infinity=1
                                 swarn = 'WARNING issued by Secondaries.generate: particle at infinity'
@@ -1310,7 +1311,9 @@ class Secondaries:
                             if self.l_record_timing:
                                 tinit+=wtime()-tstart
                                 tstart=wtime()
-                            if self.l_verbose:print 'e0, coseta',e0[i],coseta[i]
+                            if self.l_verbose:
+                                for i in range(n):
+                                    print 'e0, coseta',e0[i],coseta[i]
 
                         init_position_offset = self.inter[incident_species]['init_position_offset'][ics]
                         if forced_yield is not None:
@@ -1365,7 +1368,7 @@ class Secondaries:
                                     uysec = zeros(n*posC.maxsec,'d')
                                     uzsec = zeros(n*posC.maxsec,'d')
                                     ns = array([n*posC.maxsec])
-                                    warpsecelec(n,e0,coseta,weight,ns,xnew,ynew,znew,uxsec,uysec,uzsec,
+                                    pos.secelecarray(n,e0,coseta,weight,ns,xnew,ynew,znew,uxsec,uysec,uzsec,
                                                 costheta,sintheta,sinphi,cosphi,n_unit0,xplost,yplost,zplost,vxplost,vyplost,vzplost,
                                                 top.pgroup.sm[js_new],Electron.mass,scale_factor,init_position_offset)
                                     ns = ns[0]

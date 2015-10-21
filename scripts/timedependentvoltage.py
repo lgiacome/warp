@@ -33,6 +33,7 @@ class TimeVoltage:
                         voltage is set. It must take one argument, the current
                         value of the voltage. More functions can be installed
                         using the method installaftervoltset.
+   - solver=None: Optional solver in which to apply the voltage. Defaults to the registered solver.
     """
 
     def __init__(self,condid=0,discrete=true,
@@ -41,7 +42,8 @@ class TimeVoltage:
                   flattime=top.largepos,falltime=top.largepos,
                   voltdata=None,timedata=None,
                   voltfunc=None,
-                  aftervoltset=None):
+                  aftervoltset=None,
+                  solver=None):
         assert ((not tieffenback) or
                (tieffenback and maxvoltage is not None and risetime is not None)),\
                "If Tieffenback profile is used, both a maxvoltage and a risetime must be specified"
@@ -67,6 +69,7 @@ class TimeVoltage:
         self.timedata = timedata
         self.discrete = discrete
         self.setvinject = setvinject
+        self.solver = solver
 
         if voltfunc is None:
             self.voltfunc = voltfunc
@@ -139,7 +142,10 @@ class TimeVoltage:
         if time is None: time = top.time
         volt = self.getvolt(time)
         # --- Get the appropriate conductors object to install into.
-        solver = getregisteredsolver()
+        if self.solver is None:
+            solver = getregisteredsolver()
+        else:
+            solver = self.solver
         for c in self.condid:
             if solver is None:
                 setconductorvoltage(volt,c,discrete=self.discrete,
