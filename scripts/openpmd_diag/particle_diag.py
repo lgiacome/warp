@@ -77,7 +77,16 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         self.particle_data = particle_data
         self.species_dict = species
         self.select = select
-        
+
+        # Correct the bounds in momenta (since the momenta in Warp
+        # are not unitless, but have the units of a velocity)
+        for momentum in ['ux', 'uy', 'uz']:
+            if momentum in self.select:
+                if self.select[momentum][0] is not None:
+                    self.select[momentum][0] *= constants.c
+                if self.select[momentum][1] is not None:
+                    self.select[momentum][1] *= constants.c
+ 
     def setup_openpmd_species_group( self, grp, species ) :
         """
         Set the attributes that are specific to the particle group
@@ -309,7 +318,6 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         if self.select is not None :
             # Go through the quantities on which a rule applies
             for quantity in self.select.keys() :
-                
                 quantity_array = self.get_quantity( species, quantity )
                 # Lower bound
                 if self.select[quantity][0] is not None :
@@ -408,6 +416,10 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         
         # Apply the selection
         quantity_array = quantity_array[ select_array ]
+
+        # If this is the momentum, mutliply by the proper factor
+        if quantity in ['ux', 'uy', 'uz']:
+            quantity_array *= species.mass
         
         # Gather the data if required
         if gather==False :
@@ -438,11 +450,11 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         elif quantity == "z" :
             quantity_array = species.getz(gather=False)
         elif quantity == "ux" :
-            quantity_array = species.getux(gather=False) * species.mass
+            quantity_array = species.getux(gather=False)
         elif quantity == "uy" :
-            quantity_array = species.getuy(gather=False) * species.mass
+            quantity_array = species.getuy(gather=False)
         elif quantity == "uz" :
-            quantity_array = species.getuz(gather=False) * species.mass
+            quantity_array = species.getuz(gather=False)
         elif quantity == "w" :
             quantity_array = species.getweights(gather=False)
 
