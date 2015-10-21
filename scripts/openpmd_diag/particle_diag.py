@@ -81,7 +81,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         # Correct the bounds in momenta (since the momenta in Warp
         # are not unitless, but have the units of a velocity)
         for momentum in ['ux', 'uy', 'uz']:
-            if momentum in self.select:
+            if (self.select is not None) and (momentum in self.select):
                 if self.select[momentum][0] is not None:
                     self.select[momentum][0] *= constants.c
                 if self.select[momentum][1] is not None:
