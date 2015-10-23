@@ -335,12 +335,12 @@ def winon(winnum=None,dpi=100,prefix=None,suffix=None,xon=1,style='work.gs'):
   Opens up an X window
     - winnum=0 is the window number
     - dpi=100 is the dots per inch (either 100 or 75)
-    - prefix=None: if given, opens a new file with the same suffix number as
+    - prefix=None: if given, opens a new file with the same file name number as
                    the one for window 0. Winnum cannot be 0 and setup must have
                    already been called. Warning - this will overwrite a file
                    with the same name.
                    Both prefix and suffix can be specified.
-    - suffix=None: if given, opens a new file with the same suffix number as
+    - suffix=None: if given, opens a new file with the same file name number as
                    the one for window 0. Winnum cannot be 0 and setup must have
                    already been called. Warning - this will overwrite a file
                    with the same name.
@@ -1440,7 +1440,7 @@ def ppgeneric(y=None,x=None,kwdict={},**kw):
     - returngrid=0: when true, and when particle data is passed in and a plot
                     which requires a grid is requested (such as a contour
                     plot), no plotting is done and the grid and extrema are
-                    returned in a tuple
+                    returned in a tuple, in the format (grid, xmin, xmax, ymin, ymax)
     - slope=0.: slope to subtract from y coordinate (y-slope*x),
                 for example to skew the particles in a phase-space plot.
     - surface=0: when true, a 3-d surface plot is made of the gridded data
