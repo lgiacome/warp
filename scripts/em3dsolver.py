@@ -322,19 +322,25 @@ class EM3D(SubcycledPoissonSolver):
                             elif self.stencil == 3 : # Lehe scheme
                                 self.dtcourant = 1./clight  * min( self.dz, self.dx )
                         else :  # 2D r-z
-                            # In the rz case, the Courant limit has been evaluated
-                            # semi-analytically by R. Lehe, and resulted in the following
-                            # coefficients. For an explanation, see (not officially published)
-                            # www.normalesup.org/~lehe/Disp_relation_Circ.pdf
-                            # NB : Here the coefficient for m=1 as compared to this document,
-                            # as it was observed in practice that this coefficient was not
-                            # high enough (The simulation became unstable).
-                            circ_coeffs = [ 0.2105, 1.0, 3.5234, 8.5104, 15.5059, 24.5037 ]
-                            if self.circ_m < len(circ_coeffs) : # Use the table of the coefficients
-                                circ_alpha = circ_coeffs[self.circ_m]
-                            else : # Use a realistic extrapolation
-                                circ_alpha = self.circ_m**2 - 0.4
-                            self.dtcourant=1./(clight*sqrt((1+circ_alpha)/self.dx**2+1./self.dz**2))
+                            if self.stencil==3: # Lehe scheme
+                                self.dtcourant = 1./clight  * min( self.dz, self.dx )
+                                # Reduce the dtcoef to avoid Nyquist noise
+                                if self.dtcoef >= 1.:
+                                    self.dtcoef = 0.96
+                            else:  # Yee scheme and Cole-Karkkainen
+                                # In the rz case, the Courant limit has been evaluated
+                                # semi-analytically by R. Lehe, and resulted in the following
+                                # coefficients. For an explanation, see (not officially published)
+                                # www.normalesup.org/~lehe/Disp_relation_Circ.pdf
+                                # NB : Here the coefficient for m=1 as compared to this document,
+                                # as it was observed in practice that this coefficient was not
+                                # high enough (The simulation became unstable).
+                                circ_coeffs = [ 0.2105, 1.0, 3.5234, 8.5104, 15.5059, 24.5037 ]
+                                if self.circ_m < len(circ_coeffs) : # Use the table of the coefficients
+                                    circ_alpha = circ_coeffs[self.circ_m]
+                                else : # Use a realistic extrapolation
+                                    circ_alpha = self.circ_m**2 - 0.4
+                                self.dtcourant=1./(clight*sqrt((1+circ_alpha)/self.dx**2+1./self.dz**2))
                     else:
                     ### - 3D
                         if self.stencil==0:
