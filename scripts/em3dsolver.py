@@ -212,17 +212,33 @@ class EM3D(SubcycledPoissonSolver):
         self.setupmeshextent()
 
         # --- sets coefficients of Cole solver
-        if self.stencil == 3 : # Lehe stencil (see Lehe et al., PRSTAB 16 021301 (2013))
-        # Warning : the coefficients alphaz and deltaz are calculated later in the file,
-        # i.e. only once the dt has been calculated.
-            em3d.betaxz = 1./8
-            em3d.betazx = self.dz**2/self.dx**2*1./8
-            em3d.betayx = 0.
-            em3d.betaxy = 0.
+        # Lehe stencil (see Lehe et al., PRSTAB 16 021301 (2013))
+        if self.stencil == 3 : 
+        # Warning : the coefficients alphaz and deltaz are calculated
+        # later in the file, i.e. only once the dt has been calculated.
             if self.l_2dxz:
-                em3d.betayz = 0.
-                em3d.betazy = 0.
+                if self.l_2drz:
+                    # 2D cylindrical
+                    em3d.betaxz = 1./4
+                    em3d.betazx = 0.
+                    em3d.betayx = 0.
+                    em3d.betaxy = 0.
+                    em3d.betayz = 1./4
+                    em3d.betazy = 0.
+                else:
+                    # 2D Cartesian
+                    em3d.betaxz = 1./8
+                    em3d.betazx = self.dz**2/self.dx**2*1./8
+                    em3d.betayx = 0.
+                    em3d.betaxy = 0.
+                    em3d.betayz = 0.
+                    em3d.betazy = 0.
             else :
+                # 3D Cartesian
+                em3d.betaxz = 1./8
+                em3d.betazx = self.dz**2/self.dx**2*1./8
+                em3d.betayx = 0.
+                em3d.betaxy = 0.
                 em3d.betayz = 1./8
                 em3d.betazy = self.dz**2/self.dy**2*1./8
         elif self.l_setcowancoefs:
