@@ -324,9 +324,7 @@ class EM3D(SubcycledPoissonSolver):
                         else :  # 2D r-z
                             if self.stencil==3: # Lehe scheme
                                 self.dtcourant = 1./clight  * min( self.dz, self.dx )
-                                # Reduce the dtcoef to avoid Nyquist noise
-                                if self.dtcoef >= 1.:
-                                    self.dtcoef = 0.96
+
                             else:  # Yee scheme and Cole-Karkkainen
                                 # In the rz case, the Courant limit has been evaluated
                                 # semi-analytically by R. Lehe, and resulted in the following
