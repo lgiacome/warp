@@ -82,4 +82,4 @@ particle_boundary_dict = {
 field_solver_dict = {
     0: np.string_("Yee"),
     1: np.string_("CK"),
-    2: np.string_("Lehe") }
+    3: np.string_("Lehe") }

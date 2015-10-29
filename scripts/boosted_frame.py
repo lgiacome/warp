@@ -24,6 +24,12 @@ to be lifted in the future.
     top.vbeam=clight*(self.betabeam_lab-self.betaframe)/(1.-self.betabeam_lab*self.betaframe)
     top.vbeamfrm=clight*(self.betabeamfrm_lab-self.betaframe)/(1.-self.betabeamfrm_lab*self.betaframe)
     top.gammabar=1./sqrt(1.-(top.vbeam/clight)**2)
+    # --- defines lists for particle groups to inject
+    self.pgroups  = []
+    self.zinjects = []
+    self.vbeams   = []
+    self.list_species = []
+    # --- sets selfb arrays
     if self.l_setselfb:
       fselfbcopy = top.fselfb.copy()
       top.fselfb[...]=(top.fselfb[...]-self.betaframe*clight)/(1.-top.fselfb[...]*self.betaframe/clight)
@@ -48,11 +54,13 @@ to be lifted in the future.
          top.pgroup.pid[ilpr:iupr,top.zbirthlabpid-1] = top.pgroup.zp[ilpr:iupr].copy()
    if l_inject_plane:
     pg = top.pgroup
-    self.species=species
-    self.zinject=zinject
+    self.list_species+=[species]
+    self.zinjects+=[zinject]
     self.tinit=tinit
     self.l_rmzmean=l_rmzmean
-    self.pgroup = ParticleGroup()
+    self.pgroups.append(ParticleGroup())
+    self.ipgrp = -1
+    self.pgroup = self.pgroups[-1]
 #    self.pgroup.ns = pg.ns#len(species.jslist)
     self.pgroup.ns = len(species.jslist)
     self.pgroup.npmax = species.getn(bcast=0,gather=0)
@@ -86,6 +94,9 @@ to be lifted in the future.
          zmean=globalave(z)
        else:
          zmean=0.
+       vz = getvz(pgroup=pg,js=js,bcast=0,gather=0)
+       self.betabeam_lab = globalave(vz)/clight
+       self.vbeams.append(clight*(self.betabeam_lab-self.betaframe)/(1.-self.betabeam_lab*self.betaframe))
        if getn(pgroup=pg,js=js,bcast=0,gather=0)>0: 
         gaminvbeam_lab = getgaminv(pgroup=pg,js=js,bcast=0,gather=0)
         betabeam_lab  = sqrt(1.-gaminvbeam_lab*gaminvbeam_lab)
@@ -97,6 +108,7 @@ to be lifted in the future.
         vx = getvx(pgroup=pg,js=js,bcast=0,gather=0)
         vy = getvy(pgroup=pg,js=js,bcast=0,gather=0)
         vz = getvz(pgroup=pg,js=js,bcast=0,gather=0)
+
         t = z/vz
         x = getx(pgroup=pg,js=js,bcast=0,gather=0)
         y = gety(pgroup=pg,js=js,bcast=0,gather=0)
@@ -122,7 +134,7 @@ to be lifted in the future.
         vzpr = (vz-self.betaframe*clight)*fact
        # --- get data at t=0 in boosted frame
 #        zpr = zpr - vzpr*tpr
-        zpr = zpr - top.vbeam*tpr
+        zpr = zpr - self.vbeams[-1]*tpr
 #        zpr = zcopy*top.gammabar_lab/top.gammabar
         # --- make sure that z<=0
 #        zpr += top.boost_z0 
@@ -170,7 +182,7 @@ to be lifted in the future.
     w3d.l_inj_user_particles_dt = true
     w3d.l_inj_zmminmmaxglobal = true
 #    installuserparticlesinjection(self.add_boosted_species)
-    installbeforestep(self.add_boosted_species)
+    if len(self.pgroups)==1:installbeforestep(self.add_boosted_species_multigroups)
     if l_deprho:
       self.depos=top.depos.copy()
       top.depos='none'
@@ -216,36 +228,52 @@ to be lifted in the future.
    if not lallindomain:particleboundaries3d(top.pgroup,-1,False)
    print 'exit boost',top.pgroup.nps
    
-  def add_boosted_species(self):
-    if self.pgroup.npid != top.pgroup.npid:
-      self.pgroup.npid = top.pgroup.npid
-      self.pgroup.gchange()
-    for js in range(self.pgroup.ns):
-     if self.pgroup.nps[js]>0:
-      il=self.pgroup.ins[js]-1
-      iu=il+self.pgroup.nps[js]
-#      self.pgroup.xp[il:iu]+=top.dt*getvx(pgroup=self.pgroup,js=js,bcast=0,gather=0)
-#      self.pgroup.yp[il:iu]+=top.dt*getvy(pgroup=self.pgroup,js=js,bcast=0,gather=0)
-#      self.pgroup.zp[il:iu]+=top.dt*self.pgroup.uzp[il:iu]*self.pgroup.gaminv[il:iu] # WARNING: this can cause particles to get out of bounds
-      if top.zoldpid>0:self.pgroup.pid[il:iu,top.zoldpid-1]=self.pgroup.zp[il:iu].copy()
-      self.pgroup.zp[il:iu]+=top.dt*top.vbeam
-    if all(self.pgroup.nps==0):
+  def add_boosted_species_multigroups(self):
+      do_inject = 0
       w3d.npgrp = 0
-      gchange("Setpwork3d")
+      for self.ipgrp,self.pgroup in enumerate(self.pgroups):
+          self.vbeam = self.vbeams[self.ipgrp]
+          self.species = self.list_species[self.ipgrp]
+          # --- check whether pid arrays need to be reshaped 
+          if self.pgroup.npid != top.pgroup.npid:
+              self.pgroup.npid = top.pgroup.npid
+              self.pgroup.gchange()
+          # --- push longitudinal particle positions
+          for js in range(self.pgroup.ns):
+              if self.pgroup.nps[js]>0:
+                  il=self.pgroup.ins[js]-1
+                  iu=il+self.pgroup.nps[js]
+                  if top.zoldpid>0:self.pgroup.pid[il:iu,top.zoldpid-1]=self.pgroup.zp[il:iu].copy()
+                  self.pgroup.zp[il:iu]+=top.dt*self.vbeam
+          # --- does injection for each particle group
+          if any(self.pgroup.nps>0):
+              do_inject = 1
+              top.inject=1
+              self.add_boosted_species()
+          if not do_inject:
+              w3d.npgrp = 0
+              gchange("Setpwork3d")
+              top.inject=0
+#        uninstallbeforestep(self.add_boosted_species)
+                    
+  def add_boosted_species(self):
     nps = parallelsum(self.pgroup.nps)
-    top.finject[0][1:]=0.
-    if all(nps==0):
-      top.inject=0
+#    top.finject[0][1:]=0.
+#    if all(nps==0):
+#      top.inject=0
+    self.zinject = self.zinjects[self.ipgrp]
+    top.zinject=self.zinject-top.time*self.betaframe*clight
     for js in range(self.pgroup.ns):
      if self.pgroup.nps[js]>0:
       il=self.pgroup.ins[js]-1
       iu=il+self.pgroup.nps[js]
-      top.zinject=self.zinject-top.time*self.betaframe*clight
       ii=compress(self.pgroup.zp[il:iu]>top.zinject,il+arange(getn(pgroup=self.pgroup,js=js,bcast=0,gather=0)))
-      w3d.npgrp = len(ii)
-      w3d.npidgrp = top.npid
-      gchange("Setpwork3d")
       if len(ii)>0:
+        w3d.npgrp = len(ii)
+        w3d.npidgrp = top.npid
+        gchange("Setpwork3d")
+        top.finject[0][:]=0.
+        top.finject[0][self.species.jslist[0]]=1.
         gi=take(self.pgroup.gaminv,ii)
         vz = take(self.pgroup.uzp,ii)*gi
         w3d.xt = take(self.pgroup.xp,ii).copy()
@@ -254,7 +282,7 @@ to be lifted in the future.
         w3d.uyt = take(self.pgroup.uyp,ii)*gi
         w3d.uzt = vz
 #        w3d.bpt = (take(self.pgroup.zp,ii)-top.zinject)/vz
-        w3d.bpt = (take(self.pgroup.zp,ii)-top.zinject)/top.vbeam
+        w3d.bpt = (take(self.pgroup.zp,ii)-top.zinject)/self.vbeam
         for ipid in range(top.npid):
           w3d.pidt[:,ipid] = take(self.pgroup.pid[:,ipid],ii)
 #        gi=getgaminv(pgroup=self.pgroup,js=js,bcast=0,gather=0)
@@ -304,16 +332,17 @@ to be lifted in the future.
         processlostpart(self.pgroup,js+1,top.clearlostpart,top.time+top.dt*self.pgroup.ndts[js],top.zbeam)
 
   def add_boosted_rho(self):
-    if self.pgroup.npid != top.pgroup.npid:
-      self.pgroup.npid = top.pgroup.npid
-      self.pgroup.gchange()
+    for self.pgroup in self.pgroups:
+        if self.pgroup.npid != top.pgroup.npid:
+            self.pgroup.npid = top.pgroup.npid
+            self.pgroup.gchange()
 #    if rstrip(top.depos.tostring())=='none': return
 #    w3d.lbeforelr=0
     fs=getregisteredsolver()
-    pg=top.pgroup
     top.depos=self.depos
-    particleboundaries3d(self.pgroup,-1,False)
-    fs.loadrho(pgroups=[self.pgroup,top.pgroup])
+    for self.pgroup in self.pgroups:
+        particleboundaries3d(self.pgroup,-1,False)
+    fs.loadrho(pgroups=self.pgroups+[top.pgroup])
     top.depos='none'
 #    w3d.lbeforelr=1
 
