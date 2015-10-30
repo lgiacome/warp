@@ -307,6 +307,14 @@ class Assembly(VisualizableClass):
         self.accuimagechargeenabled = 0
         if self.laccuimagecharge: self.enable_accuimagecharge()
 
+    def __setstate__(self,dict):
+        """
+        This explicit setstate adds self to listofallconductors.
+        """
+        self.__dict__.update(dict)
+        if self not in listofallconductors:
+            listofallconductors.append(self)
+
     def getkwlist(self):
         kwlist = []
         for k in self.kwlist:
@@ -1117,7 +1125,7 @@ class EllipticAssembly(Assembly):
         """
     This explicit setstate restores the generator attributes.
         """
-        self.__dict__.update(dict)
+        self.__base__.__setstate__(dict)
         self.generatorf = self.ellipseconductorf
         self.generatord = self.ellipseconductord
         self.generatori = self.ellipseintercept
@@ -1261,7 +1269,7 @@ class XAssembly(Assembly):
         """
     This explicit setstate restores the generator attributes.
         """
-        self.__dict__.update(dict)
+        self.__base__.__setstate__(dict)
         self.generatorf = self.xconductorf
         self.generatord = self.xconductord
         self.generatori = self.xintercept
@@ -1408,7 +1416,7 @@ class YAssembly(Assembly):
         """
     This explicit setstate restores the generator attributes.
         """
-        self.__dict__.update(dict)
+        self.__base__.__setstate__(dict)
         self.generatorf = self.yconductorf
         self.generatord = self.yconductord
         self.generatori = self.yintercept
