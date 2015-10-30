@@ -118,7 +118,7 @@ class ControllerFunction:
         dict = self.__dict__.copy()
         del dict['funcs']
         funcnamelist = []
-        for f in self.controllerfuncnames():
+        for f in self.getpicklablefuncs():
             funcnamelist.append(f)
         dict['funcs'] = funcnamelist
         return dict
@@ -130,9 +130,11 @@ class ControllerFunction:
     def getmethodobject(self,func):
         return func[0]
 
-    def controllerfuncnames(self):
-        """Returns the names of the functions in the list, and any methods
-           (which are stored in lists)"""
+    def getpicklablefuncs(self):
+        """Returns the functions in a form that is picklable.
+        For functions, returns the name.
+        For instance methods, returns as is, the list containing the instance and method name.
+        """
         for f in self.funcs:
             if isinstance(f,list):
                 result = f
@@ -185,6 +187,17 @@ class ControllerFunction:
             finstance = f.im_self
             fname = f.__name__
             self.funcs.append([finstance,fname])
+        elif callable(f):
+            # --- If a function had already been installed by name, then skip the install.
+            # --- This is problematic, since no warning message is given, but it is unlikely
+            # --- to arise under normal circumstances.
+            # --- The purpose of this check is to avoid redundant installation of functions
+            # --- during a restore from a dump file. Without the check, functions that had been
+            # --- installed via a decorator would be installed an extra time since the source
+            # --- of the function contains the decoration (which is activated when the source
+            # --- is exec'd).
+            if f.__name__ not in self.funcs:
+                self.funcs.append(f)
         else:
             self.funcs.append(f)
 
