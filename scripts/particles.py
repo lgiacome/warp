@@ -1429,8 +1429,9 @@ def addparticles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
                   The flag lmomentum will be set to true.
     - pid: additional particle information, such as an ID number or weight.
     - pidpairs=None: Allows setting specific pid columns. Argument must be a
-                     list of lists, each having the format [id,pidvalue]. The
-                     assigment pid[:,id-1] = pidvalue is done.
+                     list of lists, each having the format [id,pidvalue].
+                     id is the one-based index returned by nextpid.
+                     The assigment pid[:,id-1] = pidvalue is done.
     - w=1.: particle weight
             this is only used if top.wpid > 0 and if lnewparticles is true.
     - js=0: species to which new particles will be added

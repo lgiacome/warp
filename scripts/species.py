@@ -480,6 +480,9 @@ class Species(object):
             self.type = species.__dict__[self.type.name]
         except (KeyError,AttributeError):
             pass
+        # --- Add the species to the list if it is not already there.
+        if self not in listofallspecies:
+            listofallspecies.append(self)
 
     def add_group(self,js=None,charge=None,mass=None,charge_state=None,weight=None):
         if js is None:
