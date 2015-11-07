@@ -6425,13 +6425,13 @@ def pyinit_3dem_block(nx, ny, nz,
     f.jzmaxg = f.izmaxg-f.izming
     f.xmin = xmin
     f.ymin = ymin
-    f.zmin = zmin
+    f.zmin = w3d.zmminlocal
     f.dx = dx
     f.dy = dy
     f.dz = dz
     f.xmax = xmin+dx*nx
     f.ymax = ymin+dy*ny
-    f.zmax = zmin+dz*nz
+    f.zmax = w3d.zmmaxlocal
     f.dxi = 1./dx
     f.dyi = 1./dy
     f.dzi = 1./dz
