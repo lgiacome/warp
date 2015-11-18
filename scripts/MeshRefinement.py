@@ -3056,7 +3056,7 @@ class EMMRBlock(MeshRefinement,EM3D):
         if top.efetch[0] != 4:self.yee2node3d()
         self.addsubstractfieldfromparent()
         self.smoothfields()
-        # --- for fields that are overcycled, they need to be pushed backward every ncyclesperstep
+        # --- for fields that are overcycled, they need to be pushed backward every ntsub
         self.push_b_part_1(dir=-1)
         self.exchange_f(dir=-1)
         self.exchange_b(dir=-1)
@@ -3130,8 +3130,8 @@ class EMMRBlock(MeshRefinement,EM3D):
 
     def push_ebsubcycle_children(self,children):
         c0 = children[0]
-        ncyclesperstep = c0.ncyclesperstep
-        for i in range(int(ncyclesperstep)-1):
+        ntsub = c0.ntsub
+        for i in range(int(ntsub)-1):
             for c in children:
                 self.__class__.__bases__[1].push_b_full(c)
                 if c.l_pushf:
@@ -3140,8 +3140,8 @@ class EMMRBlock(MeshRefinement,EM3D):
                 self.__class__.__bases__[1].push_e_full(c,i)
                 self.__class__.__bases__[1].exchange_e(c)
         if c0.refinement is not None:
-            ncyclesperstep = c0.field_coarse.ncyclesperstep
-            for i in range(int(ncyclesperstep)-1):
+            ntsub = c0.field_coarse.ntsub
+            for i in range(int(ntsub)-1):
                 for c in children:
                     self.__class__.__bases__[1].push_b_full(c.field_coarse)
                     self.__class__.__bases__[1].exchange_f(c.field_coarse)
@@ -3196,7 +3196,7 @@ class EMMRBlock(MeshRefinement,EM3D):
     def move_window_fields(self):
         if top.it%self.novercycle != 0:return
         # --- move window in x
-        self.xgridcont+=self.vxgrid*top.dt/self.ncyclesperstep
+        self.xgridcont+=self.vxgrid*top.dt/self.ntsub
         while (abs(self.xgrid-self.xgridcont)>=0.5*self.dx):
             self.shift_cells_x(int(sign(self.vxgrid)))
             dx = self.dx*sign(self.vxgrid)
