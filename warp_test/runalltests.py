@@ -3,6 +3,7 @@ This will run all files that have a name with the format *_test.py.
 It will print out each file name and whether all of the tests passed or not.
 """
 import glob
+import sys
 from subprocess import Popen, PIPE
 
 textRed = '\033[0;31m'    # Red
@@ -14,7 +15,7 @@ def colored(text, textcolor):
 
 # --- Run each of the files independently.
 for f in glob.glob('*_test.py'):
-    p = Popen(["python", f], stdout=PIPE, stderr=PIPE, close_fds=True, universal_newlines=True)
+    p = Popen([sys.executable, f], stdout=PIPE, stderr=PIPE, close_fds=True, universal_newlines=True)
     serr = p.stderr.readlines()
     if serr[-1] == 'OK\n':
         print('%s %s'%(f, colored('OK', textGreen)))
