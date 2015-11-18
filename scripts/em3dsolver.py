@@ -40,7 +40,7 @@ class EM3D(SubcycledPoissonSolver):
                       'laser_depos_order_x':3,
                       'laser_depos_order_y':3,
                       'laser_depos_order_z':3,
-                      'ncyclesperstep':None,
+                      'ntsub':1,
                       'l_enableovercycle':False,
                       'l_2dxz':0,'l_2drz':0,'l_1dz':0,'l_sumjx':0,
                       'l_lower_order_in_v':True,
@@ -135,13 +135,13 @@ class EM3D(SubcycledPoissonSolver):
         # --- current deposition, smoothing and stencil.
         minguards = 2+aint(top.depos_order.max(1)/2)+(self.npass_smooth*self.stride_smooth).sum(1)
         # --- add guards cells for larger stencils
-        if self.nxguard==1 and self.norderx is not None:
+        if self.nxguard==1 and self.norderx is not inf:
             minguards[0] += self.norderx/2+1
             self.nxguard = minguards[0]
-        if self.nyguard==1 and self.nordery is not None:
+        if self.nyguard==1 and self.nordery is not inf:
 	        minguards[1] += self.nordery/2+1
         	self.nyguard = minguards[1]
-        if self.nzguard==1 and self.norderz is not None:
+        if self.nzguard==1 and self.norderz is not inf:
 	        minguards[2] += self.norderz/2+1
         	self.nzguard = minguards[2]
         # --- ensures that there is at least 2 guard cells with stencil>0
@@ -212,17 +212,33 @@ class EM3D(SubcycledPoissonSolver):
         self.setupmeshextent()
 
         # --- sets coefficients of Cole solver
-        if self.stencil == 3 : # Lehe stencil (see Lehe et al., PRSTAB 16 021301 (2013))
-        # Warning : the coefficients alphaz and deltaz are calculated later in the file,
-        # i.e. only once the dt has been calculated.
-            em3d.betaxz = 1./8
-            em3d.betazx = self.dz**2/self.dx**2*1./8
-            em3d.betayx = 0.
-            em3d.betaxy = 0.
+        # Lehe stencil (see Lehe et al., PRSTAB 16 021301 (2013))
+        if self.stencil == 3 : 
+        # Warning : the coefficients alphaz and deltaz are calculated
+        # later in the file, i.e. only once the dt has been calculated.
             if self.l_2dxz:
-                em3d.betayz = 0.
-                em3d.betazy = 0.
+                if self.l_2drz:
+                    # 2D cylindrical
+                    em3d.betaxz = 1./4
+                    em3d.betazx = 0.
+                    em3d.betayx = 0.
+                    em3d.betaxy = 0.
+                    em3d.betayz = 1./4
+                    em3d.betazy = 0.
+                else:
+                    # 2D Cartesian
+                    em3d.betaxz = 1./8
+                    em3d.betazx = self.dz**2/self.dx**2*1./8
+                    em3d.betayx = 0.
+                    em3d.betaxy = 0.
+                    em3d.betayz = 0.
+                    em3d.betazy = 0.
             else :
+                # 3D Cartesian
+                em3d.betaxz = 1./8
+                em3d.betazx = self.dz**2/self.dx**2*1./8
+                em3d.betayx = 0.
+                em3d.betaxy = 0.
                 em3d.betayz = 1./8
                 em3d.betazy = self.dz**2/self.dy**2*1./8
         elif self.l_setcowancoefs:
@@ -274,7 +290,7 @@ class EM3D(SubcycledPoissonSolver):
 
         print 'alphax,alphaz,betazx,betaxz',em3d.alphax,em3d.alphaz,em3d.betazx,em3d.betaxz
         # --- set time step as a fraction of Courant condition
-        # --- also set self.ncyclesperstep if top.dt over Courant condition times dtcoef
+        # --- also set self.ntsub if top.dt over Courant condition times dtcoef
         try:
             parentid = self.parents[0]
             parent = self.root.listofblocks[parentid]
@@ -285,9 +301,9 @@ class EM3D(SubcycledPoissonSolver):
         except:
             parent = None
             sibling = None
-        if self.ncyclesperstep is None:    # No subcycling
-            self.ncyclesperstep = 1
-            if sibling is None:            # No mesh refinement
+        if sibling is not None:            # No mesh refinement
+                self.ntsub=sibling.ntsub
+        else:
                 if self.autoset_timestep:  # True by default (optional argument of EM3D)
 #                   if self.mode==2 and self.dtcoef>0.5: self.dtcoef/=2 # Obsolete
                     if self.l_1dz:
@@ -306,19 +322,23 @@ class EM3D(SubcycledPoissonSolver):
                             elif self.stencil == 3 : # Lehe scheme
                                 self.dtcourant = 1./clight  * min( self.dz, self.dx )
                         else :  # 2D r-z
-                            # In the rz case, the Courant limit has been evaluated
-                            # semi-analytically by R. Lehe, and resulted in the following
-                            # coefficients. For an explanation, see (not officially published)
-                            # www.normalesup.org/~lehe/Disp_relation_Circ.pdf
-                            # NB : Here the coefficient for m=1 as compared to this document,
-                            # as it was observed in practice that this coefficient was not
-                            # high enough (The simulation became unstable).
-                            circ_coeffs = [ 0.2105, 1.0, 3.5234, 8.5104, 15.5059, 24.5037 ]
-                            if self.circ_m < len(circ_coeffs) : # Use the table of the coefficients
-                                circ_alpha = circ_coeffs[self.circ_m]
-                            else : # Use a realistic extrapolation
-                                circ_alpha = self.circ_m**2 - 0.4
-                            self.dtcourant=1./(clight*sqrt((1+circ_alpha)/self.dx**2+1./self.dz**2))
+                            if self.stencil==3: # Lehe scheme
+                                self.dtcourant = 1./clight  * min( self.dz, self.dx )
+
+                            else:  # Yee scheme and Cole-Karkkainen
+                                # In the rz case, the Courant limit has been evaluated
+                                # semi-analytically by R. Lehe, and resulted in the following
+                                # coefficients. For an explanation, see (not officially published)
+                                # www.normalesup.org/~lehe/Disp_relation_Circ.pdf
+                                # NB : Here the coefficient for m=1 as compared to this document,
+                                # as it was observed in practice that this coefficient was not
+                                # high enough (The simulation became unstable).
+                                circ_coeffs = [ 0.2105, 1.0, 3.5234, 8.5104, 15.5059, 24.5037 ]
+                                if self.circ_m < len(circ_coeffs) : # Use the table of the coefficients
+                                    circ_alpha = circ_coeffs[self.circ_m]
+                                else : # Use a realistic extrapolation
+                                    circ_alpha = self.circ_m**2 - 0.4
+                                self.dtcourant=1./(clight*sqrt((1+circ_alpha)/self.dx**2+1./self.dz**2))
                     else:
                     ### - 3D
                         if self.stencil==0:
@@ -335,15 +355,14 @@ class EM3D(SubcycledPoissonSolver):
                         self.dtcourant*=sqrt((2.+self.theta_damp)/(2.+3.*self.theta_damp))
                     if top.dt==0.:
                         top.dt=self.dtcourant*self.dtcoef
-                    if top.dt>(self.dtcourant):
-#              self.ncyclesperstep = (nint(top.dt/(self.dtcourant))+0)
-                        self.ncyclesperstep = int(top.dt/(self.dtcourant)+1.)
-                        print '#1', self.ncyclesperstep,top.dt,self.dtcourant
-                    elif self.l_enableovercycle:
-                        self.ncyclesperstep = 1./(nint((self.dtcourant)/top.dt)+0)
-                        print '#2', self.ncyclesperstep,top.dt,self.dtcourant
-            else:
-                self.ncyclesperstep=sibling.ncyclesperstep
+                    if self.ntsub is not inf and self.ntsub<2:
+                       if top.dt>(self.dtcourant):
+#              self.ntsub = (nint(top.dt/(self.dtcourant))+0)
+                            self.ntsub = int(top.dt/(self.dtcourant)+1.)
+                            print '#1', self.ntsub,top.dt,self.dtcourant
+                       elif self.l_enableovercycle:
+                            self.ntsub = 1./(nint((self.dtcourant)/top.dt)+0)
+                            print '#2', self.ntsub,top.dt,self.dtcourant
         dtodz = clight*top.dt/self.dz
         if self.l_correct_num_Cherenkov and top.efetch[0]==4 and self.l_lower_order_in_v and dtodz>0.756 and dtodz<0.764:
             print "*** Warning: Coefficients for Galerkin algorithm are ill behaved for 0.756<c*Dt/Dz<0.764 and should not be used."
@@ -379,7 +398,7 @@ class EM3D(SubcycledPoissonSolver):
                                      zmminlocal=self.zmminlocal,zmmaxlocal=self.zmmaxlocal,
                                      #bounds=self.bounds,
                                      isactiveem=self.isactive,
-                                     ncyclesperstep=self.root.listofblocks[self.parents[0]].ncyclesperstep,
+                                     ntsub=self.root.listofblocks[self.parents[0]].ntsub,
                                      lchild=True,
                                      **self.kw)
 
@@ -531,7 +550,7 @@ class EM3D(SubcycledPoissonSolver):
                                        self.stencil,
                                        self.npass_smooth,
                                        self.l_smooth_particle_fields,
-                                       self.ncyclesperstep,
+                                       self.ntsub,
                                        self.l_1dz,
                                        self.l_2dxz,
                                        self.l_2drz,
@@ -758,8 +777,8 @@ class EM3D(SubcycledPoissonSolver):
         self.block.core.yf.E_inz_vel=self.laser_source_v
         if 1:#self.laser_source_z>self.zmmin+self.zgrid and self.laser_source_z<=self.zmmax+self.zgrid:
             self.block.core.yf.E_inz_pos = self.laser_source_z-self.zgrid
-            if self.laser_focus_z is not None:self.laser_focus_z+=self.laser_focus_v*top.dt#/self.ncyclesperstep
-            self.laser_source_z+=self.laser_source_v*top.dt#/self.ncyclesperstep
+            if self.laser_focus_z is not None:self.laser_focus_z+=self.laser_focus_v*top.dt#/self.ntsub
+            self.laser_source_z+=self.laser_source_v*top.dt#/self.ntsub
         else:
             return
 
@@ -1615,7 +1634,7 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_verbose:print 'zerosourcep',self
 
         # --- copy rho to rhoold if needed
-        if self.l_getrho and self.ncyclesperstep>1:
+        if self.l_getrho and self.ntsub>1:
             self.fields.Rhoold = self.fields.Rho.copy()
             if self.refinement is not None:
                 self.field_coarse.fields.Rhoold = self.field_coarse.fields.Rho.copy()
@@ -2280,8 +2299,8 @@ class EM3D(SubcycledPoissonSolver):
     def dosolve(self,iwhich=0,*args):
         self.getconductorobject()
         if self.solveroff:return
-        if self.ncyclesperstep<1.:
-            self.novercycle = nint(1./self.ncyclesperstep)
+        if self.ntsub<1.:
+            self.novercycle = nint(1./self.ntsub)
             self.icycle = (top.it-1)%self.novercycle
         else:
             self.novercycle = 1
@@ -2298,7 +2317,7 @@ class EM3D(SubcycledPoissonSolver):
         else:
             self.push_e()
             self.exchange_e()
-            for i in range(int(self.ncyclesperstep)-1):
+            for i in range(int(self.ntsub)-1):
                 self.push_b_full()
                 if self.l_pushf:self.exchange_f()
                 self.exchange_b()
@@ -2316,13 +2335,13 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_smooth_particle_fields and any(self.npass_smooth>0):
             self.smoothfields()
         if self.l_correct_num_Cherenkov:self.smoothfields_poly()
-        # --- for fields that are overcycled, they need to be pushed backward every ncyclesperstep
+        # --- for fields that are overcycled, they need to be pushed backward every ntsub
         self.push_e(dir=-1)
         self.exchange_e(dir=-1)
         if self.l_verbose:print 'solve 1st half done'
 
     def push_e(self,dir=1.):
-        dt = dir*top.dt/self.ncyclesperstep
+        dt = dir*top.dt/self.ntsub
         if self.novercycle==1:
             if dir>0.:
                 doit=True
@@ -2372,7 +2391,7 @@ class EM3D(SubcycledPoissonSolver):
             self.__class__.__bases__[1].exchange_e(self.field_coarse)
 
     def push_b_part_1(self,dir=1.):
-        dt = dir*top.dt/self.ncyclesperstep
+        dt = dir*top.dt/self.ntsub
         if self.novercycle==1:
             if dir>0.:
                 doit=True
@@ -2391,9 +2410,9 @@ class EM3D(SubcycledPoissonSolver):
 
     def push_b_part_2(self):
         if top.efetch[0] != 4 and (self.refinement is None):self.node2yee3d()
-        dt = top.dt/self.ncyclesperstep
-        if self.ncyclesperstep<1.:
-            self.novercycle = nint(1./self.ncyclesperstep)
+        dt = top.dt/self.ntsub
+        if self.ntsub<1.:
+            self.novercycle = nint(1./self.ntsub)
             self.icycle = (top.it-1)%self.novercycle
         else:
             self.novercycle = 1
@@ -2450,14 +2469,14 @@ class EM3D(SubcycledPoissonSolver):
             self.__class__.__bases__[1].exchange_f(self.field_coarse,dir)
 
     def push_b_full(self):
-        dt = top.dt/self.ncyclesperstep
+        dt = top.dt/self.ntsub
         if self.l_verbose:print 'push_b full',self,dt,top.it,self.icycle
         push_em3d_bf(self.block,dt,0,self.l_pushf,self.l_pushpot)
 
     def push_e_full(self,i):
-        dt = top.dt/self.ncyclesperstep
+        dt = top.dt/self.ntsub
         if self.l_getrho:
-            w = float(i+2)/self.ncyclesperstep
+            w = float(i+2)/self.ntsub
             self.fields.Rho = (1.-w)*self.fields.Rhoold + w*self.fields.Rhoarray[...,0]
         if self.l_verbose:print 'push_e full',self,dt,top.it,self.icycle
         if self.laser_mode==1:self.add_laser(self.fields)
@@ -5881,8 +5900,8 @@ class EM3D(SubcycledPoissonSolver):
 
         # --- This is copied from push_b_part_2
         # --- novercycle and icycle need to be defined for setebp.
-        if self.ncyclesperstep<1.:
-            self.novercycle = nint(1./self.ncyclesperstep)
+        if self.ntsub<1.:
+            self.novercycle = nint(1./self.ntsub)
             self.icycle = (top.it-1)%self.novercycle
         else:
             self.novercycle = 1
@@ -6249,7 +6268,7 @@ def pyinit_3dem_block(nx, ny, nz,
                       stencil,
                       npass_smooth,
                       l_smooth_particle_fields,
-                      ncyclesperstep,
+                      ntsub,
                       l_1dz,
                       l_2dxz,
                       l_2drz,
@@ -6328,9 +6347,9 @@ def pyinit_3dem_block(nx, ny, nz,
     f.ny = ny
     f.nz = nz
     f.circ_m = circ_m
-    if norderx is not None:f.norderx = norderx
-    if norderx is not None:f.nordery = nordery
-    if norderx is not None:f.norderz = norderz
+    if norderx is not inf:f.norderx = norderx
+    if norderx is not inf:f.nordery = nordery
+    if norderx is not inf:f.norderz = norderz
     f.theta_damp=theta_damp
     f.sigmae=sigmae
     f.sigmab=sigmab
@@ -6346,7 +6365,7 @@ def pyinit_3dem_block(nx, ny, nz,
         f.nxp = f.nx
         f.nyp = f.ny
         f.nzp = f.nz
-    if ncyclesperstep<0.75:
+    if ntsub<0.75:
         f.nxpnext = f.nx
         f.nypnext = f.ny
         f.nzpnext = f.nz
@@ -6405,13 +6424,15 @@ def pyinit_3dem_block(nx, ny, nz,
     f.jzmaxg = f.izmaxg-f.izming
     f.xmin = xmin
     f.ymin = ymin
-    f.zmin = zmin
+#    f.zmin = zmin # --- replaced by following line to fix issue with laser injection but following line wrong with MR
+    f.zmin = w3d.zmminlocal 
     f.dx = dx
     f.dy = dy
     f.dz = dz
     f.xmax = xmin+dx*nx
     f.ymax = ymin+dy*ny
-    f.zmax = zmin+dz*nz
+#    f.zmax = zmax+dz*nz # --- replaced by following line to fix issue with laser injection but following line wrong with MR
+    f.zmax = w3d.zmmaxlocal
     f.dxi = 1./dx
     f.dyi = 1./dy
     f.dzi = 1./dz

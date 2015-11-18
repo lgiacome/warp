@@ -100,7 +100,7 @@ def exp_by_squaring_matrixlist(x, n, matcompress=None):
         print 'Error in exp_by_squaring_matrixlist: n<1.'
         raise
     if n == 1:return x
-    y = np.identity(np.shape(x)[0]).tolist()
+    y = np.identity(len(x)).tolist()
     while n > 1:
       if float(n/2)==float(n)/2: # if n is even then 
         x = multmat(x,x,matcompress=matcompress)
@@ -158,7 +158,7 @@ class Fourier_Space():
 
     __flaginputs__ = {'nx':1,'ny':1,'nz':1,
                       'nxguard':0,'nyguard':0,'nzguard':0,
-                      'norderx':None,'nordery':None,'norderz':None,
+                      'norderx':np.inf,'nordery':np.inf,'norderz':np.inf,
                       'dt':1.,'dx':1.,'dy':1.,'dz':1.,
                       'l_staggered':False,
                       'l_staggered_a_la_brendan':False,
@@ -193,7 +193,7 @@ class Fourier_Space():
             kxunit = 2.*np.pi*(fft.fftfreq(nx))/self.dx
             kxunit_mod = kxunit.copy()
             self.kxunit = kxunit
-            if self.norderx is not None:
+            if self.norderx is not np.inf:
                 xcoefs=0.
                 if self.l_staggered or self.l_staggered_a_la_brendan:
 #                    xc = 0.5
@@ -215,7 +215,7 @@ class Fourier_Space():
             kyunit = 2.*np.pi*(fft.fftfreq(ny))/self.dy
             kyunit_mod = kyunit.copy()
             self.kyunit = kyunit
-            if self.nordery is not None:
+            if self.nordery is not np.inf:
                 ycoefs=0.
                 if self.l_staggered or self.l_staggered_a_la_brendan:
                     yc = 0.5
@@ -237,7 +237,7 @@ class Fourier_Space():
             kzunit = 2.*np.pi*(fft.fftfreq(nz))/self.dz
             kzunit_mod = kzunit.copy()
             self.kzunit = kzunit
-            if self.norderz is not None:
+            if self.norderz is not np.inf:
                 zcoefs=0.
                 if self.l_staggered or self.l_staggered_a_la_brendan:
                     zc = 0.5
@@ -724,7 +724,7 @@ class GPSTD_Maxwell_PML(GPSTD):
                             0.5*self.dx,0.5*self.dy,0.5*self.dz,l_matref=1)
 
         matcompress = getmatcompress(self.mymatref)
-
+        
         self.mymatref = exp_by_squaring_matrixlist(self.mymatref, self.ntsub, matcompress=matcompress)
 
         self.mymat = self.getmaxwellmat_pml(axp,ayp,azp,axm,aym,azm,dt,cdt,m0,m1,\
@@ -1045,7 +1045,7 @@ class PSATD_Maxwell(GPSTD):
 
         m0 = 0.
         m1 = 1.
-        dt=self.dt/self.ntsub
+        dt=self.dt
         cdt=dt*self.clight
             
         if self.nx>1:
@@ -1067,12 +1067,17 @@ class PSATD_Maxwell(GPSTD):
             azm = azp = 0.
 
         self.mymat = self.getmaxwellmat(axp,ayp,azp,axm,aym,azm,dt,cdt,m0,m1,\
-                     self.kx_unmod,self.ky_unmod,self.kz_unmod,l_matref=0,matcompress=matcompress)
+                     self.kx_unmod,self.ky_unmod,self.kz_unmod,l_matref=0)
 
     def getmaxwellmat(self,axp,ayp,azp,axm,aym,azm,dt,cdt,m0,m1,
                       kx_unmod,ky_unmod,kz_unmod,l_matref=0,
                       matcompress=None):
         c=self.clight
+        print '#############################'
+        print '      To be implemented      '
+        print ' Do not use ntsub=inf for now'
+        print '#############################'
+        raise         
 
         if self.l_pushf:
             matpushrho = GPSTD_Matrix(self.fields)

@@ -12,8 +12,7 @@ class EM3DFFT(EM3D):
                       'l_staggered_a_la_brendan':False,
                       'spectral_mix':0.,'Jmult':False,
                       'l_spectral_staggered':False,
-                      'sigmab_x':0.,'sigmab_y':0.,'sigmab_z':0.,
-                      'ntsub':1}
+                      'sigmab_x':0.,'sigmab_y':0.,'sigmab_z':0.}
 
     def __init__(self,**kw):
         try:
@@ -83,10 +82,16 @@ class EM3DFFT(EM3D):
                      'l_getrho':s.l_getrho,\
                      'clight':clight}
 
-            self.GPSTDMaxwell = GPSTD_Maxwell(yf=self.fields,
-                                              eps0=eps0,
-                                              bc_periodic=bc_periodic,
-                                              **kwGPSTD)
+            if s.ntsub is np.inf:
+                self.GPSTDMaxwell = PSATD_Maxwell(yf=self.fields,
+                                                  eps0=eps0,
+                                                  bc_periodic=bc_periodic,
+                                                  **kwGPSTD)
+            else:
+                self.GPSTDMaxwell = GPSTD_Maxwell(yf=self.fields,
+                                                  eps0=eps0,
+                                                  bc_periodic=bc_periodic,
+                                                  **kwGPSTD)
 
             self.FSpace = self.GPSTDMaxwell
         else:
@@ -135,7 +140,7 @@ class EM3DFFT(EM3D):
                 self.Jmultiplier[:,0]=self.Jmultiplier[:,1]
  
         # --- set Ex,By multipliers (ebcor=0,1,2)
-        if self.l_correct_num_Cherenkov:
+        if self.l_correct_num_Cherenkov and self.spectral:
               emK = self.FSpace
 #              k = emK.k
               k = sqrt(emK.kx_unmod*emK.kx_unmod+emK.ky_unmod*emK.ky_unmod+emK.kz_unmod*emK.kz_unmod)
@@ -339,7 +344,7 @@ class EM3DFFT(EM3D):
                                                   self.laser_depos_order_z,
                                                   l_particles_weight,
                                                   w3d.l4symtry,
-                                                  self.l_2drz)
+                                                  self.l_2drz, self.type_rz_depose)
             else:
                 depose_jxjyjz_esirkepov_n(J,
                                              self.laser_nn,
@@ -572,11 +577,11 @@ class EM3DFFT(EM3D):
         JzF = fft.fft(f.J[ngx:-ngx-1,0,ngz:-ngz-1,2],axis=1)
 
         if self.l_spectral_staggered:
-            JxF = 1j*JxF/where(emK.kx==0.,1.,emK.kx*exp(-j*emK.kx_unmod*self.dx/2))
-            JzF = 1j*JzF/where(emK.kz==0.,1.,emK.kz*exp(-j*emK.kz_unmod*self.dz/2))
+            JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx*exp(-j*emK.kx_unmod*self.dx/2))
+            JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz*exp(-j*emK.kz_unmod*self.dz/2))
         else:
-            JxF = 1j*JxF/where(emK.kx==0.,1.,emK.kx)
-            JzF = 1j*JzF/where(emK.kz==0.,1.,emK.kz)
+            JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx)
+            JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz)
         
         # --- sets currents to zero at the Nyquist wavelength
         if emK.nx>1:
@@ -594,6 +599,7 @@ class EM3DFFT(EM3D):
             index_Nyquist = compress(abs(emK.kzunit*self.dz)>=pi-0.1*dkz,arange(self.nzlocal+2*self.nzguard))
             JzF[...,index_Nyquist]=0.
 
+        # --- adjust average current values
         if emK.nx>1:
             Jxcs=ave(cumsum(f.J[ngx:-ngx-1,0,ngz:-ngz-1,0],0),0)
             Jx=fft.ifft(JxF,axis=0).real
@@ -662,7 +668,7 @@ class EM3DFFT(EM3D):
         del KF
         
     def smoothfields_poly(self):
-        if 0:#not self.spectral:
+        if not self.spectral:
             EM3D.smoothfields_poly(self)
             return
         else:
