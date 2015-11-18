@@ -14,7 +14,7 @@ def colored(text, textcolor):
 
 # --- Run each of the files independently.
 for f in glob.glob('*_test.py'):
-    p = Popen(["python", f], stdout=PIPE, stderr=PIPE, close_fds=True)
+    p = Popen(["python", f], stdout=PIPE, stderr=PIPE, close_fds=True, universal_newlines=True)
     serr = p.stderr.readlines()
     if serr[-1] == 'OK\n':
         print('%s %s'%(f, colored('OK', textGreen)))
