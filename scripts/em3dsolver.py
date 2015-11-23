@@ -2331,7 +2331,10 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_pushf:self.exchange_f()
         self.exchange_b()
         self.setebp()
-        if top.efetch[0] != 4:self.yee2node3d()
+        if not self.l_nodalgrid and top.efetch[0] != 4:self.yee2node3d()
+        if self.l_nodalgrid and top.efetch[0] == 4:
+            self.fields.l_nodecentered=True
+            self.node2yee3d()
         if self.l_smooth_particle_fields and any(self.npass_smooth>0):
             self.smoothfields()
         if self.l_correct_num_Cherenkov:self.smoothfields_poly()
@@ -2409,7 +2412,7 @@ class EM3D(SubcycledPoissonSolver):
             self.__class__.__bases__[1].push_b_part_1(self.field_coarse,dir)
 
     def push_b_part_2(self):
-        if top.efetch[0] != 4 and (self.refinement is None):self.node2yee3d()
+        if top.efetch[0] != 4 and (self.refinement is None):self.node2yee3d() 
         dt = top.dt/self.ntsub
         if self.ntsub<1.:
             self.novercycle = nint(1./self.ntsub)
@@ -2430,7 +2433,7 @@ class EM3D(SubcycledPoissonSolver):
             self.__class__.__bases__[1].yee2node3d(self.field_coarse)
 
     def node2yee3d(self):
-        if self.l_nodalgrid:return
+#        if self.l_nodalgrid:return
         node2yee3d(self.block.core.yf)
         if self.refinement is not None:
             self.__class__.__bases__[1].node2yee3d(self.field_coarse)
@@ -5909,7 +5912,10 @@ class EM3D(SubcycledPoissonSolver):
 
         # --- This is copied from the end of dosolve.
         self.setebp()
-        if top.efetch[0] != 4:self.yee2node3d()
+        if not self.l_nodalgrid and top.efetch[0] != 4:self.yee2node3d()
+        if self.l_nodalgrid and top.efetch[0] == 4:
+            self.fields.l_nodecentered=True
+            self.node2yee3d()
         if self.l_smooth_particle_fields and any(self.npass_smooth>0):
             self.smoothfields()
 
