@@ -1024,7 +1024,7 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
 
 # --- Restart command
 def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
-            dofieldsol=true,format='',datareader=None):
+            dofieldsol=true,format='',datareader=None,main=None):
     """
   Reads in data from file, redeposits charge density and does field solve
     - filename: restart file name - when restoring parallel run from multiple
@@ -1039,6 +1039,8 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
     - format='': If 'pickle', uses pickledump module (not recommended)
     - datareader=PR.PR: the data reader class to use. This can be any class that
                         conforms to the API of PW from the PyPDB package.
+    - main=__main__: main object that Forthon objects are restored into
+                     Used when the Forthon package is not "import *" into main.
     """
     # --- If each processor is restoring from a seperate file, append
     # --- appropriate suffix, assuming only prefix was passed in
@@ -1060,7 +1062,7 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
             ff = parallelrestore(filename,verbose=verbose,skip=skip,lreturnff=1)
         else:
             ff = pyrestore(filename,verbose=verbose,skip=skip,lreturnff=1,
-                           datareader=datareader)
+                           datareader=datareader,main=main)
 
         # --- Fix old dump files.
         # --- This is the only place where the open dump file is needed.

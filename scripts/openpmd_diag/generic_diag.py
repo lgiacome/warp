@@ -6,6 +6,7 @@ and FieldDiagnostic inherit
 """
 import os
 import datetime
+import shutil
 from dateutil.tz import tzlocal
 import numpy as np
 
@@ -70,7 +71,9 @@ class OpenPMDDiagnostic(object) :
         # Create a few addiditional directories within self.write_dir
         self.create_dir("")
         self.create_dir("diags")
-        self.create_dir("diags/hdf5")
+        # If the directory hdf5 exists, remove it. (Otherwise the code
+        # may crash if the directory hdf5 contains preexisting files.)
+        self.create_dir("diags/hdf5", remove_existing=True)
 
     def write( self ) :
         """
@@ -87,7 +90,7 @@ class OpenPMDDiagnostic(object) :
             # Write the hdf5 file if needed
             self.write_hdf5( self.top.it )
         
-    def create_dir( self, dir_path) :
+    def create_dir( self, dir_path, remove_existing=False ) :
         """
         Check whether the directory exists, and if not create it.
     
@@ -104,6 +107,8 @@ class OpenPMDDiagnostic(object) :
             full_path = os.path.join( self.write_dir, dir_path )
         
             # Check wether it exists, and create it if needed
+            if os.path.exists(full_path) and remove_existing==True:
+                shutil.rmtree(full_path)
             if os.path.exists(full_path) == False :
                 try:
                     os.makedirs(full_path)

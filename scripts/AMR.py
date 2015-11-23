@@ -401,7 +401,7 @@ class AMRTree(VisualizableClass):
             self.f0=[]
         # loop all refinement levels
         for i in range(nlevels-1,0,-1):
-            r = 1.-rl[min(i-1,len(rl)-1)]
+            r = rl[min(i-1,len(rl)-1)]
             ib = b**i
             if(progressive and i<nlevels-1):
                 f0 = where(self.sumpatch(listpatches,nx,ny,nz,dim)>0,ib,f)
