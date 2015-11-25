@@ -6,7 +6,7 @@ Classed for doing multigrid field solve in 3-D
 #  - modify setrhop to check if particles are within grid
 #  - incorporate instances into the particle mover, so charge is deposited and
 #    the E fields gather appropriately.
-from warp import *
+from ..warp import *
 from find_mgparam import find_mgparam
 
 try:

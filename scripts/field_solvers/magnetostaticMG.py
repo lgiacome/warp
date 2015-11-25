@@ -1,7 +1,7 @@
 """Class for doing complete magnetostatic multigrid field solve"""
 # ToDo:
 #  - modify setj to check if particles are within grid
-from warp import *
+from ..warp import *
 from find_mgparam import find_mgparam
 
 try:

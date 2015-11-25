@@ -2,7 +2,7 @@
 Utility and convenience routines used in Warp
 """
 from __future__ import generators # needed for yield statement for P2.2
-from warp import *
+from ..warp import *
 import struct # needed for makefortranordered
 import appendablearray
 import re

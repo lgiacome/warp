@@ -105,10 +105,10 @@ SRFRVLA_rnd_rectangle(name,c,l,h,r)
 # AssemblyMinus
 # Delta
 
-from warp import *
+from ..warp import *
 import collections
 import types
-from appendablearray import *
+from ..utils.appendablearray import *
 try:
     import Opyndx
     VisualizableClass = Opyndx.Visualizable

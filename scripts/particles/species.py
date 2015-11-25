@@ -5,7 +5,7 @@ types that are passed into Species. These include all of the atomic elements
 (Hydrogen, etc.) and the following, Electron, Positron, Proton, Neutron,
 Dihydrogen, Dinitrogen, Dioxygen, Carbon_Monoxide, Carbon_Dioxide, and Water
 """
-from warp import *
+from ..warp import *
 
 def SpRandom(loc=0.,scale=1.,size=None):
     if scale > 0.:

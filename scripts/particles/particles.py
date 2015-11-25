@@ -19,7 +19,7 @@ setup_subsets(): Create subsets for particle plots (negative window numbers)
 clear_subsets(): Clears the subsets for particle plots (negative window
 numbers)
 """
-from warp import *
+from ..warp import *
 
 
 #-------------------------------------------------------------------------

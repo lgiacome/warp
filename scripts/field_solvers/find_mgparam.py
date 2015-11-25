@@ -1,4 +1,4 @@
-from warp import *
+from ..warp import *
 import time
 # FIND_MGPARAM
 # Author: D. P. Grote, March 1995

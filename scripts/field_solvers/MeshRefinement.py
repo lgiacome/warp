@@ -4,7 +4,7 @@ from __future__ import generators
 __all__ = ['MeshRefinement',
            'MRBlock3D','MRBlock','MRBlock2D','MRBlockRZ','MRBlock2DDielectric',
            'MRBlockImplicit2D','EMMRBlock']
-from warp import *
+from ..warp import *
 from find_mgparam import find_mgparam
 import types
 import collections

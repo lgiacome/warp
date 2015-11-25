@@ -76,7 +76,7 @@
 |   psplots(): makes particle phase space plots which have been turned on
 
 """
-from warp import *
+from ..warp import *
 import types
 
 import __main__

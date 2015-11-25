@@ -1,7 +1,7 @@
 """Generic class describing the interface needed for a field solver.
 """
 from __future__ import generators
-from warp import *
+from ..warp import *
 import __main__
 import gc
 import types

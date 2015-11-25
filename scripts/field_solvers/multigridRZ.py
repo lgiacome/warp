@@ -2,7 +2,7 @@
 Class for doing multigrid field solve on 2-D
 --------------------------------------------
 """
-from warp import *
+from ..warp import *
 from find_mgparam import find_mgparam
 
 try:

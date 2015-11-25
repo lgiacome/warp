@@ -1,6 +1,6 @@
 """Class for doing 3 D electromagnetic solver """
-from warp import *
-from mkpalette import getpalhrgb
+from ..warp import *
+from ..diagnostics.palettes.mkpalette import getpalhrgb
 import collections
 import types
 import operator

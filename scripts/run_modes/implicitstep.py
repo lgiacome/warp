@@ -1,5 +1,5 @@
 """Defines ImplicitStep, which handles implicit time stepping"""
-from warp import *
+from ..warp import *
 import controllers
 
 class ImplicitStep(PackageBase):

@@ -6,7 +6,7 @@ The following functions are available:
 
 """
 __all__ = ['solenoiddoc','addsolenoid','addnewsolenoid','addgriddedsolenoid']
-from warp import *
+from ..warp import *
 from lattice import addnewmmlt,addnewbgrd
 
 

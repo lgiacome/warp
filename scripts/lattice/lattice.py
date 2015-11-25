@@ -64,7 +64,7 @@ plotpgrd: plots the potential
 
 todo = """ Add comment attribute to elements """
 
-from warp import *
+from ..warp import *
 import __main__
 import copy
 import collections
