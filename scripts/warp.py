@@ -66,17 +66,16 @@ import parallel
 
 try:
     import gist
-    import gistdummy
     if me == 0 and sys.platform != 'mac':
         from gist import *
     else:
         gist.pyg_unhook()
-        from gistdummy import *
+        from .diagnostics.gistdummy import *
 except ImportError:
     if not warpoptions.quietImport:
         import warnings
         warnings.warn("there was an error importing gist; if this is a problem, restart python and type 'import gist' for details, otherwise Warp will run OK but with no graphics")
-    from gistdummy import *
+    from .diagnostics.gistdummy import *
 
 if sys.hexversion >= 0x03000000:
     # --- With Python3, the so files of each Fortran package are imported
@@ -97,8 +96,8 @@ else:
     from warpC import *
 
 from Forthon import *
-from warputils import *
-import pickledump
+from .utils.warputils import *
+from .data_dumping import pickledump
 from numpy import random
 RandomArray = random
 
@@ -1364,44 +1363,44 @@ def printtimersordered(file=None,depth=3):
 # --- projections of particles, histories, as well as some line plots.
 # --- Import these here near the end so the functions defined above are
 # --- included in their dictionaries.
-from particles import *
-from fieldsolver import *
+from .particles.particles import *
+from .field_solvers.fieldsolver import *
 if lparallel: from warpparallel import *
-from warpplots import *
-from histplots import *
-from pzplots import *
-from lwplots import *
-from generateconductors import *
-from plot_conductor import *
-from multigrid import MultiGrid
-from multigrid import MultiGrid3D
-from multigrid import FullMultiGrid3D
-from multigrid import MultiGridImplicit3D
-from multigridRZ import MultiGridRZ
-from multigridRZ import MultiGrid2D
-from multigridRZ import MultiGrid2DDielectric
-from multigridRZ import MultiGridImplicit2D
-from em3dsolver import EM3D
-from MeshRefinement import *
-from magnetostaticMG import MagnetostaticMG
-from magnetostaticMG import MagnetostaticFFT
-from MeshRefinementB import MRBlockB
-from implicitstep import ImplicitStep
-from species import *
-from particlescraper import ParticleScraper
-from lattice import *
-from drawlattice import *
-from solenoid import *
+from .diagnostics.warpplots import *
+from .diagnostics.histplots import *
+from .diagnostics.pzplots import *
+from .diagnostics.lwplots import *
+from .field_solvers.generateconductors import *
+from .diagnostics.plot_conductor import *
+from .field_solvers.multigrid import MultiGrid
+from .field_solvers.multigrid import MultiGrid3D
+from .field_solvers.multigrid import FullMultiGrid3D
+from .field_solvers.multigrid import MultiGridImplicit3D
+from .field_solvers.multigridRZ import MultiGridRZ
+from .field_solvers.multigridRZ import MultiGrid2D
+from .field_solvers.multigridRZ import MultiGrid2DDielectric
+from .field_solvers.multigridRZ import MultiGridImplicit2D
+from .field_solvers.em3dsolver import EM3D
+from .field_solvers.MeshRefinement import *
+from .field_solvers.magnetostaticMG import MagnetostaticMG
+from .field_solvers.magnetostaticMG import MagnetostaticFFT
+from .field_solvers.MeshRefinementB import MRBlockB
+from .run_modes.implicitstep import ImplicitStep
+from .particles.species import *
+from .particles.particlescraper import ParticleScraper
+from .lattice.lattice import *
+from .diagnostics.drawlattice import *
+from .lattice.solenoid import *
 
 # --- Import some online documentation modules.
 from warphelp import *
-from warpscripts import *
-from warpfortran import *
+from .attic.warpscripts import *
+from .attic.warpfortran import *
 
 # --- Import the printparameters modules (which are called from fortran)
-from printparameters import *
-from printparameters3d import *
-from printparametersrz import *
+from .diagnostics.printparameters import *
+from .diagnostics.printparameters3d import *
+from .diagnostics.printparametersrz import *
 
 # --- warp imports itself as a matter of convenience, so that the
 # --- name is defined.
@@ -1414,8 +1413,7 @@ except ImportError:
 
 # --- Try to import the GUI
 try:
-    sys.path.append(os.path.join(os.path.dirname(__file__),'GUI'))
-    from WarpGUI import *
+    from .GUI.WarpGUI import *
 except:
     pass
 
