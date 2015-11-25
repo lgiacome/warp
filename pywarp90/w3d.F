@@ -10363,7 +10363,7 @@ c       --- Use user registered solver to load rho
         lfinalizerhofsapi = lfinalize_rho
         js1fsapi = is1 - 1
         js2fsapi = is2 - 1
-        call callpythonfunc("loadrhoregistered","fieldsolver")
+        call callpythonfunc("loadrhoregistered","field_solvers.fieldsolver")
         js1fsapi = -1
         js2fsapi = -1
       else
@@ -11027,7 +11027,7 @@ c     --- Just return if the efetch is turned off.
         ndtsfsapi = pgroup%ndts(is - 1)
         ipminfsapi = ipmin
         npfsapi = ip
-        call callpythonfunc("fetcheregistered","fieldsolver")
+        call callpythonfunc("fetcheregistered","field_solvers.fieldsolver")
         NULLIFY(pgroupfsapi)
         jsfsapi = -1
         npfsapi = 0
@@ -11149,7 +11149,7 @@ c       --- and the data needs to be copied around.
         npfsapi = n
         jsfsapi = jsid
         ndtsfsapi = ndts
-        call callpythonfunc("fetcheregistered","fieldsolver")
+        call callpythonfunc("fetcheregistered","field_solvers.fieldsolver")
         npfsapi = 0
         jsfsapi = -1
         ndtsfsapi = 0
@@ -11739,7 +11739,7 @@ c     --- Call the appropriate routine to get the phi
         yfsapi => y
         zfsapi => z
         phifsapi => p
-        call callpythonfunc("fetchphiregistered","fieldsolver")
+        call callpythonfunc("fetchphiregistered","field_solvers.fieldsolver")
         npfsapi = 0
         NULLIFY(xfsapi)
         NULLIFY(yfsapi)
@@ -12687,7 +12687,7 @@ c          --- turn back on the bends after the fieldsolve when computing in a b
            end if
            return
         endif
-        call callpythonfunc("fieldsolregistered","fieldsolver")
+        call callpythonfunc("fieldsolregistered","field_solvers.fieldsolver")
 
 c       --- turn back on the bends after the fieldsolve when computing in a boosted frame
         if (linbendturnedoff) then
@@ -13017,7 +13017,7 @@ c   4  2d fft in transverse plane, tridiag solve in z
       endif
 
       if (iwhich==0 .or. iwhich==1) then
-        call callpythonfunc("initfieldsolver","fieldsolver")
+        call callpythonfunc("initfieldsolver","field_solvers.fieldsolver")
       endif
 
 c Note that the select case statement was giving the f90 compiler on HPUX
@@ -13161,7 +13161,7 @@ c         --- Chombo AMR  full-multigrid solver
      &                   l2symtry,l4symtry,xmmin,ymmin,zmminlocal,zmmin)
       elseif (fstype == 12) then
         if (iwhich <= 0) then
-          call callpythonfunc("fieldsolregistered","fieldsolver")
+          call callpythonfunc("fieldsolregistered","field_solvers.fieldsolver")
         endif
 
       elseif (fstype == 13) then

@@ -224,7 +224,7 @@ c       --- set limits on loop over species
         lfinalizerhofsapi = lfinalize_rho
         js1fsapi = is1 - 1
         js2fsapi = is2 - 1
-        call callpythonfunc("bloadjregistered","fieldsolver")
+        call callpythonfunc("bloadjregistered","field_solvers.fieldsolver")
         js1fsapi = -1
         js2fsapi = -1
       elseif (fstype == 12 .and. bfstype < 0) then
@@ -232,7 +232,7 @@ c       --- set limits on loop over species
         lfinalizerhofsapi = lfinalize_rho
         js1fsapi = is1 - 1
         js2fsapi = is2 - 1
-        call callpythonfunc("loadjregistered","fieldsolver")
+        call callpythonfunc("loadjregistered","field_solvers.fieldsolver")
         js1fsapi = -1
         js2fsapi = -1
       elseif (bfstype >= 0) then
@@ -2536,9 +2536,9 @@ c     --- Zero out the particle's B field if requested (the default)
         jsfsapi = jsid
         ndtsfsapi = ndts
         if (bfstype == 12) then
-          call callpythonfunc("bfetchbregistered","fieldsolver")
+          call callpythonfunc("bfetchbregistered","field_solvers.fieldsolver")
         else
-          call callpythonfunc("fetchbregistered","fieldsolver")
+          call callpythonfunc("fetchbregistered","field_solvers.fieldsolver")
         endif
         npfsapi = 0
         jsfsapi = -1
@@ -2596,9 +2596,9 @@ c     --- Call the appropriate routine to get the A
         jsfsapi = -1
         ndtsfsapi = 1
         if (bfstype == 12) then
-          call callpythonfunc("bfetcharegistered","fieldsolver")
+          call callpythonfunc("bfetcharegistered","field_solvers.fieldsolver")
         else
-          call callpythonfunc("fetcharegistered","fieldsolver")
+          call callpythonfunc("fetcharegistered","field_solvers.fieldsolver")
         endif
         npfsapi = 0
         jsfsapi = -1
@@ -2769,12 +2769,12 @@ c=============================================================================
       if (bfstype < 0) return
 
       if (iwhich==0 .or. iwhich==1) then
-        call callpythonfunc('initbfieldsolver',"fieldsolver")
+        call callpythonfunc('initbfieldsolver',"field_solvers.fieldsolver")
       endif
 
       if (bfstype == 12) then
         if (iwhich <= 0) then
-          call callpythonfunc('bfieldsolregistered',"fieldsolver")
+          call callpythonfunc('bfieldsolregistered',"field_solvers.fieldsolver")
           return
         endif
       endif
