@@ -97,8 +97,8 @@ def multmat(matrix1,matrix2,matcompress=None):
 
 def exp_by_squaring_matrixlist(x, n, matcompress=None):
     if n < 1:
-        print 'Error in exp_by_squaring_matrixlist: n<1.'
-        raise
+        raise Exception('Error in exp_by_squaring_matrixlist: n<1.')
+
     if n == 1:return x
     y = np.identity(len(x)).tolist()
     while n > 1:
@@ -321,6 +321,10 @@ class Fourier_Space():
                 self.kmag = abs(np.where(self.k==0.,1.,self.k))
                 self.kyn = self.kyn/self.kmag
                 self.kzn = self.kzn/self.kmag
+                self.kxp = 0.
+                self.kxm = 0.
+                self.kxpn = 0.
+                self.kxmn = 0.
                 if self.l_staggered:
                     self.kymn = self.kyn*np.exp(-j*self.ky_unmod*self.dy/2)
                     self.kypn = self.kyn*np.exp( j*self.ky_unmod*self.dy/2)
@@ -355,6 +359,10 @@ class Fourier_Space():
                 self.kmag = abs(np.where(self.k==0.,1.,self.k))
                 self.kxn = self.kxn/self.kmag
                 self.kzn = self.kzn/self.kmag
+                self.kyp = 0.
+                self.kym = 0.
+                self.kypn = 0.
+                self.kymn = 0.
                 if self.l_staggered:
                     self.kxmn = self.kxn*np.exp(-j*self.kx_unmod*self.dx/2)
                     self.kxpn = self.kxn*np.exp( j*self.kx_unmod*self.dx/2)
@@ -389,6 +397,10 @@ class Fourier_Space():
                 self.kmag = abs(np.where(self.k==0.,1.,self.k))
                 self.kxn = self.kxn/self.kmag
                 self.kyn = self.kyn/self.kmag
+                self.kzp = 0.
+                self.kzm = 0.
+                self.kzpn = 0.
+                self.kzmn = 0.
                 if self.l_staggered:
                     self.kxmn = self.kxn*np.exp(-j*self.kx_unmod*self.dx/2)
                     self.kxpn = self.kxn*np.exp( j*self.kx_unmod*self.dx/2)
@@ -1053,44 +1065,57 @@ class PSATD_Maxwell(GPSTD):
         C=self.coswdt
         S=self.sinwdt
             
+        self.mymat = self.getmaxwellmat(self.kxpn,self.kypn,self.kzpn,\
+                     self.kxmn,self.kymn,self.kzmn,dt,cdt,m0,m1)
+
+    def getmaxwellmat(self,kxpn,kypn,kzpn,kxmn,kymn,kzmn,dt,cdt,m0,m1):
+
+        j = 1j
+        c=self.clight
+        C=self.coswdt
+        S=self.sinwdt
+        Jmult = 1./(self.kmag*self.clight*self.eps0)
+        EJmult = -S*Jmult
+        BJmult = j*(C-1.)*Jmult/self.clight
+
         if self.nx>1:
             axm = j*S*self.kxmn
             axp = j*S*self.kxpn
+            bxm = self.kxmn
+            bxp = self.kxpn
         else:
             axm = axp = 0.
+            bxm = bxp = 0.
 
         if self.ny>1:
             aym = j*S*self.kymn
             ayp = j*S*self.kypn
+            bym = self.kymn
+            byp = self.kypn
         else:
             aym = ayp = 0.
+            bym = byp = 0.
 
         if self.nz>1:
             azm = j*S*self.kzmn
             azp = j*S*self.kzpn
+            bzm = self.kzmn
+            bzp = self.kzpn
         else:
             azm = azp = 0.
+            bzm = bzp = 0.
 
-        self.mymat = self.getmaxwellmat(axp,ayp,azp,axm,aym,azm,dt,cdt,m0,m1,\
-                     self.kx_unmod,self.ky_unmod,self.kz_unmod,l_matref=0)
-
-    def getmaxwellmat(self,axp,ayp,azp,axm,aym,azm,dt,cdt,m0,m1,
-                      kx_unmod,ky_unmod,kz_unmod,l_matref=0,
-                      matcompress=None):
-        c=self.clight
-        C=self.coswdt
-        S=self.sinwdt
-        Soverck = S/(self.kmag*self.clight)
-        if len(self.dims)==1:Soverck[0] = self.dt
-        if len(self.dims)==2:Soverck[0,0] = self.dt
-        if len(self.dims)==3:Soverck[0,0,0] = self.dt
+        
+        if len(self.dims)==1:EJmult[0] = self.dt
+        if len(self.dims)==2:EJmult[0,0] = self.dt
+        if len(self.dims)==3:EJmult[0,0,0] = self.dt
         if self.l_pushf or self.l_pushg:
           print '#############################'
           print '      To be implemented      '
           print ' Do not use ntsub=inf for now'
           print ' when l_pushf=1 or l_pushg=1 '
           print '#############################'
-          raise         
+          raise Exception('')
 
         mymat = GPSTD_Matrix(self.fields)
         if 1:#self.l_pushg:
@@ -1098,18 +1123,18 @@ class PSATD_Maxwell(GPSTD):
 #            matpushb.add_op('by',{'by':1.,'ex':-azp/(2*c),'ez': axp/(2*c),'g':aym/(2*c)})
 #            matpushb.add_op('bz',{'bz':1.,'ex': ayp/(2*c),'ey':-axp/(2*c),'g':azm/(2*c)})
 #        else:
-            mymat.add_op('bx',{'bx':C,'ey': azp,'ez':-ayp})
-            mymat.add_op('by',{'by':C,'ex':-azp,'ez': axp})
-            mymat.add_op('bz',{'bz':C,'ex': ayp,'ey':-axp})
+            mymat.add_op('bx',{'bx':C,'ey': azp/c,'ez':-ayp/c,'jy': bzp*BJmult,'jz':-byp*BJmult})
+            mymat.add_op('by',{'by':C,'ex':-azp/c,'ez': axp/c,'jx':-bzp*BJmult,'jz': bxp*BJmult})
+            mymat.add_op('bz',{'bz':C,'ex': ayp/c,'ey':-axp/c,'jx': byp*BJmult,'jy':-bxp*BJmult})
 
         if 1:#self.l_pushf:
 #            matpushe.add_op('ex',{'ex':1.,'by':-azm*c,'bz': aym*c,'f':axp,'jx':-dt/self.eps0})
 #            matpushe.add_op('ey',{'ey':1.,'bx': azm*c,'bz':-axm*c,'f':ayp,'jy':-dt/self.eps0})
 #            matpushe.add_op('ez',{'ez':1.,'bx':-aym*c,'by': axm*c,'f':azp,'jz':-dt/self.eps0})
 #        else:
-            mymat.add_op('ex',{'ex':C,'by':-azm,'bz': aym,'jx':-Soverck})
-            mymat.add_op('ey',{'ey':C,'bx': azm,'bz':-axm,'jy':-Soverck})
-            mymat.add_op('ez',{'ez':C,'bx':-aym,'by': axm,'jz':-Soverck})
+            mymat.add_op('ex',{'ex':C,'by':-azm*c,'bz': aym*c,'jx':EJmult})
+            mymat.add_op('ey',{'ey':C,'bx': azm*c,'bz':-axm*c,'jy':EJmult})
+            mymat.add_op('ez',{'ez':C,'bx':-aym*c,'by': axm*c,'jz':EJmult})
 
         if 0:#self.l_pushf:
             matpushf = GPSTD_Matrix(self.fields)

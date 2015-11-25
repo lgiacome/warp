@@ -129,8 +129,7 @@ class EM3DFFT(EM3D):
                       * (self.GPSTDMaxwell.kz*sinkzvzdto2*coskdto2-k*coskzvzdto2*sinkdto2)
                 denomno0 = where(denom==0.,0.0001,self.denom)
                 
-                print "What is the 3-D version of Brendan's correction?"
-                Raise
+                raise Exception("What is the 3-D version of Brendan's correction?")
 
                 ktest=where((pi/2-kxvzdto2**2/(2*pi))>0,(pi/2-kxvzdto2**2/(2*pi)),0)
 
@@ -145,8 +144,8 @@ class EM3DFFT(EM3D):
 #              k = emK.k
               k = sqrt(emK.kx_unmod*emK.kx_unmod+emK.ky_unmod*emK.ky_unmod+emK.kz_unmod*emK.kz_unmod)
               if top.boost_gamma==1.:
-                  print 'Error: l_correct_num_Cherenkov=True with top.boost_gamma=1.'
-                  raise()
+                  raise Exception('Error: l_correct_num_Cherenkov=True with top.boost_gamma=1.')
+
               b0 = sqrt(1.-1./top.boost_gamma**2)
               self.b0=b0
               self.ebcor = 2
@@ -417,7 +416,7 @@ class EM3DFFT(EM3D):
                                                     top.depos_order[2,js],
                                                     l_particles_weight,w3d.l4symtry)
             else:
-                raise('Need to add depose_drhodt_n_3d')
+                raise Exception('Need to add depose_drhodt_n_3d')
 
     def depose_current_density_spectral(self,n,js,f,x,y,z,ux,uy,uz,gaminv,wfact,zgrid,q,w,nox,noy,noz):
         if top.wpid==0:
@@ -426,7 +425,7 @@ class EM3DFFT(EM3D):
         else:
             l_particles_weight = true
         if self.l_1dz:
-            raise('Need to add spectral current deposition in 1-D')
+            raise Exception('Need to add spectral current deposition in 1-D')
         elif self.l_2dxz:
             j = self.fields.J[:,self.fields.nyguard,:,:]
             depose_j_n_2dxz_spectral(j,n,
@@ -441,7 +440,7 @@ class EM3DFFT(EM3D):
                                                             top.depos_order[2,js],
                                                             l_particles_weight,w3d.l4symtry)
         else:
-            raise('Need to add spectral current deposition in 3-D')
+            raise Exception('Need to add spectral current deposition in 3-D')
 
 
 
