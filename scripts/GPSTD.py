@@ -181,7 +181,7 @@ class Fourier_Space():
         if not self.bc_periodic[0]:nx+=2*self.nxguard
         if not self.bc_periodic[1]:ny+=2*self.nyguard
         if not self.bc_periodic[2]:nz+=2*self.nzguard
-        dims=[]
+        self.dims=dims=[]
         if nx>1:dims+=[nx]
         if ny>1:dims+=[ny]
         if nz>1:dims+=[nz]
@@ -1047,22 +1047,27 @@ class PSATD_Maxwell(GPSTD):
         m1 = 1.
         dt=self.dt
         cdt=dt*self.clight
+        self.wdt = self.k*cdt
+        self.coswdt=np.cos(self.wdt)
+        self.sinwdt=np.sin(self.wdt)
+        C=self.coswdt
+        S=self.sinwdt
             
         if self.nx>1:
-            axm = j*dt*self.clight*self.kxm
-            axp = j*dt*self.clight*self.kxp
+            axm = j*S*self.kxmn
+            axp = j*S*self.kxpn
         else:
             axm = axp = 0.
 
         if self.ny>1:
-            aym = j*dt*self.clight*self.kym
-            ayp = j*dt*self.clight*self.kyp
+            aym = j*S*self.kymn
+            ayp = j*S*self.kypn
         else:
             aym = ayp = 0.
 
         if self.nz>1:
-            azm = j*dt*self.clight*self.kzm
-            azp = j*dt*self.clight*self.kzp
+            azm = j*S*self.kzmn
+            azp = j*S*self.kzpn
         else:
             azm = azp = 0.
 
@@ -1073,64 +1078,48 @@ class PSATD_Maxwell(GPSTD):
                       kx_unmod,ky_unmod,kz_unmod,l_matref=0,
                       matcompress=None):
         c=self.clight
-        print '#############################'
-        print '      To be implemented      '
-        print ' Do not use ntsub=inf for now'
-        print '#############################'
-        raise         
+        C=self.coswdt
+        S=self.sinwdt
+        Soverck = S/(self.kmag*self.clight)
+        if len(self.dims)==1:Soverck[0] = self.dt
+        if len(self.dims)==2:Soverck[0,0] = self.dt
+        if len(self.dims)==3:Soverck[0,0,0] = self.dt
+        if self.l_pushf or self.l_pushg:
+          print '#############################'
+          print '      To be implemented      '
+          print ' Do not use ntsub=inf for now'
+          print ' when l_pushf=1 or l_pushg=1 '
+          print '#############################'
+          raise         
 
-        if self.l_pushf:
-            matpushrho = GPSTD_Matrix(self.fields)
-            matpushrho.add_op('rho',{'rho':1.,'jx':-axm/c,'jy':-aym/c,'jz':-azm/c})
+        mymat = GPSTD_Matrix(self.fields)
+        if 1:#self.l_pushg:
+#            matpushb.add_op('bx',{'bx':1.,'ey': azp/(2*c),'ez':-ayp/(2*c),'g':axm/(2*c)})
+#            matpushb.add_op('by',{'by':1.,'ex':-azp/(2*c),'ez': axp/(2*c),'g':aym/(2*c)})
+#            matpushb.add_op('bz',{'bz':1.,'ex': ayp/(2*c),'ey':-axp/(2*c),'g':azm/(2*c)})
+#        else:
+            mymat.add_op('bx',{'bx':C,'ey': azp,'ez':-ayp})
+            mymat.add_op('by',{'by':C,'ex':-azp,'ez': axp})
+            mymat.add_op('bz',{'bz':C,'ex': ayp,'ey':-axp})
 
-        matpushb = GPSTD_Matrix(self.fields)
-        if self.l_pushg:
-            matpushb.add_op('bx',{'bx':1.,'ey': azp/(2*c),'ez':-ayp/(2*c),'g':axm/(2*c)})
-            matpushb.add_op('by',{'by':1.,'ex':-azp/(2*c),'ez': axp/(2*c),'g':aym/(2*c)})
-            matpushb.add_op('bz',{'bz':1.,'ex': ayp/(2*c),'ey':-axp/(2*c),'g':azm/(2*c)})
-        else:
-            matpushb.add_op('bx',{'bx':1.,'ey': azp/(2*c),'ez':-ayp/(2*c)})
-            matpushb.add_op('by',{'by':1.,'ex':-azp/(2*c),'ez': axp/(2*c)})
-            matpushb.add_op('bz',{'bz':1.,'ex': ayp/(2*c),'ey':-axp/(2*c)})
+        if 1:#self.l_pushf:
+#            matpushe.add_op('ex',{'ex':1.,'by':-azm*c,'bz': aym*c,'f':axp,'jx':-dt/self.eps0})
+#            matpushe.add_op('ey',{'ey':1.,'bx': azm*c,'bz':-axm*c,'f':ayp,'jy':-dt/self.eps0})
+#            matpushe.add_op('ez',{'ez':1.,'bx':-aym*c,'by': axm*c,'f':azp,'jz':-dt/self.eps0})
+#        else:
+            mymat.add_op('ex',{'ex':C,'by':-azm,'bz': aym,'jx':-Soverck})
+            mymat.add_op('ey',{'ey':C,'bx': azm,'bz':-axm,'jy':-Soverck})
+            mymat.add_op('ez',{'ez':C,'bx':-aym,'by': axm,'jz':-Soverck})
 
-        matpushe = GPSTD_Matrix(self.fields)
-        if self.l_pushf:
-            matpushe.add_op('ex',{'ex':1.,'by':-azm*c,'bz': aym*c,'f':axp,'jx':-dt/self.eps0})
-            matpushe.add_op('ey',{'ey':1.,'bx': azm*c,'bz':-axm*c,'f':ayp,'jy':-dt/self.eps0})
-            matpushe.add_op('ez',{'ez':1.,'bx':-aym*c,'by': axm*c,'f':azp,'jz':-dt/self.eps0})
-        else:
-            matpushe.add_op('ex',{'ex':1.,'by':-azm*c,'bz': aym*c,'jx':-dt/self.eps0})
-            matpushe.add_op('ey',{'ey':1.,'bx': azm*c,'bz':-axm*c,'jy':-dt/self.eps0})
-            matpushe.add_op('ez',{'ez':1.,'bx':-aym*c,'by': axm*c,'jz':-dt/self.eps0})
-
-        if self.l_pushf:
+        if 0:#self.l_pushf:
             matpushf = GPSTD_Matrix(self.fields)
             matpushf.add_op('f',{'f':1.,'ex':axm/2,'ey':aym/2,'ez':azm/2,'rho':-0.5*cdt/self.eps0})
 
-        if self.l_pushg:
+        if 0:#self.l_pushg:
             matpushg = GPSTD_Matrix(self.fields)
             matpushg.add_op('g',{'g':1.,'bx':axp*c,'by':ayp*c,'bz':azp*c})
 
-        if self.l_pushf:
-            mymat = multmat(matpushf.mat,matpushb.mat,matcompress=matcompress)
-            if self.l_pushg:mymat = multmat(mymat,matpushg.mat,matcompress=matcompress)
-            mymat = multmat(mymat,matpushe.mat,matcompress=matcompress)
-            mymat = multmat(mymat,matpushrho.mat,matcompress=matcompress)
-            mymat = multmat(mymat,matpushf.mat,matcompress=matcompress)
-            mymat = multmat(mymat,matpushb.mat,matcompress=matcompress)
-        else:
-            mymat = multmat(matpushb.mat,matpushe.mat,matcompress=matcompress)
-            if self.l_pushg:mymat = multmat(mymat,matpushg.mat,matcompress=matcompress)
-            mymat = multmat(mymat,matpushb.mat,matcompress=matcompress)
-
-        if l_matref:
-            self.matpushb=matpushb
-            self.matpushe=matpushe
-            if self.l_pushf:self.matpushf=matpushf
-            if self.l_pushg:self.matpushg=matpushg
-            if self.l_pushf:self.matpushrho=matpushrho
-
-        return mymat
+        return mymat.mat
 
     def push(self):
 
