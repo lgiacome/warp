@@ -2522,63 +2522,113 @@ end if
 return
 end subroutine push_em3d_fvec_cond
 
-subroutine getdive(ex,ey,ez,dive,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,xmin,l_2dxz,l_2drz)
+subroutine getdive(ex,ey,ez,dive,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,xmin,l_2dxz,l_2drz,l_nodalgrid)
 integer :: nx,ny,nz,nxguard,nyguard,nzguard
 real(kind=8), intent(IN OUT), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: ex,ey,ez,dive
 real(kind=8), intent(IN) :: dx,dy,dz,xmin
 integer(ISZ) :: j,k,l
-logical(ISZ) :: l_2dxz,l_2drz
+logical(ISZ) :: l_2dxz,l_2drz,l_nodalgrid
 real(kind=8) :: ru,rd,dxi,dyi,dzi
 
-dxi = 1./dx
-dyi = 1./dy
-dzi = 1./dz
-if (.not.l_2dxz) then
-  ! --- 3D XYZ
-  do l = 0, nz
-   do k = 0, ny
-    do j = 0, nx
-      dive(j,k,l) = dive(j,k,l) + dxi * (Ex(j,k,l) - Ex(j-1,k  ,l  )) &
-                                + dyi * (Ey(j,k,l) - Ey(j  ,k-1,l  )) &
-                                + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
-    end do
-   end do
-  end do
+if (l_nodalgrid) then
+    dxi = 0.5/dx
+    dyi = 0.5/dy
+    dzi = 0.5/dz
+    if (.not.l_2dxz) then
+      ! --- 3D XYZ
+      do l = 0, nz
+       do k = 0, ny
+        do j = 0, nx
+          dive(j,k,l) = dive(j,k,l) + dxi * (Ex(j+1,k  ,l  ) - Ex(j-1,k  ,l  )) &
+                                    + dyi * (Ey(j  ,k+1,l  ) - Ey(j  ,k-1,l  )) &
+                                    + dzi * (Ez(j  ,k  ,l+1) - Ez(j  ,k  ,l-1)) 
+        end do
+       end do
+      end do
 
-else
- if (.not.l_2drz) then
-  ! --- 2D XZ
-  k=0
-  do l = 0, nz
-    do j = 0, nx
-      dive(j,k,l) = dive(j,k,l) + dxi * (Ex(j,k,l) - Ex(j-1,k  ,l  )) &
-                                + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
-    end do
-  end do
- else
-  ! --- 2D RZ (axisymmetric)
-  k=0
-  do l = 0, nz
-    j = 0
-    if (xmin==0.) then
-      dive(j,k,l) = dive(j,k,l) + 4.*dxi * Ex(j,k,l) &
-                                + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
     else
-      ru = 1.+0.5/(xmin/dx)
-      rd = 1.-0.5/(xmin/dx)
-      dive(j,k,l) = dive(j,k,l) + dxi * (ru*Ex(j,k,l) - rd*Ex(j-1,k  ,l  )) &
-                                + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+     if (.not.l_2drz) then
+      ! --- 2D XZ
+      k=0
+      do l = 0, nz
+        do j = 0, nx
+          dive(j,k,l) = dive(j,k,l) + dxi * (Ex(j+1,k  ,l  ) - Ex(j-1,k  ,l  )) &
+                                    + dzi * (Ez(j  ,k  ,l+1) - Ez(j  ,k  ,l-1)) 
+        end do
+      end do
+     else
+      ! --- 2D RZ (axisymmetric)
+      k=0
+      do l = 0, nz
+        j = 0
+        if (xmin==0.) then
+          dive(j,k,l) = dive(j,k,l) + 4.*dxi * Ex(j,k,l) &
+                                    + dzi * (Ez(j  ,k  ,l+1) - Ez(j  ,k  ,l-1)) 
+        else
+          ru = 1.+1./(xmin/dx)
+          rd = 1.-1./(xmin/dx)
+          dive(j,k,l) = dive(j,k,l) + dxi * (ru*Ex(j+1,k  ,l  ) - rd*Ex(j-1,k  ,l  )) &
+                                    + dzi *    (Ez(j  ,k  ,l+1) -    Ez(j  ,k  ,l-1)) 
+        end if
+        do j = 1, nx
+          ru = 1.+1./(xmin/dx+j)
+          rd = 1.-1./(xmin/dx+j)
+          dive(j,k,l) = dive(j,k,l) + dxi * (ru*Ex(j+1,k  ,l  ) - rd*Ex(j-1,k  ,l  )) &
+                                    + dzi * (   Ez(j  ,k  ,l+1) -    Ez(j  ,k  ,l-1)) 
+        end do
+      end do
+     end if
     end if
-    do j = 1, nx
-      ru = 1.+0.5/(xmin/dx+j)
-      rd = 1.-0.5/(xmin/dx+j)
-      dive(j,k,l) = dive(j,k,l) + dxi * (ru*Ex(j,k,l) - rd*Ex(j-1,k  ,l  )) &
-                                + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
-    end do
-  end do
- end if
-end if
+else
+    dxi = 1./dx
+    dyi = 1./dy
+    dzi = 1./dz
+    if (.not.l_2dxz) then
+      ! --- 3D XYZ
+      do l = 0, nz
+       do k = 0, ny
+        do j = 0, nx
+          dive(j,k,l) = dive(j,k,l) + dxi * (Ex(j,k,l) - Ex(j-1,k  ,l  )) &
+                                    + dyi * (Ey(j,k,l) - Ey(j  ,k-1,l  )) &
+                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+        end do
+       end do
+      end do
 
+    else
+     if (.not.l_2drz) then
+      ! --- 2D XZ
+      k=0
+      do l = 0, nz
+        do j = 0, nx
+          dive(j,k,l) = dive(j,k,l) + dxi * (Ex(j,k,l) - Ex(j-1,k  ,l  )) &
+                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+        end do
+      end do
+     else
+      ! --- 2D RZ (axisymmetric)
+      k=0
+      do l = 0, nz
+        j = 0
+        if (xmin==0.) then
+          dive(j,k,l) = dive(j,k,l) + 4.*dxi * Ex(j,k,l) &
+                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+        else
+          ru = 1.+0.5/(xmin/dx)
+          rd = 1.-0.5/(xmin/dx)
+          dive(j,k,l) = dive(j,k,l) + dxi * (ru*Ex(j,k,l) - rd*Ex(j-1,k  ,l  )) &
+                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+        end if
+        do j = 1, nx
+          ru = 1.+0.5/(xmin/dx+j)
+          rd = 1.-0.5/(xmin/dx+j)
+          dive(j,k,l) = dive(j,k,l) + dxi * (ru*Ex(j,k,l) - rd*Ex(j-1,k  ,l  )) &
+                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+        end do
+      end do
+     end if
+    end if
+end if
 return
 end subroutine getdive
 

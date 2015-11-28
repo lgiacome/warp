@@ -888,8 +888,10 @@ class GPSTD_Maxwell(GPSTD):
             self.add_fields({"f":yf.F})
         if self.l_pushg:
             self.add_fields({"g":yf.G})
-        if self.l_pushf or self.l_getrho:
-            self.add_fields({"rho":yf.Rho},True)
+#        if self.l_pushf or self.l_getrho:
+#            self.add_fields({"rho":yf.Rho},True)
+        self.add_fields({"rho":yf.Rho},True)
+        self.add_fields({"drho":yf.Rhoold},True)
         self.add_fields({"jx":yf.J[...,0],"jy":yf.J[...,1],"jz":yf.J[...,2]},True)
         
         self.get_Ffields()
@@ -955,7 +957,8 @@ class GPSTD_Maxwell(GPSTD):
 
         if self.l_pushf:
             matpushrho = GPSTD_Matrix(self.fields)
-            matpushrho.add_op('rho',{'rho':1.,'jx':-axm/c,'jy':-aym/c,'jz':-azm/c})
+#            matpushrho.add_op('rho',{'rho':1.,'jx':-axm/c,'jy':-aym/c,'jz':-azm/c})
+            matpushrho.add_op('rho',{'rho':1.,'drho':1./self.ntsub})
 
         matpushb = GPSTD_Matrix(self.fields)
         if self.l_pushg:
@@ -1032,6 +1035,7 @@ class PSATD_Maxwell(GPSTD):
         self.processdefaultsfromdict(GPSTD_Maxwell.__flaginputs__,kw)
 
         yf=self.yf
+
         nx = np.max([1,yf.nx])
         ny = np.max([1,yf.ny])
         nz = np.max([1,yf.nz])
@@ -1049,8 +1053,8 @@ class PSATD_Maxwell(GPSTD):
             self.add_fields({"f":yf.F})
         if self.l_pushg:
             self.add_fields({"g":yf.G})
-        if self.l_pushf or self.l_getrho:
-            self.add_fields({"rho":yf.Rho},True)
+        self.add_fields({"rho":yf.Rho},True)
+        self.add_fields({"rhoold":yf.Rhoold},True)
         self.add_fields({"jx":yf.J[...,0],"jy":yf.J[...,1],"jz":yf.J[...,2]},True)
         
         self.get_Ffields()
@@ -1074,75 +1078,89 @@ class PSATD_Maxwell(GPSTD):
         c=self.clight
         C=self.coswdt
         S=self.sinwdt
+
+        Soverk = S/self.kmag
         Jmult = 1./(self.kmag*self.clight*self.eps0)
+
         EJmult = -S*Jmult
+        ERhomult = j*(-EJmult/dt-1./self.eps0)/self.kmag
+        ERhooldmult = j*(C/self.eps0+EJmult/dt) /self.kmag
+
         BJmult = j*(C-1.)*Jmult/self.clight
 
+        FJmult = j*(C-1.)*Jmult
+        FRhomult = (C-1.)/(dt*self.kmag**2*self.clight*self.eps0)
+
+        if len(self.dims)==1:
+            EJmult[0] = -self.dt/self.eps0
+            Soverk[0] = self.dt*self.clight
+            FRhomult[0] = -0.5*self.dt*self.clight/self.eps0
+        if len(self.dims)==2:
+            EJmult[0,0] = -self.dt/self.eps0
+            Soverk[0,0] = self.dt*self.clight
+            FRhomult[0,0] = -0.5*self.dt*self.clight/self.eps0
+        if len(self.dims)==3:
+            EJmult[0,0,0] = -self.dt/self.eps0
+            Soverk[0,0,0] = self.dt*self.clight
+            FRhomult[0,0,0] = -0.5*self.dt*self.clight/self.eps0
+        
         if self.nx>1:
             axm = j*S*self.kxmn
             axp = j*S*self.kxpn
-            bxm = self.kxmn
-            bxp = self.kxpn
+            kxpn = self.kxpn
+            kxmn = self.kxmn
         else:
             axm = axp = 0.
             bxm = bxp = 0.
+            kxpn = kxmn = 0.
 
         if self.ny>1:
             aym = j*S*self.kymn
             ayp = j*S*self.kypn
-            bym = self.kymn
-            byp = self.kypn
+            kypn = self.kypn
+            kymn = self.kymn
         else:
             aym = ayp = 0.
             bym = byp = 0.
+            kypn = kymn = 0.
 
         if self.nz>1:
             azm = j*S*self.kzmn
             azp = j*S*self.kzpn
-            bzm = self.kzmn
-            bzp = self.kzpn
+            kzpn = self.kzpn
+            kzmn = self.kzmn
         else:
             azm = azp = 0.
             bzm = bzp = 0.
-
-        
-        if len(self.dims)==1:EJmult[0] = self.dt
-        if len(self.dims)==2:EJmult[0,0] = self.dt
-        if len(self.dims)==3:EJmult[0,0,0] = self.dt
-        if self.l_pushf or self.l_pushg:
-          print '#############################'
-          print '      To be implemented      '
-          print ' Do not use ntsub=inf for now'
-          print ' when l_pushf=1 or l_pushg=1 '
-          print '#############################'
-          raise Exception('')
+            kzpn = kzmn = 0.
 
         mymat = GPSTD_Matrix(self.fields)
-        if 1:#self.l_pushg:
-#            matpushb.add_op('bx',{'bx':1.,'ey': azp/(2*c),'ez':-ayp/(2*c),'g':axm/(2*c)})
-#            matpushb.add_op('by',{'by':1.,'ex':-azp/(2*c),'ez': axp/(2*c),'g':aym/(2*c)})
-#            matpushb.add_op('bz',{'bz':1.,'ex': ayp/(2*c),'ey':-axp/(2*c),'g':azm/(2*c)})
-#        else:
-            mymat.add_op('bx',{'bx':C,'ey': azp/c,'ez':-ayp/c,'jy': bzp*BJmult,'jz':-byp*BJmult})
-            mymat.add_op('by',{'by':C,'ex':-azp/c,'ez': axp/c,'jx':-bzp*BJmult,'jz': bxp*BJmult})
-            mymat.add_op('bz',{'bz':C,'ex': ayp/c,'ey':-axp/c,'jx': byp*BJmult,'jy':-bxp*BJmult})
+        if self.l_pushg:
+            mymat.add_op('bx',{'bx':C,'ey': azp/c,'ez':-ayp/c,'g':axm/c,'jy': kzpn*BJmult,'jz':-kypn*BJmult})
+            mymat.add_op('by',{'by':C,'ex':-azp/c,'ez': axp/c,'g':aym/c,'jx':-kzpn*BJmult,'jz': kxpn*BJmult})
+            mymat.add_op('bz',{'bz':C,'ex': ayp/c,'ey':-axp/c,'g':azm/c,'jx': kypn*BJmult,'jy':-kxpn*BJmult})
+        else:
+            mymat.add_op('bx',{'bx':C,'ey': azp/c,'ez':-ayp/c,'jy': kzpn*BJmult,'jz':-kypn*BJmult})
+            mymat.add_op('by',{'by':C,'ex':-azp/c,'ez': axp/c,'jx':-kzpn*BJmult,'jz': kxpn*BJmult})
+            mymat.add_op('bz',{'bz':C,'ex': ayp/c,'ey':-axp/c,'jx': kypn*BJmult,'jy':-kxpn*BJmult})
 
-        if 1:#self.l_pushf:
-#            matpushe.add_op('ex',{'ex':1.,'by':-azm*c,'bz': aym*c,'f':axp,'jx':-dt/self.eps0})
-#            matpushe.add_op('ey',{'ey':1.,'bx': azm*c,'bz':-axm*c,'f':ayp,'jy':-dt/self.eps0})
-#            matpushe.add_op('ez',{'ez':1.,'bx':-aym*c,'by': axm*c,'f':azp,'jz':-dt/self.eps0})
-#        else:
-            mymat.add_op('ex',{'ex':C,'by':-azm*c,'bz': aym*c,'jx':EJmult})
-            mymat.add_op('ey',{'ey':C,'bx': azm*c,'bz':-axm*c,'jy':EJmult})
-            mymat.add_op('ez',{'ez':C,'bx':-aym*c,'by': axm*c,'jz':EJmult})
+        if self.l_pushf:
+            mymat.add_op('ex',{'ex':C,'by':-azm*c,'bz': aym*c,'jx':EJmult,'f':axp,'rho':kxpn*ERhomult,'rhoold':kxpn*ERhooldmult})
+            mymat.add_op('ey',{'ey':C,'bx': azm*c,'bz':-axm*c,'jy':EJmult,'f':ayp,'rho':kypn*ERhomult,'rhoold':kypn*ERhooldmult})
+            mymat.add_op('ez',{'ez':C,'bx':-aym*c,'by': axm*c,'jz':EJmult,'f':azp,'rho':kzpn*ERhomult,'rhoold':kzpn*ERhooldmult})
+        else:
+            mymat.add_op('ex',{'ex':C,'by':-azm*c,'bz': aym*c,'jx':EJmult,'rho':kxpn*ERhomult,'rhoold':kxpn*ERhooldmult})
+            mymat.add_op('ey',{'ey':C,'bx': azm*c,'bz':-axm*c,'jy':EJmult,'rho':kypn*ERhomult,'rhoold':kypn*ERhooldmult})
+            mymat.add_op('ez',{'ez':C,'bx':-aym*c,'by': axm*c,'jz':EJmult,'rho':kzpn*ERhomult,'rhoold':kzpn*ERhooldmult})
 
-        if 0:#self.l_pushf:
-            matpushf = GPSTD_Matrix(self.fields)
-            matpushf.add_op('f',{'f':1.,'ex':axm/2,'ey':aym/2,'ez':azm/2,'rho':-0.5*cdt/self.eps0})
-
-        if 0:#self.l_pushg:
-            matpushg = GPSTD_Matrix(self.fields)
-            matpushg.add_op('g',{'g':1.,'bx':axp*c,'by':ayp*c,'bz':azp*c})
+        if self.l_pushf:
+            mymat.add_op('f',{'f':C,'ex':axm,'ey':aym,'ez':azm, \
+                                    'jx': kxmn*FJmult,'jy': kymn*FJmult,'jz': kzmn*FJmult, \
+                                    'rho':FRhomult,\
+                                    'rhoold':-FRhomult - Soverk/self.eps0})
+            
+        if self.l_pushg:
+            mymat.add_op('g',{'g':C,'bx':axp*c,'by':ayp*c,'bz':azp*c})
 
         return mymat.mat
 

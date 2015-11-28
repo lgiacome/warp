@@ -83,6 +83,13 @@ class EM3DFFT(EM3D):
                      'clight':clight}
 
             if s.ntsub is np.inf:
+                if not self.l_getrho:
+                    self.l_getrho = True
+                    f.nxr = f.nx
+                    f.nyr = f.ny
+                    f.nzr = f.nz
+                    f.gchange()
+
                 self.GPSTDMaxwell = PSATD_Maxwell(yf=self.fields,
                                                   eps0=eps0,
                                                   bc_periodic=bc_periodic,
@@ -278,75 +285,18 @@ class EM3DFFT(EM3D):
             EM3D.depose_j_laser(self,f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight)
             return
             
-        if self.spectral_current and not self.l_spectral_staggered:
-            J=f.J*0
-        else:
-            J=f.J
-        for q in [1.,-1.]:
-            if self.l_2dxz:
-                if self.spectral_current and not self.l_spectral_staggered:
-                    depose_j_n_2dxz_spectral(J,
-                                               self.laser_nn,
-                                               self.laser_xx+q*laser_xdx,
-                                               self.laser_source_z*ones(self.laser_nn),
-                                               q*laser_ux,
-                                               q*laser_uy,
-                                               self.laser_source_v*ones(self.laser_nn),
-                                               self.laser_gi,
-                                               weights,
-                                               q,
-                                               f.xmin,f.zmin+self.zgrid,
-                                               top.dt,
-                                               f.dx,f.dz,
-                                               f.nx,f.nz,
-                                               f.nxguard,f.nzguard,
-                                               self.laser_depos_order_x,
-                                               self.laser_depos_order_z,
-                                               l_particles_weight,
-                                               w3d.l4symtry)
-                else:
-                    if self.l_1dz:
-                        depose_j_n_1dz(J,
-                                                  self.laser_nn,
-                                                  self.laser_source_z*ones(self.laser_nn),
-                                                  q*laser_ux,
-                                                  q*laser_uy,
-                                                  self.laser_source_v*ones(self.laser_nn),
-                                                  self.laser_gi,
-                                                  weights,
-                                                  q,
-                                                  f.zmin+self.zgrid,
-                                                  top.dt,
-                                                  f.dz,
-                                                  f.nz,
-                                                  f.nzguard,
-                                                  self.laser_depos_order_z,
-                                                  l_particles_weight)
-                    else:
-                        depose_jxjyjz_esirkepov_n_2d(J,
-                                                  self.laser_nn,
-                                                  self.laser_xx+q*laser_xdx,
-                                                  self.laser_yy+q*laser_ydy,
-                                                  self.laser_source_z*ones(self.laser_nn),
-                                                  q*laser_ux,
-                                                  q*laser_uy,
-                                                  self.laser_source_v*ones(self.laser_nn),
-                                                  self.laser_gi,
-                                                  weights,
-                                                  q,
-                                                  f.xmin,f.zmin+self.zgrid,
-                                                  top.dt,
-                                                  f.dx,f.dz,
-                                                  f.nx,f.nz,
-                                                  f.nxguard,f.nzguard,
-                                                  self.laser_depos_order_x,
-                                                  self.laser_depos_order_z,
-                                                  l_particles_weight,
-                                                  w3d.l4symtry,
-                                                  self.l_2drz, self.type_rz_depose)
-            else:
-                depose_jxjyjz_esirkepov_n(J,
+        if top.ndts[0]<>1:
+            print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
+            raise
+        f.J = self.fields.Jarray[:,:,:,:,0]
+        f.Rho = self.fields.Rhoarray[:,:,:,0]
+        
+        for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
+            # The antenna is made of two types of fictious particles : positive and negative
+            
+            self.depose_current_density_spectral(
                                              self.laser_nn,
+                                             f,
                                              self.laser_xx+q*laser_xdx,
                                              self.laser_yy+q*laser_ydy,
                                              self.laser_source_z*ones(self.laser_nn),
@@ -354,21 +304,35 @@ class EM3DFFT(EM3D):
                                              q*laser_uy,
                                              self.laser_source_v*ones(self.laser_nn),
                                              self.laser_gi,
-                                             weights,
-                                             q,
-                                             f.xmin,f.ymin,f.zmin+self.zgrid,
                                              top.dt,
-                                             f.dx,f.dy,f.dz,
-                                             f.nx,f.ny,f.nz,
-                                             f.nxguard,f.nyguard,f.nzguard,
+                                             1.,
+                                             self.zgrid,
+                                             q,
+                                             weights,
                                              self.laser_depos_order_x,
                                              self.laser_depos_order_y,
                                              self.laser_depos_order_z,
-                                             l_particles_weight,
-                                             w3d.l4symtry)
-        if self.spectral_current and not self.l_spectral_staggered:
-            J[...,2]=0
-            f.J+=J
+                                             l_particles_weight)
+
+            if self.l_getrho :
+               self.depose_charge_density(   self.laser_nn,
+                                             f,
+                                             self.laser_xx+q*laser_xdx,
+                                             self.laser_yy+q*laser_ydy,
+                                             self.laser_source_z*ones(self.laser_nn),
+                                             q*laser_ux,
+                                             q*laser_uy,
+                                             self.laser_source_v*ones(self.laser_nn),
+                                             self.laser_gi,
+                                             top.dt,
+                                             1.,
+                                             self.zgrid,
+                                             q,
+                                             weights,
+                                             self.laser_depos_order_x,
+                                             self.laser_depos_order_y,
+                                             self.laser_depos_order_z,
+                                             l_particles_weight)
 
 ################################################################################
 # CHARGE/CURRENT DEPOSITION
@@ -383,17 +347,24 @@ class EM3DFFT(EM3D):
         nox = top.depos_order[0,js]
         noy = top.depos_order[1,js]
         noz = top.depos_order[2,js]
+        dt = top.dt*top.pgroup.ndts[js]
+        
+        if top.wpid==0:
+            wfact = ones((1,),'d')
+            l_particles_weight = false
+        else:
+            l_particles_weight = true
 
         if self.spectral_current:
-            self.depose_current_density_spectral(n,js,f,x,y,z,ux,uy,uz,gaminv,
+            self.depose_current_density_spectral(n,f,x,y,z,ux,uy,uz,gaminv,dt,
                                         wfact,zgrid,
-                                        q,w,nox,noy,noz)
+                                        q,w,nox,noy,noz,l_particles_weight)
         else:
-            EM3D.depose_current_density(self,n,js,f,x,y,z,ux,uy,uz,gaminv,wfact,zgrid,
-                                        q,w,nox,noy,noz)
+            EM3D.depose_current_density(self,n,f,x,y,z,ux,uy,uz,gaminv,dt,wfact,zgrid,
+                                        q,w,nox,noy,noz,l_particles_weight)
 
         if self.l_getrho :
-            EM3D.depose_charge_density(self,n,js,f,x,y,z,ux,uy,uz,gaminv,wfact,zgrid,q,w,nox,noy,noz)
+            EM3D.depose_charge_density(self,n,f,x,y,z,ux,uy,uz,gaminv,dt,wfact,zgrid,q,w,nox,noy,noz,l_particles_weight)
         
         if self.current_cor:
             # --- deposit dRho/dt for correction of current to verify 
@@ -418,12 +389,7 @@ class EM3DFFT(EM3D):
             else:
                 raise Exception('Need to add depose_drhodt_n_3d')
 
-    def depose_current_density_spectral(self,n,js,f,x,y,z,ux,uy,uz,gaminv,wfact,zgrid,q,w,nox,noy,noz):
-        if top.wpid==0:
-            wfact = ones((1,),'d')
-            l_particles_weight = false
-        else:
-            l_particles_weight = true
+    def depose_current_density_spectral(self,n,f,x,y,z,ux,uy,uz,gaminv,dt,wfact,zgrid,q,w,nox,noy,noz,l_particles_weight):
         if self.l_1dz:
             raise Exception('Need to add spectral current deposition in 1-D')
         elif self.l_2dxz:
@@ -432,17 +398,15 @@ class EM3DFFT(EM3D):
                                                             x,z,ux,uy,uz,
                                                             gaminv,wfact,q*w,
                                                             f.xmin,f.zmin+self.zgrid,
-                                                            top.dt*top.pgroup.ndts[js],
+                                                            dt,
                                                             f.dx,f.dz,
                                                             f.nx,f.nz,
                                                             f.nxguard,f.nzguard,
-                                                            top.depos_order[0,js],
-                                                            top.depos_order[2,js],
+                                                            nox,
+                                                            noz,
                                                             l_particles_weight,w3d.l4symtry)
         else:
             raise Exception('Need to add spectral current deposition in 3-D')
-
-
 
     def zerosourcep(self):
         EM3D.zerosourcep(self)
@@ -462,12 +426,13 @@ class EM3DFFT(EM3D):
         self.aftersetsourcep()
         # -- add laser if laser_mode==2
 #        if self.laser_mode==2 and self.spectral:self.add_laser(self.block.core.yf)
-        # --- smooth current density
-        if any(self.npass_smooth>0):self.smoothdensity()
-        # -- add laser if laser_mode==2
         if self.laser_mode==2:self.add_laser(self.block.core.yf)
+        # -- add laser if laser_mode==2
+#        if self.laser_mode==2:self.add_laser(self.block.core.yf)
         if not self.spectral_current and self.l_nodalgrid:self.Jyee2node3d()
         if self.spectral_current:self.getcurrent_spectral()
+        # --- smooth current density
+        if any(self.npass_smooth>0):self.smoothdensity()
         # --- smooth current density
         if self.current_cor:self.current_cor_spectral()
         self.applysourceboundaryconditions()
@@ -564,7 +529,7 @@ class EM3DFFT(EM3D):
             ngx = self.nxguard
         else:
             ngx=0
-        if self.bounds[1]==periodic:
+        if self.bounds[2]==periodic:
             ngy = self.nyguard
         else:
             ngy=0
@@ -572,6 +537,7 @@ class EM3DFFT(EM3D):
             ngz = self.nzguard
         else:
             ngz=0
+        
         JxF = fft.fft(f.J[ngx:-ngx-1,0,ngz:-ngz-1,0],axis=0)
         JzF = fft.fft(f.J[ngx:-ngx-1,0,ngz:-ngz-1,2],axis=1)
 
@@ -613,7 +579,7 @@ class EM3DFFT(EM3D):
 
         f.J[ngx:-ngx-1,0,ngz:-ngz-1,0]=Jx
         f.J[ngx:-ngx-1,0,ngz:-ngz-1,2]=Jz
-        
+
         self.JxF=JxF
         self.JzF=JzF
         
@@ -685,16 +651,23 @@ class EM3DFFT(EM3D):
 
         if top.efetch[0] != 4 and (self.refinement is None) and not self.l_nodalgrid:self.node2yee3d()
 
-        if self.l_getrho:self.GPSTDMaxwell.fields['rho']=self.fields.Rhoold
+        if self.ntsub==inf:
+            self.GPSTDMaxwell.fields['rhoold']=self.fields.Rhoold
+            self.GPSTDMaxwell.fields['rho']=self.fields.Rho
+        else:
+#            self.GPSTDMaxwell.fields['rhoold']=self.fields.Rhoold
+#            self.GPSTDMaxwell.fields['rho']=self.fields.Rho
+            self.GPSTDMaxwell.fields['drho']=self.fields.Rho-self.fields.Rhoold
+            if self.l_getrho:self.GPSTDMaxwell.fields['rho']=self.fields.Rhoold
         self.GPSTDMaxwell.fields['jx']=self.fields.J[...,0]
         self.GPSTDMaxwell.fields['jy']=self.fields.J[...,1]
         self.GPSTDMaxwell.fields['jz']=self.fields.J[...,2]
         
-        J = self.fields.J.copy()
+#        J = self.fields.J.copy()
         
         self.GPSTDMaxwell.push_fields()
 
-        self.fields.J=J
+#        self.fields.J=J
         
         b=self.block
 
