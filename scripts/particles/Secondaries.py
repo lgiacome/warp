@@ -2,7 +2,7 @@
 Secondaries: class for generating secondaries
 """
 from warp import *
-from appendablearray import *
+from ..utils.appendablearray import AppendableArray
 import pos
 from pos import pos as posC
 try:
@@ -25,7 +25,7 @@ except AttributeError:
     pos_version = '15p3'
 
 def secondariesdoc():
-    import Secondaries
+    from ..particles import Secondaries
     print Secondaries.__doc__
 
 class Secondaries:

@@ -47,10 +47,10 @@ del imp
 # --- the scripts directory may not be in sys.path. But it needs to be in
 # --- sys.path so that input files can import any scripts that are
 # --- not imported here in warp.py.
-scriptspath = os.path.dirname(__file__)
-if scriptspath not in sys.path:
-    sys.path.append(scriptspath)
-del scriptspath
+#scriptspath = os.path.dirname(__file__)
+#if scriptspath not in sys.path:
+    #sys.path.append(scriptspath)
+#del scriptspath
 
 # --- Since gist is only loaded on PE0 in the parallel
 # --- environment, the parallel module must also be loaded in to check

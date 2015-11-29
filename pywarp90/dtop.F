@@ -432,7 +432,7 @@ c  Exit now if output parameters are not to be printed
       if (.not. lprntpara) return
 
 c     --- Call script version of this routine.
-      call callpythonfunc("printparameters","printparameters3d")
+      call callpythonfunc("printparameters","diagnostics.printparameters")
 
 c  Write to plot frame
    20 format(1x,a,1pe11.4,a)
@@ -633,8 +633,8 @@ c  Phase space plots, both "frequent" ones and others
       timetemp = wtime()
 
       if (lpsplots) then
-        if (freqflag == ALWAYS) call callpythonfunc("psplotsalways","warpplots")
-        if (freqflag == SELDOM) call callpythonfunc("psplotsseldom","warpplots")
+        if (freqflag == ALWAYS) call callpythonfunc("psplotsalways","diagnostics.warpplots")
+        if (freqflag == SELDOM) call callpythonfunc("psplotsseldom","diagnostics.warpplots")
         plottime = plottime + (wtime() - timetemp)
         return
       endif
@@ -653,8 +653,8 @@ c  Plots all 1d (z dependent) quantities vs z
       timetemp = wtime()
 
       if (lonedplts) then
-        if (freqflag == ALWAYS) call callpythonfunc("onedpltsalways","warpplots")
-        if (freqflag == SELDOM) call callpythonfunc("onedpltsseldom","warpplots")
+        if (freqflag == ALWAYS) call callpythonfunc("onedpltsalways","diagnostics.warpplots")
+        if (freqflag == SELDOM) call callpythonfunc("onedpltsseldom","diagnostics.warpplots")
         return
       endif
 

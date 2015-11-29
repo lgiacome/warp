@@ -29,7 +29,7 @@ c Exit now if parameter are not to be printed
       if (.not. lprntpara) return
 
 c     --- Call script version of this routine.
-      call callpythonfunc("printparameters3d","printparameters3d")
+      call callpythonfunc("printparameters3d","diagnostics.printparameters3d")
 
    20 format(1x,a,1pe11.4,a)
    30 format(1x,a,i8,a)

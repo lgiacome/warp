@@ -23,11 +23,16 @@ gunppzy: plots streamlines of particle trajectories - requires top.spid
 gunppzr: plots streamlines of particle trajectories - requires top.spid
 
 """
-from warp import *
+from ..warp import *
 import curses.ascii
 import sys
-import adjustmesh3d
+from ..field_solvers import adjustmesh3d
 import __main__
+
+# --- Read in getzmom script. Only used to make final and initial calls to
+# --- getzmmnt routine. Moments are calculated during timesteps and include all
+# --- particles.
+from ..diagnostics import getzmom
 
 
 ##############################################################################
@@ -76,11 +81,6 @@ _ofstype = top.fstype
 # --- Vz fuzz, particles with uzp bigger are selected.  It should be small
 # --- since uzp may be small for newly injected particles.
 _vzfuzz = 1.e-20
-
-# --- Read in getzmom script. Only used to make final and initial calls to
-# --- getzmmnt routine. Moments are calculated during timesteps and include all
-# --- particles.
-import getzmom
 
 # --- Store the data in lists. This allows an arbitrary number of
 # --- iterations since the next data is just appended.

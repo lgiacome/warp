@@ -1,13 +1,13 @@
 """General injection algorithms
 """
 __all__ = ['InjectionGaussLaw', 'particleinjection_doc']
-from warp import *
-import generateconductors
+from ..warp import *
+from ..field_solvers import generateconductors
 import copy
 
 
 def particleinjection_doc():
-    import particleinjection
+    from ..warp import particleinjection
     print particleinjection.__doc__
 
 class InjectionGaussLaw(object):

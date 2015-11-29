@@ -1,8 +1,8 @@
 """Class for doing complete FFT field solve"""
 # ToDo:
 #  - ???
-from warp import *
-from lattice import addnewbgrd,addnewbsqgrad
+from ..warp import *
+from ..lattice.lattice import addnewbgrd,addnewbsqgrad
 
 
 ##############################################################################

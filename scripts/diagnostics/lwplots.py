@@ -59,11 +59,11 @@ penergylw: Plots energy as a function of time
 
 """
 
-from warp import *
+from ..warp import *
 import __main__
 
 def lwplotsdoc():
-    import lwplots
+    from ..warp import lwplots
     print lwplots.__doc__
 
 ###########################################################################

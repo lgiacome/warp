@@ -113,7 +113,7 @@ else:
         # --- For older versions of pygist
         maxplotwindows = 8
 
-import controllers
+from ..warp import controllers
 import os
 import sys
 
@@ -142,7 +142,7 @@ if with_gist:
         # --- in the same directory as the palette files.
         # --- "import warp" is broken in Python3 because of problems with
         # --- relative imports.
-        os.environ["GISTPATH"] = os.path.dirname(controllers.__file__)
+        os.environ["GISTPATH"] = os.path.join(os.path.dirname(controllers.__file__), 'diagnostics', 'palettes')
 
     def active_window(winnum=None):
         if winnum is None:

@@ -1,7 +1,7 @@
 """
 ParticleScraper: class for creating particle scraping
 """
-from warp import *
+from ..warp import *
 #import decorators
 
 
