@@ -1167,7 +1167,7 @@ color = ["red","green","blue","cyan","magenta","yellow"]
 # Note: Subtracted off 0.0337 from X position of titlel (10/21/99)
 ptitle_placement = [
   [[0.3950, 0.9070], [0.3950, 0.4000], [0.1000, 0.6575], [0.3950, 0.3680]], #  1
-  [[0.3950, 0.9070], [0.3950, 0.4000], [0.1000, 0.6575], [0.3950, 0.3680]], #  2
+  [[0.3950, 0.9070], [0.3950, 0.4000], [0.6900, 0.6575], [0.3950, 0.3680]], #  2
   [[0.2634, 0.8880], [0.2634, 0.6500], [0.1250, 0.7760], [0.3950, 0.3750]], #  3
   [[0.5266, 0.8880], [0.5266, 0.6500], [0.3932, 0.7760], [0.3950, 0.3750]], #  4
   [[0.2634, 0.6230], [0.2634, 0.3900], [0.1250, 0.5160], [0.3950, 0.3750]], #  5
@@ -1188,6 +1188,10 @@ default_titlet=""
 default_titleb=""
 default_titlel=""
 default_titler=""
+default_titlet_color = 'fg'
+default_titleb_color = 'fg'
+default_titlel_color = 'fg'
+default_titler_color = 'fg'
 def settitles(titlet="",titleb="",titlel="",titler=""):
     "Sets titles which are plotted by ptitles"
     global default_titlet,default_titleb,default_titlel,default_titler
@@ -1195,17 +1199,29 @@ def settitles(titlet="",titleb="",titlel="",titler=""):
     if titleb is not None: default_titleb = titleb
     if titlel is not None: default_titlel = titlel
     if titler is not None: default_titler = titler
-def ptitles(titlet="",titleb="",titlel="",titler="",v=None,height=None):
+def settitlecolors(titlet_color='fg',titleb_color='fg',titlel_color='fg',titler_color='fg'):
+    "Sets colors of titles which are plotted by ptitles"
+    global default_titlet_color,default_titleb_color,default_titlel_color,default_titler_color
+    if titlet_color is not None: default_titlet_color = titlet_color
+    if titleb_color is not None: default_titleb_color = titleb_color
+    if titlel_color is not None: default_titlel_color = titlel_color
+    if titler_color is not None: default_titler_color = titler_color
+def ptitles(titlet="",titleb="",titlel="",titler="",v=None,height=None,
+            titlet_color=None,titleb_color=None,titlel_color=None,titler_color=None):
     "Plots titles, either uses input or titles set by settitles"
     global framet,frameb,framel,framer
     if "ptitles" in _plotpackage.__dict__:
-        _plotpackage.ptitles(titlet,titleb,titlel,titler,v)
+        _plotpackage.ptitles(titlet,titleb,titlel,titler,v,titlet_color,titleb_color,titlel_color,titler_color)
         return
     if v is None: v = plsys()
     if titlet=="" and default_titlet: titlet = default_titlet
     if titleb=="" and default_titleb: titleb = default_titleb
     if titlel=="" and default_titlel: titlel = default_titlel
     if titler=="" and default_titler: titler = default_titler
+    if titlet_color is None and default_titlet_color: titlet_color = default_titlet_color
+    if titleb_color is None and default_titleb_color: titleb_color = default_titleb_color
+    if titlel_color is None and default_titlel_color: titlel_color = default_titlel_color
+    if titler_color is None and default_titler_color: titler_color = default_titler_color
     framet=titlet
     frameb=titleb
     framel=titlel
@@ -1214,29 +1230,33 @@ def ptitles(titlet="",titleb="",titlel="",titler="",v=None,height=None):
     if titlet:
         if with_gist:
             plt(titlet,ptitle_placement[v-1][0][0],ptitle_placement[v-1][0][1],
-                justify="CC",orient=0,local=1,height=height)
+                justify="CC",orient=0,local=1,height=height,color=titlet_color)
         if with_matplotlib:
             pylab.title(titlet)
     if titleb:
         if with_gist:
             plt(titleb,ptitle_placement[v-1][1][0],ptitle_placement[v-1][1][1],
-                justify="CC",orient=0,local=1,height=height)
+                justify="CC",orient=0,local=1,height=height,color=titleb_color)
         if with_matplotlib:
             pylab.xlabel(titleb + '\n' + titler)
     if titlel:
         if with_gist:
+            if ptitle_placement[v-1][2][0] < 0.5:
+                orient = 1
+            else:
+                orient = 3
             plt(titlel,ptitle_placement[v-1][2][0],ptitle_placement[v-1][2][1],
-                justify="CC",orient=1,local=1,height=height)
+                justify="CC",orient=orient,local=1,height=height,color=titlel_color)
         if with_matplotlib:
             pylab.ylabel(titlel)
     if titler:
         if with_gist:
             plt(titler,ptitle_placement[v-1][3][0],ptitle_placement[v-1][3][1],
-                justify="CC",orient=0,local=1,height=height)
+                justify="CC",orient=0,local=1,height=height,color=titler_color)
     settitles()
-def ptitlebottom(text=""):
+def ptitlebottom(text="",**kw):
     if with_gist:
-        plt(text,0.3950,0.37,justify="CC",local=1)
+        plt(text,0.3950,0.37,justify="CC",local=1,**kw)
 
 ##########################################################################
 ##########################   UTILITY ROUTINES  ###########################
@@ -5393,15 +5413,17 @@ def gstyle():
         gist_style['systems'][i]['legend']=''
 
 ##########################################################################
-def set_label(height=None,font=None,bold=0,italic=0,axis='all',system=None):
+def set_label(height=None,font=None,bold=0,italic=0,axis='all',system=None,color=None):
     """change plots label attributes
-    - height=None,
-    - scale=1.,
-    - font=None ('Courier'=0,'Times'=1,'Helvetica'=2,'Symbol'=3,'New Century'=4),
+    - height=None
+    - scale=1.
+    - font=None ('Courier'=0,'Times'=1,'Helvetica'=2,'Symbol'=3,'New Century'=4)
     - bold=0
     - italic=0
     - axis='all'
-    - system='all'"""
+    - system='all'
+    - color=None: integer in range 242-251
+    """
     try:
         gist_style
     except:
@@ -5435,11 +5457,15 @@ def set_label(height=None,font=None,bold=0,italic=0,axis='all',system=None):
                 gist_style ['systems'][i]['ticks']['horizontal']['textStyle']['height']= height
             if font is not None:
                 gist_style ['systems'][i]['ticks']['horizontal']['textStyle']['font']=font
+            if color is not None:
+                gist_style ['systems'][i]['ticks']['horizontal']['textStyle']['color']=color
         if(axis=='y' or axis=='all'):
             if height is not None:
                 gist_style ['systems'][i]['ticks']['vertical']['textStyle']['height']= height
             if font is not None:
                 gist_style ['systems'][i]['ticks']['vertical']['textStyle']['font']=font
+            if color is not None:
+                gist_style ['systems'][i]['ticks']['vertical']['textStyle']['color']=color
     set_style(gist_style)
 
 ##########################################################################
