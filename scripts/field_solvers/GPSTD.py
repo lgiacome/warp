@@ -427,19 +427,19 @@ class Fourier_Space():
             if name in kw: del kw[name]
     
     def get_ius(self):
-    	if self.bc_periodic[0]:
+        if self.bc_periodic[0]:
             ixl = self.nxguard
             ixu = max(1,self.nx+self.nxguard)
         else:
             ixl = 0
             ixu = max(1,self.nx+2*self.nxguard)
-    	if self.bc_periodic[1]:
+        if self.bc_periodic[1]:
            iyl = self.nyguard
            iyu = max(1,self.ny+self.nyguard)
         else:
             iyl = 0
             iyu = max(1,self.ny+2*self.nyguard)
-    	if self.bc_periodic[2]:
+        if self.bc_periodic[2]:
            izl = self.nzguard
            izu = max(1,self.nz+self.nzguard)
         else:
@@ -584,15 +584,15 @@ class GPSTD(Fourier_Space):
         self.get_fields()
 
         # --- set periodic BC
-    	if self.bc_periodic[0]:
+        if self.bc_periodic[0]:
             ngx = self.nxguard
         else:
             ngx = 0
-    	if self.bc_periodic[1]:
+        if self.bc_periodic[1]:
             ngy = self.nyguard
         else:
             ngy = 0
-    	if self.bc_periodic[2]:
+        if self.bc_periodic[2]:
             ngz = self.nzguard
         else:
             ngz = 0

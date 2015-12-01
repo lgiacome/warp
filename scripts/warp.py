@@ -89,14 +89,13 @@ if sys.hexversion >= 0x03000000:
 # --- If python had been built statically, then warpCparallel is linked
 # --- in under the name warpC.
 if lparallel and not lstatic_python:
-    import warpCparallel as warpC
-    from warpCparallel import *
+    from . import warpCparallel as warpC
+    from .warpCparallel import *
 else:
-    import warpC
-    from warpC import *
+    from . import warpC
+    from .warpC import *
 
 from Forthon import *
-from .utils.warputils import *
 from .data_dumping import pickledump
 from numpy import random
 RandomArray = random
@@ -108,34 +107,38 @@ import PRpickle as PR
 
 # --- The Warp modules must be imported in the order below because of
 # --- linking dependencies.
-from toppy import *
-from envpy import *
-from w3dpy import *
-from f3dpy import *
-from fxypy import *
-from wxypy import *
-try:  # RZ code hasn't been installed on all machines yet
+if sys.hexversion >= 0x03000000:
+    from .toppy import *
+    from .envpy import *
+    from .w3dpy import *
+    from .f3dpy import *
+    from .fxypy import *
+    from .wxypy import *
+    from .frzpy import *
+    from .wrzpy import *
+    from .cirpy import *
+    from .herpy import *
+    from .chopy import *
+    from .em2dpy import *
+    from .em3dpy import *
+else:
+    from toppy import *
+    from envpy import *
+    from w3dpy import *
+    from f3dpy import *
+    from fxypy import *
+    from wxypy import *
     from frzpy import *
     from wrzpy import *
-except ImportError:
-    pass
-try:  # cirpy hasn't been installed on all machines yet
     from cirpy import *
-except ImportError:
-    pass
-try:  # herpy hasn't been installed on all machines yet
     from herpy import *
-except ImportError:
-    pass
-try:  # chopy hasn't been installed on all machines yet
     from chopy import *
-except ImportError:
-    pass
-from em2dpy import *
-from em3dpy import *
-import controllers
-from controllers import *
-from ctl import *
+    from em2dpy import *
+    from em3dpy import *
+from .utils.warputils import *
+from . import controllers
+from .controllers import *
+from .ctl import *
 
 # --- Now make sure that a proper version of warpC has been imported.
 if lparallel:
@@ -1405,7 +1408,7 @@ from .diagnostics.printparametersrz import *
 # --- warp imports itself as a matter of convenience, so that the
 # --- name is defined.
 try:
-    import warp
+    from . import warp
 except ImportError:
     # --- In python3, relative imports are broken - apparently a file
     # --- in a package cannot import itself. Ignore this for now.
