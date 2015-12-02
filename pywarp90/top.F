@@ -1360,13 +1360,20 @@ c         --- End of Z moments accumulation
 
       if (itask == 3 .and. .not. laccumulate_zmoments) then
 
-c       --- If the moments for each species was calculated separately, sum
-c       --- them to get the combined moments.
+c       --- If the moments for each species was calculated separately, do a weighted sum
+c       --- to get the combined moments.
         if (nszmmnt > 0) then
           maxp(:,nszmmnt) = maxval(maxp(:,0:nszmmnt-1),2)
           minp(:,nszmmnt) = minval(minp(:,0:nszmmnt-1),2)
-          zmmnts0(:,nszmmnt) = sum(zmmnts0(:,0:nszmmnt-1),2)
-          zmmnts(:,:,nszmmnt) = sum(zmmnts(:,:,0:nszmmnt-1),3)
+
+          zmmnts0(:,nszmmnt) = 0.
+          zmmnts(:,:,nszmmnt) = 0.
+          do js=0,nszmmnt-1
+            zmmnts0(:,nszmmnt) = zmmnts0(:,nszmmnt) + zmmnts0(:,js)*zmmntsw(js)
+            zmmnts(:,:,nszmmnt) = zmmnts(:,:,nszmmnt) + zmmnts(:,:,js)*zmmntsw(js)
+          enddo
+          zmmnts0(:,nszmmnt) = zmmnts0(:,nszmmnt)/sum(zmmntsw(0:nszmmnt-1))
+          zmmnts(:,:,nszmmnt) = zmmnts(:,:,nszmmnt)/sum(zmmntsw(0:nszmmnt-1))
         endif
 
 
