@@ -108,19 +108,34 @@ import PRpickle as PR
 # --- The Warp modules must be imported in the order below because of
 # --- linking dependencies.
 if sys.hexversion >= 0x03000000:
-    from .toppy import *
-    from .envpy import *
-    from .w3dpy import *
-    from .f3dpy import *
-    from .fxypy import *
-    from .wxypy import *
-    from .frzpy import *
-    from .wrzpy import *
-    from .cirpy import *
-    from .herpy import *
-    from .chopy import *
-    from .em2dpy import *
-    from .em3dpy import *
+    if lparallel:
+        from .topparallelpy import *
+        from .envparallelpy import *
+        from .w3dparallelpy import *
+        from .f3dparallelpy import *
+        from .fxyparallelpy import *
+        from .wxyparallelpy import *
+        from .frzparallelpy import *
+        from .wrzparallelpy import *
+        from .cirparallelpy import *
+        from .herparallelpy import *
+        from .choparallelpy import *
+        from .em2dparallelpy import *
+        from .em3dparallelpy import *
+    else:
+        from .toppy import *
+        from .envpy import *
+        from .w3dpy import *
+        from .f3dpy import *
+        from .fxypy import *
+        from .wxypy import *
+        from .frzpy import *
+        from .wrzpy import *
+        from .cirpy import *
+        from .herpy import *
+        from .chopy import *
+        from .em2dpy import *
+        from .em3dpy import *
 else:
     from toppy import *
     from envpy import *

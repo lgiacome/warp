@@ -83,7 +83,7 @@ Miscellaneous:
   pzppcell: Plots no. of simulation particles per cell versus Z
 """
 
-from warp import *
+from ..warp import *
 import __main__
 
 

@@ -3,10 +3,7 @@
 __all__ = ['AppendableArray','DynamicHistogram','DynamicHistogramIntersect']
 import sys
 import numpy
-if sys.hexversion >= 0x03000000:
-    from .. import toppy
-else:
-    import toppy
+from ..warp import deposgrid1d, setgrid1d, setgrid1dw, deposeintersect
 import types
 # Class which allows an appendable array.
 # DPG 8/19/99
@@ -227,7 +224,7 @@ class DynamicHistogram:
         if l_rescale_array:
             newdata  = numpy.zeros(self.n,'d')
             tmpcount = numpy.zeros(self.n,'d')
-            toppy.deposgrid1d(1,self.n,self.bins,self.data,self.n-1,newdata,tmpcount,self.min,self.max)
+            deposgrid1d(1,self.n,self.bins,self.data,self.n-1,newdata,tmpcount,self.min,self.max)
             self.binsdx = (self.max-self.min)/(self.n-1)
             self.bins = self.min+numpy.arange(self.n)*self.binsdx
             self.binsminmax = numpy.zeros(self.n*2)
@@ -239,9 +236,9 @@ class DynamicHistogram:
         if type(d) is type(0.):d=array([d])
         self.checkbounds(d)
         if weights is None:
-            toppy.setgrid1d(numpy.shape(d)[0],d,self.n-1,self.data,self.min,self.max)
+            setgrid1d(numpy.shape(d)[0],d,self.n-1,self.data,self.min,self.max)
         else:
-            toppy.setgrid1dw(numpy.shape(d)[0],d,weights,self.n-1,self.data,self.min,self.max)
+            setgrid1dw(numpy.shape(d)[0],d,weights,self.n-1,self.data,self.min,self.max)
 
 class DynamicHistogramIntersect(DynamicHistogram):
     """
@@ -265,7 +262,7 @@ class DynamicHistogramIntersect(DynamicHistogram):
         n1 = len(i1)
         n2 = len(i2)
         fminmax = numpy.array([self.min,self.max])
-        toppy.deposeintersect(z1,d1,ssn1,w1,n1,z2,d2,ssn2,w2,n2,z0,self.data,fminmax,self.n-1,True,self.overfrac)
+        deposeintersect(z1,d1,ssn1,w1,n1,z2,d2,ssn2,w2,n2,z0,self.data,fminmax,self.n-1,True,self.overfrac)
         self.min = fminmax[0]
         self.max = fminmax[1]
         if self.min != minold or self.max != maxold:
