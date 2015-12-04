@@ -15,7 +15,9 @@ import sys
 # --- Only numpy is now supported.
 import numpy
 from numpy import *
+from numpy import random
 ArrayType = ndarray
+RandomArray = random
 def gettypecode(x):
     return x.dtype.char
 def oldnonzero(a):
@@ -96,9 +98,6 @@ else:
     from .warpC import *
 
 from Forthon import *
-from .data_dumping import pickledump
-from numpy import random
-RandomArray = random
 
 from .data_dumping import PWpickle
 from .data_dumping import PRpickle
@@ -150,6 +149,7 @@ else:
     from chopy import *
     from em2dpy import *
     from em3dpy import *
+
 from .utils.warputils import *
 from . import controllers
 from .controllers import *
@@ -1032,7 +1032,7 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
         gchange("Hist")
     # --- Call routine to make data dump
     if format == 'pickle':
-        import pickledump
+        from .data_dumping import pickledump
         pickledump.pickledump(filename,attr,interpreter_variables,serial,ff,
                               varsuffix,verbose)
     else:
@@ -1077,7 +1077,7 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
         filename = filename + '_%05d_%05d%s.dump'%(me,npes,suffix)
 
     if format == 'pickle':
-        import pickledump
+        from .data_dumping import pickledump
         pickledump.picklerestore(filename,verbose,skip=skip)
     else:
         # --- Call different restore routine depending on context.
@@ -1383,7 +1383,8 @@ def printtimersordered(file=None,depth=3):
 # --- included in their dictionaries.
 from .particles.particles import *
 from .field_solvers.fieldsolver import *
-if lparallel: from .warpparallel import *
+if lparallel:
+    from .warpparallel import *
 from .diagnostics.warpplots import *
 from .diagnostics.histplots import *
 from .diagnostics.pzplots import *
@@ -1412,8 +1413,8 @@ from .lattice.solenoid import *
 
 # --- Import some online documentation modules.
 from .warphelp import *
-from .attic.warpscripts import *
-from .attic.warpfortran import *
+#from .attic.warpscripts import *
+#from .attic.warpfortran import *
 
 # --- Import the printparameters modules (which are called from fortran)
 from .diagnostics.printparameters import *
@@ -1429,10 +1430,10 @@ else:
     import warp
 
 # --- Try to import the GUI
-try:
-    from .GUI.WarpGUI import *
-except:
-    pass
+#try:
+#    from .GUI.WarpGUI import *
+#except:
+#    pass
 
 ##############################################################################
 ######  Don't put anything below this line!!! ################################
