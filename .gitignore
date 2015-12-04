@@ -6,17 +6,19 @@
 *.pyc
 
 # Ignore files created during the build
-Makefile
 build
 build3
 buildparallel
+build3parallel
 *.o
 *.so
 forthonf2c.h
 ranffortran.c
 
 # Ignore local definitions for building
+Makefile
 Makefile.local
 Makefile.local3
 Makefile.local.pympi
+Makefile.local3.pympi
 setup.local.py

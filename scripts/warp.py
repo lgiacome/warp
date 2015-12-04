@@ -100,10 +100,10 @@ from .data_dumping import pickledump
 from numpy import random
 RandomArray = random
 
-import PWpickle
-import PRpickle
-import PWpickle as PW
-import PRpickle as PR
+from .data_dumping import PWpickle
+from .data_dumping import PRpickle
+from .data_dumping import PWpickle as PW
+from .data_dumping import PRpickle as PR
 
 # --- The Warp modules must be imported in the order below because of
 # --- linking dependencies.
@@ -1383,7 +1383,7 @@ def printtimersordered(file=None,depth=3):
 # --- included in their dictionaries.
 from .particles.particles import *
 from .field_solvers.fieldsolver import *
-if lparallel: from warpparallel import *
+if lparallel: from .warpparallel import *
 from .diagnostics.warpplots import *
 from .diagnostics.histplots import *
 from .diagnostics.pzplots import *
@@ -1411,7 +1411,7 @@ from .diagnostics.drawlattice import *
 from .lattice.solenoid import *
 
 # --- Import some online documentation modules.
-from warphelp import *
+from .warphelp import *
 from .attic.warpscripts import *
 from .attic.warpfortran import *
 
@@ -1421,13 +1421,12 @@ from .diagnostics.printparameters3d import *
 from .diagnostics.printparametersrz import *
 
 # --- warp imports itself as a matter of convenience, so that the
-# --- name is defined.
-try:
+# --- name is defined. Note that this warp refers to this script
+# --- and not the overall module.
+if sys.hexversion >= 0x03000000:
     from . import warp
-except ImportError:
-    # --- In python3, relative imports are broken - apparently a file
-    # --- in a package cannot import itself. Ignore this for now.
-    pass
+else:
+    import warp
 
 # --- Try to import the GUI
 try:
