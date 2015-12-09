@@ -1851,12 +1851,27 @@ class GridIntercepts(object):
             if nx >= 0 and ny >= 0 and nz >= 0:
                 arglist = kwlist + [self.intercepts, fuzz]
                 generator(*arglist)
-                self.intercepts.xvoltages = voltage
-                self.intercepts.yvoltages = voltage
-                self.intercepts.zvoltages = voltage
+                v = self.getvoltages(voltage)
+                self.intercepts.xvoltages = v
+                self.intercepts.yvoltages = v
+                self.intercepts.zvoltages = v
                 self.intercepts.xcondids = condid
                 self.intercepts.ycondids = condid
                 self.intercepts.zcondids = condid
+
+    def getvoltages(self,voltage):
+        "Routine to get appropriate voltages."
+        # --- The voltage can be a number, a class instance, or a function.
+        # --- If it is an instance, the class must have a method getvolt
+        # --- that takes the time as an argument. If a function, it must
+        # --- take one argument, the time.
+        if isinstance(voltage,(types.FunctionType,types.MethodType)):
+            v = voltage(top.time)
+        elif isinstance(voltage,types.InstanceType):
+            v = voltage.getvolt(top.time)
+        else:
+            v = voltage
+        return v
 
     def handleneumannboundaries(dels):
         # --- This should be the same as what is in Delta.normalize
