@@ -4,13 +4,13 @@ Two functions are available for saving an ExtPart object in a file.
  - restoreExtPart(object,filename)
 """
 __all__ = ['ExtPart','dumpExtPart','restoreExtPart','ZCrossingParticles']
-from warp import *
-from appendablearray import *
+from .. import *
+from ..utils.appendablearray import *
 import cPickle
 import types
 
 def extpartdoc():
-    import extpart
+    from ..particles import extpart
     print extpart.__doc__
 
 _extforcenorestore = 0
