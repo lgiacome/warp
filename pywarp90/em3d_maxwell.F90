@@ -5683,6 +5683,13 @@ integer(ISZ):: n,zl,zr
 end subroutine shift_em3dsplitf_ncells_z
 
 subroutine shift_3darray_ncells_z(f,nx,ny,nz,nxguard,nyguard,nzguard,zl,zr,n)
+! ==================================================================================
+! Shift an array of reals along the z axis by n cells, and exchange values with 
+! neighboring processors, in the direction of the shift
+! If n is positive, the values are shifted to the left within one domain
+! If n is negative, the values are shifter to the right within one domain
+! zl and zr are tags that identify the left and right boundary conditions
+! ==================================================================================
 #ifdef MPIPARALLEL
 use mpirz
 #endif
@@ -5692,15 +5699,18 @@ integer(ISZ), parameter:: otherproc=10, ibuf = 950
 real(kind=8) :: f(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) 
 
 if (n > 0) then
+  ! Shift the values to the left within one domain
   f(:,:,-nzguard:nz+nzguard-n) = f(:,:,-nzguard+n:nz+nzguard)
   if (zr/=otherproc) f(:,:,nz+nzguard-n+1:) = 0.
 
 #ifdef MPIPARALLEL
+  ! Send data from the left side of the domain to the left processor
   if (zl==otherproc) then
      call mpi_packbuffer_init(size(f(:,:,nzguard-n+1:nzguard)),ibuf)
      call mympi_pack(f(:,:,nzguard-n+1:nzguard),ibuf)
      call mpi_send_pack(procneighbors(0,2),0,ibuf)
   end if
+  ! Receive data from the right processor into the right side of the domain
   if (zr==otherproc) then
     call mpi_packbuffer_init(size(f(:,:,nz+nzguard-n+1:)),ibuf)
     call mpi_recv_pack(procneighbors(1,2),0,ibuf)
@@ -5710,18 +5720,22 @@ if (n > 0) then
 #endif
 
 else if (n < 0) then
+  ! Shift the values to the right within one domain
+  ! NB: In the mathematical operations below, keep in mind that n is *negative*
   f(:,:,-nzguard-n:nz+nzguard) = f(:,:,-nzguard:nz+nzguard+n)
-  if (zr/=otherproc) f(:,:,:-nzguard-n-1) = 0.
+  if (zl/=otherproc) f(:,:,:-nzguard-n-1) = 0.
 
 #ifdef MPIPARALLEL
-  if (zl==otherproc) then
+  ! Send data from the right side of the domain to the right processor
+  if (zr==otherproc) then
      call mpi_packbuffer_init(size(f(:,:,nz-nzguard:nz-nzguard-n-1)),ibuf)
      call mympi_pack(f(:,:,nz-nzguard:nz-nzguard-n-1),ibuf)
-     call mpi_send_pack(procneighbors(0,2),0,ibuf)
+     call mpi_send_pack(procneighbors(1,2),0,ibuf)
   end if
-  if (zr==otherproc) then
+  ! Receive data from the left processor into the left side of the domain
+  if (zl==otherproc) then
     call mpi_packbuffer_init(size(f(:,:,-nzguard:-nzguard-n-1)),ibuf)
-    call mpi_recv_pack(procneighbors(1,2),0,ibuf)
+    call mpi_recv_pack(procneighbors(0,2),0,ibuf)
     f(:,:,-nzguard:-nzguard-n-1) = reshape(mpi_unpack_real_array( size(f(:,:,-nzguard:-nzguard-n-1)),ibuf), &
                                                                  shape(f(:,:,-nzguard:-nzguard-n-1)))
   end if
@@ -5733,6 +5747,13 @@ endif
 end subroutine shift_3darray_ncells_z
 
 subroutine shift_3dlarray_ncells_z(f,nx,ny,nz,nxguard,nyguard,nzguard,zl,zr,n)
+! ==================================================================================
+! Shift an array of booleans along the z axis by n cells, and exchange values with 
+! neighboring processors, in the direction of the shift
+! If n is positive, the values are shifted to the left within one domain
+! If n is negative, the values are shifter to the right within one domain
+! zl and zr are tags that identify the left and right boundary conditions
+! ==================================================================================
 #ifdef MPIPARALLEL
 use mpirz
 #endif
@@ -5742,15 +5763,18 @@ integer(ISZ), parameter:: otherproc=10, ibuf = 950
 logical(ISZ) :: f(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) 
 
 if (n > 0) then
+  ! Shift the values to the left within one domain
   f(:,:,-nzguard:nz+nzguard-n) = f(:,:,-nzguard+n:nz+nzguard)
   if (zr/=otherproc) f(:,:,nz+nzguard-n+1:) = .false.
 
 #ifdef MPIPARALLEL
+  ! Send data from the left side of the domain to the left processor
   if (zl==otherproc) then
      call mpi_packbuffer_init(size(f(:,:,nzguard-n+1:nzguard)),ibuf)
      call mympi_pack(f(:,:,nzguard-n+1:nzguard),ibuf)
      call mpi_send_pack(procneighbors(0,2),0,ibuf)
   end if
+  ! Receive data from the right processor into the right side of the domain
   if (zr==otherproc) then
     call mpi_packbuffer_init(size(f(:,:,nz+nzguard-n+1:)),ibuf)
     call mpi_recv_pack(procneighbors(1,2),0,ibuf)
@@ -5760,18 +5784,22 @@ if (n > 0) then
 #endif
 
 else if (n < 0) then
+  ! Shift the values to the right within one domain
+  ! NB: In the mathematical operations below, keep in mind that n is *negative*
   f(:,:,-nzguard-n:nz+nzguard) = f(:,:,-nzguard:nz+nzguard+n)
-  if (zr/=otherproc) f(:,:,:-nzguard-n-1) = .false.
+  if (zl/=otherproc) f(:,:,:-nzguard-n-1) = .false.
 
 #ifdef MPIPARALLEL
-  if (zl==otherproc) then
+  ! Send data from the right side of the domain to the right processor
+  if (zr==otherproc) then
      call mpi_packbuffer_init(size(f(:,:,nz-nzguard:nz-nzguard-n-1)),ibuf)
      call mympi_pack(f(:,:,nz-nzguard:nz-nzguard-n-1),ibuf)
-     call mpi_send_pack(procneighbors(0,2),0,ibuf)
+     call mpi_send_pack(procneighbors(1,2),0,ibuf)
   end if
-  if (zr==otherproc) then
+  ! Receive data from the left processor into the left side of the domain
+  if (zl==otherproc) then
     call mpi_packbuffer_init(size(f(:,:,-nzguard:-nzguard-n-1)),ibuf)
-    call mpi_recv_pack(procneighbors(1,2),0,ibuf)
+    call mpi_recv_pack(procneighbors(0,2),0,ibuf)
     f(:,:,-nzguard:-nzguard-n-1) = reshape(mpi_unpack_logical_array( size(f(:,:,-nzguard:-nzguard-n-1)),ibuf), &
                                                                     shape(f(:,:,-nzguard:-nzguard-n-1)))
   end if
@@ -5783,6 +5811,13 @@ endif
 end subroutine shift_3dlarray_ncells_z
 
 subroutine shift_circarray_ncells_z(f,nx,nz,circ_m,nxguard,nzguard,zl,zr,n)
+! ==================================================================================
+! Shift an array of reals along the z axis by n cells, and exchange values with 
+! neighboring processors, in the direction of the shift
+! If n is positive, the values are shifted to the left within one domain
+! If n is negative, the values are shifter to the right within one domain
+! zl and zr are tags that identify the left and right boundary conditions
+! ==================================================================================
 #ifdef MPIPARALLEL
 use mpirz
 #endif
@@ -5793,16 +5828,19 @@ complex(kind=8) :: f(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m)
 complex(kind=8) :: i=(0.,1.)
 
 if (n > 0) then
+  ! Shift the values to the left within one domain
   f(:,-nzguard:nz+nzguard-n,:) = f(:,-nzguard+n:nz+nzguard,:)
   if (zr/=otherproc) f(:,nz+nzguard-n+1:,:) = 0.
 
 #ifdef MPIPARALLEL
   ! Send and receive the real part of the array
+  ! Send data from the left side of the domain to the left processor
   if (zl==otherproc) then
      call mpi_packbuffer_init(size(f(:,nzguard-n+1:nzguard,:)),ibuf)
      call mympi_pack(dble(f(:,nzguard-n+1:nzguard,:)),ibuf)
      call mpi_send_pack(procneighbors(0,2),0,ibuf)
-  end if    
+  end if
+  ! Receive data from the right processor into the right side of the domain
   if (zr==otherproc) then
     call mpi_packbuffer_init(size(f(:,nz+nzguard-n+1:,:)),ibuf)
     call mpi_recv_pack(procneighbors(1,2),0,ibuf)
@@ -5810,11 +5848,13 @@ if (n > 0) then
                                                            shape(f(:,nz+nzguard-n+1:,:)))
  end if
  ! Send and receive the imaginary part of the array
+ ! Send data from the left side of the domain to the left processor
   if (zl==otherproc) then
      call mpi_packbuffer_init(size(f(:,nzguard-n+1:nzguard,:)),ibuf)
      call mympi_pack(dimag(f(:,nzguard-n+1:nzguard,:)),ibuf)
      call mpi_send_pack(procneighbors(0,2),0,ibuf)
-  end if    
+  end if
+  ! Receive data from the right processor into the right side of the domain
   if (zr==otherproc) then
     call mpi_packbuffer_init(size(f(:,nz+nzguard-n+1:,:)),ibuf)
     call mpi_recv_pack(procneighbors(1,2),0,ibuf)
@@ -5824,31 +5864,37 @@ if (n > 0) then
 #endif
 
 else if (n < 0) then
+  ! Shift the values to the right within one domain
+  ! NB: In the mathematical operations below, keep in mind that n is *negative*
   f(:,-nzguard-n:nz+nzguard,:) = f(:,-nzguard:nz+nzguard+n,:)
-  if (zr/=otherproc) f(:,:-nzguard-n-1,:) = 0.
+  if (zl/=otherproc) f(:,:-nzguard-n-1,:) = 0.
 
 #ifdef MPIPARALLEL
   ! Send and receive the real part of the array
-  if (zl==otherproc) then
+  ! Send data from the right side of the domain to the right processor
+  if (zr==otherproc) then
      call mpi_packbuffer_init(size(f(:,nz-nzguard:nz-nzguard-n-1,:)),ibuf)
      call mympi_pack(dble(f(:,nz-nzguard:nz-nzguard-n-1,:)),ibuf)
-     call mpi_send_pack(procneighbors(0,2),0,ibuf)
+     call mpi_send_pack(procneighbors(1,2),0,ibuf)
   end if
-  if (zr==otherproc) then
+  ! Receive data from the left processor into the left side of the domain
+  if (zl==otherproc) then
     call mpi_packbuffer_init(size(f(:,-nzguard:-nzguard-n-1,:)),ibuf)
-    call mpi_recv_pack(procneighbors(1,2),0,ibuf)
+    call mpi_recv_pack(procneighbors(0,2),0,ibuf)
     f(:,-nzguard:-nzguard-n-1,:) = reshape(mpi_unpack_real_array( size(f(:,-nzguard:-nzguard-n-1,:)),ibuf), &
                                                                     shape(f(:,-nzguard:-nzguard-n-1,:)))
   end if
- ! Send and receive the imaginary part of the array
-  if (zl==otherproc) then
+  ! Send and receive the imaginary part of the array
+  ! Send data from the right side of the domain to the right processor
+  if (zr==otherproc) then
      call mpi_packbuffer_init(size(f(:,nz-nzguard:nz-nzguard-n-1,:)),ibuf)
      call mympi_pack(dimag(f(:,nz-nzguard:nz-nzguard-n-1,:)),ibuf)
-     call mpi_send_pack(procneighbors(0,2),0,ibuf)
+     call mpi_send_pack(procneighbors(1,2),0,ibuf)
   end if
-  if (zr==otherproc) then
+  ! Receive data from the left processor into the left side of the domain
+  if (zl==otherproc) then
     call mpi_packbuffer_init(size(f(:,-nzguard:-nzguard-n-1,:)),ibuf)
-    call mpi_recv_pack(procneighbors(1,2),0,ibuf)
+    call mpi_recv_pack(procneighbors(0,2),0,ibuf)
     f(:,-nzguard:-nzguard-n-1,:) = f(:,-nzguard:-nzguard-n-1,:) + i*reshape(mpi_unpack_real_array( &
          size(f(:,-nzguard:-nzguard-n-1,:)),ibuf), shape(f(:,-nzguard:-nzguard-n-1,:)))
   end if
