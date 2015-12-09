@@ -1542,9 +1542,9 @@ class Delta:
         # --- If it is an instance, the class must have a method getvolt
         # --- that takes the time as an argument. If a function, it must
         # --- take one argument, the time.
-        if isinstance(voltage,(types.FunctionType,types.MethodType)):
+        if callable(voltage):
             v = voltage(top.time)
-        elif isinstance(voltage,types.InstanceType):
+        elif hasattr(voltage, 'getvolt') and callable(voltage.getvolt):
             v = voltage.getvolt(top.time)
         else:
             v = voltage
@@ -1865,9 +1865,9 @@ class GridIntercepts(object):
         # --- If it is an instance, the class must have a method getvolt
         # --- that takes the time as an argument. If a function, it must
         # --- take one argument, the time.
-        if isinstance(voltage,(types.FunctionType,types.MethodType)):
+        if callable(voltage):
             v = voltage(top.time)
-        elif isinstance(voltage,types.InstanceType):
+        elif hasattr(voltage, 'getvolt') and callable(voltage.getvolt):
             v = voltage.getvolt(top.time)
         else:
             v = voltage
