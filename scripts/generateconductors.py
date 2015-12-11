@@ -286,6 +286,8 @@ class Assembly(VisualizableClass):
         self.generatori = generatori
         self.generatorfnew = generatorfnew
 
+        self.timedependentvoltage = None
+
         while 'kw' in kw:
             kwtemp = kw['kw']
             del kw['kw']
@@ -415,16 +417,16 @@ class Assembly(VisualizableClass):
         # --- without modifying the user set attribute, voltage.
         if self.timedependentvoltage is not None:
             v = self.timedependentvoltage
-        elif callable(voltage):
+        elif callable(self.voltage):
             if time is None:
                 time = top.time
-            v = voltage(time)
-        elif hasattr(voltage, 'getvolt') and callable(voltage.getvolt):
+            v = self.voltage(time)
+        elif hasattr(self.voltage, 'getvolt') and callable(self.voltage.getvolt):
             if time is None:
                 time = top.time
-            v = voltage.getvolt(time)
+            v = self.voltage.getvolt(time)
         else:
-            v = voltage
+            v = self.voltage
         return v
 
     def get_energy_histogram(self,js=0,n=1000):
