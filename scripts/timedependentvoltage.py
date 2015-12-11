@@ -147,6 +147,8 @@ class TimeVoltage:
         else:
             solver = self.solver
         for c in self.condid:
+            if isinstance(c, Assembly):
+                c.timedependentvoltage = volt
             if solver is None:
                 setconductorvoltage(volt,c,discrete=self.discrete,
                                     setvinject=self.setvinject)

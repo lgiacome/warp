@@ -232,6 +232,10 @@ class Assembly(VisualizableClass):
   Class to hold assemblies of conductors.  Base class of all conductors.
   Should never be directly created by the user.
    - v=0.: voltage on conductor
+           The voltage can be a number, a class instance, or a function.
+           If it is an instance, the class must have a method getvolt.
+           The function or getvolt method must take one argument, the time,
+           and return the value of the voltage.
    - x,y,z=0.,0.,0: center of conductor
    - condid='next': conductor identification number, can be 'next' in which case
                     a unique ID is chosen
@@ -333,7 +337,7 @@ class Assembly(VisualizableClass):
                    [self.xcent+maxs[0],self.ycent+maxs[1],self.zcent+maxs[2]])
 
     def griddistance(self,ix,iy,iz,xx,yy,zz):
-        result = Delta(ix,iy,iz,xx,yy,zz,voltage=self.voltage,condid=self.condid,
+        result = Delta(ix,iy,iz,xx,yy,zz,voltage=self.getvoltage(),condid=self.condid,
                        generator=self.generatorf,neumann=self.neumann,
                        kwlist=self.getkwlist())
         return result
@@ -342,7 +346,7 @@ class Assembly(VisualizableClass):
                        nx,ny,nz,ix,iy,iz,mglevel):
         result = GridIntercepts(xmmin,ymmin,zmmin,dx,dy,dz,
                                 nx,ny,nz,ix,iy,iz,mglevel,
-                                voltage=self.voltage,condid=self.condid,
+                                voltage=self.getvoltage(),condid=self.condid,
                                 generator=self.generatorfnew,neumann=self.neumann,
                                 kwlist=self.getkwlist())
         return result
@@ -404,6 +408,24 @@ class Assembly(VisualizableClass):
             plg(xcent+r,z,color=color,**kw)
             if fullplane:
                 plg(xcent-array(r),z,color=color,**kw)
+
+    def getvoltage(self,time=None):
+        "Routine to get appropriate voltage on the conductor"
+        # --- The timedependentvoltage attribute allows external changing of the voltage
+        # --- without modifying the user set attribute, voltage.
+        if self.timedependentvoltage is not None:
+            v = self.timedependentvoltage
+        elif callable(voltage):
+            if time is None:
+                time = top.time
+            v = voltage(time)
+        elif hasattr(voltage, 'getvolt') and callable(voltage.getvolt):
+            if time is None:
+                time = top.time
+            v = voltage.getvolt(time)
+        else:
+            v = voltage
+        return v
 
     def get_energy_histogram(self,js=0,n=1000):
         """
@@ -1516,8 +1538,8 @@ class Delta:
                                 self.dels[2, :], self.dels[3, :],
                                 self.dels[4, :], self.dels[5, :]] + [fuzz]
             generator(*arglist)
-            self.setvoltages(voltage)
-            self.setcondids(condid)
+            self.vs = full((6,self.ndata), voltage)
+            self.ns = full((6,self.ndata), int(condid), dtype='l')
             self.setlevels(0)
         else:
             self.ndata = len(ix)
@@ -1536,26 +1558,8 @@ class Delta:
 
         self.append(self)
 
-    def setvoltages(self,voltage):
-        "Routine to set appropriate voltages."
-        # --- The voltage can be a number, a class instance, or a function.
-        # --- If it is an instance, the class must have a method getvolt
-        # --- that takes the time as an argument. If a function, it must
-        # --- take one argument, the time.
-        if callable(voltage):
-            v = voltage(top.time)
-        elif hasattr(voltage, 'getvolt') and callable(voltage.getvolt):
-            v = voltage.getvolt(top.time)
-        else:
-            v = voltage
-        self.vs = v + zeros((6,self.ndata),'d')
-
-    def setcondids(self,condid):
-        "Routine to setcondid condids."
-        self.ns = int(condid) + zeros((6,self.ndata),'l')
-
     def setlevels(self,level):
-        self.mglevel = level + zeros(self.ndata,'l')
+        self.mglevel = full(self.ndata, level, dtype='l')
 
     def normalize(self,dx,dy,dz):
         """
@@ -1851,27 +1855,12 @@ class GridIntercepts(object):
             if nx >= 0 and ny >= 0 and nz >= 0:
                 arglist = kwlist + [self.intercepts, fuzz]
                 generator(*arglist)
-                v = self.getvoltages(voltage)
-                self.intercepts.xvoltages = v
-                self.intercepts.yvoltages = v
-                self.intercepts.zvoltages = v
+                self.intercepts.xvoltages = voltage
+                self.intercepts.yvoltages = voltage
+                self.intercepts.zvoltages = voltage
                 self.intercepts.xcondids = condid
                 self.intercepts.ycondids = condid
                 self.intercepts.zcondids = condid
-
-    def getvoltages(self,voltage):
-        "Routine to get appropriate voltages."
-        # --- The voltage can be a number, a class instance, or a function.
-        # --- If it is an instance, the class must have a method getvolt
-        # --- that takes the time as an argument. If a function, it must
-        # --- take one argument, the time.
-        if callable(voltage):
-            v = voltage(top.time)
-        elif hasattr(voltage, 'getvolt') and callable(voltage.getvolt):
-            v = voltage.getvolt(top.time)
-        else:
-            v = voltage
-        return v
 
     def handleneumannboundaries(dels):
         # --- This should be the same as what is in Delta.normalize
