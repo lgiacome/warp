@@ -2053,6 +2053,10 @@ class Species(object):
         """Calls :py:func:`~warpplots.ppzrp` for this species."""
         return self._callppfunc(ppzrp,**kw)
 
+    def ppzke(self,**kw):
+        """Calls :py:func:`~warpplots.ppzke` for this species."""
+        return self._callppfunc(ppzke,**kw)
+
     def ppzvr(self,**kw):
         """Calls :py:func:`~warpplots.ppzvr` for this species."""
         return self._callppfunc(ppzvr,**kw)
