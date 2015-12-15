@@ -115,13 +115,19 @@ class OpenPMDDiagnostic(object) :
                 except OSError :
                     pass
 
-    def setup_openpmd_file( self, f ) :
+    def setup_openpmd_file( self, f, iteration, time ) :
         """
         Sets the attributes of the hdf5 file, that comply with OpenPMD
     
         Parameter
         ---------
         f : an h5py.File object
+
+        iteration: int
+            The present iteration
+
+        time: float
+            The physical time of the present iteration
         """
         # Set the attributes of the HDF5 file
     
@@ -139,11 +145,11 @@ class OpenPMDDiagnostic(object) :
         f.attrs["iterationFormat"] =  np.string_("data%T.h5")
 
         # Setup the basePath
-        base_path = "/data/%d/" %self.top.it
+        base_path = "/data/%d/" %iteration
         f.attrs["basePath"] = np.string_(base_path)
         bp = f.require_group( base_path )
-        bp.attrs["time"] = self.top.time
-        bp.attrs["dt"] = self.top.dt
+        bp.attrs["time"] = time
+        bp.attrs["dt"] = iteratiion
         bp.attrs["timeUnitSI"] = 1.
         
     def setup_openpmd_record( self, dset, quantity ) :

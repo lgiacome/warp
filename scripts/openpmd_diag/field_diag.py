@@ -202,18 +202,23 @@ class FieldDiagnostic(OpenPMDDiagnostic) :
         filename = "data%08d.h5" %iteration
         fullpath = os.path.join( self.write_dir, "diags/hdf5", filename )
 
+    def create_empty_openpmd_file( fullpath, iteration, time, Nz ):
+        """
+        ### DOC ###
+        """
+        
         # In gathering mode, only the first proc creates the file.
         if self.lparallel_output == False and self.rank == 0 :
             # Create the filename and open hdf5 file
             f = h5py.File( fullpath, mode="a" )
-            self.setup_openpmd_file( f )
+            self.setup_openpmd_file( f, iteration, time )
             this_rank_writes = True
         # In parallel mode (lparallel_output=True), all proc create the file
         elif self.lparallel_output == True :
             # Create the filename and open hdf5 file
             f = h5py.File( fullpath, mode="a", driver='mpio',
                            comm=self.comm_world)
-            self.setup_openpmd_file( f )
+            self.setup_openpmd_file( f, iteration, time )
             this_rank_writes = True
         else:
             f = None

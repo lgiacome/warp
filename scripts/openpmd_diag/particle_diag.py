@@ -181,7 +181,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         if self.lparallel_output == False and self.rank == 0 :
             # Create the filename and open hdf5 file
             f = h5py.File( fullpath, mode="a" )
-            self.setup_openpmd_file( f )
+            self.setup_openpmd_file( f, self.top.it, self.top.time )
             this_rank_writes = True
         # In parallel mode (lparallel_output=True), all proc create the file
         elif self.lparallel_output == True :
