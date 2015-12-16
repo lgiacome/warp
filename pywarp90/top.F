@@ -574,6 +574,7 @@ c  time in any location.
       real(kind=8):: tr,tg,th
       real(kind=8):: gamma
       real(kind=8):: timetemp,wtime
+      real(kind=8):: sumsw
       real(kind=8):: zmmntscopy(NUMZMMNT)
 #ifdef J90
       real(kind=8):: pmmnts(NUMZMMNT,np)
@@ -1372,8 +1373,11 @@ c       --- to get the combined moments.
             zmmnts0(:,nszmmnt) = zmmnts0(:,nszmmnt) + zmmnts0(:,js)*zmmntsw(js)
             zmmnts(:,:,nszmmnt) = zmmnts(:,:,nszmmnt) + zmmnts(:,:,js)*zmmntsw(js)
           enddo
-          zmmnts0(:,nszmmnt) = zmmnts0(:,nszmmnt)/sum(zmmntsw(0:nszmmnt-1))
-          zmmnts(:,:,nszmmnt) = zmmnts(:,:,nszmmnt)/sum(zmmntsw(0:nszmmnt-1))
+          sumsw = sum(zmmntsw(0:nszmmnt-1))
+          if (sumsw .ne. 0.) then
+            zmmnts0(:,nszmmnt) = zmmnts0(:,nszmmnt)/sumsw
+            zmmnts(:,:,nszmmnt) = zmmnts(:,:,nszmmnt)/sumsw
+          endif
         endif
 
 
