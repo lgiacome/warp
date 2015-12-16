@@ -68,8 +68,15 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         self.em = em
         self.fieldtypes = fieldtypes
 
-        # Determine the components to be written (Cartesian or cylindrical)
-        if (self.em.l_2drz is True):
+        # Determine the dimensions (Cartesian or cylindrical)
+        if self.em.l_2drz is True:
+            self.dim = "circ"
+        elif self.em.l_2dxz is True:
+            self.dim = "2d"
+        else:
+            self.dim = "3d"
+        # Determine the coordinates
+        if self.dim == "circ":
             self.coords = ['r', 't', 'z']
         else:
             self.coords = ['x', 'y', 'z']
@@ -140,13 +147,13 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             dset = None
         
         # Circ case
-        if (self.em.l_2drz is True):
+        if self.dim == "circ":
             self.write_circ_dataset( dset, quantity )
         # 2D Cartesian case
-        elif (self.em.l_2dxz is True):
+        elif self.dim == "2d":
             self.write_cart2d_dataset( dset, quantity )
         # 3D Cartesian case
-        else:
+        elif self.dim == "3d":
             self.write_cart3d_dataset( dset, quantity )
 
     def write_circ_dataset( self, dset, quantity ):
@@ -364,13 +371,13 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         """
         # Determine the shape of the datasets that will be written
         # Circ case
-        if (self.em.l_2drz==True):
+        if self.dim == "circ":
             data_shape = ( 2*self.em.circ_m+1, self.em.nx+1, Nz+1 )
         # 2D case
-        elif (self.em.l_2dxz==True):
+        elif self.dim == "2d":
             data_shape = ( self.em.nx+1, Nz+1 )
         # 3D case
-        else:
+        elif self.dim == "3d":
             data_shape = ( self.em.nx+1, self.em.ny+1, Nz+1 )
 
         # Create the file
@@ -494,7 +501,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         
         # Geometry parameters
         # - thetaMode
-        if (self.em.l_2drz==True):
+        if self.dim == "circ":
             dset.attrs['geometry']  = np.string_("thetaMode")
             dset.attrs['geometryParameters'] = \
               np.string_("m=%d;imag=+" %(self.em.circ_m + 1))
@@ -502,13 +509,13 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             dset.attrs['axisLabels'] = np.array([ 'r', 'z' ])
             dset.attrs["gridGlobalOffset"] = np.array([self.w3d.xmmin, zmin])
         # - 2D Cartesian
-        elif (self.em.l_2dxz==True):
+        elif self.dim == "2d":
             dset.attrs['geometry'] = np.string_("cartesian")
             dset.attrs['gridSpacing'] = np.array([ self.em.dx, dz ])
             dset.attrs['axisLabels'] = np.array([ 'x', 'z' ])
             dset.attrs["gridGlobalOffset"] = np.array([self.w3d.xmmin, zmin])
         # - 3D Cartesian
-        else:
+        elif self.dim == "3d":
             dset.attrs['geometry'] = np.string_("cartesian")
             dset.attrs['gridSpacing'] = np.array([ self.em.dx, self.em.dy, dz ])
             dset.attrs['axisLabels'] = np.array([ 'x', 'y', 'z' ])

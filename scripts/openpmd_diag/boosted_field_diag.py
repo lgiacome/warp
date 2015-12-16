@@ -29,13 +29,14 @@ number of particles in advance (Needed to create the dataset) ?
 import os
 import numpy as np
 from scipy.constants import c
+from field_diag import FieldDiagnostic
 
-class LabFrameDiagnostic(FieldDiagnostic):
+class BoostedFieldDiagnostic(FieldDiagnostic):
     """
     ### DOC ###
     """
-    def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshot_lab,
-                 Ntot_snapshot_lab, gamma_boost, period, em, top, w3d,
+    def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
+                 Ntot_snapshots_lab, gamma_boost, period, em, top, w3d,
                  comm_world=None, fieldtypes=["rho", "E", "B", "J"],
                  write_dir=None, lparallel_output=False ) :
         """
@@ -52,7 +53,7 @@ class LabFrameDiagnostic(FieldDiagnostic):
         v_lab: float (m.s^-1)
             Speed of the moving window *in the lab frame*
 
-        dt_snapshot_lab: float (seconds)
+        dt_snapshots_lab: float (seconds)
             Time interval *in the lab frame* between two successive snapshots
 
         Ntot_snapshots_lab: int
@@ -65,7 +66,7 @@ class LabFrameDiagnostic(FieldDiagnostic):
         See the documentation of FieldDiagnostic for the other parameters       
         """
         # Do not leave write_dir as None, as this may conflict with
-        # the default directory ('./') in which diagnostics in the
+        # the default directory ('./diags') in which diagnostics in the
         # boosted frame are written.
         if write_dir is None:
             write_dir='lab_diags'
@@ -73,16 +74,6 @@ class LabFrameDiagnostic(FieldDiagnostic):
         # Initialize the normal attributes of a FieldDiagnostic
         FieldDiagnostic.__init__(self, period, em, top, w3d,
                 comm_world, fieldtypes, write_dir, lparallel_output)
-                
-        # Create the list of LabSnapshot objects
-        self.snapshots = []
-        for i in range( Ntot_snapshots_lab ):
-            t_lab = i * dt_snapshots_lab
-            snapshot = LabSnapshot( t_lab,
-                                    zmin_lab + v_lab*t_lab,
-                                    zmax_lab + v_lab*t_lab,
-                                    self.write_dir, i )
-            self.snapshots.append( snapshot )
 
         # Register the boost quantities
         self.gamma_boost = gamma_boost
@@ -93,12 +84,20 @@ class LabFrameDiagnostic(FieldDiagnostic):
         # Find the z resolution and size of the diagnostic in the lab frame
         dz_lab = c*self.top.dt * self.inv_beta_boost*self.inv_gamma_boost
         Nz = int( (zmax_lab - zmin_lab)/dz_lab )
+        self.inv_dz_lab = 1./dz_lab
         
-        # Create an empty openPMD file and datasets for each snaphot
+        # Create the list of LabSnapshot objects
+        self.snapshots = []
         for i in range( Ntot_snapshots_lab ):
-            snapshot = self.snapshots[i]
-            ### The method below should be defined for FieldDiagnostic
-            self.create_empty_openpmd_file( snapshot.filename, Nz, dz_lab )
+            t_lab = i * dt_snapshots_lab
+            snapshot = LabSnapshot( t_lab,
+                                    zmin_lab + v_lab*t_lab,
+                                    zmax_lab + v_lab*t_lab,
+                                    self.write_dir, i )
+            self.snapshots.append( snapshot )
+            # Initialize a corresponding empty file
+            self.create_empty_openpmd_file( snapshot.filename, i,
+                snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt )
 
     def write( self ):
         """
@@ -138,22 +137,48 @@ class LabFrameDiagnostic(FieldDiagnostic):
                  (snapshot.current_z_lab < snapshot.zmax_lab) ):
 
                 # In this case register the slice into the memory buffers
-                # self.register_slice( i_boosted, i_lab )
-                pass
+                self.register_slice_into( snapshot )
 
+    def register_slice_into( self, snapshot ):
+        """
+        """
+        # Find the index of the slice in the boosted frame
+        ### Should be more exact: should take into account the
+        ### staggering, the guard cells, and the interpolation
+        zmin_boost = self.top.zgrid + self.w3d.zmmin_local
+        i_boost = int( ( snapshot.current_z_boost - zmin_boost )/self.em.dz )
+
+        # Find the index of the slice in the lab frame
+        i_lab = int( (snaphot.current_z_lab - zmin.zmin_lab)*self.inv_dz_lab )
+
+        # Extract the proper arrays
+        if self.dim == "2d":
+            array = self.extract_slice_2d(i_boost)
+        elif self.dim == "circ":
+            array = self.extract_slice_circ(i_boost)
+        elif self.dim == "3d":
+            array = self.extract_slice_3d(i_boost)
+
+    def extract_array_2d( self, i_slice ):
+        """
+        """
+        
+
+        
+            
     def flush_to_disk( self ):
         """
         """
         # Loop through the labsnapshots and flush the data
-        for snapshot in snapshots:
+        for snapshot in self.snapshots:
             snapshot.flush_to_disk()
 
-
-class LabSnapshot( ):
+            
+class LabSnapshot( object ):
     """
     ### DOC ###
     """
-    def __init___(self, t_lab, zmin_lab, zmax_lab, write_dir, i):
+    def __init__(self, t_lab, zmin_lab, zmax_lab, write_dir, i):
         """
         Initialize a LabSnapshot 
 
@@ -161,7 +186,7 @@ class LabSnapshot( ):
         ----------
         t_lab: float (seconds)
             Time of this snapshot *in the lab frame*
-        
+            
         zmin_lab, zmax_lab: floats
             Longitudinal limits of this snapshot
 
@@ -173,7 +198,7 @@ class LabSnapshot( ):
            Number of the file, where this snapshot is to be written
         """
         # Deduce the name of the filename where this snapshot writes
-        self.filename = os.path.join( write_dir, 'hdf5/data%05d.png' %i)
+        self.filename = os.path.join( write_dir, 'hdf5/data%05d.h5' %i)
 
         # Time and boundaries in the lab frame (constants quantities)
         self.zmin_lab = zmin_lab
@@ -211,13 +236,9 @@ class LabSnapshot( ):
         self.current_z_boost = ( t_lab*inv_gamma - t_boost )*c*inv_beta
         self.current_z_lab = ( t_lab - t_boost*inv_gamma )*c*inv_beta
 
-    def register_slice( self ):
-
-        # Get the right slice for rho, J, E, B
-
-        # Do the conversion to the lab frame
-
-        # Add the slice to the data
+    def register_slice( self, em, zmin_boost, inv_dz_lab ):
+        """
+        """
 
     def flush_to_disk( self ):
         

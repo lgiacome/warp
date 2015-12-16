@@ -18,3 +18,4 @@ Then pass the method diag.write to installafterstep :
 
 from field_diag import FieldDiagnostic
 from particle_diag import ParticleDiagnostic
+from boosted_field_diag import BoostedFieldDiagnostic
