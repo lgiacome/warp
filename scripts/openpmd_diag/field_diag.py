@@ -4,12 +4,12 @@ This file defines the class FieldDiagnostic
 import os
 import numpy as np
 from generic_diag import OpenPMDDiagnostic
+from field_extraction import get_circ_dataset, \
+     get_cart3d_dataset, get_cart2d_dataset
 
 # Import a number of useful dictionaries
-from data_dict import circ_dict_quantity, cart_dict_quantity, \
-    circ_dict_Jindex, cart_dict_Jindex, \
-    field_boundary_dict, particle_boundary_dict, field_solver_dict, \
-    x_offset_dict, y_offset_dict, z_offset_dict
+from data_dict import field_boundary_dict, particle_boundary_dict, \
+     field_solver_dict, x_offset_dict, y_offset_dict, z_offset_dict
 
 class FieldDiagnostic(OpenPMDDiagnostic):
     """
@@ -75,12 +75,31 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             self.dim = "2d"
         else:
             self.dim = "3d"
+
         # Determine the coordinates
         if self.dim == "circ":
             self.coords = ['r', 't', 'z']
         else:
             self.coords = ['x', 'y', 'z']
+
+        # Dtermine the global indices of the local domain
+        if (self.dim == "2d") or (self.dim=="circ"):
+            global_indices = np.zeros([2,2], dtype = np.int)
+        elif self.dim == "3d":
+            global_indices = np.zeros([2,3], dtype = np.int)
+        # In the x direction
+        global_indices[0,0] = top.fsdecomp.ix[top.iprocgrid[0]]
+        global_indices[1,0] = global_indices[0,0] + em.nxlocal + 1
+        # In the y direction
+        if self.dim == "3d":
+            global_indices[0,1] = top.fsdecomp.iy[top.iprocgrid[1]]
+            global_indices[1,1] = global_indices[0,1] + em.nylocal + 1
+        # In the z direction
+        global_indices[0,-1] = top.fsdecomp.iz[top.iprocgrid[2]]
+        global_indices[1,-1] = global_indices[0,-1] + em.nzlocal + 1
         
+        self.global_indices = global_indices
+                    
     def write_hdf5( self, iteration ):
         """
         Write an HDF5 file that complies with the OpenPMD standard
@@ -96,7 +115,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         
         # Create the file and setup its attributes
         zmin = self.top.zgrid + self.w3d.zmmin
-        self.create_empty_openpmd_file( fullpath, self.top.it,
+        self.create_file_empty_meshes( fullpath, self.top.it,
                 self.top.time, self.em.nz, zmin, self.em.dz, self.top.dt )
 
         # Open the file again, and get the field path
@@ -123,6 +142,9 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Close the file
         if f is not None:      
             f.close()
+
+    # Writing methods
+    # ---------------
 
     def write_dataset( self, field_grp, path, quantity ):
         """
@@ -163,26 +185,16 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Fill the dataset with these quantities
         # Gathering mode
         if self.lparallel_output == False:
-            F, F_circ, _ = self.get_circ_dataset( quantity, lgather=True )
+            F = get_circ_dataset( self.em, quantity, lgather=True )
             if self.rank == 0:
-	            # Mode m=0
-    	        dset[0,:,:] = F
-                # Higher modes (real and imaginary part)
-                for m in range(self.em.circ_m):
-            	    dset[2*m+1,:,:] = F_circ[:,:,m].real
-            	    dset[2*m+2,:,:] = F_circ[:,:,m].imag
+    	        dset[:,:,:] = F
         # Parallel mode
         else:
-            F, F_circ, bounds = self.get_circ_dataset( quantity, False )
-            # Mode m=0
-            dset[ 0, bounds[0,0]:bounds[1,0],
-                     bounds[0,1]:bounds[1,1] ] = F
-            # Higher modes (real and imaginary part)
-            for m in range(self.em.circ_m):
-                dset[ 2*m+1, bounds[0,0]:bounds[1,0],
-                         bounds[0,1]:bounds[1,1] ] = F_circ[:,:,m].real
-                dset[ 2*m+2, bounds[0,0]:bounds[1,0],
-                         bounds[0,1]:bounds[1,1] ] = F_circ[:,:,m].imag
+            F = get_circ_dataset( self.em, quantity, lgather=False )
+            indices = self.global_indices
+            with dset.collective:
+                dset[ :, indices[0,0]:indices[1,0],
+                        indices[0,1]:indices[1,1] ] = F
 
     def write_cart2d_dataset( self, dset, quantity ):
         """
@@ -191,14 +203,16 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Fill the dataset with these quantities
         # Gathering mode
         if self.lparallel_output == False:
-            F, _ = self.get_cart_dataset( quantity, True )
+            F = get_cart2d_dataset( self.em, quantity, lgather=True )
             if self.rank == 0:
     	        dset[:,:] = F
         # Parallel mode
         else:
-            F, bounds = self.get_cart_dataset( quantity, False )
-            dset[ bounds[0,0]:bounds[1,0],
-                    bounds[0,1]:bounds[1,1] ] = F
+            F = get_cart2d_dataset( self.em, quantity, lgather=False )
+            indices = self.global_indices
+            with dset.collective:
+                dset[ indices[0,0]:indices[1,0],
+                        indices[0,1]:indices[1,1] ] = F
 
     def write_cart3d_dataset( self, dset, quantity ):
         """
@@ -207,144 +221,25 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Fill the dataset with these quantities
         # Gathering mode
         if self.lparallel_output == False:
-            F, _ = self.get_cart_dataset( quantity, True )
+            F = get_cart3d_dataset( self.em, quantity, lgather=True )
             if self.rank == 0:
     	        dset[:,:,:] = F
         # Parallel mode
         else:
-            F, bounds = self.get_cart_dataset( quantity, False )
-            dset[ bounds[0,0]:bounds[1,0],
-                  bounds[0,1]:bounds[1,1],
-                  bounds[0,2]:bounds[1,2] ] = F
-                     
-    def get_circ_dataset( self, quantity, lgather):
-        """
-        Get a given quantity in Circ coordinates
-
-        Parameters
-        ----------
-        quantity: string
-            Describes which field is being written.
-            (Either rho, Er, Et, Ez, Br, Bz, Bt, Jr, Jt or Jz)
-
-        lgather: boolean
-            Defines if data is gathered on me (process) = 0
-            If "False": No gathering is done
-        """
-        F_circ = None
-        em = self.em
+            F = get_cart3d_dataset( self.em, quantity, lgather=False )
+            indices = self.global_indices
+            with dset.collective:
+                dset[ indices[0,0]:indices[1,0],
+                    indices[0,1]:indices[1,1],
+                    indices[0,2]:indices[1,2] ] = F
         
-        # Treat the currents in a special way
-        if quantity in ['Jr', 'Jt', 'Jz']:
-            # Get the array index that corresponds to that component
-            i = circ_dict_Jindex[ quantity ]
-            # Extract mode 0
-            F = em.getarray( em.fields.J[:,:,:,i] )
-            # Extract higher modes
-            if em.circ_m > 0:
-                F_circ = em.getarray_circ( em.fields.J_circ[:,:,i,:] )
-                
-        # Treat the fields E, B, rho in a more systematic way
-        elif quantity in ['Er', 'Et', 'Ez', 'Br', 'Bt', 'Bz', 'rho' ]:
-            # Get the field name in Warp
-            field_name = circ_dict_quantity[ quantity ]
-            # Extract mode 0
-            field_array = getattr( em.fields, field_name )
-            F = em.getarray( field_array )
-            # Extract higher modes
-            if em.circ_m > 0:
-                field_array = getattr( em.fields, field_name + '_circ')
-                F_circ = em.getarray_circ( field_array )
-
-        # Gather array if lgather = True 
-        # (Mutli-proc operations using gather)
-        # Only done in non-parallel case
-        if lgather is True:
-            F = em.gatherarray( F )
-            if em.circ_m > 0:
-                F_circ = em.gatherarray( F_circ )
-        
-        # Get global positions (indices) of local domain
-        # Only needed for parallel output
-        if lgather == False:
-            nx, nz = np.shape(F)
-            bounds = np.zeros([2,2], dtype = np.int)
-            bounds[0,0] = int(round((em.block.xmin - em.xmmin) / em.dx))
-            bounds[1,0] = bounds[0,0] + nx
-            bounds[0,1] = int(round((em.block.zmin - em.zmmin) / em.dz))
-            bounds[1,1] = bounds[0,1] + nz
-        else:
-            bounds = None
-
-        return( F, F_circ, bounds )
-
-    def get_cart_dataset( self, quantity, lgather):
-        """
-        Get a given quantity in Cartesian coordinates
-
-        Parameters
-        ----------
-        quantity: string
-            Describes which field is being written.
-            (Either rho, Er, Et, Ez, Br, Bz, Bt, Jr, Jt or Jz)
-
-        lgather: boolean
-            Defines if data is gathered on me (process) = 0
-            If "False": No gathering is done
-        """
-        em = self.em
-        
-        # Treat the currents in a special way
-        if quantity in ['Jx', 'Jy', 'Jz']:
-            # Get the array index that corresponds to that component
-            i = cart_dict_Jindex[ quantity ]
-            F = em.getarray( em.fields.J[:,:,:,i] )
-
-        # Treat the fields E, B, rho in a more systematic way
-        elif quantity in ['Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz', 'rho' ]:
-            # Get the field name in Warp
-            field_name = cart_dict_quantity[ quantity ]
-            field_array = getattr( em.fields, field_name )
-            F = em.getarray( field_array )
-
-        # Gather array if lgather = True 
-        # (Mutli-proc operations using gather)
-        # Only done in non-parallel case
-        if lgather is True:
-            F = em.gatherarray( F )
-        
-        # Get global positions (indices) of local domain
-        # Only needed for parallel output
-        if lgather == False:
-            if F.ndim == 2:
-                nx, nz = np.shape(F)
-                bounds = np.zeros([2,2], dtype = np.int)
-                bounds[0,0] = int(round((em.block.xmin - em.xmmin) / em.dx))
-                bounds[1,0] = bounds[0,0] + nx
-                bounds[0,1] = int(round((em.block.zmin - em.zmmin) / em.dz))
-                bounds[1,1] = bounds[0,1] + nz
-            elif F.ndim == 3:
-                nx, ny, nz = np.shape(F)
-                bounds = np.zeros([2,3], dtype = np.int)
-                bounds[0,0] = int(round((em.block.xmin - em.xmmin) / em.dx))
-                bounds[1,0] = bounds[0,0] + nx
-                bounds[0,1] = int(round((em.block.ymin - em.ymmin) / em.dy))
-                bounds[1,1] = bounds[0,1] + ny
-                bounds[0,2] = int(round((em.block.zmin - em.zmmin) / em.dz))
-                bounds[1,2] = bounds[0,2] + nz
-        else:
-            bounds = None
-
-        return( F, bounds )
-
-
     # OpenPMD setup methods
     # ---------------------
 
-    def create_empty_openpmd_file( self, fullpath, iteration,
+    def create_file_empty_meshes( self, fullpath, iteration,
                                    time, Nz, zmin, dz, dt ):
         """
-        Create an openPMD file and setup all its attributes
+        Create an openPMD file with empty meshes and setup all its attributes
 
         Parameters
         ----------
@@ -539,18 +434,18 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         """
         # Generic setup of the component
         self.setup_openpmd_component( dset )
-        
+
         # Field positions
-        if (self.em.l_2dxz==True):
+        if (self.em.l_2dxz==True) :
             positions = np.array([0., 0.])
         else:
             positions = np.array([0.,0.,0.])
         # Along x
         positions[0] = x_offset_dict[ quantity ]
         # Along y (3D Cartesian only)
-        if (self.em.l_2dxz==False):
+        if (self.em.l_2dxz==False) :
             positions[1] = y_offset_dict[quantity]
         # Along z
         positions[-1] = z_offset_dict[ quantity ]
-
+            
         dset.attrs['position'] = positions
