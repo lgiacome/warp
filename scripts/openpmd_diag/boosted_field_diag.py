@@ -21,19 +21,26 @@ or open/close them on the fly?
 - What to do for the particles ? How to know the total
 number of particles in advance (Needed to create the dataset) ?
 >> Do resizable particle arrays
+- Should we pack the arrays before writing them to the file
 
-- Can we zero out the fields when we create a new dataset ?
 - Is it better to write all the attributes with only one proc ?
-
 """
 import os
 import numpy as np
 from scipy.constants import c
 from field_diag import FieldDiagnostic
+from field_extraction import get_dataset
+from data_dict import z_offset_dict
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
-    ### DOC ###
+    Class that writes the fields *in the lab frame*, from 
+    a simulation in the boosted frame
+
+    Usage
+    -----
+    After initialization, the diagnostic is called by using the
+    `write` method.
     """
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period, em, top, w3d,
@@ -81,7 +88,8 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         self.beta_boost = np.sqrt( 1. - self.inv_gamma_boost**2 )
         self.inv_beta_boost = 1./self.beta_boost
 
-        # Find the z resolution and size of the diagnostic in the lab frame
+        # Find the z resolution and size of the diagnostic *in the lab frame*
+        # (Needed to initialize metadata in the openPMD file)
         dz_lab = c*self.top.dt * self.inv_beta_boost*self.inv_gamma_boost
         Nz = int( (zmax_lab - zmin_lab)/dz_lab )
         self.inv_dz_lab = 1./dz_lab
@@ -111,26 +119,28 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         Should be registered with installafterstep in Warp
         """
-        # Store snapshots slices in memory at each timestep
+        # At each timestep, store a slices of the fields in memory buffers 
         self.store_snapshot_slices()
 
-        # Write the stored slices to disk every self.period
+        # Every self.period, write the buffered slices to disk 
         if self.top.it % self.period == 0:
             self.flush_to_disk()
         
     def store_snapshot_slices( self ):
         """
+        Store slices of the fields in the memory buffers of the
+        corresponding lab snapshots
         """
         # Find the limits of the local subdomain at this iteration
-        zmin_boost = self.top.zgrid + self.w3d.zmmin_local
-        zmax_boost = self.top.zgrid + self.w3d.zmmax_local
+        zmin_boost = self.top.zgrid + self.em.zmminlocal
+        zmax_boost = self.top.zgrid + self.em.zmmaxlocal
 
         # Loop through the labsnapshots
         for snapshot in self.snapshots:
 
             # Update the positions of the output slice of this snapshot
             # in the lab and boosted frame (current_z_lab and current_z_boost)
-            snapshot.update_current_output_positions( self.top.t,
+            snapshot.update_current_output_positions( self.top.time,
                             self.inv_gamma_boost, self.inv_beta_boost )
 
             # For this snapshot:
@@ -145,23 +155,28 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
                 # In this case, extract the proper slice from the field array,
                 # perform a Lorentz transform to the lab frame, and store
-                # the results in a proper array
+                # the results in a properly-formed array
                 storing_array = self.slice_handler.extract_slice(
                     self.em, snapshot.current_z_boost, zmin_boost )
                 # Register this in the buffers of this snapshot
-                snapshot.register_slice( storing_array )
+                snapshot.register_slice( storing_array, self.inv_dz_lab )
         
     def flush_to_disk( self ):
         """
+        Writes the buffered slices of fields to the disk
+
+        Erase the buffered slices of the LabSnapshot objects
         """
         # Loop through the labsnapshots and flush the data
         for snapshot in self.snapshots:
-            snapshot.flush_to_disk()
 
+            snapshot.buffered_slices = []
+            snapshot.buffer_z_indices = []
 
-class LabSnapshot( object ):
+class LabSnapshot:
     """
-    ### DOC ###
+    Class that stores data relative to one given snapshot
+    in the lab frame (i.e. one given *time* in the lab frame)
     """
     def __init__(self, t_lab, zmin_lab, zmax_lab, write_dir, i):
         """
@@ -180,7 +195,7 @@ class LabSnapshot( object ):
             this snapshot is to be written
 
         i: int
-           Number of the file, where this snapshot is to be written
+           Number of the file where this snapshot is to be written
         """
         # Deduce the name of the filename where this snapshot writes
         self.filename = os.path.join( write_dir, 'hdf5/data%05d.h5' %i)
@@ -220,11 +235,27 @@ class LabSnapshot( object ):
         self.current_z_boost = ( t_lab*inv_gamma - t_boost )*c*inv_beta
         self.current_z_lab = ( t_lab - t_boost*inv_gamma )*c*inv_beta
 
-    def register_slice( self, em, zmin_boost, inv_dz_lab ):
+    def register_slice( self, field_array, inv_dz_lab ):
         """
+        Store the slice of fields represented by field_array
+        and also store the z index at which this slice should be
+        written in the final lab frame array
+
+        Parameters
+        ----------
+        field_array: array of reals
+            An array of packed fields that corresponds to one slice,
+            as given by the SliceHandler object
+
+        inv_dz_lab: float
+            Inverse of the grid spacing in z, *in the lab frame*
         """
         # Find the index of the slice in the lab frame
-        i_lab = int( (self.current_z_lab - self.zmin_lab)*self.inv_dz_lab )
+        iz_lab = int( (self.current_z_lab - self.zmin_lab)*inv_dz_lab )
+
+        # Store the values and the index
+        self.buffered_slices.append( field_array )
+        self.buffer_z_index.append( iz_lab )
 
     def flush_to_disk( self ):
         
@@ -240,14 +271,22 @@ class LabSnapshot( object ):
         self.buffer_z_index = []
 
 
-class SliceHandler():
+class SliceHandler:
     """
-    Extracts compacts, transforms and writes the slices
-    ### DOC
+    Class that extracts, Lorentz-transforms and writes slices of the fields
     """
-    def __init__( gamma_boost, beta_boost, dim ):
+    def __init__( self, gamma_boost, beta_boost, dim ):
         """
-        ### DOC
+        Initialize the SliceHandler object
+
+        Parameters
+        ----------
+        gamma_boost, beta_boost: float
+            The Lorentz factor of the boost and the corresponding beta
+
+        dim: string
+            Either "2d", "3d", or "circ"
+            Indicates the geometry of the fields
         """
         # Store the arguments
         self.dim = dim
@@ -267,232 +306,177 @@ class SliceHandler():
         self.index_to_field = { value:key for key, value \
                                 in self.field_to_index.items() }
             
-    def extract_slice( self, em, z_boost ):
+    def extract_slice( self, em, z_boost, zmin_boost ):
         """
-        ### DOC ###
+        Returns an array that contains the slice of the fields at
+        z_boost (the fields returned are already transformed to the lab frame)
+
+        Parameters
+        ----------
+        em: an EM3DSolver object
+            The object from which to extract the fields
+
+        z_boost: float (meters)
+            Position of the slice in the boosted frame
+
+        zmin_boost: float (meters)
+            Position of the left end of physical part of the local subdomain
+            (i.e. excludes guard cells)
+        
+        Returns
+        -------
+        An array of reals that packs together the slices of the
+        different fields.
+
+        The first index of this array corresponds to the field type
+        (10 different field types), and the correspondance
+        between the field type and integer index is given self.field_to_index
+
+        The shape of this arrays is:
+        - (10, em.nxlocal+1,) for dim="2d"
+        - (10, em.nxlocal+1, em.nylocal+1) for dim="3d"
+        - (10, 2*em.circ_m+1, em.nxlocal+1) for dim="circ"
         """
+        # Extract a slice of the fields *in the boosted frame*
+        # at z_boost, using interpolation, and store them in an array
+        # (See the docstring of the extract_slice_boosted_frame for
+        # the shape of this array.)
+        field_array = self.extract_slice_boosted_frame(
+            em, z_boost, zmin_boost )
+
+        # Perform the Lorentz transformation of the fields *from
+        # the boosted frame to the lab frame*
+        self.transform_fields_to_lab_frame( field_array )
+            
+        return( field_array )
+
+    def extract_slice_boosted_frame( self, em, z_boost, zmin_boost ):
+        """
+        Extract a slice of the fields at z_boost, using interpolation in z
+
+        See the docstring of extract_slice for the parameters.
+
+        Returns
+        -------
+        An array that packs together the slices of the different fields.
+            The shape of this arrays is:
+            - (10, em.nxlocal+1,) for dim="2d"
+            - (10, em.nxlocal+1, em.nylocal+1) for dim="3d"
+            - (10, 2*em.circ_m+1, em.nxlocal+1) for dim="circ"
+        """
+        # Allocate an array of the proper shape
+        if self.dim=="2d":
+            field_array = np.empty( (10, em.nxlocal+1,) )
+        elif self.dim=="3d":
+            field_array = np.empty( (10, em.nxlocal+1, em.nylocal+1) )
+        elif self.dim=="circ":
+            field_array = np.empty( (10, 2*em.circ_m+1, em.nxlocal+1) )
+
         # Find the index of the slice in the boosted frame
         # and the corresponding interpolation shape factor
-        # NB: all the fields are node-centered here, because
-        # the arrays, Exp, Eyp, Ezp, etc. are used
-        iz_boost = int( ( z_boost - zmin_boost )/self.em.dz )
-        Sz_boost = iz_boost + 1 - ( z_boost - zmin_boost )/self.em.dz
-        # The slice at index iz_boost is weighted with Sz_boost
-        # and the slice at index iz_boost+1 is weighted with (1-Sz_boost)
+        dz = em.dz
+        # Centered
+        z_centered_gridunits = ( z_boost - zmin_boost )/dz
+        iz_centered = int( z_centered_gridunits )
+        Sz_centered = iz_centered + 1 - z_centered_gridunits
+        # Staggered
+        z_staggered_gridunits = ( z_boost - zmin_boost - 0.5*dz )/dz
+        iz_staggered = int( z_staggered_gridunits )
+        Sz_staggered = iz_staggered + 1 - z_staggered_gridunits
 
-        # Extract the proper arrays
-        if (self.dim == "2d") or (self.dim == "3d"):
-            storing_array = self.extract_slice_cartesian(i_boost)
-        elif self.dim == "circ":
-            storing_array = self.extract_slice_circ(i_boost)
-
-        return( storing_array )
-
-    def get_circ_slice( self, quantity, S, iz_slice ):
-        """
-        Store the slice in an array that contains the different fields,
-        in a layout that is close the final layout in the openPMD file
-
-        ### DOC ###
-        """
-        # Obtain the slices, in the boosted frame
-        # In 2D, the slices are 1D arrays (corresponding to the x direction)
-        # In 3D, the slices are 2D arrays (x and y directions)
-        # (The functions em.getXX simply removes the guard cells)
-
-        # Calculate the S_centered and iz_centered +
-        # the S_staggered and iz_staggered (cf fbpic)
-
-        # Interpolate (loop over the fields in an abstract manner)
-        interpolate_slice( field, S, iz, centered_in_x, centered_in_y )
-        
-        # Allocate the boosted_array (form depends on the dimension)
-
-        # Perform the transformation to the lab, in a new array
-        boosted_array[ field_to_index[quantity] ] = \
-          Sz_boost
-
-        ( em.getex(), iz_slice, S )
-        ey_slice = em.getey()[...,iz_slice]
-        ez_slice = em.getez()[...,iz_slice]
-        bx_slice = em.getbx()[...,iz_slice]
-        by_slice = em.getby()[...,iz_slice]
-        bz_slice = em.getbz()[...,iz_slice]
-        jx_slice = em.getjx()[...,iz_slice]
-        jy_slice = em.getjy()[...,iz_slice]
-        jz_slice = em.getjz()[...,iz_slice]
-        rho_slice = em.getrho()[...,iz_slice]
-
-        # Allocate an array to store them
-        if self.dim == "2d":
-            boost_array = np.array( (10, ex_slice.shape[0]) )
-            lab_array = np.array( (10, ex_slice.shape[0]) )
-        if self.dim == "3d":
-            lab_array = np.array( (10, ex_slice.shape[0],
-                                       ex_slice.shape[1]) )
-            boost_array = np.array( (10, ex_slice.shape[0],
-                                       ex_slice.shape[1]) )
-
-        # Perform the Lorentz transformation from the boosted frame
-        # to the lab frame and store the result at the proper index
-        # (correspondance given by field_to_index)
-        # Some shortcuts
-        gamma = self.gamma_boost
-        cbeta = c*self.beta_boost
-        beta_c = self.beta_boost/c
+        # Shortcut for the correspondance between field and integer index
         f2i = self.field_to_index
-        # Lorentz transformations
-        # For E
-        lab_array[ f2i['Ez'], ... ] = boost_arrays
-        storing_array[ field_to_index['Ex'], ... ] = \
-            gamma*( ex_slice + cbeta*by_slice )
-        storing_array[ field_to_index['Ey'], ... ] = \
-            gamma*( ey_slice - cbeta*bx_slice )
-        # For B
-        storing_array[ field_to_index['Bz'], ... ] = bz_slice
-        storing_array[ field_to_index['Bx'], ... ] = \
-            gamma*( bx_slice - beta_c*ey_slice )
-        storing_array[ field_to_index['By'], ... ] = \
-            gamma*( by_slice + beta_c*ex_slice )
-        # For J
-        storing_array[ field_to_index['Jz'], ... ] = \
-            gamma*( jz_slice + cbeta*rho_slice )
-        storing_array[ field_to_index['Jx'], ... ] = jx_slice
-        storing_array[ field_to_index['Jy'], ... ] = jy_slice
-        # For rho
-        storing_array[ field_to_index['rho'], ... ] = \
-            gamma*( rho_slice + beta_c*jz_slice )
         
-        return( storing_array )
+        # Loop through the fields, and extract the proper slice for each field
+        for quantity in self.field_to_index.keys():
+            # Here typical values for `quantity` are e.g. 'Er', 'Bx', 'rho'
 
-    def extract_slice_cartesian( self, iz_slice ):
+            # Choose the index and interpolating factor, depending
+            # on whether the field is centered in z or staggered
+            # - Centered field in z
+            if z_offset_dict[quantity] == 0:
+                iz = iz_centered
+                Sz = Sz_centered
+            # - Staggered field in z
+            elif z_offset_dict[quantity] == 0.5:
+                iz = iz_staggered
+                Sz = Sz_staggered
+            else:
+                raise ValueError( 'Unknown staggered offset for %s: %f' %(
+                    quantity, z_offset_dict[quantity] ))
+
+            # Interpolate the centered field in z
+            # (Transversally-staggered fields are also interpolated
+            # to the nodes of the grid, thanks to the flag transverse_centered)
+            field_array[ f2i[quantity], ... ] = Sz * get_dataset(
+                self.dim, em, quantity, lgather=False, iz_slice=iz,
+                transverse_centered=True )
+            field_array[ f2i[quantity], ... ] += (1.-Sz) * get_dataset(
+                self.dim, em, quantity, lgather=False, iz_slice=iz+1,
+                transverse_centered=True )
+
+        return( field_array )
+
+    def transform_fields_to_lab_frame( self, fields ):
         """
-        Store the slice in an array that contains the different fields,
-        in a layout that is close the final layout in the openPMD file
+        Modifies the array `fields` in place, to transform the field values
+        from the boosted frame to the lab frame.
 
-        ### DOC ###
+        The transformation is a transformation with -beta_boost, thus
+        the corresponding formulas are:
+        - for the transverse part of E and B:
+        $\vec{E}_{lab} = \gamma(\vec{E} - c\vec{\beta} \times\vec{B})$
+        $\vec{B}_{lab} = \gamma(\vec{B} + \vec{\beta}/c \times\vec{E})$
+        - for rho and Jz:
+        $\rho_{lab} = \gamma(\rho + \beta J_{z}/c)$
+        $J_{z,lab} = \gamma(J_z + c\beta \rho)$
+            
+        Parameter
+        ---------
+        fields: array of floats
+             An array that packs together the slices of the different fields.
+            The shape of this arrays is:
+            - (10, em.nxlocal+1,) for dim="2d"
+            - (10, em.nxlocal+1, em.nylocal+1) for dim="3d"
+            - (10, 2*em.circ_m+1, em.nxlocal+1) for dim="circ"
         """
-        # Obtain the slices, in the boosted frame
-        # In 2D, the slices are 1D arrays (corresponding to the x direction)
-        # In 3D, the slices are 2D arrays (x and y directions)
-        # (The functions em.getXX simply removes the guard cells)
-        ex_slice = em.getex()[...,iz_slice]
-        ey_slice = em.getey()[...,iz_slice]
-        ez_slice = em.getez()[...,iz_slice]
-        bx_slice = em.getbx()[...,iz_slice]
-        by_slice = em.getby()[...,iz_slice]
-        bz_slice = em.getbz()[...,iz_slice]
-        jx_slice = em.getjx()[...,iz_slice]
-        jy_slice = em.getjy()[...,iz_slice]
-        jz_slice = em.getjz()[...,iz_slice]
-        rho_slice = em.getrho()[...,iz_slice]
-
-        # Allocate an array to store the fields
-        # First index: field (correspondance is given by self.field_to_index)
-        # Second index: x coordinate
-        # Third index (3d only): y coordinate
-        if self.dim == "2d":
-            storing_array = np.array( (10, ex_slice.shape[0]) )
-        if self.dim == "3d":
-            storing_array = np.array( (10, ex_slice.shape[0],
-                                       ex_slice.shape[1]) )
-
-        # Perform the Lorentz transformation from the boosted frame
-        # to the lab frame and store the result at the proper index
-        # (correspondance given by field_to_index)
         # Some shortcuts
         gamma = self.gamma_boost
         cbeta = c*self.beta_boost
         beta_c = self.beta_boost/c
-        field_to_index = self.field_to_index
+        # Shortcut to give the correspondance between field name
+        # (e.g. 'Ex', 'rho') and integer index in the array
+        f2i = self.field_to_index
+        
         # Lorentz transformations
-        # For E
-        storing_array[ field_to_index['Ez'], ... ] = ez_slice
-        storing_array[ field_to_index['Ex'], ... ] = \
-            gamma*( ex_slice + cbeta*by_slice )
-        storing_array[ field_to_index['Ey'], ... ] = \
-            gamma*( ey_slice - cbeta*bx_slice )
-        # For B
-        storing_array[ field_to_index['Bz'], ... ] = bz_slice
-        storing_array[ field_to_index['Bx'], ... ] = \
-            gamma*( bx_slice - beta_c*ey_slice )
-        storing_array[ field_to_index['By'], ... ] = \
-            gamma*( by_slice + beta_c*ex_slice )
-        # For J
-        storing_array[ field_to_index['Jz'], ... ] = \
-            gamma*( jz_slice + cbeta*rho_slice )
-        storing_array[ field_to_index['Jx'], ... ] = jx_slice
-        storing_array[ field_to_index['Jy'], ... ] = jy_slice
-        # For rho
-        storing_array[ field_to_index['rho'], ... ] = \
-            gamma*( rho_slice + beta_c*jz_slice )
-        
-        return( storing_array )
-        
-    def extract_slice_cylindrical( self, iz_slice ):
-        """
-        Store the slice in an array that contains the different fields,
-        in a layout that is close the final layout in the openPMD file
-
-        ### DOC ###
-        """
-        # Obtain the slices, in the boosted frame
-        # For the mode 0 (1d slice: corresponding to the radial direction)
-        er_mode0_slice = em.getex()[:,iz_slice]
-        et_mode0_slice = em.getey()[:,iz_slice]
-        ez_mode0_slice = em.getez()[:,iz_slice]
-        br_mode0_slice = em.getbx()[:,iz_slice]
-        bt_mode0_slice = em.getby()[:,iz_slice]
-        bz_mode0_slice = em.getbz()[:,iz_slice]
-        jr_mode0_slice = em.getjx()[:,iz_slice]
-        jt_mode0_slice = em.getjy()[:,iz_slice]
-        jz_mode0_slice = em.getjz()[:,iz_slice]
-        rho_mode0_slice = em.getrho()[:,iz_slice]
-        # For higher modes (2d slice: first index=r, last index=mode)
-        er_modes_slice = em.getex_circ()[:,iz_slice,:]
-        et_modes_slice = em.getey_circ()[:,iz_slice,:]
-        ez_modes_slice = em.getez_circ()[:,iz_slice,:]
-        br_modes_slice = em.getbx_circ()[:,iz_slice,:]
-        bt_modes_slice = em.getby_circ()[:,iz_slice,:]
-        bz_modes_slice = em.getbz_circ()[:,iz_slice,:]
-        jr_modes_slice = em.getjx_circ()[:,iz_slice,:]
-        jt_modes_slice = em.getjy_circ()[:,iz_slice,:]
-        jz_modes_slice = em.getjz_circ()[:,iz_slice,:]
-        rho_modes_slice = em.getrho_circ()[:,iz_slice,:]
-
-        # Allocate an array to store the fields in format close
-        # to the final openPMD format
-        # First index 
-        
-
-        # Perform the Lorentz transformation from the boosted frame
-        # to the lab frame and store the result at the proper index
-        # (correspondance given by field_to_index)
-        # Some shortcuts
-        gamma = self.gamma_boost
-        cbeta = c*self.beta_boost
-        beta_c = self.beta_boost/c
-        field_to_index = self.field_to_index
-        # Lorentz transformations
-        # For E
-        storing_array[ field_to_index['Ez'], :, :] = ez_slice
-        storing_array[ field_to_index['Er'], :, :] = \
-            gamma*( er_slice + cbeta*bt_slice )
-        storing_array[ field_to_index['Et'], :, :] = \
-            gamma*( et_slice - cbeta*br_slice )
-        # For B
-        storing_array[ field_to_index['Bz'], :, :] = bz_slice
-        storing_array[ field_to_index['Bx'], :, :] = \
-            gamma*( br_slice - beta_c*et_slice )
-        storing_array[ field_to_index['By'], :, :] = \
-            gamma*( bt_slice + beta_c*er_slice )
-        # For J
-        storing_array[ field_to_index['Jz'], :, :] = \
-            gamma*( jz_slice + cbeta*rho_slice )
-        storing_array[ field_to_index['Jr'], :, :] = jr_slice
-        storing_array[ field_to_index['Jt'], :, :] = jt_slice
-        # For rho
-        storing_array[ field_to_index['rho'], ... ] = \
-            gamma*( rho_slice + beta_c*jz_slice )
-        
-        return( storing_array )
+        # For E and B
+        # (NB: Ez and Bz are unchanged by the Lorentz transform)
+        if self.dim in ["2d", "3d"]:
+            # Use temporary arrays when changing Ex and By in place
+            ex_lab = gamma*( fields[f2i['Ex']] + cbeta * fields[f2i['By']] )
+            by_lab = gamma*( fields[f2i['By']] + beta_c * fields[f2i['Ex']] ) 
+            fields[ f2i['Ex'], ... ] = ex_lab
+            fields[ f2i['By'], ... ] = by_lab
+            # Use temporary arrays when changing Ey and Bx in place
+            ey_lab = gamma*( fields[f2i['Ey']] - cbeta * fields[f2i['Bx']] )
+            bx_lab = gamma*( fields[f2i['Bx']] - beta_c * fields[f2i['Ey']] ) 
+            fields[ f2i['Ey'], ... ] = ey_lab
+            fields[ f2i['Bx'], ... ] = bx_lab
+        elif self.dim=="circ":
+            # Use temporary arrays when changing Er and Bt in place
+            er_lab = gamma*( fields[f2i['Er']] + cbeta * fields[f2i['Bt']] )
+            bt_lab = gamma*( fields[f2i['Bt']] + beta_c * fields[f2i['Er']] ) 
+            fields[ f2i['Er'], ... ] = er_lab
+            fields[ f2i['Bt'], ... ] = bt_lab
+            # Use temporary arrays when changing Et and Br in place
+            et_lab = gamma*( fields[f2i['Et']] - cbeta * fields[f2i['Br']] )
+            br_lab = gamma*( fields[f2i['Br']] - beta_c * fields[f2i['Et']] ) 
+            fields[ f2i['Et'], ... ] = et_lab
+            fields[ f2i['Br'], ... ] = br_lab
+        # For rho and J
+        # (NB: the transverse components of J are unchanged)
+        # Use temporary arrays when changing rho and Jz in place
+        rho_lab = gamma*( fields[f2i['rho']] + beta_c * fields[f2i['Jz']] )
+        Jz_lab =  gamma*( fields[f2i['Jz']] + cbeta * fields[f2i['rho']] )
+        fields[ f2i['rho'], ... ] = rho_lab
+        fields[ f2i['Jz'], ... ] = Jz_lab

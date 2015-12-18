@@ -11,14 +11,24 @@ import numpy as np
 from data_dict import circ_dict_quantity, cart_dict_quantity, \
         circ_dict_Jindex, cart_dict_Jindex, x_offset_dict, y_offset_dict
 
-def get_circ_dataset( em, quantity, lgather,
-                      iz_slice=None, transversally_centered=False ):
-    """
-    Get a given quantity in Circ coordinates
 
+def get_dataset( dim, em, quantity, lgather,
+                 iz_slice=None, transverse_centered=False ):
+    """
+    Extract fields from the grid and return them in a format
+    which is close to their final layout in the openPMD file.
+
+    This format depends on the slicing (iz_slice) and geometry (dim)
+    See below for more information of the shape of the output of this function
+    
     Parameters
     ----------
+    dim: string
+        Either "2d", "circ" or "3d"
+        Indicates the geometry of the fields
+
     em: an EM3DSolver object
+        The object from which to extract the fields
     
     quantity: string
         Describes which field is being written.
@@ -33,16 +43,59 @@ def get_circ_dataset( em, quantity, lgather,
         If not None, this is the index of the slice to be returned,
         within the local subdomain
 
-    transversally_centered: bool, optional
+    transverse_centered: bool, optional
         Whether to return fields that are always transversally centered
         (implies that staggered fields will be transversally averaged)
 
     Returns
     -------
-    A 3d array of reals, of shape (2*em.circ_m+1, nxlocal+1, nzlocal+1)
-    if iz_slice is None
-    A 2darray of reals, of shape (2*em.circ_m+1, nxlocal+1)
-    if iz_slice is not None
+    An array of reals whose format is close to the final openPMD layout.
+
+    When there is no slicing (iz_slice is None), the returned array is of shape
+    - (Nx+1, Nz+1) if dim="2d"
+    - (Nx+1, Ny+1, Nz+1) if dim="3d"
+    - ( 2*em.circ_m+1, Nx+1, Nz+1) if dim="circ"
+      (real and imaginary part are separated for each mode)
+    When there is slicing (iz_slice is an integer), the shape is
+    - (Nx+1,) if dim="2d"
+    - (Nx+1, Ny+1) if dim="3d"
+    - ( 2*em.circ_m+1, Nx+1) if dim="circ"
+      (real and imaginary part are separated for each mode)
+
+    In the above Nx is either em.nxlocal (if lgather is False) or the global
+    em.nx (if lgather is True). The same holds for Ny and Nz 
+    """
+    if dim=="circ":
+        return( get_circ_dataset( em, quantity, lgather=lgather,
+            iz_slice=iz_slice, transverse_centered=transverse_centered ) )
+    elif dim=="2d":
+        return( get_cart2d_dataset( em, quantity, lgather=lgather,
+            iz_slice=iz_slice, transverse_centered=transverse_centered ) )
+    elif dim=="3d":
+        return( get_cart3d_dataset( em, quantity, lgather=lgather,
+            iz_slice=iz_slice, transverse_centered=transverse_centered ) )    
+
+def get_circ_dataset( em, quantity, lgather,
+                      iz_slice=None, transverse_centered=False ):
+    """
+    Get a given quantity in Circ coordinates
+
+    Parameters
+    ----------
+    See the docstring of the function get_dataset
+
+    Returns
+    -------
+    An array of reals whose format is close to the final openPMD layout.
+
+    When there is no slicing (iz_slice is None), the returned array is of shape
+    ( 2*em.circ_m+1, Nx+1, Nz+1)
+    When there is slicing (iz_slice is an integer), the shape is
+    ( 2*em.circ_m+1, Nx+1)
+    (real and imaginary part are separated for each mode)
+
+    In the above Nx is either em.nxlocal (if lgather is False) or the global
+    em.nx (if lgather is True). The same holds for Nz.
     """
     # Extract either a slice or the full array
 
@@ -89,7 +142,7 @@ def get_circ_dataset( em, quantity, lgather,
     # If needed, average the slices for a staggered field
     # In the x direction
     nxg = em.nxguard
-    if transversally_centered and (x_offset_dict[quantity]==0.5):
+    if transverse_centered and (x_offset_dict[quantity]==0.5):
         F = 0.5*( F[ nxg-1:-nxg-1 ] + F[ nxg:-nxg ] )
         if em.circ_m > 0:
             F_circ = 0.5*( F_circ[ nxg-1:-nxg-1 ] + F_circ[ nxg:-nxg ] )
@@ -114,48 +167,42 @@ def get_circ_dataset( em, quantity, lgather,
 
     # Reshape the array so that it is stored in openPMD layout,
     # with real and imaginary part of each mode separated
-    if iz_slice is None:
-        Ftot = np.empty( ( 1+2*em.circ_m, F.shape[0], F.shape[1] ) )
+    if F is not None:
+        # Check that the present process participates in writing data      
+        if iz_slice is None:
+            Ftot = np.empty( ( 1+2*em.circ_m, F.shape[0], F.shape[1] ) )
+        else:
+            Ftot = np.empty( ( 1+2*em.circ_m, F.shape[0] ) )
+        # Fill the array
+        Ftot[ 0, ... ] = F[...]
+        for m in range(em.circ_m):
+            Ftot[ 2*m+1, ... ] = F_circ[..., m].real
+            Ftot[ 2*m+2, ... ] = F_circ[..., m].imag
     else:
-        Ftot = np.empty( ( 1+2*em.circ_m, F.shape[0] ) )
-    # Fill the array
-    Ftot[ 0, ... ] = F[...]
-    for m in range(em.circ_m):
-        Ftot[ 2*m+1, ... ] = F_circ[..., m].real
-        Ftot[ 2*m+2, ... ] = F_circ[..., m].imag
-        
+        Ftot = None
+
     return( Ftot )
 
 def get_cart3d_dataset( em, quantity, lgather,
-                      iz_slice=None, transversally_centered=False ):
+                      iz_slice=None, transverse_centered=False ):
     """
     Get a given quantity in 3D Cartesian coordinates
 
     Parameters
     ----------
-    em: an EM3DSolver object
-    
-    quantity: string
-        Describes which field is being written.
-        (Either rho, Ex, Ey, Ez, Bx, By, Bz, Jx, Jy or Jz)
-
-    lgather: boolean
-        Defines if data is gathered on me (process) = 0
-        If "False": No gathering is done
-
-    iz_slice: int or None
-        If None, the full field array is returned
-        If not None, this is the index of the slice to be returned,
-        within the local subdomain
-
-    transversally_centered: bool, optional
-        Whether to return fields that are always transversally centered
-        (implies that staggered fields will be transversally averaged)
+    See the docstring of the function get_dataset
 
     Returns
     -------
-    A 3darray of shape (nxlocal+1, nylocal+1, nzlocal+1) if iz_slice is None
-    A 2darray (nxlocal+1, nylocal+1) if iz_slice is not None
+    An array of reals whose format is close to the final openPMD layout.
+
+    When there is no slicing (iz_slice is None), the returned array is of shape
+    ( Nx+1, Ny+1, Nz+1)
+    When there is slicing (iz_slice is an integer), the shape is
+    ( Nx+1, Ny+1)
+
+    In the above Nx is either em.nxlocal (if lgather is False) or the global
+    em.nx (if lgather is True). The same holds for Ny and Nz.
     """
     # Extract either a slice or the full array
 
@@ -177,18 +224,20 @@ def get_cart3d_dataset( em, quantity, lgather,
             F = getattr( em.fields, field_name )[:,:,:]
         else:
             F = getattr( em.fields, field_name )[:,:,em.nzguard+iz_slice]
+    else:
+        raise ValueError('Unknown quantity: %s' %quantity)
 
     # Cut away the guard cells
     # If needed, average the slices for a staggered field
     # In x
     nxg = em.nxguard
-    if transversally_centered and (x_offset_dict[quantity]==0.5):
+    if transverse_centered and (x_offset_dict[quantity]==0.5):
         F = 0.5*( F[ nxg-1:-nxg-1 ] + F[ nxg:-nxg ] )
     else:
         F = F[ nxg:-nxg ]
     # In y
     nyg = em.nyguard
-    if transversally_centered and (y_offset_dict[quantity]==0.5):
+    if transverse_centered and (y_offset_dict[quantity]==0.5):
         F = 0.5*( F[ :, nyg-1:-nyg-1 ] + F[ :, nyg:-nyg ] )
     else:
         F = F[ :, nyg:-nyg ]
@@ -210,35 +259,25 @@ def get_cart3d_dataset( em, quantity, lgather,
 
 
 def get_cart2d_dataset( em, quantity, lgather,
-                      iz_slice=None, transversally_centered=False ):
+                      iz_slice=None, transverse_centered=False ):
     """
     Get a given quantity in 2D Cartesian coordinates
 
     Parameters
     ----------
-    em: an EM3DSolver object
-    
-    quantity: string
-        Describes which field is being written.
-        (Either rho, Ex, Ey, Ez, Bx, By, Bz, Jx, Jy or Jz)
-
-    lgather: boolean
-        Defines if data is gathered on me (process) = 0
-        If "False": No gathering is done
-
-    iz_slice: int or None
-        If None, the full field array is returned
-        If not None, this is the index of the slice to be returned,
-        within the local subdomain
-
-    transversally_centered: bool, optional
-        Whether to return fields that are always transversally centered
-        (implies that staggered fields will be transversally averaged)
+    See the docstring of the function get_dataset
 
     Returns
     -------
-    A 2darray of shape (nxlocal+1, nzlocal+1) if iz_slice is None
-    A 1darray (nxlocal+1) if iz_slice is not None
+    An array of reals whose format is close to the final openPMD layout.
+
+    When there is no slicing (iz_slice is None), the returned array is of shape
+    ( Nx+1, Nz+1)
+    When there is slicing (iz_slice is an integer), the shape is
+    ( Nx+1,)
+
+    In the above Nx is either em.nxlocal (if lgather is False) or the global
+    em.nx (if lgather is True). The same holds for Nz.
     """
     # Extract either a slice or the full array
 
@@ -260,12 +299,14 @@ def get_cart2d_dataset( em, quantity, lgather,
             F = getattr( em.fields, field_name )[:,0,:]
         else:
             F = getattr( em.fields, field_name )[:,0,em.nzguard+iz_slice]
+    else:
+        raise ValueError('Unknown quantity: %s' %quantity)
 
     # Cut away the guard cells
     # If needed, average the slices for a staggered field
     # In the x direction
     nxg = em.nxguard
-    if transversally_centered and (x_offset_dict[quantity]==0.5):
+    if transverse_centered and (x_offset_dict[quantity]==0.5):
         F = 0.5*( F[ nxg-1:-nxg-1 ] + F[ nxg:-nxg ] )
     else:
         F = F[ nxg : -nxg ]
