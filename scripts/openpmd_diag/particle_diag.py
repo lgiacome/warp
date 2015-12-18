@@ -175,25 +175,27 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         """
         # Create the file
         filename = "data%08d.h5" %iteration
-        fullpath = os.path.join( self.write_dir, "diags/hdf5", filename )
+        fullpath = os.path.join( self.write_dir, "hdf5", filename )
         
         # In gathering mode, only the first proc creates the file.
         if self.lparallel_output == False and self.rank == 0 :
             # Create the filename and open hdf5 file
             f = h5py.File( fullpath, mode="a" )
-            self.setup_openpmd_file( f )
+            self.setup_openpmd_file( f, self.top.it,
+                                     self.top.time, self.top.dt )
             this_rank_writes = True
         # In parallel mode (lparallel_output=True), all proc create the file
         elif self.lparallel_output == True :
             # Create the filename and open hdf5 file
             f = h5py.File( fullpath, mode="a", driver='mpio',
                            comm=self.comm_world)
-            self.setup_openpmd_file( f )
+            self.setup_openpmd_file( f, self.top.it,
+                                     self.top.time, self.top.dt )
             this_rank_writes = True
         else:
             f = None
             this_rank_writes = False
-
+            
         # Loop over the different species and 
         # particle quantities that should be written
         for species_name in self.species_dict :
