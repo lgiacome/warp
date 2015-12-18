@@ -120,7 +120,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
 
         # Open the file again, and get the field path
         f = self.open_file( fullpath )
-        # (f is None if this processor does not participate is writing data)
+        # (f is None if this processor does not participate in writing data)
         if f is not None:
             field_path = "/data/%d/fields/" %iteration
             field_grp = f[field_path]
@@ -145,7 +145,6 @@ class FieldDiagnostic(OpenPMDDiagnostic):
 
     # Writing methods
     # ---------------
-
     def write_dataset( self, field_grp, path, quantity ):
         """
         Write a given dataset

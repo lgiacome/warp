@@ -1,32 +1,22 @@
 """
-Major ideas of this implementation:
+This file defines the class BoostedFieldDiagnostic
 
-- Try to reuse the existing structures (FieldDiagnostic, etc.) as
-  much as possible, so that we don't have to rewrite the openPMD attribute
+Major features:
+- The class reuses the existing methods of FieldDiagnostic
+  as much as possible, through class inheritance
+- The class implements memory buffering of the slices, so as
+  not to write to disk at every timestep
 
-- Implement storing of the data in memory (done at each iteration),
-  and flushing to the disk every 10/20 timestep
-  (will be very useful on the GPU, to avoid waisting time in CPU communication)
-
-- Encapsulate the data of each lab snapshot (i.e. time in the lab frame,
-  file to which it writes, accumulated data in memory) into a dedicated object
-  (LabSnapshot)
-
-Questions:
-- Which datastructure to use for the slices => array of all fields
+Remaining questions:
 - Should one use the IO collectives when only a few proc modify a given file?
-- Should we just have the proc writing directly to the file ? Should we gather on the first proc ?
-- Should we keep all the files open simultaneously,
-or open/close them on the fly?
-- What to do for the particles ? How to know the total
-number of particles in advance (Needed to create the dataset) ?
->> Do resizable particle arrays
-- Should we pack the arrays before writing them to the file
-
-- Is it better to write all the attributes with only one proc ?
+- Should we just have the proc writing directly to the file ?
+  Should we gather on the first proc ?
+- Is it better to write all the attributes of the openPMD file
+  with only one proc ?
 """
 import os
 import numpy as np
+import h5py
 from scipy.constants import c
 from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
@@ -156,11 +146,11 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 # In this case, extract the proper slice from the field array,
                 # perform a Lorentz transform to the lab frame, and store
                 # the results in a properly-formed array
-                storing_array = self.slice_handler.extract_slice(
+                slice_array = self.slice_handler.extract_slice(
                     self.em, snapshot.current_z_boost, zmin_boost )
                 # Register this in the buffers of this snapshot
-                snapshot.register_slice( storing_array, self.inv_dz_lab )
-        
+                snapshot.register_slice( slice_array, self.inv_dz_lab )
+
     def flush_to_disk( self ):
         """
         Writes the buffered slices of fields to the disk
@@ -170,8 +160,103 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # Loop through the labsnapshots and flush the data
         for snapshot in self.snapshots:
 
+            # Compact the successive slices that have been buffered
+            # over time into a single array
+            field_array, iz_min, iz_max = snapshot.compact_slices()
+            # Erase the memory buffers
             snapshot.buffered_slices = []
             snapshot.buffer_z_indices = []
+
+            # Write this array to disk (if this snapshot has new slices)
+            if field_array is not None:
+                self.write_slices( field_array, iz_min, iz_max,
+                    snapshot, self.slice_handler.field_to_index )
+
+    def write_slices( self, field_array, iz_min, iz_max, snapshot, f2i ): 
+        """
+        For one given snapshot, write the slices of the
+        different fields to an openPMD file
+
+        Parameters
+        ----------
+        field_array: array of reals
+            Array of shape
+            - (10, em.nxlocal+1, nslices) if dim="2d"
+            - (10, em.nxlocal+1, em.nylocal+1, nslices) if dim="3d"
+            - (10, 2*em.circ_m+1, em.nxlocal+1, nslices) if dim="circ"
+
+        iz_min, iz_max: integers
+            The indices between which the slices will be written
+            iz_min is inclusice and iz_max is exclusive
+
+        snapshot: a LabSnaphot object
+
+        f2i: dict
+            Dictionary of correspondance between the field names
+            and the integer index in the field_array
+        """
+        # Open the file without parallel I/O in this implementation
+        f = self.open_file( snapshot.filename )
+
+        field_path = "/data/%d/fields/" %snapshot.iteration
+        field_grp = f[field_path]
+        
+        # Loop over the different quantities that should be written
+        for fieldtype in self.fieldtypes:
+            # Scalar field
+            if fieldtype == "rho":
+                data = field_array[ f2i[ "rho" ] ]
+                self.write_field_slices( field_grp, data, "rho",
+                                         "rho", iz_min, iz_max )
+            # Vector field
+            elif fieldtype in ["E", "B", "J"]:
+                for coord in self.coords:
+                    quantity = "%s%s" %(fieldtype, coord)
+                    path = "%s/%s" %(fieldtype, coord)
+                    data = field_array[ f2i[ quantity ] ]
+                    self.write_field_slices( field_grp, data, path,
+                                        quantity, iz_min, iz_max )
+
+        # Close the file
+        f.close()
+
+    def write_field_slices( self, field_grp, data, path,
+                            quantity, iz_min, iz_max ):
+        """
+        Writes the slices of a given field into the openPMD file
+
+        Parameters
+        ----------
+        field_grp: an hdf5.Group
+            The h5py group that contains all the meshes
+
+        data: array of reals
+            An array containing the slices for one given field
+            
+        path: string
+            The path of the dataset to write within field_grp
+
+        quantity: string
+            A string that indicates which field is being written
+            (e.g. 'Ex', 'Br', or 'rho')
+
+        iz_min, iz_max: integers
+            The indices between which the slices will be written
+            iz_min is inclusice and iz_max is exclusive
+        """
+        dset = field_grp[ path ]
+        indices = self.global_indices
+
+        # Write the fields depending on the geometry
+        if self.dim == "2d":
+            dset[ indices[0,0]:indices[1,0], iz_min:iz_max ] = data
+        elif self.dim == "3d":
+            dset[ indices[0,0]:indices[1,0],
+                  indices[1,0]:indices[1,1], iz_min:iz_max ] = data
+        elif self.dim == "circ":
+            # The first index corresponds to the azimuthal mode
+            dset[:, indices[0,0]:indices[1,0], iz_min:iz_max ] = data
+
 
 class LabSnapshot:
     """
@@ -199,6 +284,7 @@ class LabSnapshot:
         """
         # Deduce the name of the filename where this snapshot writes
         self.filename = os.path.join( write_dir, 'hdf5/data%05d.h5' %i)
+        self.iteration = i
 
         # Time and boundaries in the lab frame (constants quantities)
         self.zmin_lab = zmin_lab
@@ -212,7 +298,7 @@ class LabSnapshot:
 
         # Buffered field slice and corresponding array index in z
         self.buffered_slices = []
-        self.buffer_z_index = []
+        self.buffer_z_indices = []
 
     def update_current_output_positions( self, t_boost, inv_gamma, inv_beta ):
         """
@@ -235,15 +321,15 @@ class LabSnapshot:
         self.current_z_boost = ( t_lab*inv_gamma - t_boost )*c*inv_beta
         self.current_z_lab = ( t_lab - t_boost*inv_gamma )*c*inv_beta
 
-    def register_slice( self, field_array, inv_dz_lab ):
+    def register_slice( self, slice_array, inv_dz_lab ):
         """
-        Store the slice of fields represented by field_array
+        Store the slice of fields represented by slice_array
         and also store the z index at which this slice should be
         written in the final lab frame array
 
         Parameters
         ----------
-        field_array: array of reals
+        slice_array: array of reals
             An array of packed fields that corresponds to one slice,
             as given by the SliceHandler object
 
@@ -254,23 +340,59 @@ class LabSnapshot:
         iz_lab = int( (self.current_z_lab - self.zmin_lab)*inv_dz_lab )
 
         # Store the values and the index
-        self.buffered_slices.append( field_array )
-        self.buffer_z_index.append( iz_lab )
+        self.buffered_slices.append( slice_array )
+        self.buffer_z_indices.append( iz_lab )
 
-    def flush_to_disk( self ):
+    def compact_slices(self):
+        """
+        Compact the successive slices that have been buffered
+        over time into a single array, and return the indices
+        at which this array should be written.
+
+        Returns
+        -------
+        field_array: an array of reals of shape
+        - (10, em.nxlocal+1, nslices) if dim is "2d"
+        - (10, em.nxlocal+1, em.nylocal+1, nslices) if dim is "3d"
+        - (10, 2*em.circ_m+1, em.nxlocal+1, nslices) if dim is "circ"
+        In the above nslices is the number of buffered slices
+
+        iz_min, iz_max: integers
+        The indices between which the slices should be written
+        (iz_min is inclusive, iz_max is exclusive)
+
+        Returns None if the slices are empty
+        """
+        # Return None if the slices are empty
+        if len(self.buffer_z_indices) == 0:
+            return( None, None, None )
         
-        # Convert slices to array
+        # Check that the indices of the slices are contiguous
+        # (This should be a consequence of the transformation implemented
+        # in update_current_output_positions, and of the calculation
+        # of inv_dz_lab.)
+        iz_old = self.buffer_z_indices[0]
+        for iz in self.buffer_z_indices[1:]:
+            if iz != iz_old - 1:
+                raise UserWarning('In the boosted frame diagnostic, '
+                        'the buffered slices are not contiguous in z.\n'
+                        'The boosted frame diagnostics may be inaccurate.')
+                break
+            iz_old = iz
 
-        # Check that the slices indices are contiguous
+        # Pack the different slices together
+        # Reverse the order of the slices when stacking the array,
+        # since the slices where registered for right to left
+        field_array = np.stack( self.buffered_slices[::-1], axis=-1 )
 
-        # Gather on the first proc + First proc writes ?
-        # Write the data
+        # Get the first and last index in z
+        # (Following Python conventions, iz_min is inclusive,
+        # iz_max is exclusive)
+        iz_min = self.buffer_z_indices[-1]
+        iz_max = self.buffer_z_indices[0] + 1
 
-        # Erase the slices
-        self.buffered_slices = []
-        self.buffer_z_index = []
-
-
+        return( field_array, iz_min, iz_max )
+        
 class SliceHandler:
     """
     Class that extracts, Lorentz-transforms and writes slices of the fields
@@ -302,10 +424,6 @@ class SliceHandler:
             self.field_to_index = {'Er':0, 'Et':1, 'Ez':2, 'Br':3,
                 'Bt':4, 'Bz':5, 'Jr':6, 'Jt':7, 'Jz':8, 'rho':9}            
 
-        # Create the reverse dictionary
-        self.index_to_field = { value:key for key, value \
-                                in self.field_to_index.items() }
-            
     def extract_slice( self, em, z_boost, zmin_boost ):
         """
         Returns an array that contains the slice of the fields at
@@ -341,14 +459,14 @@ class SliceHandler:
         # at z_boost, using interpolation, and store them in an array
         # (See the docstring of the extract_slice_boosted_frame for
         # the shape of this array.)
-        field_array = self.extract_slice_boosted_frame(
+        slice_array = self.extract_slice_boosted_frame(
             em, z_boost, zmin_boost )
 
         # Perform the Lorentz transformation of the fields *from
         # the boosted frame to the lab frame*
-        self.transform_fields_to_lab_frame( field_array )
+        self.transform_fields_to_lab_frame( slice_array )
             
-        return( field_array )
+        return( slice_array )
 
     def extract_slice_boosted_frame( self, em, z_boost, zmin_boost ):
         """
@@ -366,11 +484,11 @@ class SliceHandler:
         """
         # Allocate an array of the proper shape
         if self.dim=="2d":
-            field_array = np.empty( (10, em.nxlocal+1,) )
+            slice_array = np.empty( (10, em.nxlocal+1,) )
         elif self.dim=="3d":
-            field_array = np.empty( (10, em.nxlocal+1, em.nylocal+1) )
+            slice_array = np.empty( (10, em.nxlocal+1, em.nylocal+1) )
         elif self.dim=="circ":
-            field_array = np.empty( (10, 2*em.circ_m+1, em.nxlocal+1) )
+            slice_array = np.empty( (10, 2*em.circ_m+1, em.nxlocal+1) )
 
         # Find the index of the slice in the boosted frame
         # and the corresponding interpolation shape factor
@@ -408,14 +526,14 @@ class SliceHandler:
             # Interpolate the centered field in z
             # (Transversally-staggered fields are also interpolated
             # to the nodes of the grid, thanks to the flag transverse_centered)
-            field_array[ f2i[quantity], ... ] = Sz * get_dataset(
+            slice_array[ f2i[quantity], ... ] = Sz * get_dataset(
                 self.dim, em, quantity, lgather=False, iz_slice=iz,
                 transverse_centered=True )
-            field_array[ f2i[quantity], ... ] += (1.-Sz) * get_dataset(
+            slice_array[ f2i[quantity], ... ] += (1.-Sz) * get_dataset(
                 self.dim, em, quantity, lgather=False, iz_slice=iz+1,
                 transverse_centered=True )
 
-        return( field_array )
+        return( slice_array )
 
     def transform_fields_to_lab_frame( self, fields ):
         """

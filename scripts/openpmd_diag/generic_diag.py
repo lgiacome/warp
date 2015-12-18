@@ -62,7 +62,9 @@ class OpenPMDDiagnostic(object) :
         self.period = period
         self.comm_world = comm_world
         self.lparallel_output = lparallel_output
-            
+        if (self.comm_world is None) or (self.comm_world.size==1):
+            self.lparallel_output = False
+        
         # Get the directory in which to write the data
         if write_dir is None :
             self.write_dir = os.path.join( os.getcwd(), 'diags' )
