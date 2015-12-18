@@ -16,6 +16,7 @@ Remaining questions:
 """
 import os
 import numpy as np
+import time
 import h5py
 from scipy.constants import c
 from field_diag import FieldDiagnostic
@@ -86,6 +87,11 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         
         # Create the list of LabSnapshot objects
         self.snapshots = []
+        # Record the time it takes
+        measured_start = time.clock()
+        print('\nInitializing the lab-frame diagnostics: %d files...' %(
+            Ntot_snapshots_lab) )
+        # Loop through the lab snapshots and create the corresponding files
         for i in range( Ntot_snapshots_lab ):
             t_lab = i * dt_snapshots_lab
             snapshot = LabSnapshot( t_lab,
@@ -96,6 +102,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             # Initialize a corresponding empty file
             self.create_file_empty_meshes( snapshot.filename, i,
                 snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt )
+        # Print a message that records the time for initialization
+        measured_end = time.clock()
+        print('Time taken for initialization of the files: %.5f s' %(
+            measured_end-measured_start) )
 
         # Create a slice handler, which will do all the extraction, Lorentz
         # transformation, etc for each slice to be registered in a
@@ -252,7 +262,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             dset[ indices[0,0]:indices[1,0], iz_min:iz_max ] = data
         elif self.dim == "3d":
             dset[ indices[0,0]:indices[1,0],
-                  indices[1,0]:indices[1,1], iz_min:iz_max ] = data
+                  indices[0,1]:indices[1,1], iz_min:iz_max ] = data
         elif self.dim == "circ":
             # The first index corresponds to the azimuthal mode
             dset[:, indices[0,0]:indices[1,0], iz_min:iz_max ] = data
