@@ -1,6 +1,6 @@
 # File MPLOT.PY --- standard post-processing for module-impedance runs
 
-from warp import *
+from ..warp import *
 
 
 ### MPLOT - setup plots

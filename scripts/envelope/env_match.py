@@ -1,4 +1,5 @@
 from warp import *
+from warp.optimizer import ParticleSwarm
 import numpy.linalg as linalg
 
 print 'Envelope matching routines'
@@ -375,7 +376,6 @@ def matchxenv(xf=0.,xpf=0.,yf=0.,ypf=0.,zz=None,maxiter=100,tol=1.e-10):
         print "top.y0 = %20.15e;top.yp0 = %20.15e"%(top.y0,top.yp0)
 
 #----------------------------------------------------------------------------
-from optimizer import ParticleSwarm
 def envmatchswarm(quads,af,bf,apf,bpf,zz=None,maxiter=100,tol=1.e-10):
     """Varies quads to match the envelope to the specified final values
        - quads index of quad elements which are to be varied
