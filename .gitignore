@@ -16,7 +16,6 @@ forthonf2c.h
 ranffortran.c
 
 # Ignore local definitions for building
-Makefile
 Makefile.local
 Makefile.local3
 Makefile.local.pympi
