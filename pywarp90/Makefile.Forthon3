@@ -77,5 +77,5 @@ ranffortran.c: ranffortran.m
 	$(PYTHON) -c "from Forthon.preprocess import main;main()" ranffortran.m ranffortran.c
 
 clean:
-	rm -rf $(BUILDBASEDIR) *.o
+	rm -rf $(BUILDBASEDIR) *.o ../scripts/$(BUILDBASEDIR)
 
