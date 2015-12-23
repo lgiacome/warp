@@ -2293,7 +2293,7 @@ class Species(object):
     zshift = property(*_getpgroupattribute('zshift'))
 
     # --- This handles the particles from the species.
-    # --- Note that this is on for the local domain, no parallel communication
+    # --- Note that this is only for the local domain, no parallel communication
     # --- is done. If particles are needed across parallel domains, use the
     # --- get methods.
     def _getpgroupattribute(name,doc=None):
@@ -2959,3 +2959,41 @@ class Species(object):
     del _gettopjsidattribute
     del _gettoplabmomattribute
     del _gettopjsidhistattribute
+
+    @classmethod
+    def addpid(cls, pidname):
+        """Dynamically add a new particle attribute"""
+        if pidname in cls.__dict__ or pidname+'pid' in cls.__dict__:
+            raise Exception('A new pid must have a unique name')
+        pid = nextpid()
+
+        def fget(self):
+            if len(self.jslist) == 1:
+                if self.pgroup.npmax > 0:
+                    js = self.jslist[0]
+                    i1 = self.pgroup.ins[js] - 1
+                    i2 = i1 + self.pgroup.nps[js]
+                    return self.pgroup.pid[i1:i2, pid-1]
+                else:
+                    # --- Arrays are unallocated - return a zero length array.
+                    # --- This avoids the need of code always having to check if
+                    # --- the arrays are allocated.
+                    return zeros(0)
+            else:
+                raise NotImplementedError('The species attributes only works with one species')
+        def fset(self,value):
+            if len(self.jslist) == 1:
+                js = self.jslist[0]
+                i1 = self.pgroup.ins[js] - 1
+                i2 = i1 + self.pgroup.nps[js]
+                self.pgroup.pid[i1:i2, pid-1] = value
+            else:
+                raise NotImplementedError('The species attributes only works with one species')
+
+        def getpidname(self, **kw):
+            return self.getpid(id=pid-1, **kw)
+
+        setattr(cls, pidname+'pid', pid)
+        setattr(cls, pidname, property(fget, fset, None, None))
+        setattr(cls, 'get'+pidname, getpidname)
+
