@@ -709,7 +709,16 @@ class Species(object):
     def addparticles(self,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,js=None,**kw):
         if js is None:
             js=self.jslist[0]
+
+        # --- Allow added pid names to be passed in through the keyword list.
+        pidpairs = kw.setdefault('pidpairs', [])
+        for k, v in kw.items():
+            if k in self._addedpids:
+                pidpairs.append([getattr(self, k+'pid'), v])
+                kw.pop(k)
+
         return addparticles(x,y,z,vx,vy,vz,gi=gi,js=js,**kw)
+
     addpart = addparticles
 
     def add_uniform_box(self,np,xmin,xmax,ymin,ymax,zmin,zmax,vthx=0.,
@@ -2960,12 +2969,21 @@ class Species(object):
     del _gettoplabmomattribute
     del _gettopjsidhistattribute
 
+    # --- Save a list of added pid attributes
+    _addedpids = []
+
     @classmethod
-    def addpid(cls, pidname):
-        """Dynamically add a new particle attribute"""
-        if pidname in cls.__dict__ or pidname+'pid' in cls.__dict__:
+    def addpid(cls, name, pid=None):
+        """Dynamically add a new particle attribute
+        - name: name of new attribute. An attribute name+'pid' will also be added to hold the pid number.
+                The particle data can be access directly with the attribute or via a get method.
+                For example, by calling beam.addpid('foo'), the data can be accessed using beam.foo or beam.getfoo().
+        - pid=None: if specified, the pid to use, otherwise nextpid will be called
+        """
+        if name in cls.__dict__ or name+'pid' in cls.__dict__:
             raise Exception('A new pid must have a unique name')
-        pid = nextpid()
+        if pid is None:
+            pid = nextpid()
 
         def fget(self):
             if len(self.jslist) == 1:
@@ -2993,7 +3011,8 @@ class Species(object):
         def getpidname(self, **kw):
             return self.getpid(id=pid-1, **kw)
 
-        setattr(cls, pidname+'pid', pid)
-        setattr(cls, pidname, property(fget, fset, None, None))
-        setattr(cls, 'get'+pidname, getpidname)
+        setattr(cls, name+'pid', pid)
+        setattr(cls, name, property(fget, fset, None, None))
+        setattr(cls, 'get'+name, getpidname)
+        cls._addedpids.append(name)
 
