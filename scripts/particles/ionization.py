@@ -67,12 +67,12 @@ Class for generating particles from impact ionization
     self.gi={}
     self.w={}
     self.pidtag={}
-    # --- This is kind of messy, but the injpid must be handled. When injection
+    # --- This is kind of messy, but the injdatapid must be handled. When injection
     # --- is being done, it needs to be set properly in order for the emitted
     # --- particles to have the correctly calculated E fields when they are created
-    # --- near an emitting surface. The injpid of the incident particles are passed to
+    # --- near an emitting surface. The injdatapid of the incident particles are passed to
     # --- the emitted particles.
-    self.injpid={}
+    self.injdatapid={}
     self.emitted_id = None
     self.l_timing=l_timing
     self.install()
@@ -216,7 +216,7 @@ a value given a velocity. This returns the Appropriate value.
         self.gi[emitted_pgroup]={}
         self.w[emitted_pgroup]={}
         self.pidtag[emitted_pgroup]={}
-        self.injpid[emitted_pgroup]={}
+        self.injdatapid[emitted_pgroup]={}
       if js not in self.x[emitted_pgroup]:
         self.nps[emitted_pgroup][js]=0
         self.x[emitted_pgroup][js]=fzeros(self.npmax,'d')
@@ -230,8 +230,8 @@ a value given a velocity. This returns the Appropriate value.
           self.w[emitted_pgroup][js]=fzeros(self.npmax,'d')
         if emitted_tag is not None:
           self.pidtag[emitted_pgroup][js]=fzeros(self.npmax,'d')
-        if top.injpid > 0:
-          self.injpid[emitted_pgroup][js]=fzeros(self.npmax,'d')
+        if top.injdatapid > 0:
+          self.injdatapid[emitted_pgroup][js]=fzeros(self.npmax,'d')
 
   def add_ionization(self,incident_species,emitted_species,target_species=None,cross_section=None,**kw):
     """The incident species will knock an electron off of the target species.
@@ -298,15 +298,15 @@ velocity of the incident particle.
     if not isinstalleduserinjection(self.generate):
       installuserinjection(self.generate)
 
-  def addpart(self,nn,x,y,z,ux,uy,uz,gi,pg,js,tag,injpid,w=1.):
+  def addpart(self,nn,x,y,z,ux,uy,uz,gi,pg,js,tag,injdatapid,w=1.):
     ilf=0
-    if injpid is not None:
+    if injdatapid is not None:
       # --- This is needed in case injection is setup after the interactions
       # --- are setup. If that happens, the array would not have been allocated.
       try:
-        self.injpid[pg][js]
+        self.injdatapid[pg][js]
       except KeyError:
-        self.injpid[pg][js]=fzeros(self.npmax,'d')
+        self.injdatapid[pg][js]=fzeros(self.npmax,'d')
     while self.nps[pg][js]+nn>self.npmax:
       il=self.nps[pg][js]
       iu=min(il+nn,self.npmax)
@@ -321,8 +321,8 @@ velocity of the incident particle.
       if top.wpid>0:self.w[pg][js][il:iu]=w[ilf:ilf+nf]
       if tag is not None:
         self.pidtag[pg][js][il:iu]=tag
-      if injpid is not None:
-        self.injpid[pg][js][il:iu]=injpid[ilf:ilf+nf]
+      if injdatapid is not None:
+        self.injdatapid[pg][js][il:iu]=injdatapid[ilf:ilf+nf]
       self.nps[pg][js]+=nf
       self.flushpart(pg,js)
       ilf+=nf
@@ -339,8 +339,8 @@ velocity of the incident particle.
     if top.wpid>0:self.w[pg][js][il:iu]=w[ilf:]
     if tag is not None:
       self.pidtag[pg][js][il:iu]=tag
-    if injpid is not None:
-      self.injpid[pg][js][il:iu]=injpid[ilf:]
+    if injdatapid is not None:
+      self.injdatapid[pg][js][il:iu]=injdatapid[ilf:]
     self.nps[pg][js]+=nn
 
   def flushpart(self,pg,js):
@@ -364,8 +364,8 @@ velocity of the incident particle.
            pidpairs.append([self.emitted_id,self.pidtag[pg][js][:nn]])
          except KeyError:
            pass
-         if top.injpid > 0:
-           pidpairs.append([top.injpid,self.injpid[pg][js][:nn]])
+         if top.injdatapid > 0:
+           pidpairs.append([top.injdatapid,self.injdatapid[pg][js][:nn]])
          if top.wpid==0:
            w=1.
          else:
@@ -475,7 +475,7 @@ velocity of the incident particle.
     _cleanit(self.gi)
     _cleanit(self.w)
     _cleanit(self.pidtag)
-    _cleanit(self.injpid)
+    _cleanit(self.injdatapid)
 
 #printall(io,l_cgm=1)
 
@@ -580,12 +580,12 @@ velocity of the incident particle.
             wi = ipg.pid[i1:i2:self.stride,top.wpid-1]
           else:
             wi = 1.
-          if top.injpid > 0:
-            # --- Save the injpid of the incident particles so that it can be
+          if top.injdatapid > 0:
+            # --- Save the injdatapid of the incident particles so that it can be
             # --- passed to the emitted particles.
-            injpid = ipg.pid[i1:i2:self.stride,top.injpid-1]
+            injdatapid = ipg.pid[i1:i2:self.stride,top.injdatapid-1]
           else:
-            injpid = None
+            injdatapid = None
           # --- get velocity in lab frame if using a boosted frame of reference
           if top.boost_gamma>1.:
             uzboost = clight*sqrt(top.boost_gamma**2-1.)
@@ -718,9 +718,9 @@ velocity of the incident particle.
             else:
               w = wi[io]
 
-            # --- The injpid value needs to be copied to the emitted particles
+            # --- The injdatapid value needs to be copied to the emitted particles
             # --- so that they are handled properly in the region near the source.
-            if top.injpid > 0: injpid = injpid[io]
+            if top.injdatapid > 0: injdatapid = injdatapid[io]
 
             # --- If the emitted energy was not specified, the emitted particle will be
             # --- given the same velocity of the incident particle.
@@ -769,10 +769,10 @@ velocity of the incident particle.
               if self.l_verbose:print 'add ',nnew, emitted_species.name,' from by impact ionization:',incident_species.name,'+',((target_species is None and 'background gas') or target_species.name)
               if self.inter[incident_species]['remove_incident'][it] and (emitted_species.type is incident_species.type):
                 self.addpart(nnew,xnewp,ynewp,znewp,uxnew,uynew,uznew,ginew,epg,emitted_species.jslist[0],
-                             self.inter[incident_species]['emitted_tag'][it],injpid,w)
+                             self.inter[incident_species]['emitted_tag'][it],injdatapid,w)
               else:
                 self.addpart(nnew,xnew,ynew,znew,uxnew,uynew,uznew,ginew,epg,emitted_species.jslist[0],
-                             self.inter[incident_species]['emitted_tag'][it],injpid,w)
+                             self.inter[incident_species]['emitted_tag'][it],injdatapid,w)
             ncoli = ncoli[io] - 1
             io = arange(nnew)[ncoli>0]
             nnew = len(io)

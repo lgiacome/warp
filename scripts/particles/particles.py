@@ -1563,8 +1563,8 @@ def addparticles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
 
     if lnewparticles:
         # --- Set time of creation
-        if top.tpid > 0:
-            pid[:,top.tpid-1] = top.time
+        if top.tbirthpid > 0:
+            pid[:,top.tbirthpid-1] = top.time
 
         # --- Set weights
         if w is not None and top.wpid > 0:

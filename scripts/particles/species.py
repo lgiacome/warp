@@ -716,6 +716,12 @@ class Species(object):
             if k in self._addedpids:
                 pidpairs.append([getattr(self, k+'pid'), v])
                 kw.pop(k)
+            try:
+                n = self._builtinpids[k]
+                pidpairs.append([getattr(n[0], n[1]), v])
+                kw.pop(k)
+            except KeyError:
+                pass
 
         return addparticles(x,y,z,vx,vy,vz,gi=gi,js=js,**kw)
 
@@ -2372,8 +2378,14 @@ class Species(object):
 
     pid = property(*_getpgroupattribute('pid','particle ID information'))
 
+    _builtinpids = {}
+
     # --- This handles the components of the pid for the particles from the species.
-    def _getpgroupattribute(pkg,idname,doc=None):
+    def _getpgroupattribute(pkg,idname,doc=None,attrname=None,_builtinpids=_builtinpids):
+        if attrname is None:
+            attrname = idname[:-3] # strip off the pid suffix
+        # --- Add attribute to dictionary, allowing it to be used as a keyword to addparticles
+        _builtinpids[attrname] = [pkg, idname]
         def fget(self):
             id = getattr(pkg,idname) - 1
             if id < 0: raise Exception('%s not setup'%idname)
@@ -2403,11 +2415,11 @@ class Species(object):
         return fget,fset,None,doc
 
     w = property(*_getpgroupattribute(top,'wpid','particle variable weight'))
-    injdata = property(*_getpgroupattribute(top,'injpid','particle injection data'))
-    ssn = property(*_getpgroupattribute(top,'spid','particle SSNs'))
-    ssnparent = property(*_getpgroupattribute(top,'sppid','particle parent SSNs'))
-    tbirth = property(*_getpgroupattribute(top,'tpid','particle creation time'))
-    rbirth = property(*_getpgroupattribute(top,'rpid','particle initial radius'))
+    injdata = property(*_getpgroupattribute(top,'injdatapid','particle injection data'))
+    ssn = property(*_getpgroupattribute(top,'spid','particle SSNs','ssn'))
+    ssnparent = property(*_getpgroupattribute(top,'sppid','particle parent SSNs','ssnparent'))
+    rbirth = property(*_getpgroupattribute(top,'rbirthpid','particle initial radius'))
+    tbirth = property(*_getpgroupattribute(top,'tbirthpid','particle creation time'))
     xbirth = property(*_getpgroupattribute(top,'xbirthpid','particle birth x'))
     ybirth = property(*_getpgroupattribute(top,'ybirthpid','particle birth y'))
     zbirth = property(*_getpgroupattribute(top,'zbirthpid','particle birth z'))

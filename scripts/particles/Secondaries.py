@@ -84,8 +84,8 @@ class Secondaries:
         self.min_age=min_age
         if self.min_age is not None:
             w3d.l_inj_rec_inittime=true
-            if top.tpid==0:
-                top.tpid=nextpid()
+            if top.tbirthpid==0:
+                top.tbirthpid=nextpid()
                 setuppgroup(top.pgroup)
         self.l_usenew=l_usenew
         self.install()
@@ -445,7 +445,7 @@ class Secondaries:
                     #               (zplost>zmin) & (zplost<zmax)
                     # --- exclude particles recently created
                     if self.min_age is not None:
-                        inittime = take(top.pidlost[i1:i2,top.tpid-1],iit,0)
+                        inittime = take(top.pidlost[i1:i2,top.tbirthpid-1],iit,0)
                         condition =  ((top.time-inittime)>self.min_age*top.dt)
                         # condition = condition & ((top.time-inittime)>self.min_age*top.dt)
                         iit2 = compress(condition,arange(n))
@@ -1123,7 +1123,7 @@ class Secondaries:
                     #               (zplost>zmin) & (zplost<zmax)
                     # --- exclude particles recently created
                     if self.min_age is not None:
-                        inittime = take(top.pidlost[i1:i2,top.tpid-1],iit,0)
+                        inittime = take(top.pidlost[i1:i2,top.tbirthpid-1],iit,0)
                         condition =  ((top.time-inittime)>self.min_age*top.dt)
                         # condition = condition & ((top.time-inittime)>self.min_age*top.dt)
                         iit2 = compress(condition,arange(n))

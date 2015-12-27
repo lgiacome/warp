@@ -518,7 +518,7 @@ def gun(iter=1, ipsave=None, save_same_part=None, maxtime=None,
                             if w3d.l_inj_rec_inittime:
                                 ip1 = top.pgroup.ins[js]-1
                                 ip2 = top.pgroup.ins[js]+top.pgroup.nps[js]-1
-                                top.pgroup.pid[ip1:ip2, top.tpid-1] = top.pgroup.pid[ip1:ip2, top.tpid-1]-top.dt
+                                top.pgroup.pid[ip1:ip2, top.tbirthpid-1] = top.pgroup.pid[ip1:ip2, top.tbirthpid-1]-top.dt
                             pgroup.gchange()
                             copygrouptogroup(top.pgroup, len(ii), ii, -1, pgroup, 1)
 

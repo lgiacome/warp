@@ -3427,8 +3427,8 @@ c     --- Do nothing if both flags are false
       end if
       do ip=1,np
         ip0 = ipmin - 1 + ip
-        if(tpid>0) then
-          if ((time-pgroup%pid(ip0,tpid))<ndtsmax*dt) cycle
+        if(tbirthpid>0) then
+          if ((time-pgroup%pid(ip0,tbirthpid))<ndtsmax*dt) cycle
         endif
         if (dxpid > 0 .and. dypid > 0 .and. dzpid > 0) then
           tdx = pgroup%pid(ip0,dxpid)
