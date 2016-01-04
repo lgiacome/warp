@@ -102,6 +102,11 @@ import pickledump
 from numpy import random
 RandomArray = random
 
+import PWpickle
+import PRpickle
+import PWpickle as PW
+import PRpickle as PR
+
 # --- The Warp modules must be imported in the order below because of
 # --- linking dependencies.
 from toppy import *
@@ -951,7 +956,7 @@ def restoreolddump(ff):
 # --- Dump command
 def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars=1,
          ff=None,varsuffix=None,histz=2,resizeHist=1,verbose=false,
-         hdf=0,format='',datawriter=None):
+         hdf=0,format='',datawriter=PW.PW):
     """
   Creates a dump file
     - filename=(prefix+runid+'%06d'%top.it+suffix+'.dump')
@@ -1010,6 +1015,7 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
         gchange("Hist")
     # --- Call routine to make data dump
     if format == 'pickle':
+        import pickledump
         pickledump.pickledump(filename,attr,interpreter_variables,serial,ff,
                               varsuffix,verbose)
     else:
@@ -1022,9 +1028,15 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
     # --- Update dump time
     top.dumptime = top.dumptime + (wtime() - timetemp)
 
+# --- Restore
+def restore(filename, **kw):
+    kw.setdefault('datareader', PR.PR)
+    kw.setdefault('main', warp)
+    pyrestore(filename, **kw)
+
 # --- Restart command
 def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
-            dofieldsol=true,format='',datareader=None,main=None):
+            dofieldsol=true,format='',datareader=PR.PR,main=None):
     """
   Reads in data from file, redeposits charge density and does field solve
     - filename: restart file name - when restoring parallel run from multiple
@@ -1039,8 +1051,8 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
     - format='': If 'pickle', uses pickledump module (not recommended)
     - datareader=PR.PR: the data reader class to use. This can be any class that
                         conforms to the API of PW from the PyPDB package.
-    - main=__main__: main object that Forthon objects are restored into
-                     Used when the Forthon package is not "import *" into main.
+    - main=warp: main object that Forthon objects are restored into
+                 Used when the Forthon package is not "import *" into main.
     """
     # --- If each processor is restoring from a seperate file, append
     # --- appropriate suffix, assuming only prefix was passed in
@@ -1048,6 +1060,7 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
         filename = filename + '_%05d_%05d%s.dump'%(me,npes,suffix)
 
     if format == 'pickle':
+        import pickledump
         pickledump.picklerestore(filename,verbose,skip=skip)
     else:
         # --- Call different restore routine depending on context.
@@ -1061,6 +1074,8 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
         if onefile and lparallel:
             ff = parallelrestore(filename,verbose=verbose,skip=skip,lreturnff=1)
         else:
+            if main is None:
+                main = warp
             ff = pyrestore(filename,verbose=verbose,skip=skip,lreturnff=1,
                            datareader=datareader,main=main)
 
