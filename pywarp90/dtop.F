@@ -330,9 +330,16 @@ c=============================================================================
 c  Summarize the state of the system in one line
 
 c     --- return if line is not requested
-      if (verbosity .lt. 2) return
+      if (verbosity < 2) return
 
-      it_len = max(6, int(log10(1.*it) + 1))
+      if (it < 0) then
+        it_len = int(log10(-1.*it) + 2)
+      else if (it > 0) then
+        it_len = int(log10(1.*it) + 1)
+      else if (it == 0) then
+        it_len = 1
+      endif
+      it_len = max(6, it_len)
 
       write(o_fmt,'("(''it = '',i",i3,",'' time ='',1pe11.4,'//
      &''' pz ='',1pe11.4,'' ese ='',1pe11.4,'//
