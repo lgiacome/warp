@@ -1,5 +1,4 @@
 from ..warp import *
-import __main__
 
 
 def printparametersrz():
@@ -18,5 +17,3 @@ def printparametersrz():
     plt(textblock, 0.12, 0.88, justify="LT")
     fma()
 
-# --- Explicitly add the function to main since it will be called by fortran
-__main__.__dict__['printparametersrz'] = printparametersrz

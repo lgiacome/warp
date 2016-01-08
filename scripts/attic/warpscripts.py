@@ -37,8 +37,6 @@ def warpscripts():
   generatelattice.py: Obsolete
   getzmom.py: python function for calculating particle moments
   gistdummy.py: stub routines when gist is not available
-  grid_1d.py: routine to bin one-dimensional data onto a grid
-  grid_2d.py: routine to bin two-dimensional data onto a grid
   hermestools.py: provides tools for using Hermes
   histplot.py: routine which makes a standard set of history plots
                (uses histplots)
@@ -72,7 +70,6 @@ def warpscripts():
   printparameters3d.py: prints basic run parameters (automatically imported)
   printparametersrz.py: prints basic run parameters (automatically imported)
   PRpyt.py: interface to read hdf files using PyTables
-  ptob.py: routine to save multi-dimensional array in a basis readable pdb file
   PWpyt.py: interface to write hdf files using PyTables
   Opyndx.py: defines convenience routines for using the OpenDX wrapper
   pzplots.py: plots of z moments of particles (automatically imported)
@@ -219,13 +216,10 @@ def warpscripts():
   General tools:
     appendablearray
     Fitting
-    grid_1d
-    grid_2d
     monitor
     noparens
     optimizer
     PRpyt
-    ptob
     PWpyt
     runcounter
     setupvalidation

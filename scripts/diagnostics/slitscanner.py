@@ -2,11 +2,11 @@
 Creates a class which generates slit scanner data.
 SlitScan()
 """
-from warp import *
+from ..warp import *
 
 
 def slitscannerdoc():
-    import slitscanner
+    from ..diagnostics import slitscanner
     print slitscanner.__doc__
 
 #---------------------------------------------------------------------------

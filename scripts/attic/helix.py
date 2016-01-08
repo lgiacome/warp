@@ -1,8 +1,8 @@
 """Generates the applied field from the helix accelerating structure
 """
-from warp import *
-from plot_conductor import setconductorvoltage
-from appendablearray import AppendableArray
+from ..warp import *
+from ..diagnostics.plot_conductor import setconductorvoltage
+from ..utils.appendablearray import AppendableArray
 
 class LinearHelix:
     """

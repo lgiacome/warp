@@ -19,7 +19,7 @@ import numpy
 
 
 def tifrwdoc():
-    import tifrw
+    from ..diagnostics import tifrw
     print tifrw.__doc__
 
 

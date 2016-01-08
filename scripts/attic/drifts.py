@@ -1,5 +1,5 @@
-from warp import *
-from lattice import *
+from ..warp import *
+from ..lattice.lattice import *
 
 
 def initdrifts():

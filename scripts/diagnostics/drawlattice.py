@@ -1,11 +1,11 @@
 """Creates the function drawlattice which plots the lattice.
 """
 __all__ = ['drawlatticedoc','drawlattice']
-from warp import *
+from ..warp import *
 
 
 def drawlatticedoc():
-    import drawlattice
+    from ..diagnostics import drawlattice
     print drawlattice.__doc__
 
 #############################################################################

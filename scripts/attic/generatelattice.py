@@ -1,4 +1,4 @@
-from lattice import *
+from ..lattice.lattice import *
 # Requires that functions beamduration, beamavesize, and endcondition
 # be supplied.
 

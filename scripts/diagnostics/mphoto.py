@@ -27,14 +27,14 @@
 
 yes = 1
 no = 0
-from warp import *
+from ..warp import *
 import numpy
 import os
-from tifrw import *
+from ..diagnostics.tifrw import *
 
 
 def mphotodoc():
-    import mphoto
+    from ..diagnostics import mphoto
     print(mphoto.__doc__)
 
 

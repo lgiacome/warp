@@ -15,11 +15,11 @@ apply_pp    ... Pepper-pot
 apply_grid  ... Rectangular Grid
 
 """
-from warp import *
+from ..warp import *
 
 
 def PepperGriddoc():
-    import PepperGrid
+    from ..diagnostics import PepperGrid
     print PepperGrid.__doc__
 
 

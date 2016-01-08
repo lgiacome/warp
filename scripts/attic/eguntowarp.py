@@ -1,11 +1,11 @@
 """Inject particles into a simulation, based on egun results.
 """
-from warp import *
-import getzmom
+from ..warp import *
+from ..diagnostics import getzmom
 
 
 def eguntowarpdoc():
-    import eguntowarp
+    from ..attic import eguntowarp
     print eguntowarp.__doc__
 
 class EgunToWarp:

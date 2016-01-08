@@ -1,6 +1,5 @@
 from ..warp import *
-from mplot import *
-import __main__
+from ..diagnostics.mplot import *
 
 
 hpbasictext = """
@@ -106,6 +105,7 @@ def _extractvar(name,varsuffix=None,pkg='top',attr=None,ff=None):
             try:    result = ff.read(vname)
             except: result = None
             if result is not None: return result
+            import __main__
             try:    result = __main__.__dict__[vname]
             except: result = None
             if result is not None: return result

@@ -45,7 +45,6 @@ def ylimits(*x, **xx):
 def moush(*x, **xx):
     pass
 def eps(*x, **xx):
-    import os
     pass
 def xytitles(*x, **xx):
     pass

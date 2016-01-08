@@ -1,4 +1,4 @@
-from warp import *
+from ..warp import *
 # These routines calculate the self-electric field energy. There is also an
 # expression for the estimated emittance growth. See the paper Wrangler, IEEE
 # Trans. in Nuc. Sci., 32, 2196, (1985) for more information.

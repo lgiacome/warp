@@ -60,10 +60,9 @@ penergylw: Plots energy as a function of time
 """
 
 from ..warp import *
-import __main__
 
 def lwplotsdoc():
-    from ..warp import lwplots
+    from ..diagnostics import lwplots
     print lwplots.__doc__
 
 ###########################################################################
@@ -101,6 +100,7 @@ returned.
             if result is not None:
                 return result
             try:
+                import __main__
                 result = __main__.__dict__[vname]
             except:
                 result = None

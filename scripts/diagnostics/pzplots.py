@@ -88,7 +88,7 @@ import __main__
 
 
 def pzplotsdoc():
-    import pzplots
+    from ..diagnostics import pzplots
     print pzplots.__doc__
 
 def setzdiagsflag(flag):

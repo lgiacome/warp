@@ -13,14 +13,14 @@ The functions listed below are included in this module.  To access more detailed
 # Import necessary packages from warp and scipy                        #
 ########################################################################
 
-from warp import *
+from .. import *
 from scipy import optimize
 
 ########################################################################
 # Load in lattice-related functions from matching program              #
 ########################################################################
 
-import envmatch_KVinvariant as matching
+from ..envelope import envmatch_KVinvariant as matching
 
 ########################################################################
 # Add script name version and script documentation function            #
@@ -28,7 +28,7 @@ import envmatch_KVinvariant as matching
 
 
 def lattice_rescaledoc():
-    import lattice_rescale
+    from ..envelope import lattice_rescale
     print  lattice_rescale.__doc__
 
 ########################################################################

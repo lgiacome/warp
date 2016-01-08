@@ -1,4 +1,4 @@
-from warp import *
+from ..warp import *
 
 
 def vtkparticlegrid(xx, yy, zz, gnx=32, gny=32, gnz=32,

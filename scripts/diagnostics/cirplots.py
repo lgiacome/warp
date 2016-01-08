@@ -1,6 +1,6 @@
 """Predefined history plots for Circe package.
 """
-from warp import *
+from ..warp import *
 
 
 ##############################################################################

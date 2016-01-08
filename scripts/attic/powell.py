@@ -1,4 +1,4 @@
-from warp import sign
+from ..warp import sign
 # This is a conversion of routines from Numerical Recipes
 
 ########################################################################

@@ -1,4 +1,4 @@
-from warp import *
+from ..warp import *
 
 
 def printarraysizesdoc():

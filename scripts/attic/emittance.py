@@ -1,4 +1,4 @@
-from warp import *
+from ..warp import *
 from grid_1d import *
 from grid_2d import *
 

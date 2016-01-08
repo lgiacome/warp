@@ -1,8 +1,8 @@
 """Diagnostics captured as particles cross grid cells.
 """
 __all__ = ['GridCrossingDiags','GridCrossingDiagsOld']
-from warp import *
-import cPickle
+from ..warp import *
+from ..warp.data_dumping import cPickle
 
 
 class GridCrossingDiags(object):

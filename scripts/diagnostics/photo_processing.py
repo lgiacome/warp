@@ -17,16 +17,16 @@
 # *  make_mov    ... Assembles tif files at end of run to make AVI movie
 # ==================
 """
-from warp import *
+from ..warp import *
 import Image
 import os
 import numpy
-import mphoto
+from ..diagnostics import mphoto
 import gifmaker
 
 
 def photo_processingdoc():
-    import photo_processing
+    from ..diagnostics import photo_processing
     print photo_processing.__doc__
 
 def make_montage(runid=None, label = "z", Rows = None, Columns = None):
