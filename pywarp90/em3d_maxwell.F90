@@ -5184,24 +5184,24 @@ INTEGER :: j, k, l
   return
 end subroutine push_em3d_block
 
-subroutine push_em3d_eef(b,dt,which,l_pushf,l_pushpot)
+subroutine push_em3d_eef(b,dt,which,l_pushf,l_pushpot,l_pushe)
 use mod_emfield3d
 implicit none
 
 TYPE(EM3D_BLOCKtype) :: b
 REAL(kind=8), INTENT(IN) :: dt
-logical(ISZ) :: l_pushf,l_pushpot
+logical(ISZ) :: l_pushf,l_pushpot,l_pushe
 
 INTEGER(ISZ) :: j, k, l,which
   
   if (which==0) then
     if(l_pushpot) call push_em3d_phi(b%core%yf,dt)
     if(l_pushf) call push_em3d_ef(b%core%yf,dt)
-    call push_em3d_e(b%core%yf,dt)
+    if(l_pushe) call push_em3d_e(b%core%yf,dt)
   else
     if(l_pushpot) call push_em3d_phi(b%core%yf,dt*0.5)
     if(l_pushf) call push_em3d_ef(b%core%yf,dt*0.5)
-    call push_em3d_e(b%core%yf,dt*0.5)
+    if(l_pushe) call push_em3d_e(b%core%yf,dt*0.5)
   end if
 
 !  if(l_pushpot) call push_em3d_blockbndphi(b,dt,which)
@@ -5221,22 +5221,22 @@ INTEGER(ISZ) :: j, k, l,which
   return
 end subroutine push_em3d_eef
 
-subroutine push_em3d_bf(b,dt,which,l_pushf,l_pushpot)
+subroutine push_em3d_bf(b,dt,which,l_pushf,l_pushpot,l_pushb)
 use mod_emfield3d
 implicit none
 
 TYPE(EM3D_BLOCKtype) :: b
 REAL(kind=8), INTENT(IN) :: dt
-logical(ISZ) :: l_pushf,l_pushpot
+logical(ISZ) :: l_pushf,l_pushpot,l_pushb
 
 INTEGER(ISZ) :: j, k, l,which
 
   if (which==0) then
     if(l_pushf) call push_em3d_f(b%core%yf,dt)
-    call push_em3d_b(b%core%yf,dt,which)
+    if(l_pushb) call push_em3d_b(b%core%yf,dt,which)
   else
     if(l_pushf) call push_em3d_f(b%core%yf,dt*0.5)
-    call push_em3d_b(b%core%yf,dt*0.5,which)
+    if(l_pushb) call push_em3d_b(b%core%yf,dt*0.5,which)
   endif
 
   if(l_pushf) call push_em3d_blockbndf(b,dt,which)

@@ -2369,7 +2369,7 @@ class EM3D(SubcycledPoissonSolver):
         if top.dt != self.dtinit:raise Exception('Time step has been changed since initialization of EM3D.')
         self.push_b_part_2()
         if self.l_pushf:self.exchange_f()
-        em3d_exchange_b(self.block)
+        self.exchange_b()
         self.move_window_fields()
         if self.l_verbose:print 'solve 2nd half done'
 
@@ -2439,7 +2439,7 @@ class EM3D(SubcycledPoissonSolver):
                     self.fields.Ex_inz*=-1.
                     self.fields.Ey_inz*=-1.
             if self.l_verbose:print 'push_e',self,dt,top.it,self.icycle
-            push_em3d_eef(self.block,dt,0,self.l_pushf,self.l_pushpot)
+            push_em3d_eef(self.block,dt,0,self.l_pushf,self.l_pushpot,1)
             if self.laser_mode==1 and dir<0.:
                 self.fields.Ex_inz*=-1.
                 self.fields.Ey_inz*=-1.
@@ -2484,7 +2484,7 @@ class EM3D(SubcycledPoissonSolver):
                 doit=False
         if doit:
             if self.l_verbose:print 'push_b part 1',self,dt,top.it,self.icycle,dir
-            push_em3d_bf(self.block,dt,1,self.l_pushf,self.l_pushpot)
+            push_em3d_bf(self.block,dt,1,self.l_pushf,self.l_pushpot,True)
         if self.refinement is not None:
             self.__class__.__bases__[1].push_b_part_1(self.field_coarse,dir)
 
@@ -2499,7 +2499,7 @@ class EM3D(SubcycledPoissonSolver):
             self.icycle = 0
         if self.icycle==0:
             if self.l_verbose:print 'push_b part 2',self,dt,top.it,self.icycle
-            push_em3d_bf(self.block,dt,2,self.l_pushf,self.l_pushpot)
+            push_em3d_bf(self.block,dt,2,self.l_pushf,self.l_pushpot,True)
         if self.refinement is not None:
             self.__class__.__bases__[1].push_b_part_2(self.field_coarse)
 
