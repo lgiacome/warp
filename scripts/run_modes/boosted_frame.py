@@ -550,7 +550,7 @@ to be lifted in the future.
             else:
                 pid=None
         if me==0:
-            import PWpickle as PW
+            from ..data_dumping import PWpickle as PW
             f=PW.PW(filename)
             f.time=top.time
             f.x=x

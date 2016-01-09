@@ -76,7 +76,7 @@ from ..diagnostics.histplots import *
 
 
 def rami_scriptsdoc():
-    from ..utils import rami_scripts
+    import rami_scripts
     print rami_scripts.__doc__
 
 # -- Default Variables to be saved

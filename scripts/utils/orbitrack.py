@@ -22,7 +22,7 @@ save_moms()     ... Save Moments calculated using spmom to file
 
 import __main__
 from rami_scripts import *
-import getzmom
+from ..diagnostics import getzmom
 
 
 def orbitrackdoc():

@@ -23,7 +23,7 @@
 # ==================
 """
 from warp import *
-from rami_scripts import *
+from ..utils.rami_scripts import *
 
 def b_fieldsdoc():
     import b_fields

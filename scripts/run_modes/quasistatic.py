@@ -6,10 +6,10 @@ In parallel, there is a caveat that each processor carries particles at differen
 # TODO: Mesh Refinement; get Ez from beam using dA/dt=vz*dA/dz (for now, Ez=0).
 
 from warp import *
-from getzmom import *
-#from AMR import *
-from appendablearray import *
-from ionization import *
+from ..diagnostics.getzmom import *
+#from ..field_solvers.AMR import *
+from ..utils.appendablearray import *
+from ..particles.ionization import *
 import __main__
 try:
   from pos import *

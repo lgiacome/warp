@@ -1,7 +1,7 @@
 from warp import *
 from pos import *
-from Secondaries import *
-from appendablearray import *
+from ..particles.Secondaries import *
+from ..utils.appendablearray import *
 
 class Posinst_Like:
     """
