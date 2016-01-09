@@ -5,7 +5,7 @@ from ..warp import *
 
 
 def drawlatticedoc():
-    from ..diagnostics import drawlattice
+    import drawlattice
     print drawlattice.__doc__
 
 #############################################################################

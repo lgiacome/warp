@@ -1,10 +1,10 @@
 """Defines classes to handle Coulomb collisions
 """
-from warp import *
+from ..warp import *
 import time
 
 def collisiondoc():
-    import collision
+    from ..particles import collision
     print collision.__doc__
 
 class LangevinCollisions(object):

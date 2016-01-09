@@ -1,7 +1,7 @@
 """
 Secondaries: class for generating secondaries
 """
-from warp import *
+from ..warp import *
 from ..utils.appendablearray import AppendableArray
 import pos
 from pos import pos as posC

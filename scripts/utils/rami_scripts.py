@@ -69,13 +69,14 @@ yes = 1; no = 0
 aper_dist = 0.0
 sfact = 1.0
 lcalc_mom = no
-import sys, __main__
-from warp import *
-from histplots import *
+import sys
+import __main__
+from ..warp import *
+from ..diagnostics.histplots import *
 
 
 def rami_scriptsdoc():
-    import rami_scripts
+    from ..utils import rami_scripts
     print rami_scripts.__doc__
 
 # -- Default Variables to be saved

@@ -2,7 +2,7 @@
 """
 __all__ = ['GridCrossingDiags','GridCrossingDiagsOld']
 from ..warp import *
-from ..warp.data_dumping import cPickle
+import cPickle
 
 
 class GridCrossingDiags(object):

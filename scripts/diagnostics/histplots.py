@@ -1,5 +1,5 @@
 from ..warp import *
-from ..diagnostics.mplot import *
+from mplot import *
 
 
 hpbasictext = """

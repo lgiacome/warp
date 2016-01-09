@@ -1,5 +1,5 @@
-from warp import *
-from appendablearray import *
+from ..warp import *
+from ..utils.appendablearray import *
 
 
 class TraceParticle(object):

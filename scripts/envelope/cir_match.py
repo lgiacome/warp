@@ -1,5 +1,5 @@
 """Functions to find matched beam parameters for a periodic lattice using Circe."""
-from warp import *
+from ..warp import *
 
 print " "
 print "This scripts finds matched beam parameters for a periodic lattice."

@@ -1,11 +1,11 @@
 #!/usr/local/python/bin/python
 from ..warp import *
-from ..attic import namelist
+import namelist
 import sys
 import getopt
-from ..attic import hibeamlattice
+import hibeamlattice
 import string
-from ..attic.hibeamdefaults import *
+from hibeamdefaults import *
 
 
 # --- Get the command line options.

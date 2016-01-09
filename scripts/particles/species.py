@@ -472,7 +472,7 @@ class Species(object):
 
     def __setstate__(self,dict):
         self.__dict__.update(dict)
-        import species
+        from ..particles import species
         # --- Check if the type is already declared in this module.
         # --- If it is, replace it with the one defined here since they
         # --- are supposed to be singletons.
@@ -2222,7 +2222,7 @@ class Species(object):
             else:
                 pid=None
         if me==0:
-            import PWpickle as PW
+            from ..data_dumping import PWpickle as PW
             f=PW.PW(filename)
             f.time=top.time
             f.x=x
@@ -2236,7 +2236,7 @@ class Species(object):
             f.close()
 
     def load(self,filename='pdump.pdb'):
-        import PRpickle as PR
+        from ..data_dumping import PRpickle as PR
         f=PR.PR(filename)
         self.addparticles(f.x,f.y,f.z,f.ux,f.uy,f.uz,f.gi,lmomentum=True)
         f.close()

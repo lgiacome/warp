@@ -1,5 +1,5 @@
-from warp import *
-from warp.optimizer import ParticleSwarm
+from ..warp import *
+from ..utils.optimizer import ParticleSwarm
 import numpy.linalg as linalg
 
 print 'Envelope matching routines'

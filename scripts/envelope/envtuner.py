@@ -1,6 +1,6 @@
 """Graphical tuning of lattice elements with the envelope code"""
 
-from warp import *
+from ..warp import *
 
 
 def makeenvtuneplot(zl,zu,qz):

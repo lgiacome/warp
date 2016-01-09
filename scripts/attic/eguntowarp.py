@@ -5,7 +5,7 @@ from ..diagnostics import getzmom
 
 
 def eguntowarpdoc():
-    from ..attic import eguntowarp
+    import eguntowarp
     print eguntowarp.__doc__
 
 class EgunToWarp:

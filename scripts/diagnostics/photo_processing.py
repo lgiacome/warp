@@ -21,12 +21,12 @@ from ..warp import *
 import Image
 import os
 import numpy
-from ..diagnostics import mphoto
+import mphoto
 import gifmaker
 
 
 def photo_processingdoc():
-    from ..diagnostics import photo_processing
+    import photo_processing
     print photo_processing.__doc__
 
 def make_montage(runid=None, label = "z", Rows = None, Columns = None):

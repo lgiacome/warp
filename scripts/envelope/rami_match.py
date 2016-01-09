@@ -15,9 +15,9 @@ quadrupoles when the beam is round, but the env slopes are different.
 # indicated below.                                                           #
 ##############################################################################
 """
-from warp import *
+from ..warp import *
 import numpy.linalg as linalg
-import singleparticle
+from ..particles import singleparticle
 
 
 def rami_matchdoc():

@@ -1636,7 +1636,7 @@ def addparticles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
     if dofieldsol:
         fieldsol(-1)
     if resetmoments:
-        import getzmom
+        from ..diagnostics import getzmom
         getzmom.zmmnt()
         if top.it%top.nhist == 0:
             top.jhist = top.jhist - 1

@@ -30,11 +30,11 @@ no = 0
 from ..warp import *
 import numpy
 import os
-from ..diagnostics.tifrw import *
+from tifrw import *
 
 
 def mphotodoc():
-    from ..diagnostics import mphoto
+    import mphoto
     print(mphoto.__doc__)
 
 

@@ -6,7 +6,7 @@ from ..warp import *
 
 
 def slitscannerdoc():
-    from ..diagnostics import slitscanner
+    import slitscanner
     print slitscanner.__doc__
 
 #---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-from warp import *
+from ..warp import *
 import numpy.linalg as linalg
 
 print " "
@@ -358,8 +358,8 @@ def matchxenv(xf=0.,xpf=0.,yf=0.,ypf=0.,zz=None,maxiter=100,tol=1.e-10):
 #  dedx or dbdx
 #  hlp
 #  occupancy
-from powell import *
-from optimizer import *
+from ..utils.powell import *
+from ..utils.optimizer import *
 #import powell
 class Match3:
     def __init__(self,m1,m2,m3,im=None,

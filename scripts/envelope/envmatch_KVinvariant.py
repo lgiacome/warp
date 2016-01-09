@@ -54,7 +54,7 @@ The functions listed below are included in this module.  To access more detailed
 # Import necessary packages from warp and scipy                        #
 ########################################################################
 
-from warp import *
+from ..warp import *
 from scipy import optimize
 from scipy import integrate
 from scipy import interpolate

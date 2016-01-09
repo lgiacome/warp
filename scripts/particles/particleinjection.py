@@ -7,7 +7,7 @@ import copy
 
 
 def particleinjection_doc():
-    from ..warp import particleinjection
+    from ..particles import particleinjection
     print particleinjection.__doc__
 
 class InjectionGaussLaw(object):

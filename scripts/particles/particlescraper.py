@@ -6,7 +6,7 @@ from ..warp import *
 
 
 def particlescraperdoc():
-    import particlescraper
+    from ..particles import particlescraper
     print particlescraper.__doc__
 
 

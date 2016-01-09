@@ -26,15 +26,15 @@ save_irrev()    ... Save Irreversibility factors (coefficients) into text file
 
 """
 
-from ..diagnostics.rami_scripts import *
-from Fitting import *
+from ..utils.rami_scripts import *
+from ..utils.Fitting import *
 import __main__
 import os
 import sys
 
 
 def postrackdoc():
-    from ..diagnostics import postrack
+    import postrack
     print postrack.__doc__
 
 # --- Restore data files if postprocessing

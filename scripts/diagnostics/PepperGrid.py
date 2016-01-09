@@ -19,7 +19,7 @@ from ..warp import *
 
 
 def PepperGriddoc():
-    from ..diagnostics import PepperGrid
+    import PepperGrid
     print PepperGrid.__doc__
 
 

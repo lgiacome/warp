@@ -1,7 +1,7 @@
 """Ionization: class for generating particles from impact ionization and other inelestic collisions.
 """
 __all__ = ['Ionization']
-from warp import *
+from ..warp import *
 import time
 import types
 try:
@@ -11,8 +11,8 @@ except:
   l_txphysics = False
 
 def ionizationdoc():
-  import Ionization
-  print Ionization.__doc__
+  from ..particles import ionization
+  print ionization.__doc__
 
 class Ionization:
   """
@@ -954,7 +954,7 @@ Chebyshev fitting.
         return h1,h2,h3,h4
 
     def datafilename(self):
-        import ionization
+        from ..particles import ionization
         return os.path.join(os.path.dirname(ionization.__file__),'aladdin_8.txt')
 
     def findcollision(self):

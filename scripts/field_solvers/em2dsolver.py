@@ -1,7 +1,7 @@
 """Class for doing 2 1/2 D electromagnetic solver using code adapted from the
 emi code"""
 from warp import *
-from getzmom import * 
+from ..diagnostic.getzmom import * 
 import operator
 
 try:

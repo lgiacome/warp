@@ -1,4 +1,4 @@
-from ..warp.diagnostics.histplots import *
+from histplots import *
 
 
 def histplotdoc():
