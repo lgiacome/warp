@@ -1,5 +1,5 @@
 from warp import *
-from ionization import *
+from warp.particles.ionization import *
 
 warp_elements=elements=[]
 for k in periodic_table:
@@ -317,7 +317,7 @@ velocity of the incident particle.
         self.gi[emitted_pgroup]={}
         self.w[emitted_pgroup]={}
         self.pidtag[emitted_pgroup]={}
-        self.injpid[emitted_pgroup]={}
+        self.injdatapid[emitted_pgroup]={}
       if js not in self.x[emitted_pgroup]:
         self.nps[emitted_pgroup][js]=0
         self.x[emitted_pgroup][js]=fzeros(self.npmax,'d')
@@ -331,8 +331,8 @@ velocity of the incident particle.
           self.w[emitted_pgroup][js]=fzeros(self.npmax,'d')
         if emitted_tag is not None:
           self.pidtag[emitted_pgroup][js]=fzeros(self.npmax,'d')
-        if top.injpid > 0:
-          self.injpid[emitted_pgroup][js]=fzeros(self.npmax,'d')
+        if top.injdatapid > 0:
+          self.injdatapid[emitted_pgroup][js]=fzeros(self.npmax,'d')
 
   def GetADKrateSI(self,E,charge,elemnt,dt,l_dc2ac=False):
       Z=elemnt.Z
@@ -405,12 +405,12 @@ velocity of the incident particle.
             wi = ipg.pid[i1:i2:self.stride,top.wpid-1]
           else:
             wi = 1.
-          if top.injpid > 0:
-            # --- Save the injpid of the incident particles so that it can be
+          if top.injdatapid > 0:
+            # --- Save the injdatapid of the incident particles so that it can be
             # --- passed to the emitted particles.
-            injpid = ipg.pid[i1:i2:self.stride,top.injpid-1]
+            injdatapid = ipg.pid[i1:i2:self.stride,top.injdatapid-1]
           else:
-            injpid = None
+            injdatapid = None
           # --- get velocity in lab frame if using a boosted frame of reference
           if top.boost_gamma>1.:
             uzboost = clight*sqrt(top.boost_gamma**2-1.)
@@ -466,9 +466,9 @@ velocity of the incident particle.
             else:
               w = wi[io]
 
-            # --- The injpid value needs to be copied to the emitted particles
+            # --- The injdatapid value needs to be copied to the emitted particles
             # --- so that they are handled properly in the region near the source.
-            if top.injpid > 0: injpid = injpid[io]
+            if top.injdatapid > 0: injdatapid = injdatapid[io]
 
             for emitted_species in self.inter[incident_species]['emitted_species'][it]:
 
@@ -512,10 +512,10 @@ velocity of the incident particle.
               if self.l_verbose:print 'add ',nnew, emitted_species.name,' from by impact ionization:',incident_species.name,'+',((target_species is None and 'background gas') or target_species.name)
               if self.inter[incident_species]['remove_incident'][it] and (emitted_species.type is incident_species.type):
                 self.addpart(nnew,xnewp,ynewp,znewp,uxnewp,uynewp,uznewp,ginewp,epg,emitted_species.jslist[0],
-                             self.inter[incident_species]['emitted_tag'][it],injpid,w)
+                             self.inter[incident_species]['emitted_tag'][it],injdatapid,w)
               else:
                 self.addpart(nnew,xnew,ynew,znew,uxnewp,uynewp,uznewp,ginewp,epg,emitted_species.jslist[0],
-                             self.inter[incident_species]['emitted_tag'][it],injpid,w)
+                             self.inter[incident_species]['emitted_tag'][it],injdatapid,w)
             ncoli = ncoli[io] - 1
             io = arange(nnew)[ncoli>0]
             nnew = len(io)
