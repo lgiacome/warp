@@ -2422,9 +2422,9 @@ pgroupstatic ParticleGroup +parallel # Main group holding the particles
 pgroup _ParticleGroup +parallel # Main group holding the particles
 nplive integer    /0/  # No. of "live" particles
 npid   integer    /0/  # number of columns for pid.
-spid   integer    /0/  # position of particles SSNs in array pid
+ssnpid integer    /0/  # position of particles SSNs in array pid
                        # (FORTRAN indexed: based 1)
-sppid  integer    /0/  # position of particles parent SSNs in array pid
+ssnparentpid  integer /0/ # position of particles parent SSNs in array pid
                        # (FORTRAN indexed: based 1)
 wpid   integer    /0/  # position of particle weights in array pid
                        # (FORTRAN indexed: based 1)

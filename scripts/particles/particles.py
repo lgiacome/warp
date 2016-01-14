@@ -258,9 +258,9 @@ def selectparticles(iw=0,kwdict={},**kw):
     - zl=None: Lower range in z of selection region
     - zu=None: Upper range in z of selection region
     - ssn=None: Returns the particle or particles with the specified ssn
-                Raises and error if ssn's are not saved - top.spid must be setup
+                Raises and error if ssn's are not saved - top.ssnpid must be setup
                 or the ssnid must be specified.
-    - ssnid=top.spid: ID to use when selecting particles with a specified ssn.
+    - ssnid=top.ssnpid: ID to use when selecting particles with a specified ssn.
     - ii=None: Particle index list
                If supplied, use it for the list of particles instead
                of choosing particles from the given species.
@@ -389,7 +389,7 @@ def selectparticles(iw=0,kwdict={},**kw):
     if i2 <= i1: return array([],'l')
 
     if ssn is not None:
-        if ssnid is None: ssnid = top.spid
+        if ssnid is None: ssnid = top.ssnpid
         assert ssnid > 0,"ssn's are not used"
         id = getattrwithsuffix(pgroup,'pid',suffixparticle)[:,ssnid-1]
         id,ii = _setindices(id,ii,i1,i2)

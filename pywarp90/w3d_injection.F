@@ -20,7 +20,7 @@ c=============================================================================
       use InPart
       use InPart3d
       use InMesh3d
-      use Particles,Only: spid,wpid,rbirthpid,ssn,lmappid,npid,
+      use Particles,Only: ssnpid,wpid,rbirthpid,ssn,lmappid,npid,
      &                    tbirthpid,xbirthpid,ybirthpid,zbirthpid,zbirthlabpid,
      &                    uxbirthpid,uybirthpid,uzbirthpid
       use Picglb
@@ -483,8 +483,8 @@ c             --- Scale the particle weight.
 c             --- Save the ID of the injection source.
               pgroup%pid(ii,injdatapid) = ij
 c             --- Save SSN
-              if (spid>0) then
-                pgroup%pid(ii,spid) = ssn
+              if (ssnpid>0) then
+                pgroup%pid(ii,ssnpid) = ssn
                 ssn = ssn+1
               end if
 c             --- save radius of creation if rbirthpid > 0
@@ -1492,8 +1492,8 @@ c                   --- massless momentums properly.
                     endif
 
 c                   --- Save SSN
-                    if (spid>0) then
-                      pgroup%pid(ii,spid) = ssn
+                    if (ssnpid>0) then
+                      pgroup%pid(ii,ssnpid) = ssn
                       ssn = ssn+1
                     end if
 
@@ -2297,8 +2297,8 @@ c                   --- before pid is used anywhere.
 c                   --- The fraction of the step to advance the particle
                     pgroup%pid(ii,injdatapid) = rnrev(injctcnt,dig5)
 c                   --- Save SSN
-                    if (spid>0) then
-                      pgroup%pid(ii,spid) = ssn
+                    if (ssnpid>0) then
+                      pgroup%pid(ii,ssnpid) = ssn
                       ssn = ssn+1
                     end if
 c                   --- Set particle weight to the scale factor (since nothing

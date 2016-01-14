@@ -18,9 +18,9 @@ gunmg: performs multiple iteration, starting from a coarse resolution and
 gunamr: performs gun iterations, applying mesh refinement as the solution
         stablizes
 
-gunppzx: plots streamlines of particle trajectories - requires top.spid
-gunppzy: plots streamlines of particle trajectories - requires top.spid
-gunppzr: plots streamlines of particle trajectories - requires top.spid
+gunppzx: plots streamlines of particle trajectories - requires top.ssnpid
+gunppzy: plots streamlines of particle trajectories - requires top.ssnpid
+gunppzr: plots streamlines of particle trajectories - requires top.ssnpid
 
 """
 from ..warp import *
@@ -1041,7 +1041,7 @@ def statusline():
 
 ########################################################################
 def ppstreamlines(y, x, js=0, color='fg', width=1.0):
-    pid = getpid(js=js, id=top.spid-1)
+    pid = getpid(js=js, id=top.ssnpid-1)
     # --- Sort the particle data based on the ID number
     ii = argsort(pid)
     y = take(y, ii)
@@ -1061,11 +1061,11 @@ def ppstreamlines(y, x, js=0, color='fg', width=1.0):
 def gunppzx(**kw):
     """
   Make particle stream-line plots of X versus Z from gun results. Note
-  that if top.spid is not set, ppzx is called directly instead.
+  that if top.ssnpid is not set, ppzx is called directly instead.
     - color='fg',width=1.0: standard plg options
     - titles=1: when true, plots appropriate titles
     """
-    if top.spid == 0:
+    if top.ssnpid == 0:
         ppzx(**kw)
         return
     if ppmultispecies(gunppzx, (), kw):
@@ -1082,11 +1082,11 @@ def gunppzx(**kw):
 def gunppzy(**kw):
     """
   Make particle stream-line plots of Y versus Z from gun results. Note
-  that if top.spid is not set, ppzx is called directly instead.
+  that if top.ssnpid is not set, ppzx is called directly instead.
     - color='fg',width=1.0: standard plg options
     - titles=1: when true, plots appropriate titles
     """
-    if top.spid == 0:
+    if top.ssnpid == 0:
         ppzy(**kw)
         return
     if ppmultispecies(gunppzy, (), kw):
@@ -1103,11 +1103,11 @@ def gunppzy(**kw):
 def gunppzr(**kw):
     """
   Make particle stream-line plots of R versus Z from gun results. Note
-  that if top.spid is not set, ppzx is called directly instead.
+  that if top.ssnpid is not set, ppzx is called directly instead.
     - color='fg',width=1.0: standard plg options
     - titles=1: when true, plots appropriate titles
     """
-    if top.spid == 0:
+    if top.ssnpid == 0:
         ppzr(**kw)
         return
     if ppmultispecies(gunppzr, (), kw):

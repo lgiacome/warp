@@ -6119,7 +6119,7 @@ c=============================================================================
       use InPart
       use InPart3d
       use InMesh3d
-      use Particles,Only: npmax,spid,ssn
+      use Particles,Only: npmax,ssnpid,ssn
       use Picglb
       use Picglb3d
 #ifdef MPIPARALLEL
@@ -6860,8 +6860,8 @@ c            --- add sinusoidal perturbation to uzp
              endif
 
              if (pgroup%npid > 0) pgroup%pid(ipi,:) = 0.
-             if (spid > 0) then
-               pgroup%pid(ipi,spid) = ioff + k + i - 1
+             if (ssnpid > 0) then
+               pgroup%pid(ipi,ssnpid) = ioff + k + i - 1
                ssn = ioff + k + i
              endif
            enddo
@@ -6962,8 +6962,8 @@ c            --- add sinusoidal perturbation to uzp
              endif
 
              if (pgroup%npid > 0) pgroup%pid(ipi,:) = 0.
-             if (spid > 0) then
-               pgroup%pid(ipi,spid) = ioff + k + i - 1
+             if (ssnpid > 0) then
+               pgroup%pid(ipi,ssnpid) = ioff + k + i - 1
                ssn = ioff + k + i
              endif
            enddo
@@ -7071,8 +7071,8 @@ c            --- add sinusoidal perturbation to uzp
              endif
 
              if (pgroup%npid > 0) pgroup%pid(ipi,:) = 0.
-             if (spid > 0) then
-               pgroup%pid(ipi,spid) = ioff + k + i - 1
+             if (ssnpid > 0) then
+               pgroup%pid(ipi,ssnpid) = ioff + k + i - 1
                ssn = ioff + k + i
              endif
            enddo

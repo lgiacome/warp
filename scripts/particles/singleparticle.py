@@ -89,7 +89,7 @@ class TraceParticle(object):
                 top.pgroup.sid[js] = js
 
         # --- Use the particle's ssn to keep track of them
-        if top.spid == 0: top.spid = nextpid()
+        if top.ssnpid == 0: top.ssnpid = nextpid()
         setuppgroup(top.pgroup)
 
         # --- Setup particles
@@ -153,7 +153,7 @@ class TraceParticle(object):
         else:
             self.ssn = None
         self.ssn = parallel.broadcast(self.ssn)
-        self.pidinit[:,top.spid-1] = self.ssn
+        self.pidinit[:,top.ssnpid-1] = self.ssn
         # --- Set current values
         self.x = self.xinit*ones(self.nn)
         self.y = self.yinit*ones(self.nn)

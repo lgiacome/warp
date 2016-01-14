@@ -2381,9 +2381,8 @@ class Species(object):
     _builtinpids = {}
 
     # --- This handles the components of the pid for the particles from the species.
-    def _getpgroupattribute(pkg,idname,doc=None,attrname=None,_builtinpids=_builtinpids):
-        if attrname is None:
-            attrname = idname[:-3] # strip off the pid suffix
+    def _getpgroupattribute(pkg,idname,doc=None,_builtinpids=_builtinpids):
+        attrname = idname[:-3] # strip off the pid suffix
         # --- Add attribute to dictionary, allowing it to be used as a keyword to addparticles
         _builtinpids[attrname] = [pkg, idname]
         def fget(self):
@@ -2425,10 +2424,10 @@ class Species(object):
     # getw is already defined
     injdata = property(*_getpgroupattribute(top,'injdatapid','particle injection data'))
     getinjdata = _setupgetmethod(top, 'injdatapid')
-    ssn = property(*_getpgroupattribute(top,'spid','particle SSNs','ssn'))
-    getssn = _setupgetmethod(top, 'spid')
-    ssnparent = property(*_getpgroupattribute(top,'sppid','particle parent SSNs','ssnparent'))
-    getssnparent = _setupgetmethod(top,'sppid')
+    ssn = property(*_getpgroupattribute(top,'ssnpid','particle SSNs'))
+    getssn = _setupgetmethod(top, 'ssnpid')
+    ssnparent = property(*_getpgroupattribute(top,'ssnparentpid','particle parent SSNs'))
+    getssnparent = _setupgetmethod(top,'ssnparentpid')
     rbirth = property(*_getpgroupattribute(top,'rbirthpid','particle initial radius'))
     getrbirth = _setupgetmethod(top,'rbirthpid')
     tbirth = property(*_getpgroupattribute(top,'tbirthpid','particle creation time'))

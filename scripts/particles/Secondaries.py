@@ -102,11 +102,11 @@ class Secondaries:
         else:
             self.zoldpid=zoldpid
         if self.l_trackssnparents:
-            if top.spid==0:
-                top.spid=nextpid()
+            if top.ssnpid==0:
+                top.ssnpid=nextpid()
                 setuppgroup(top.pgroup)
-            if top.sppid==0:
-                top.sppid=nextpid()
+            if top.ssnparentpid==0:
+                top.ssnparentpid=nextpid()
                 setuppgroup(top.pgroup)
         # --- set variables for secondary electrons routines
         if pos_version >= '17p3':
@@ -277,7 +277,7 @@ class Secondaries:
         self.uz[js][il:iu]=uz
         if weight is not None:self.pid[js][il:iu,top.wpid-1]=weight
         if itype is not None:self.pid[js][il:iu,self.piditype]=itype.astype(float64)
-        if ssnparent is not None:self.pid[js][il:iu,top.sppid-1]=ssnparent
+        if ssnparent is not None:self.pid[js][il:iu,top.ssnparentpid-1]=ssnparent
         self.nps[js]+=nn
 
     def addparticles(self,nn,x,y,z,ux,uy,uz,js,weight=None,itype=None,ssnparent=None):
@@ -285,7 +285,7 @@ class Secondaries:
             pid = zeros((nn,top.npid))
             if weight is not None:pid[:,top.wpid-1]=weight
             if itype is not None:pid[:,self.piditype]=itype.astype(float64)
-            if ssnparent is not None:pid[:,top.sppid-1]=ssnparent
+            if ssnparent is not None:pid[:,top.ssnparentpid-1]=ssnparent
         else:
             pid=0.
         gi=1./sqrt(1.+(ux**2+uy**2+uz**2)/clight**2)
@@ -470,7 +470,7 @@ class Secondaries:
                         setu_in_uzboosted_frame3d(n,uxplost,uyplost,uzplost,gaminvlost,
                                                   -uzboost,
                                                   top.boost_gamma)
-                    if self.l_trackssnparents: ssnplost = take(top.pidlost[i1:i2,top.spid-1],iit)
+                    if self.l_trackssnparents: ssnplost = take(top.pidlost[i1:i2,top.ssnpid-1],iit)
                     if self.vmode==1:
                         vxplost=uxplost*gaminvlost
                         vyplost=uyplost*gaminvlost
@@ -1148,7 +1148,7 @@ class Secondaries:
                         setu_in_uzboosted_frame3d(n,uxplost,uyplost,uzplost,gaminvlost,
                                                   -uzboost,
                                                   top.boost_gamma)
-                    if self.l_trackssnparents: ssnplost = take(top.pidlost[i1:i2,top.spid-1],iit)
+                    if self.l_trackssnparents: ssnplost = take(top.pidlost[i1:i2,top.ssnpid-1],iit)
                     if self.vmode==1:
                         vxplost=uxplost*gaminvlost
                         vyplost=uyplost*gaminvlost
