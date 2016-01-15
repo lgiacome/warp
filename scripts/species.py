@@ -586,25 +586,31 @@ class Species(object):
             densityc = 0.*dens
 
         np=0
-        for js in self.jslist:
-            np+=getn(js=js)
+        try:
+            pgroups = self.flatten(self.pgroups)
+        except:
+            pgroups = [self.pgroup]
+        for pg in pgroups:
+          for js in self.jslist:
+            np+=getn(js=js,pgroup=pg)
         if np == 0:
             if dens is None:
                 return density
             else:
                 return
-        for js in self.jslist:
-            x=getx(js=js,lost=lost,gather=0)
-            y=gety(js=js,lost=lost,gather=0)
-            z=getz(js=js,lost=lost,gather=0)
+        for pg in pgroups:
+          for js in self.jslist:
+            x=getx(js=js,lost=lost,gather=0,pgroup=pg)
+            y=gety(js=js,lost=lost,gather=0,pgroup=pg)
+            z=getz(js=js,lost=lost,gather=0,pgroup=pg)
             if w3d.solvergeom==w3d.RZgeom:x=sqrt(x*x+y*y)
             np=shape(x)[0]
             if np > 0:
                 if top.wpid == 0:
-                    w=self.pgroup.sw[js]*ones(np,'d')
+                    w=pg.sw[js]*ones(np,'d')
                 else:
-                    w=self.pgroup.sw[js]*getpid(js=js,id=top.wpid-1,gather=0)
-                if charge:w*=self.pgroup.sq[js]
+                    w=pg.sw[js]*getpid(js=js,id=top.wpid-1,gather=0,pgroup=pg)
+                if charge:w*=pg.sq[js]
                 if w3d.solvergeom is w3d.Zgeom:
                     deposgrid1d(1,np,z,w,nz,density,densityc,zmin,zmax)
                 elif w3d.solvergeom is w3d.XYgeom:
@@ -666,6 +672,16 @@ class Species(object):
         """Fetches the self E field, putting it into the self.pgroup.ex etc arrays."""
         fetche3d(self.pgroup,self.ins,self.nps,self.js+1)
 
+    def flatten(self,lis):
+        """Given a list, possibly nested to any level, return it flattened."""
+        new_lis = []
+        for item in lis:
+            if type(item) == type([]):
+                new_lis.extend(self.flatten(item))
+            else:
+                new_lis.append(item)
+        return new_lis
+    
     def getappliedfields(self):
         dtl = -0.5*top.dt
         dtr = +0.5*top.dt
@@ -1952,14 +1968,23 @@ class Species(object):
         """Calls :py:func:`~particles.getke` for this species."""
         return getke(jslist=self.jslist,**kw)
 
-    def _callppfunc(self,ppfunc,**kw):
+    def _callppfunc(self,ppfunc,pgroups=None,**kw):
         """This is an intermediary for all of the pp particle plot methods. This
     makes it easier to make changes to all of them at once, without adding alot
     of code."""
-        kw.setdefault('color',self.color)
-        kw.setdefault('marker',self.marker)
-        kw.setdefault('msize',self.msize)
-        return ppfunc(jslist=self.jslist,**kw)
+        if pgroups is None:
+            try:
+                pgroups = self.pgroups
+            except:
+                pgroups = self.pgroup
+        if type(pgroups) == type([]):
+            for pgs in pgroups:
+                self._callppfunc(ppfunc,pgs,**kw)
+        else:
+            kw.setdefault('color',self.color)
+            kw.setdefault('marker',self.marker)
+            kw.setdefault('msize',self.msize)
+            return ppfunc(jslist=self.jslist,pgroup=pgroups,**kw)
 
     def ppxy(self,**kw):
         """Calls :py:func:`~warpplots.ppxy` for this species."""
