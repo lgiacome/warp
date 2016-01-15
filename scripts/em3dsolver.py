@@ -2551,7 +2551,7 @@ class EM3D(SubcycledPoissonSolver):
     def push_b_full(self):
         dt = top.dt/self.ntsub
         if self.l_verbose:print 'push_b full',self,dt,top.it,self.icycle
-        push_em3d_bf(self.block,dt,0,self.l_pushf,self.l_pushpot)
+        push_em3d_bf(self.block,dt,0,self.l_pushf,self.l_pushpot,True)
 
     def push_e_full(self,i):
         dt = top.dt/self.ntsub
@@ -2560,7 +2560,7 @@ class EM3D(SubcycledPoissonSolver):
             self.fields.Rho = (1.-w)*self.fields.Rhoold + w*self.fields.Rhoarray[...,0]
         if self.l_verbose:print 'push_e full',self,dt,top.it,self.icycle
         if self.laser_mode==1:self.add_laser(self.fields)
-        push_em3d_eef(self.block,dt,0,self.l_pushf,self.l_pushpot)
+        push_em3d_eef(self.block,dt,0,self.l_pushf,self.l_pushpot,True)
 
     ##########################################################################
     # Define the basic plot commands
@@ -3225,7 +3225,247 @@ class EM3D(SubcycledPoissonSolver):
                 if self.block.zrbnd==em3d.otherproc:oz=1
             return g[f.nxguard:-f.nxguard-ox,f.nzguard:-f.nzguard-oz,:]
 
-        
+    def step(self,n=1,freq_print=10,lallspecl=0):
+        for i in range(n):
+            if top.it%freq_print==0:print 'it = %g time = %g'%(top.it,top.time)
+            if lallspecl:
+                l_first=l_last=1
+            else:
+                if i==0:
+                    l_first=1
+                else:
+                    l_first=0
+                if i==n-1:
+                    l_last=1
+                else:
+                    l_last=0
+            self.onestep(l_first,l_last)
+       
+    def onestep(self,l_first,l_last):
+        # --- call beforestep functions
+        callbeforestepfuncs.callfuncsinlist()
+    
+        top.zgrid+=top.vbeamfrm*top.dt
+        top.zbeam=top.zgrid
+
+        # --- gather fields from grid to particles
+#        w3d.pgroupfsapi = top.pgroup
+#        for js in range(top.pgroup.ns):
+#          self.fetcheb(js)
+
+        # --- push 
+        if l_first:
+            for js in range(top.pgroup.ns):
+                self.push_velocity_second_half(js)
+                self.push_positions(js)
+        else:        
+            for js in range(top.pgroup.ns):
+                self.push_velocity_full(js)
+                self.push_positions(js)
+
+        particleboundaries3d(top.pgroup,-1,False)
+
+        # --- call beforeloadrho functions
+        beforeloadrho.callfuncsinlist()
+#        self.loadsource()
+        self.loadrho()
+        self.loadj()
+                      
+#        self.solve2ndhalf()
+        self.dosolve()
+    
+        w3d.pgroupfsapi = top.pgroup
+        for js in range(top.pgroup.ns):
+          self.fetcheb(js)
+    
+        if l_last:
+            for js in range(top.pgroup.ns):
+                self.push_velocity_first_half(js)
+
+        # --- update time, time counter
+        top.time+=top.dt
+        if top.it%top.nhist==0:
+#           zmmnt()
+           minidiag(top.it,top.time,top.lspecial)
+        top.it+=1
+
+        # --- call afterstep functions
+        callafterstepfuncs.callfuncsinlist()
+       
+    def fetcheb(self,js,pg=None):
+        if self.l_verbose:print me,'enter fetcheb'
+        if pg is None:
+            pg = top.pgroup
+        np = pg.nps[js]
+        if np==0:return
+        il = pg.ins[js]-1
+        iu = il+pg.nps[js]
+        w3d.ipminfsapi=pg.ins[js]
+        w3d.npfsapi=pg.nps[js]
+        pg.ex[il:iu]=0.
+        pg.ey[il:iu]=0.
+        pg.ez[il:iu]=0.
+        pg.bx[il:iu]=0.
+        pg.by[il:iu]=0.
+        pg.bz[il:iu]=0.
+        self.fetche()
+        self.fetchb()
+
+    def push_velocity_first_half(self,js,pg=None):
+        if self.l_verbose:print me,'enter push_ions_velocity_first_half'
+        if pg is None:
+            pg = top.pgroup
+        np = pg.nps[js]
+        if np==0:return
+        il = pg.ins[js]-1
+        iu = il+pg.nps[js]
+        if pg.lebcancel_pusher:
+          ebcancelpush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
+                            pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu],
+                            pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu],
+                            pg.sq[js],pg.sm[js],top.dt,1)
+        else:
+          # --- push velocity from electric field (half step)
+          epush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
+                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu], 
+                     pg.sq[js],pg.sm[js],0.5*top.dt)
+          # --- update gamma
+          self.set_gamma(js,pg)
+          # --- push velocity from magnetic field
+          bpush3d (np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
+                      pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu], 
+                      pg.sq[js],pg.sm[js],0.5*top.dt, top.ibpush)
+
+        if self.l_verbose:print me,'exit push_ions_velocity_first_half'
+    
+    def push_velocity_full(self,js,pg=None):
+        if self.l_verbose:print me,'enter push_ions_velocity_first_half'
+        if pg is None:
+            pg = top.pgroup
+        np = pg.nps[js]
+        if np==0:return
+        il = pg.ins[js]-1
+        iu = il+pg.nps[js]
+        if pg.lebcancel_pusher:
+          ebcancelpush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
+                            pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu],
+                            pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu],
+                            pg.sq[js],pg.sm[js],top.dt,0)
+        else:
+          # --- push velocity from electric field (half step)
+          epush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
+                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu], 
+                     pg.sq[js],pg.sm[js],0.5*top.dt)
+          # --- update gamma
+          self.set_gamma(js,pg)
+          # --- push velocity from magnetic field
+          bpush3d (np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
+                      pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu], 
+                      pg.sq[js],pg.sm[js],top.dt, top.ibpush)
+          # --- push velocity from electric field (half step)
+          epush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
+                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu], 
+                     pg.sq[js],pg.sm[js],0.5*top.dt)
+          # --- update gamma
+          self.set_gamma(js,pg)
+
+        if self.l_verbose:print me,'exit push_ions_velocity_first_half'
+    
+    def push_velocity_second_half(self,js,pg=None):
+        if self.l_verbose:print me,'enter push_ions_velocity_second_half'
+        if pg is None:
+            pg = top.pgroup
+        np = pg.nps[js]
+        if np==0:return
+        il = pg.ins[js]-1
+        iu = il+pg.nps[js]
+        if pg.lebcancel_pusher:
+          ebcancelpush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
+                            pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu],
+                            pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu],
+                            pg.sq[js],pg.sm[js],top.dt,2)
+        else:
+          # --- push velocity from magnetic field
+          bpush3d (np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
+                      pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu], 
+                      pg.sq[js],pg.sm[js],0.5*top.dt, top.ibpush)
+          # --- push velocity from electric field (half step)
+          epush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
+                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu], 
+                     pg.sq[js],pg.sm[js],0.5*top.dt)
+        # --- update gamma
+        self.set_gamma(js,pg)
+
+        if self.l_verbose:print me,'exit push_ions_velocity_second_half'
+    
+    def set_gamma(self,js,pg=None):
+        if self.l_verbose:print me,'enter set_gamma'
+        if pg is None:
+            pg = top.pgroup
+        np = pg.nps[js]
+        if np==0:return
+        il = pg.ins[js]-1
+        iu = il+pg.nps[js]
+        # --- update gamma
+        gammaadv(np,pg.gaminv[il:iu],pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
+                 top.gamadv,top.lrelativ)
+
+        if self.l_verbose:print me,'exit push_ions_velocity_second_half'
+    
+    def push_positions(self,js,pg=None):
+        if self.l_verbose:print me,'enter push_ions_positions'
+        if pg is None:
+            pg = top.pgroup
+        np = pg.nps[js]
+        if np==0:return
+        il = pg.ins[js]-1
+        iu = il+pg.nps[js]
+        xpush3d(np,pg.xp[il:iu],pg.yp[il:iu],pg.zp[il:iu],
+                       pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
+                       pg.gaminv[il:iu],top.dt)      
+
+        if self.l_verbose:print me,'exit push_ions_positions'
+
+    def apply_bndconditions(self,js,pg=None):
+        if self.l_verbose:print me,'enter apply_ions_bndconditions'
+        # --- apply boundary conditions
+        if pg is None:
+            pg = top.pgroup
+        if pg.nps[js]==0:return
+        self.apply_bnd_conditions(js,pg)
+        if self.l_verbose:print me,'exit apply_ions_bndconditions'
+    
+    def apply_bnd_conditions(self,js,pg=None):
+        if self.l_verbose:print me,'enter apply_bnd_conditions'
+        if pg is None:
+            pg = top.pgroup
+        if pg.nps[js]==0:return
+        il = pg.ins[js]-1
+        iu = il+pg.nps[js]
+        #stckxy3d(pg.nps[js],pg.xp[il:iu],w3d.xmmax,w3d.xmmin,w3d.dx,
+        #              pg.yp[il:iu],w3d.ymmax,w3d.ymmin,w3d.dy,
+        #              pg.zp[il:iu],w3d.zmminlocal,w3d.dz,
+        #              pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
+        #              top.zgrid,top.zbeam,w3d.l2symtry,w3d.l4symtry,top.pboundxy,true)
+        stckxy3d(pg,js,top.zbeam,true)
+        partbndwithdata(pg.nps[js],pg.xp[il:iu],pg.uxp[il:iu],pg.gaminv[il:iu],
+                        w3d.xmmaxlocal,w3d.xmminlocal,w3d.dx,0.,
+                        top.pboundxy,top.pboundxy)
+        partbndwithdata(pg.nps[js],pg.yp[il:iu],pg.uyp[il:iu],pg.gaminv[il:iu],
+                        w3d.ymmaxlocal,w3d.ymminlocal,w3d.dy,0.,
+                        top.pboundxy,top.pboundxy)
+        if js==0 or js==w3d.nzp-1:
+          if js==0:top.pboundnz=-1
+          if js==w3d.nzp-1:top.pbound0=-1
+          partbndwithdata(pg.nps[js],pg.zp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
+                          w3d.zmmaxlocal,w3d.zmminlocal,w3d.dz,top.zgrid,
+                          top.pbound0,top.pboundnz)
+          if js==0:top.pboundnz=0
+          if js==w3d.nzp-1:top.pbound0=0
+        if self.scraper is not None:self.scraper.scrape(js)
+        processlostpart(pg,js+1,top.clearlostpart,top.time+top.dt*pg.ndts[js],top.zbeam)
+        if self.l_verbose:print me,'enter apply_bnd_conditions'
+       
     #############################################################
     #                   Plotting methods                        #
     #############################################################
