@@ -48,7 +48,7 @@ class EM3D(SubcycledPoissonSolver):
                       'alpha_smooth':array([[0.5],[0.5],[0.5]]),
                       'stride_smooth':array([[1],[1],[1]]),
                       'mask_smooth':None,
-                      'l_smooth_particle_fields':True,
+                      'l_smooth_particle_fields':False,
                       'n_smooth_fields':None,
                       'autoset_timestep':true,'dtcoef':1.,#0.99,
                       'deposit_energy_density':false,'refinement':None,
