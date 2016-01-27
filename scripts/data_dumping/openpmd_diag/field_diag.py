@@ -368,7 +368,8 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             dset.attrs["currentSmoothing"] = np.string_("none")
         else:
             dset.attrs["currentSmoothing"] = np.string_("Binomial")
-            dset.attrs["currentSmoothingParameters"] = str(self.em.npass_smooth)
+            dset.attrs["currentSmoothingParameters"] = \
+              np.string_(str(self.em.npass_smooth))
         # Charge correction
         dset.attrs["chargeCorrection"] = np.string_("none")
 
