@@ -2313,7 +2313,7 @@ select case (f%stencil)
      ! Choose the kind of stencil that is used for the E correction
      ! (Second step of the propagative Poisson correction)
 
-case( 0,2 ) ! Yee stencil
+case( 0,1 ) ! Yee stencil
  if(f%nconds>0) then 
   call push_em3d_fvec_cond(f%ex,f%ey,f%ez,f%f, f%rho, &
                       dtsepsi,dtsdx,dtsdy,dtsdz, &
@@ -2337,7 +2337,7 @@ case( 0,2 ) ! Yee stencil
                       f%nxguard,f%nzguard,f%circ_m)
  end if
 
-case( 1 ) ! Cole-Karkkainen stencil (since the B push uses the Cole-Karkkainen stencil,
+case( 2 ) ! Cole-Karkkainen stencil (since the B push uses the Cole-Karkkainen stencil,
    ! and since this Poisson correction should not modify curl(E) in the B push)
   call push_em3d_kyeefvec(f%ex,f%ey,f%ez,f%f, f%rho, &
                       dtsepsi,dtsdx,dtsdy,dtsdz, &
