@@ -928,7 +928,7 @@ class EM3D(SubcycledPoissonSolver):
 #        weights = ones(self.laser_nn)*f.dx*f.dz*eps0/(top.dt)*self.laser_emax*top.dt/(0.1*f.dx)
 #        weights = ones(self.laser_nn)*f.dx*clight*eps0*self.laser_emax/(dispmax*self.laser_frequency)
                 weights = ones(self.laser_nn)*eps0*self.laser_emax/0.01
-                l_particles_weight=False
+                l_particles_weight=True   # Flag indicating that the particles do not all have the same weight
                 if not self.l_1dz: # 2D and 3D
                     weights*=f.dx
                 if (not self.l_2dxz) : # 3D cartesian
@@ -939,7 +939,6 @@ class EM3D(SubcycledPoissonSolver):
                 elif self.circ_m > 0 : # Circ
                     # Laser initialized with particles in a star-pattern
                     weights*=f.dx*self.weights_circ
-                    l_particles_weight=True   # Flag indicating that the particles do not all have the same weight
 
             elif self.submethod_laser==2.2:
                 # --- displaces particles on fixed segment, adjusting weights, incomplete!
@@ -6781,17 +6780,9 @@ def pyinit_3dem_block(nx, ny, nz,
 
     f.gchange()
 
-#    if l_nodalgrid:
-#        f.xcoefs[:] = FD_weights(0.,f.norderx+1,1)[-1,f.norderx/2+1:]
-#        f.ycoefs[:] = FD_weights(0.,f.nordery+1,1)[-1,f.nordery/2+1:]
-#        f.zcoefs[:] = FD_weights(0.,f.norderz+1,1)[-1,f.norderz/2+1:]
-#    else:
-#        f.xcoefs[:] = FD_weights(0.5,f.norderx+1,1)[-1,f.norderx/2+1:]
-#        f.ycoefs[:] = FD_weights(0.5,f.nordery+1,1)[-1,f.nordery/2+1:]
-#        f.zcoefs[:] = FD_weights(0.5,f.norderz+1,1)[-1,f.norderz/2+1:]
-    f.xcoefs[:] = FD_weights_hvincenti(f.norderx,l_staggered=not l_nodalgrid)
-    f.ycoefs[:] = FD_weights_hvincenti(f.nordery,l_staggered=not l_nodalgrid)
-    f.zcoefs[:] = FD_weights_hvincenti(f.norderz,l_staggered=not l_nodalgrid)
+    if f.norderx is not inf:f.xcoefs[:] = FD_weights_hvincenti(f.norderx,l_staggered=not l_nodalgrid)
+    if f.nordery is not inf:f.ycoefs[:] = FD_weights_hvincenti(f.nordery,l_staggered=not l_nodalgrid)
+    if f.norderx is not inf:f.zcoefs[:] = FD_weights_hvincenti(f.norderz,l_staggered=not l_nodalgrid)
 
     if excoef is not None:
         # --- sets field deposition transformation stencil

@@ -192,7 +192,7 @@ class EM3DFFT(EM3D):
                       self.coskzvzdto2 = cos(self.kzvzdto2)
                       self.Exmultiplier = self.kzvzdto2*self.coskzvzdto2/self.sinkzvzdto2
                       # --- set By multiplier
-                      if self.norderx is None:
+                      if self.norderx is inf:
                           self.kdto2 = where(k==0,0.0001,0.5*k*clight*top.dt)
                       else:
                           self.kdto2 = sqrt((fc(sin(emK.kx_unmod*0.5*self.dx),self.norderx)/(0.5*self.dx))**2+ \
@@ -305,10 +305,10 @@ class EM3DFFT(EM3D):
                                              self.laser_source_v*ones(self.laser_nn),
                                              self.laser_gi,
                                              top.dt,
-                                             1.,
+                                             weights,
                                              self.zgrid,
                                              q,
-                                             weights,
+                                             1.,
                                              self.laser_depos_order_x,
                                              self.laser_depos_order_y,
                                              self.laser_depos_order_z,
@@ -325,10 +325,10 @@ class EM3DFFT(EM3D):
                                              self.laser_source_v*ones(self.laser_nn),
                                              self.laser_gi,
                                              top.dt,
-                                             1.,
+                                             weights,
                                              self.zgrid,
                                              q,
-                                             weights,
+                                             1.,
                                              self.laser_depos_order_x,
                                              self.laser_depos_order_y,
                                              self.laser_depos_order_z,
