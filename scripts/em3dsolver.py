@@ -2035,13 +2035,12 @@ class EM3D(SubcycledPoissonSolver):
         return f
 
     def fetche(self,*args,**kw):
-#    import traceback as tb
-#    tb.print_stack()
-        SubcycledPoissonSolver.fetchfield(self,*args,**kw)
+        if self.l_verbose:print 'fetche',self
+        self.fetchfield(*args,**kw)
 
     def loadrho(self,lzero=None,lfinalize_rho=None,pgroups=None,**kw):
         if self.l_verbose:print 'loadrho',self
-        SubcycledPoissonSolver.loadsource(self,lzero,lfinalize_rho,pgroups,**kw)
+        self.loadsource(lzero,lfinalize_rho,pgroups,**kw)
 
     def fetchphi(self):
         pass
