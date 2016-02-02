@@ -1009,48 +1009,48 @@ c=============================================================================
           uzhat = uzframe/umag
         endif
 
-        ix = int(xlab - xmmin)/dx
-        iy = int(ylab - ymmin)/dy
-        iz = int(zlab - zmmin)/dz
-        wx =    (xlab - xmmin)/dx - ix
-        wy =    (ylab - ymmin)/dy - iy
-        wz =    (zlab - zmmin)/dz - iz
+        ix = int((xlab - xmmin)/dx)
+        iy = int((ylab - ymmin)/dy)
+        iz = int((zlab - zmmin)/dz)
+        wx =     (xlab - xmmin)/dx - ix
+        wy =     (ylab - ymmin)/dy - iy
+        wz =     (zlab - zmmin)/dz - iz
 
         ! --- Get the photon density at the electron location (in lab frame)
-        pdens = photon_density(ix-1,iy-1,iz-1)*(1. - wx)*(1. - wy)*(1. - wz) +
-     &          photon_density(ix  ,iy-1,iz-1)*      wx *(1. - wy)*(1. - wz) +
-     &          photon_density(ix-1,iy  ,iz-1)*(1. - wx)*      wy *(1. - wz) +
-     &          photon_density(ix  ,iy  ,iz-1)*      wx *      wy *(1. - wz) +
-     &          photon_density(ix-1,iy-1,iz  )*(1. - wx)*(1. - wy)*      wz  +
-     &          photon_density(ix  ,iy-1,iz  )*      wx *(1. - wy)*      wz  +
-     &          photon_density(ix-1,iy  ,iz  )*(1. - wx)*      wy *      wz  +
-     &          photon_density(ix  ,iy  ,iz  )*      wx *      wy *      wz 
+        pdens = photon_density(ix  ,iy  ,iz  )*(1. - wx)*(1. - wy)*(1. - wz) +
+     &          photon_density(ix+1,iy  ,iz  )*      wx *(1. - wy)*(1. - wz) +
+     &          photon_density(ix  ,iy+1,iz  )*(1. - wx)*      wy *(1. - wz) +
+     &          photon_density(ix+1,iy+1,iz  )*      wx *      wy *(1. - wz) +
+     &          photon_density(ix  ,iy  ,iz+1)*(1. - wx)*(1. - wy)*      wz  +
+     &          photon_density(ix+1,iy  ,iz+1)*      wx *(1. - wy)*      wz  +
+     &          photon_density(ix  ,iy+1,iz+1)*(1. - wx)*      wy *      wz  +
+     &          photon_density(ix+1,iy+1,iz+1)*      wx *      wy *      wz 
 
         ! --- Get the momentum of the incoming photon (in lab frame)
-        pxtemp = photon_px(ix-1,iy-1,iz-1)*(1. - wx)*(1. - wy)*(1. - wz) +
-     &           photon_px(ix  ,iy-1,iz-1)*      wx *(1. - wy)*(1. - wz) +
-     &           photon_px(ix-1,iy  ,iz-1)*(1. - wx)*      wy *(1. - wz) +
-     &           photon_px(ix  ,iy  ,iz-1)*      wx *      wy *(1. - wz) +
-     &           photon_px(ix-1,iy-1,iz  )*(1. - wx)*(1. - wy)*      wz  +
-     &           photon_px(ix  ,iy-1,iz  )*      wx *(1. - wy)*      wz  +
-     &           photon_px(ix-1,iy  ,iz  )*(1. - wx)*      wy *      wz  +
-     &           photon_px(ix  ,iy  ,iz  )*      wx *      wy *      wz
-        pytemp = photon_py(ix-1,iy-1,iz-1)*(1. - wx)*(1. - wy)*(1. - wz) +
-     &           photon_py(ix  ,iy-1,iz-1)*      wx *(1. - wy)*(1. - wz) +
-     &           photon_py(ix-1,iy  ,iz-1)*(1. - wx)*      wy *(1. - wz) +
-     &           photon_py(ix  ,iy  ,iz-1)*      wx *      wy *(1. - wz) +
-     &           photon_py(ix-1,iy-1,iz  )*(1. - wx)*(1. - wy)*      wz  +
-     &           photon_py(ix  ,iy-1,iz  )*      wx *(1. - wy)*      wz  +
-     &           photon_py(ix-1,iy  ,iz  )*(1. - wx)*      wy *      wz  +
-     &           photon_py(ix  ,iy  ,iz  )*      wx *      wy *      wz
-        pztemp = photon_pz(ix-1,iy-1,iz-1)*(1. - wx)*(1. - wy)*(1. - wz) +
-     &           photon_pz(ix  ,iy-1,iz-1)*      wx *(1. - wy)*(1. - wz) +
-     &           photon_pz(ix-1,iy  ,iz-1)*(1. - wx)*      wy *(1. - wz) +
-     &           photon_pz(ix  ,iy  ,iz-1)*      wx *      wy *(1. - wz) +
-     &           photon_pz(ix-1,iy-1,iz  )*(1. - wx)*(1. - wy)*      wz  +
-     &           photon_pz(ix  ,iy-1,iz  )*      wx *(1. - wy)*      wz  +
-     &           photon_pz(ix-1,iy  ,iz  )*(1. - wx)*      wy *      wz  +
-     &           photon_pz(ix  ,iy  ,iz  )*      wx *      wy *      wz
+        pxtemp = photon_px(ix  ,iy  ,iz  )*(1. - wx)*(1. - wy)*(1. - wz) +
+     &           photon_px(ix+1,iy  ,iz  )*      wx *(1. - wy)*(1. - wz) +
+     &           photon_px(ix  ,iy+1,iz  )*(1. - wx)*      wy *(1. - wz) +
+     &           photon_px(ix+1,iy+1,iz  )*      wx *      wy *(1. - wz) +
+     &           photon_px(ix  ,iy  ,iz+1)*(1. - wx)*(1. - wy)*      wz  +
+     &           photon_px(ix+1,iy  ,iz+1)*      wx *(1. - wy)*      wz  +
+     &           photon_px(ix  ,iy+1,iz+1)*(1. - wx)*      wy *      wz  +
+     &           photon_px(ix+1,iy+1,iz+1)*      wx *      wy *      wz
+        pytemp = photon_py(ix  ,iy  ,iz  )*(1. - wx)*(1. - wy)*(1. - wz) +
+     &           photon_py(ix+1,iy  ,iz  )*      wx *(1. - wy)*(1. - wz) +
+     &           photon_py(ix  ,iy+1,iz  )*(1. - wx)*      wy *(1. - wz) +
+     &           photon_py(ix+1,iy+1,iz  )*      wx *      wy *(1. - wz) +
+     &           photon_py(ix  ,iy  ,iz+1)*(1. - wx)*(1. - wy)*      wz  +
+     &           photon_py(ix+1,iy  ,iz+1)*      wx *(1. - wy)*      wz  +
+     &           photon_py(ix  ,iy+1,iz+1)*(1. - wx)*      wy *      wz  +
+     &           photon_py(ix+1,iy+1,iz+1)*      wx *      wy *      wz
+        pztemp = photon_pz(ix  ,iy  ,iz  )*(1. - wx)*(1. - wy)*(1. - wz) +
+     &           photon_pz(ix+1,iy  ,iz  )*      wx *(1. - wy)*(1. - wz) +
+     &           photon_pz(ix  ,iy+1,iz  )*(1. - wx)*      wy *(1. - wz) +
+     &           photon_pz(ix+1,iy+1,iz  )*      wx *      wy *(1. - wz) +
+     &           photon_pz(ix  ,iy  ,iz+1)*(1. - wx)*(1. - wy)*      wz  +
+     &           photon_pz(ix+1,iy  ,iz+1)*      wx *(1. - wy)*      wz  +
+     &           photon_pz(ix  ,iy+1,iz+1)*(1. - wx)*      wy *      wz  +
+     &           photon_pz(ix+1,iy+1,iz+1)*      wx *      wy *      wz
 
         ! --- Photon energy in lab frame
         pelab = photon_energy
