@@ -484,7 +484,7 @@ dtsdz = f%clight**2*dt/f%dz
 mudt  = f%mu0*f%clight**2*dt
 
 !if (f%spectral) then
-!  call callpythonfunc("push_spectral","em3dsolverFFT")
+!  call callpythonfunc("push_spectral","field_solvers.em3dsolverFFT")
 !  return
 !end if
 

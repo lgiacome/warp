@@ -23,7 +23,7 @@ c Exit if paramters are not to be printed
       if (.not. lprntpara) return
 
 c     --- Call script version of this routine
-      call callpythonfunc("printparametersrz","printparametersrz")
+      call callpythonfunc("printparametersrz","diagnostics.printparametersrz")
  
 c  Write to tty
    30 format(1x,a,i8,a)

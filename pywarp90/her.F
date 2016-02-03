@@ -102,7 +102,7 @@ c --- Set the g-factor for the constant g-factor model
 
       if (icharge == 5 .or. icharge == 6) then
 c     Read in Bessel data
-        call callpythonfunc ("readbessel","hermestools")
+        call callpythonfunc ("readbessel","utils.hermestools")
       endif
 
       if (icharge == 7) then

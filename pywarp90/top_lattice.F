@@ -7772,7 +7772,7 @@ c       ezpyelem(1:nppyelem) = 0.
 c       bxpyelem(1:nppyelem) = 0.
 c       bypyelem(1:nppyelem) = 0.
 c       bzpyelem(1:nppyelem) = 0.
-        call callpythonfunc("pyelemfunctions","lattice")
+        call callpythonfunc("pyelemfunctions","lattice.lattice")
 
         do ip = 1, nppyelem
           ii = iipyelem(ip)
