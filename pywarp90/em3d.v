@@ -67,8 +67,8 @@ push_em3d_f(f:EM3D_YEEFIELDtype,dt:real) subroutine
 push_em3d_phi(f:EM3D_YEEFIELDtype,dt:real) subroutine
 push_em3d_a(f:EM3D_YEEFIELDtype,dt:real) subroutine
 push_em3d_block(f:EM3D_BLOCKtype,dt:real,which:integer) subroutine
-push_em3d_eef(f:EM3D_BLOCKtype,dt:real,which:integer,l_pushf:logical,l_pushpot:logical) subroutine
-push_em3d_bf(f:EM3D_BLOCKtype,dt:real,which:integer,l_pushf:logical,l_pushpot:logical) subroutine
+push_em3d_eef(f:EM3D_BLOCKtype,dt:real,which:integer,l_pushf:logical,l_pushpot:logical,l_pushe:logical) subroutine
+push_em3d_bf(f:EM3D_BLOCKtype,dt:real,which:integer,l_pushf:logical,l_pushpot:logical,l_pushb:logical) subroutine
 push_em3d_blockbnde(b:EM3D_BLOCKtype,dt:real,which:integer) subroutine
 push_em3d_blockbndb(b:EM3D_BLOCKtype,dt:real,which:integer) subroutine
 push_em3d_blockbndef(b:EM3D_BLOCKtype,dt:real,which:integer) subroutine

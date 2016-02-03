@@ -574,6 +574,7 @@ c  time in any location.
       real(kind=8):: tr,tg,th
       real(kind=8):: gamma
       real(kind=8):: timetemp,wtime
+      real(kind=8):: sumsw
       real(kind=8):: zmmntscopy(NUMZMMNT)
 #ifdef J90
       real(kind=8):: pmmnts(NUMZMMNT,np)
@@ -1372,8 +1373,11 @@ c       --- to get the combined moments.
             zmmnts0(:,nszmmnt) = zmmnts0(:,nszmmnt) + zmmnts0(:,js)*zmmntsw(js)
             zmmnts(:,:,nszmmnt) = zmmnts(:,:,nszmmnt) + zmmnts(:,:,js)*zmmntsw(js)
           enddo
-          zmmnts0(:,nszmmnt) = zmmnts0(:,nszmmnt)/sum(zmmntsw(0:nszmmnt-1))
-          zmmnts(:,:,nszmmnt) = zmmnts(:,:,nszmmnt)/sum(zmmntsw(0:nszmmnt-1))
+          sumsw = sum(zmmntsw(0:nszmmnt-1))
+          if (sumsw .ne. 0.) then
+            zmmnts0(:,nszmmnt) = zmmnts0(:,nszmmnt)/sumsw
+            zmmnts(:,:,nszmmnt) = zmmnts(:,:,nszmmnt)/sumsw
+          endif
         endif
 
 
@@ -4498,7 +4502,7 @@ c=============================================================================
       use Subtimerstop
       use Constant
       use Picglb,Only: time
-      use Particles,Only: spid,tbirthpid,xbirthpid,ybirthpid,zbirthpid,uxbirthpid,uybirthpid,uzbirthpid,ssn
+      use Particles,Only: ssnpid,tbirthpid,xbirthpid,ybirthpid,zbirthpid,uxbirthpid,uybirthpid,uzbirthpid,ssn
       use Beam_acc
       type(ParticleGroup):: pgroup
       integer(ISZ):: is,nn,nnpid
@@ -4708,11 +4712,11 @@ c       --- Do nothing if there is nothing to copy
         if (nnpid > 0) pgroup%pid(i1:i2,1:nnpid) = ppid(j1:j2,:)
 
         if (lnewparticles) then
-          if (spid > 0) then
+          if (ssnpid > 0) then
 c           --- Only set the ssn if it is not already set.
             do ip=i1,i2
-              if (pgroup%pid(ip,spid) == 0) then
-                pgroup%pid(ip,spid) = ssn
+              if (pgroup%pid(ip,ssnpid) == 0) then
+                pgroup%pid(ip,ssnpid) = ssn
                 ssn = ssn + 1
               endif
             enddo
@@ -7393,7 +7397,7 @@ c there is a problem here with the intel compiler
 c=============================================================================
       subroutine impact_ion(is1,is2,nbp,wp,shiftx,shifty,shiftz,deltax,deltay,deltaz,condid)
       use Constant
-      use Particles,Only: pgroup,wpid,spid,ssn
+      use Particles,Only: pgroup,wpid,ssnpid,ssn
       use InPart
       use LostParticles
       INTEGER, INTENT(IN) :: is1, is2, condid
@@ -7433,8 +7437,8 @@ c           conductor generate new particles.
           pgroup%xp(i1+ir-1) = xplost(ip)+shiftx+(wranf()-0.5)*deltax
           pgroup%yp(i1+ir-1) = yplost(ip)+shifty+(wranf()-0.5)*deltay
           pgroup%zp(i1+ir-1) = zplost(ip)+shiftz+(wranf()-0.5)*deltaz
-          if(spid>0) then
-            pgroup%pid(i1+ir-1,spid) = ssn
+          if(ssnpid>0) then
+            pgroup%pid(i1+ir-1,ssnpid) = ssn
             ssn=ssn+1
           end if
         end do

@@ -29,7 +29,7 @@ c Exit now if parameter are not to be printed
       if (.not. lprntpara) return
 
 c     --- Call script version of this routine.
-      call callpythonfunc("printparameters3d","printparameters3d")
+      call callpythonfunc("printparameters3d","diagnostics.printparameters3d")
 
    20 format(1x,a,1pe11.4,a)
    30 format(1x,a,i8,a)
@@ -100,7 +100,7 @@ c=============================================================================
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
       if (fstype == 12) then
-        call callpythonfunc("rhodiaregistered","fieldsolver")
+        call callpythonfunc("rhodiaregistered","field_solvers.fieldsolver")
       else if(solvergeom==XYZgeom) then
         call rhodia3d
       end if
@@ -117,7 +117,7 @@ c=============================================================================
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
       if (fstype == 12) then
-        call callpythonfunc("gtlchgregistered","fieldsolver")
+        call callpythonfunc("gtlchgregistered","field_solvers.fieldsolver")
       else if(solvergeom==XYZgeom) then
         call gtlchg3d
       else if(solvergeom==RZgeom .or. solvergeom==XZgeom) then
@@ -136,7 +136,7 @@ c=============================================================================
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
       if (fstype == 12) then
-        call callpythonfunc("srhoaxregistered","fieldsolver")
+        call callpythonfunc("srhoaxregistered","field_solvers.fieldsolver")
       else if(solvergeom==XYZgeom) then
         call srhoax3d
       end if
@@ -153,7 +153,7 @@ c=============================================================================
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
       if (fstype == 12) then
-        call callpythonfunc("geteseregistered","fieldsolver")
+        call callpythonfunc("geteseregistered","field_solvers.fieldsolver")
       else if(solvergeom==XYZgeom) then
         call getese3d
       end if
@@ -170,7 +170,7 @@ c=============================================================================
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
       if (fstype == 12) then
-        call callpythonfunc("sphiaxregistered","fieldsolver")
+        call callpythonfunc("sphiaxregistered","field_solvers.fieldsolver")
       else if(solvergeom==XYZgeom) then
         call sphiax3d
       end if
@@ -187,7 +187,7 @@ c=============================================================================
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
       if (fstype == 12) then
-        call callpythonfunc("sezaxregistered","fieldsolver")
+        call callpythonfunc("sezaxregistered","field_solvers.fieldsolver")
       else if(solvergeom==XYZgeom) then
         call sezax3d
       end if

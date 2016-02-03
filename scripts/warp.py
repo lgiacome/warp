@@ -15,7 +15,9 @@ import sys
 # --- Only numpy is now supported.
 import numpy
 from numpy import *
+from numpy import random
 ArrayType = ndarray
+RandomArray = random
 def gettypecode(x):
     return x.dtype.char
 def oldnonzero(a):
@@ -47,10 +49,10 @@ del imp
 # --- the scripts directory may not be in sys.path. But it needs to be in
 # --- sys.path so that input files can import any scripts that are
 # --- not imported here in warp.py.
-scriptspath = os.path.dirname(__file__)
-if scriptspath not in sys.path:
-    sys.path.append(scriptspath)
-del scriptspath
+#scriptspath = os.path.dirname(__file__)
+#if scriptspath not in sys.path:
+    #sys.path.append(scriptspath)
+#del scriptspath
 
 # --- Since gist is only loaded on PE0 in the parallel
 # --- environment, the parallel module must also be loaded in to check
@@ -66,17 +68,16 @@ import parallel
 
 try:
     import gist
-    import gistdummy
     if me == 0 and sys.platform != 'mac':
         from gist import *
     else:
         gist.pyg_unhook()
-        from gistdummy import *
+        from .diagnostics.gistdummy import *
 except ImportError:
     if not warpoptions.quietImport:
         import warnings
         warnings.warn("there was an error importing gist; if this is a problem, restart python and type 'import gist' for details, otherwise Warp will run OK but with no graphics")
-    from gistdummy import *
+    from .diagnostics.gistdummy import *
 
 if sys.hexversion >= 0x03000000:
     # --- With Python3, the so files of each Fortran package are imported
@@ -86,52 +87,90 @@ if sys.hexversion >= 0x03000000:
     #sys.setdlopenflags(ctypes.RTLD_LAZY + ctypes.RTLD_GLOBAL)
     sys.setdlopenflags(1 + ctypes.RTLD_GLOBAL)
 
+# --- Test for a mixed installed of Warp, if the old pre-reorganized version is still installed.
+try:
+    # --- This should fail
+    from . import colortext
+except ImportError:
+    pass
+else:
+    # --- If not, that means that there is the file warp/colortext.py which should not be there.
+    import warp
+    import os
+    print '\n\n'
+    print colortext.coloredtext('Error: A mixed installation of Warp has been found.', colortext.textBRed)
+    print colortext.coloredtext('Please remove the directory %s,'%os.path.dirname(warp.__file__), colortext.textBRed)
+    print colortext.coloredtext('and do "make cleanall" and re-install Warp.', colortext.textBRed)
+    print '\n\n'
+    raise Exception('Mixed installation of Warp found')
+
 # Import the warpC shared object which contains all of Warp
 # --- If python had been built statically, then warpCparallel is linked
 # --- in under the name warpC.
 if lparallel and not lstatic_python:
-    import warpCparallel as warpC
-    from warpCparallel import *
+    from . import warpCparallel as warpC
+    from .warpCparallel import *
 else:
-    import warpC
-    from warpC import *
+    from . import warpC
+    from .warpC import *
 
 from Forthon import *
-from warputils import *
-import pickledump
-from numpy import random
-RandomArray = random
+
+from .data_dumping import PWpickle
+from .data_dumping import PRpickle
+from .data_dumping import PWpickle as PW
+from .data_dumping import PRpickle as PR
 
 # --- The Warp modules must be imported in the order below because of
 # --- linking dependencies.
-from toppy import *
-from envpy import *
-from w3dpy import *
-from f3dpy import *
-from fxypy import *
-from wxypy import *
-try:  # RZ code hasn't been installed on all machines yet
+if sys.hexversion >= 0x03000000:
+    if lparallel:
+        from .topparallelpy import *
+        from .envparallelpy import *
+        from .w3dparallelpy import *
+        from .f3dparallelpy import *
+        from .fxyparallelpy import *
+        from .wxyparallelpy import *
+        from .frzparallelpy import *
+        from .wrzparallelpy import *
+        from .cirparallelpy import *
+        from .herparallelpy import *
+        from .choparallelpy import *
+        from .em2dparallelpy import *
+        from .em3dparallelpy import *
+    else:
+        from .toppy import *
+        from .envpy import *
+        from .w3dpy import *
+        from .f3dpy import *
+        from .fxypy import *
+        from .wxypy import *
+        from .frzpy import *
+        from .wrzpy import *
+        from .cirpy import *
+        from .herpy import *
+        from .chopy import *
+        from .em2dpy import *
+        from .em3dpy import *
+else:
+    from toppy import *
+    from envpy import *
+    from w3dpy import *
+    from f3dpy import *
+    from fxypy import *
+    from wxypy import *
     from frzpy import *
     from wrzpy import *
-except ImportError:
-    pass
-try:  # cirpy hasn't been installed on all machines yet
     from cirpy import *
-except ImportError:
-    pass
-try:  # herpy hasn't been installed on all machines yet
     from herpy import *
-except ImportError:
-    pass
-try:  # chopy hasn't been installed on all machines yet
     from chopy import *
-except ImportError:
-    pass
-from em2dpy import *
-from em3dpy import *
-import controllers
-from controllers import *
-from ctl import *
+    from em2dpy import *
+    from em3dpy import *
+
+from .utils.warputils import *
+from . import controllers
+from .controllers import *
+from .ctl import *
 
 # --- Now make sure that a proper version of warpC has been imported.
 if lparallel:
@@ -951,7 +990,7 @@ def restoreolddump(ff):
 # --- Dump command
 def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars=1,
          ff=None,varsuffix=None,histz=2,resizeHist=1,verbose=false,
-         hdf=0,format='',datawriter=None):
+         hdf=0,format='',datawriter=PW.PW):
     """
   Creates a dump file
     - filename=(prefix+runid+'%06d'%top.it+suffix+'.dump')
@@ -1010,6 +1049,7 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
         gchange("Hist")
     # --- Call routine to make data dump
     if format == 'pickle':
+        from .data_dumping import pickledump
         pickledump.pickledump(filename,attr,interpreter_variables,serial,ff,
                               varsuffix,verbose)
     else:
@@ -1022,9 +1062,15 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
     # --- Update dump time
     top.dumptime = top.dumptime + (wtime() - timetemp)
 
+# --- Restore
+def restore(filename, **kw):
+    kw.setdefault('datareader', PR.PR)
+    kw.setdefault('main', warp)
+    pyrestore(filename, **kw)
+
 # --- Restart command
 def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
-            dofieldsol=true,format='',datareader=None,main=None):
+            dofieldsol=true,format='',datareader=PR.PR,main=None):
     """
   Reads in data from file, redeposits charge density and does field solve
     - filename: restart file name - when restoring parallel run from multiple
@@ -1039,8 +1085,8 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
     - format='': If 'pickle', uses pickledump module (not recommended)
     - datareader=PR.PR: the data reader class to use. This can be any class that
                         conforms to the API of PW from the PyPDB package.
-    - main=__main__: main object that Forthon objects are restored into
-                     Used when the Forthon package is not "import *" into main.
+    - main=warp: main object that Forthon objects are restored into
+                 Used when the Forthon package is not "import *" into main.
     """
     # --- If each processor is restoring from a seperate file, append
     # --- appropriate suffix, assuming only prefix was passed in
@@ -1048,6 +1094,7 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
         filename = filename + '_%05d_%05d%s.dump'%(me,npes,suffix)
 
     if format == 'pickle':
+        from .data_dumping import pickledump
         pickledump.picklerestore(filename,verbose,skip=skip)
     else:
         # --- Call different restore routine depending on context.
@@ -1061,6 +1108,8 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
         if onefile and lparallel:
             ff = parallelrestore(filename,verbose=verbose,skip=skip,lreturnff=1)
         else:
+            if main is None:
+                main = warp
             ff = pyrestore(filename,verbose=verbose,skip=skip,lreturnff=1,
                            datareader=datareader,main=main)
 
@@ -1349,60 +1398,59 @@ def printtimersordered(file=None,depth=3):
 # --- projections of particles, histories, as well as some line plots.
 # --- Import these here near the end so the functions defined above are
 # --- included in their dictionaries.
-from particles import *
-from fieldsolver import *
-if lparallel: from warpparallel import *
-from warpplots import *
-from histplots import *
-from pzplots import *
-from lwplots import *
-from generateconductors import *
-from plot_conductor import *
-from multigrid import MultiGrid
-from multigrid import MultiGrid3D
-from multigrid import FullMultiGrid3D
-from multigrid import MultiGridImplicit3D
-from multigridRZ import MultiGridRZ
-from multigridRZ import MultiGrid2D
-from multigridRZ import MultiGrid2DDielectric
-from multigridRZ import MultiGridImplicit2D
-from em3dsolver import EM3D
-from MeshRefinement import *
-from magnetostaticMG import MagnetostaticMG
-from magnetostaticMG import MagnetostaticFFT
-from MeshRefinementB import MRBlockB
-from implicitstep import ImplicitStep
-from species import *
-from particlescraper import ParticleScraper
-from lattice import *
-from drawlattice import *
-from solenoid import *
+from .particles.particles import *
+from .field_solvers.fieldsolver import *
+if lparallel:
+    from .warpparallel import *
+from .diagnostics.warpplots import *
+from .diagnostics.histplots import *
+from .diagnostics.pzplots import *
+from .diagnostics.lwplots import *
+from .field_solvers.generateconductors import *
+from .diagnostics.plot_conductor import *
+from .field_solvers.multigrid import MultiGrid
+from .field_solvers.multigrid import MultiGrid3D
+from .field_solvers.multigrid import FullMultiGrid3D
+from .field_solvers.multigrid import MultiGridImplicit3D
+from .field_solvers.multigridRZ import MultiGridRZ
+from .field_solvers.multigridRZ import MultiGrid2D
+from .field_solvers.multigridRZ import MultiGrid2DDielectric
+from .field_solvers.multigridRZ import MultiGridImplicit2D
+from .field_solvers.em3dsolver import EM3D
+from .field_solvers.MeshRefinement import *
+from .field_solvers.magnetostaticMG import MagnetostaticMG
+from .field_solvers.magnetostaticMG import MagnetostaticFFT
+from .field_solvers.MeshRefinementB import MRBlockB
+from .run_modes.implicitstep import ImplicitStep
+from .particles.species import *
+from .particles.particlescraper import ParticleScraper
+from .lattice.lattice import *
+from .diagnostics.drawlattice import *
+from .lattice.solenoid import *
 
 # --- Import some online documentation modules.
-from warphelp import *
-from warpscripts import *
-from warpfortran import *
+from .warphelp import *
+#from .attic.warpscripts import *
+#from .attic.warpfortran import *
 
 # --- Import the printparameters modules (which are called from fortran)
-from printparameters import *
-from printparameters3d import *
-from printparametersrz import *
+from .diagnostics.printparameters import *
+from .diagnostics.printparameters3d import *
+from .diagnostics.printparametersrz import *
 
 # --- warp imports itself as a matter of convenience, so that the
-# --- name is defined.
-try:
+# --- name is defined. Note that this warp refers to this script
+# --- and not the overall module.
+if sys.hexversion >= 0x03000000:
+    from . import warp
+else:
     import warp
-except ImportError:
-    # --- In python3, relative imports are broken - apparently a file
-    # --- in a package cannot import itself. Ignore this for now.
-    pass
 
 # --- Try to import the GUI
-try:
-    sys.path.append(os.path.join(os.path.dirname(__file__),'GUI'))
-    from WarpGUI import *
-except:
-    pass
+#try:
+#    from .GUI.WarpGUI import *
+#except:
+#    pass
 
 ##############################################################################
 ######  Don't put anything below this line!!! ################################

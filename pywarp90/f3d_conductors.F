@@ -10209,11 +10209,11 @@ c     The radius returned is always greater than or equal to zero.
 c       --- Get r(z) from the Python function.
         srfrv_z = zz
         if (icase == 0) then
-          call callpythonfunc("rofzfunc","generateconductors")
+          call callpythonfunc("rofzfunc","field_solvers.generateconductors")
         else if (icase == 1) then
-          call callpythonfunc("rminofz","generateconductors")
+          call callpythonfunc("rminofz","field_solvers.generateconductors")
         else if (icase == 2) then
-          call callpythonfunc("rmaxofz","generateconductors")
+          call callpythonfunc("rmaxofz","field_solvers.generateconductors")
         endif
 
       else

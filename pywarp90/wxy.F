@@ -4705,7 +4705,7 @@ c       --- Use 3d field solver
 c       --- Otherwise, use 2d field solver
 
         if (iwhich==0 .or. iwhich==1) then
-          call callpythonfunc("initfieldsolver","fieldsolver")
+          call callpythonfunc("initfieldsolver","field_solvers.fieldsolver")
         endif
 
         if (fstype == 0 .or. fstype == 1 .or. fstype == 2) then

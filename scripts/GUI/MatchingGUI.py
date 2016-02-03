@@ -2,7 +2,7 @@
 
 from wx import *
 from wx.lib.anchors import LayoutAnchors
-import matchenv
+from ..envelope import matchenv
 import newstdout
 import warp
 import sys

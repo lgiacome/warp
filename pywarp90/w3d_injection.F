@@ -20,7 +20,7 @@ c=============================================================================
       use InPart
       use InPart3d
       use InMesh3d
-      use Particles,Only: spid,wpid,tpid,rpid,ssn,lmappid,npid,
+      use Particles,Only: ssnpid,wpid,rbirthpid,ssn,lmappid,npid,
      &                    tbirthpid,xbirthpid,ybirthpid,zbirthpid,zbirthlabpid,
      &                    uxbirthpid,uybirthpid,uzbirthpid
       use Picglb
@@ -481,17 +481,15 @@ c             --- Scale the particle weight.
                 pgroup%gaminv(ii) = 1.
               endif
 c             --- Save the ID of the injection source.
-              pgroup%pid(ii,injpid) = ij
+              pgroup%pid(ii,injdatapid) = ij
 c             --- Save SSN
-              if (spid>0) then
-                pgroup%pid(ii,spid) = ssn
+              if (ssnpid>0) then
+                pgroup%pid(ii,ssnpid) = ssn
                 ssn = ssn+1
               end if
-c             --- save time of creation if tpid > 0
-              if(tpid>0) pgroup%pid(ii,tpid) = time + fulldt_s
-c             --- save radius of creation if rpid > 0
-              if(rpid>0) then
-                pgroup%pid(ii,rpid) = sqrt(pgroup%xp(ii)**2+pgroup%yp(ii)**2)
+c             --- save radius of creation if rbirthpid > 0
+              if(rbirthpid>0) then
+                pgroup%pid(ii,rbirthpid) = sqrt(pgroup%xp(ii)**2+pgroup%yp(ii)**2)
               endif
               if (xbirthpid > 0) pgroup%pid(ii,xbirthpid) = pgroup%xp(ii)
               if (ybirthpid > 0) pgroup%pid(ii,ybirthpid) = pgroup%yp(ii)
@@ -608,7 +606,7 @@ c           --- get E self-field at initial positions
               bx = 0.
               by = 0.
               bz = 0.
-              call inj_sete3d(nn,xx,yy,zz,pgroup%pid(i1:i2,injpid),ex,ey,ez)
+              call inj_sete3d(nn,xx,yy,zz,pgroup%pid(i1:i2,injdatapid),ex,ey,ez)
             endif
 
 c           --- get external fields at initial positions
@@ -679,8 +677,8 @@ c           --- Set fractional time to advance particles
               ! --- put in reverse order in internal particle arrays
               dtp(1:nn) = dtp(nn:1:-1)
             end if
-            pgroup%pid(i1:i2,injpid) = pgroup%pid(i1:i2,injpid) + dtp(1:nn)
-            if (tbirthpid > 0) pgroup%pid(i1:i2,tbirthpid) = time - dtp(1:nn)
+            pgroup%pid(i1:i2,injdatapid) = pgroup%pid(i1:i2,injdatapid) + dtp(1:nn)
+            if (tbirthpid > 0) pgroup%pid(i1:i2,tbirthpid) = time + fulldt_s - dtp(1:nn)
 
 c           --- Add in a velocity tilt (this is dependent on the fractional
 c           --- time step and so must be done here).
@@ -1205,6 +1203,7 @@ c               --- Loop over the species
                   jsid = pgroup%sid(is-1)
                   if (finject(ij,jsid+1) == 0.) cycle
                   inj_is = min(jsid+1,inj_ns)
+                  fulldt_s = dt*pgroup%ndts(is-1)*pgroup%dtscale(is)
 
 c                 --- Skip this species if no particles are to be injected
                   if (inj_npactual(ix,iy,ij,inj_is) == 0.) cycle
@@ -1404,25 +1403,22 @@ c                   --- The fractions are chosen using the digit reversed
 c                   --- number generator and not particle number since they
 c                   --- are correlated with transverse position.
                     if(l_inj_regular) then
-                      pgroup%pid(ii,injpid) = rnrev(injctcnt,dig1)
+                      pgroup%pid(ii,injdatapid) = rnrev(injctcnt,dig1)
                     else
-                      pgroup%pid(ii,injpid) = rnrev(injctcnt,dig9)
+                      pgroup%pid(ii,injdatapid) = rnrev(injctcnt,dig9)
                     end if
 
-c                   --- save time of creation if tpid > 0
-                    if(tpid>0) pgroup%pid(ii,tpid) = time + fulldt_s
-
-c                   --- reverse sign of pid(ii,tpid) if temperature added
+c                   --- reverse sign of pid(ii,tbirthpid) if temperature added
 c                   --- after delay.
 c                   --- negative pid is then used to track particles on which
 c                   --- to add temperature.
                     if(l_inj_delay_temp) then
-                      pgroup%pid(ii,tpid) = -pgroup%pid(ii,tpid)
+                      pgroup%pid(ii,tbirthpid) = -pgroup%pid(ii,tbirthpid)
                     endif
 
-c                   --- save radius of creation if rpid > 0
-                    if(rpid>0) then
-                      pgroup%pid(ii,rpid) =
+c                   --- save radius of creation if rbirthpid > 0
+                    if(rbirthpid>0) then
+                      pgroup%pid(ii,rbirthpid) =
      &                            sqrt(pgroup%xp(ii)**2+pgroup%yp(ii)**2)
                     endif
 
@@ -1430,13 +1426,13 @@ c                   --- save radius of creation if rpid > 0
 c                     --- Get the normal velocity for this particle. This is
 c                     --- based on the Child-Langmuir solution, given a
 c                     --- voltage drop, vnorm, and a time since emission,
-c                     --- pid(ii,injpid)*dt.
+c                     --- pid(ii,injdatapid)*dt.
                       vnorm = inj_phi(ixx        ,iyy        ,ij)*(1. - wxx)*(1. - wyy) +
      &                        inj_phi(ixx+spreadx,iyy        ,ij)*      wxx *(1. - wyy) +
      &                        inj_phi(ixx        ,iyy+spready,ij)*(1. - wxx)*      wyy  +
      &                        inj_phi(ixx+spreadx,iyy+spready,ij)*      wxx *      wyy
                       vznorm = vzconst(jsid)*abs(vnorm)**1.5*
-     &                         (pgroup%pid(ii,injpid)*fulldt_s)**2
+     &                         (pgroup%pid(ii,injdatapid)*fulldt_s)**2
                       if (inj_d(ij) < 0.) vznorm = -vznorm
                     else
                       vznorm = 0.
@@ -1496,12 +1492,12 @@ c                   --- massless momentums properly.
                     endif
 
 c                   --- Save SSN
-                    if (spid>0) then
-                      pgroup%pid(ii,spid) = ssn
+                    if (ssnpid>0) then
+                      pgroup%pid(ii,ssnpid) = ssn
                       ssn = ssn+1
                     end if
 
-                    if (tbirthpid > 0) pgroup%pid(ii,tbirthpid) = time - pgroup%pid(ii,injpid)*fulldt_s
+                    if (tbirthpid > 0) pgroup%pid(ii,tbirthpid) = time + fulldt_s - pgroup%pid(ii,injdatapid)*fulldt_s
                     if (xbirthpid > 0) pgroup%pid(ii,xbirthpid) = pgroup%xp(ii)
                     if (ybirthpid > 0) pgroup%pid(ii,ybirthpid) = pgroup%yp(ii)
                     if (zbirthpid > 0) pgroup%pid(ii,zbirthpid) = pgroup%zp(ii)
@@ -1513,7 +1509,7 @@ c                   --- Save the ID of the injection source. Note that pid
 c                   --- is doing double duty, saving the injection source
 c                   --- number and the fraction of the timestep the
 c                   --- particle is advanced.
-                    pgroup%pid(ii,injpid) = pgroup%pid(ii,injpid) + ij
+                    pgroup%pid(ii,injdatapid) = pgroup%pid(ii,injdatapid) + ij
 
 c                   --- increment various particle counters
                     npinje_s(jsid+1) = npinje_s(jsid+1) + 1
@@ -1627,7 +1623,7 @@ c         --- size, uniformly distributed between 0 and dt.
             jsid = pgroup%sid(is-1)
 c           --- Skip this if no particles of this species were injected.
             if (.not. pgroup%ldts(is-1)) cycle
-            fulldt_s    = dt*pgroup%ndts(is-1)*pgroup%dtscale(is)
+            fulldt_s = dt*pgroup%ndts(is-1)*pgroup%dtscale(is)
             if(npinje_s(jsid+1)==0) cycle
 
 c           --- Make sure that there is enough room in the temporary arrays.
@@ -1653,7 +1649,7 @@ c           --- and to make the following code look cleaner.
             uy => pgroup%uyp(i1:i2)
             uz => pgroup%uzp(i1:i2)
             gg => pgroup%gaminv(i1:i2)
-            id => pgroup%pid(i1:i2,injpid)
+            id => pgroup%pid(i1:i2,injdatapid)
             ex => pgroup%ex(i1:i2)
             ey => pgroup%ey(i1:i2)
             ez => pgroup%ez(i1:i2)
@@ -1735,7 +1731,7 @@ c                 --- numbers.
               if(.not. l_inj_delay_temp) then
 c               --- Convert the thermal velocity to the lab frame. Note that
 c               --- this only matters if vthperp != vthz
-                indx(1:nn) = int(pgroup%pid(i1:i2,injpid))
+                indx(1:nn) = int(pgroup%pid(i1:i2,injdatapid))
                 call inj_transform(nn,uxt,uyt,uzt,nn,indx,1,0)
 c               --- Now add it in.
                 ux = ux + uxt(1:nn)
@@ -1792,7 +1788,7 @@ c           --- Skip this if no particles of this species were injected.
             nn = npinje_s(jsid+1)
 #else
 c           --- Find particles that were freshly injected. These
-c           --- are particles which still have noninteger pid(:,injpid).
+c           --- are particles which still have noninteger pid(:,injdatapid).
             allocate(mask(pgroup%nps(is)),stat=allocerror)
             if (allocerror /= 0) then
               print*,"inject3d: allocation error ",allocerror,
@@ -1803,9 +1799,9 @@ c           --- are particles which still have noninteger pid(:,injpid).
 
             i1 = pgroup%ins(is)
             i2 = pgroup%ins(is)+pgroup%nps(is)-1
-            where (pgroup%pid(i1:i2,injpid) < ninject+1)
-              mask = ((pgroup%pid(i1:i2,injpid) -
-     &             int(pgroup%pid(i1:i2,injpid))))
+            where (pgroup%pid(i1:i2,injdatapid) < ninject+1)
+              mask = ((pgroup%pid(i1:i2,injdatapid) -
+     &             int(pgroup%pid(i1:i2,injdatapid))))
             elsewhere
               mask = 0.
             endwhere
@@ -1830,8 +1826,8 @@ c           --- Make equivalences so names make sense below
 c           --- Fetch time step size
             i1 = pgroup%ins(is)+ntinject(jsid+1)
             i2 = pgroup%ins(is)+ntinject(jsid+1)+npinje_s(jsid+1)-1
-            tt(1:nn) = fulldt_s*(pgroup%pid(i1:i2,injpid) -
-     &                       int(pgroup%pid(i1:i2,injpid)))
+            tt(1:nn) = fulldt_s*(pgroup%pid(i1:i2,injdatapid) -
+     &                       int(pgroup%pid(i1:i2,injdatapid)))
 c           --- Create equivalences
             xx => pgroup%xp(i1:i2)
             yy => pgroup%yp(i1:i2)
@@ -1840,7 +1836,7 @@ c           --- Create equivalences
             uy => pgroup%uyp(i1:i2)
             uz => pgroup%uzp(i1:i2)
             gg => pgroup%gaminv(i1:i2)
-            id => pgroup%pid(i1:i2,injpid)
+            id => pgroup%pid(i1:i2,injdatapid)
             ex => pgroup%ex(i1:i2)
             ey => pgroup%ey(i1:i2)
             ez => pgroup%ez(i1:i2)
@@ -1876,7 +1872,7 @@ c           --- only particles that have been injected this time step.
             uy = PACK(pgroup%uyp(i1:i2),mask > 0.)
             uz = PACK(pgroup%uzp(i1:i2),mask > 0.)
             gg = PACK(pgroup%gaminv(i1:i2),mask > 0.)
-            id = PACK(pgroup%pid(i1:i2,injpid),mask > 0.)
+            id = PACK(pgroup%pid(i1:i2,injdatapid),mask > 0.)
 #endif
 
 c           --- Zero the B field which is accumulated below
@@ -1995,7 +1991,7 @@ c           pgroup%zp(i1:i2) = UNPACK(zz,mask>0.,pgroup%zp(i1:i2))
             pgroup%bx(i1:i2) = UNPACK(bx,mask>0.,pgroup%bx(i1:i2))
             pgroup%by(i1:i2) = UNPACK(by,mask>0.,pgroup%by(i1:i2))
             pgroup%bz(i1:i2) = UNPACK(bz,mask>0.,pgroup%bz(i1:i2))
-            pgroup%pid(i1:i2,injpid) = int(pgroup%pid(i1:i2,injpid))
+            pgroup%pid(i1:i2,injdatapid) = int(pgroup%pid(i1:i2,injdatapid))
             deallocate(mask)
 #endif
 
@@ -2038,7 +2034,7 @@ c           --- loop over species
               jsid = pgroup%sid(is-1)
               if (.not. pgroup%ldts(is-1)) cycle
               if (ftinject(ij,jsid+1) == 0.) cycle
-              fulldt_s    = dt*pgroup%ndts(is-1)*pgroup%dtscale(is)
+              fulldt_s = dt*pgroup%ndts(is-1)*pgroup%dtscale(is)
               qoverm = pgroup%sq(is)/pgroup%sm(is)
 
 c             --- Load particles one azimuthal section at a time,
@@ -2169,7 +2165,7 @@ c           --- loop over species
               jsid = pgroup%sid(is-1)
               if (.not. pgroup%ldts(is-1)) cycle
               if (ftinject(ij,jsid+1) == 0.) cycle
-              fulldt_s    = dt*pgroup%ndts(is-1)*pgroup%dtscale(is)
+              fulldt_s = dt*pgroup%ndts(is-1)*pgroup%dtscale(is)
               nti = 0
               qoverm = pgroup%sq(is)/pgroup%sm(is)
 
@@ -2299,10 +2295,10 @@ c                   --- Clear out any old data from pid. This is done here
 c                   --- before pid is used anywhere.
                     pgroup%pid(ii,:) = 0.
 c                   --- The fraction of the step to advance the particle
-                    pgroup%pid(ii,injpid) = rnrev(injctcnt,dig5)
+                    pgroup%pid(ii,injdatapid) = rnrev(injctcnt,dig5)
 c                   --- Save SSN
-                    if (spid>0) then
-                      pgroup%pid(ii,spid) = ssn
+                    if (ssnpid>0) then
+                      pgroup%pid(ii,ssnpid) = ssn
                       ssn = ssn+1
                     end if
 c                   --- Set particle weight to the scale factor (since nothing
@@ -2313,7 +2309,7 @@ c                   --- by the radius.
                       pgroup%pid(ii,wpid) = wtinject(ij,is)
                     endif
 
-                    if (tbirthpid > 0) pgroup%pid(ii,tbirthpid) = time - pgroup%pid(ii,injpid)*fulldt_s
+                    if (tbirthpid > 0) pgroup%pid(ii,tbirthpid) = time + fulldt_s - pgroup%pid(ii,injdatapid)*fulldt_s
                     if (xbirthpid > 0) pgroup%pid(ii,xbirthpid) = pgroup%xp(ii)
                     if (ybirthpid > 0) pgroup%pid(ii,ybirthpid) = pgroup%yp(ii)
                     if (zbirthpid > 0) pgroup%pid(ii,zbirthpid) = pgroup%zp(ii)
@@ -2325,7 +2321,7 @@ c                   --- Save the ID of the injection source. Note that pid
 c                   --- is doing double duty, saving the injection source
 c                   --- number and the fraction of the timestep the
 c                   --- particle is advanced.
-                    pgroup%pid(ii,injpid) = pgroup%pid(ii,injpid) + ninject + ij
+                    pgroup%pid(ii,injdatapid) = pgroup%pid(ii,injdatapid) + ninject + ij
 
 c                   --- increment particle counter
                     nti = nti + 1
@@ -2461,7 +2457,7 @@ c           --- and to make the following code look cleaner.
             uy => pgroup%uyp(i1:i2)
             uz => pgroup%uzp(i1:i2)
             gg => pgroup%gaminv(i1:i2)
-            id => pgroup%pid(i1:i2,injpid)
+            id => pgroup%pid(i1:i2,injdatapid)
             ex => pgroup%ex(i1:i2)
             ey => pgroup%ey(i1:i2)
             ez => pgroup%ez(i1:i2)
@@ -2570,7 +2566,7 @@ c           --- Skip this if no particles of this species were injected.
             nn = ntinject(jsid+1)
 #else
 c           --- Find particles that were freshly injected. These
-c           --- are particles which still have noninteger pid(:,injpid).
+c           --- are particles which still have noninteger pid(:,injdatapid).
             allocate(mask(pgroup%nps(is)),stat=allocerror)
             if (allocerror /= 0) then
               print*,"inject3d: allocation error ",allocerror,
@@ -2582,9 +2578,9 @@ c           --- are particles which still have noninteger pid(:,injpid).
             if (pgroup%nps(is) == 0) cycle
             i1 = pgroup%ins(is)
             i2 = pgroup%ins(is)+pgroup%nps(is)-1
-            where (pgroup%pid(i1:i2,injpid) > ninject+1)
-              mask = ((pgroup%pid(i1:i2,injpid) -
-     &             int(pgroup%pid(i1:i2,injpid))))
+            where (pgroup%pid(i1:i2,injdatapid) > ninject+1)
+              mask = ((pgroup%pid(i1:i2,injdatapid) -
+     &             int(pgroup%pid(i1:i2,injdatapid))))
             elsewhere
               mask = 0.
             endwhere
@@ -2613,8 +2609,8 @@ c           --- Assume that injection will never be done inside a bend.
 c           --- Fetch time step size
             i1 = pgroup%ins(is)
             i2 = pgroup%ins(is)+ntinject(jsid+1)-1
-            tt(1:nn) = fulldt_s*(pgroup%pid(i1:i2,injpid) -
-     &                       int(pgroup%pid(i1:i2,injpid)))
+            tt(1:nn) = fulldt_s*(pgroup%pid(i1:i2,injdatapid) -
+     &                       int(pgroup%pid(i1:i2,injdatapid)))
 c           --- Create equivalences
             xx => pgroup%xp(i1:i2)
             yy => pgroup%yp(i1:i2)
@@ -2623,7 +2619,7 @@ c           --- Create equivalences
             uy => pgroup%uyp(i1:i2)
             uz => pgroup%uzp(i1:i2)
             gg => pgroup%gaminv(i1:i2)
-            id => pgroup%pid(i1:i2,injpid)
+            id => pgroup%pid(i1:i2,injdatapid)
             ex => pgroup%ex(i1:i2)
             ey => pgroup%ey(i1:i2)
             ez => pgroup%ez(i1:i2)
@@ -2659,7 +2655,7 @@ c           --- only particles that have been injected this time step.
             uy = PACK(pgroup%uyp(i1:i2),mask > 0.)
             uz = PACK(pgroup%uzp(i1:i2),mask > 0.)
             gg = PACK(pgroup%gaminv(i1:i2),mask > 0.)
-            id = PACK(pgroup%pid(i1:i2,injpid),mask > 0.)
+            id = PACK(pgroup%pid(i1:i2,injdatapid),mask > 0.)
 #endif
 
 c           --- Zero the B field which is accumulated below
@@ -2723,7 +2719,7 @@ c           pgroup%zp(i1:i2) = UNPACK(zz,mask>0.,pgroup%zp(i1:i2))
             pgroup%bx(i1:i2) = UNPACK(bx,mask>0.,pgroup%bx(i1:i2))
             pgroup%by(i1:i2) = UNPACK(by,mask>0.,pgroup%by(i1:i2))
             pgroup%bz(i1:i2) = UNPACK(bz,mask>0.,pgroup%bz(i1:i2))
-            pgroup%pid(i1:i2,injpid) = int(pgroup%pid(i1:i2,injpid))
+            pgroup%pid(i1:i2,injdatapid) = int(pgroup%pid(i1:i2,injdatapid))
             deallocate(mask)
 #endif
 
@@ -2751,7 +2747,7 @@ c=============================================================================
       use InGen3d
       use InPart
       use InMesh3d
-      use Particles,Only: npmax,wpid,tpid,rpid
+      use Particles,Only: npmax,wpid,tbirthpid,rbirthpid
       use InjectVars
       use InjectVars3d
       use Setpwork3d
@@ -2784,18 +2780,18 @@ c time of particle creation is recorded initially with a negative value
 c switched to positive when temperature has been added.
       if(l_inj_delay_temp) l_inj_rec_inittime = .true.
 
-c Set tpid if needed and not set by user
-      if(l_inj_rec_inittime .and. tpid==0) then
-        if (tpid == 0) tpid = nextpid()
+c Set tbirthpid if needed and not set by user
+      if(l_inj_rec_inittime .and. tbirthpid==0) then
+        if (tbirthpid == 0) tbirthpid = nextpid()
       end if
 
-c Set rpid if needed and not set by user
-      if(l_inj_rec_initradius .and. rpid==0) then
-        if (rpid == 0) rpid = nextpid()
+c Set rbirthpid if needed and not set by user
+      if(l_inj_rec_initradius .and. rbirthpid==0) then
+        if (rbirthpid == 0) rbirthpid = nextpid()
       end if
 
 c Set pid index for injection information for particles
-      if (injpid == 0) injpid = nextpid()
+      if (injdatapid == 0) injdatapid = nextpid()
 
 c Make sure that space has been allocated for the arrays. This is needed
 c in case the user changes ninject or ns but doesn't explicitly allocate
@@ -3912,14 +3908,14 @@ c=============================================================================
       if (lw3dtimesubs) substarttime = wtime()
 
       if (inject <= 0 .and. tinject <= 0) return
-      if (injpid == 0) return
+      if (injdatapid == 0) return
 
       i1 = ipmin
       i2 = ipmin + np - 1
       call inj_sete3d(np,pgroup%xp(i1:i2),pgroup%yp(i1:i2),pgroup%zp(i1:i2),
-     &                pgroup%pid(i1:i2,injpid),ex,ey,ez)
+     &                pgroup%pid(i1:i2,injdatapid),ex,ey,ez)
       call tinj_sete3d(np,pgroup%xp(i1:i2),pgroup%yp(i1:i2),pgroup%zp(i1:i2),
-     &                 pgroup%pid(i1:i2,injpid),ex,ey,ez)
+     &                 pgroup%pid(i1:i2,injdatapid),ex,ey,ez)
 
 !$OMP MASTER
       if (lw3dtimesubs) timeinj_sete = timeinj_sete + wtime() - substarttime
@@ -3962,7 +3958,7 @@ c any conductor surface.
 c     --- The user can force the code to skip the special calculation of the
 c     --- E fields for particles behind the virtual surface.
       if (linj_efromgrid) return
-      if (injpid == 0) return
+      if (injdatapid == 0) return
 
       allocate(xx(npart),yy(npart),zz(npart))
       allocate(tex(npart),tey(npart),tez(npart))
@@ -4174,13 +4170,13 @@ c=============================================================================
       use InPart3d
       use InjectVars
       use InjectVars3d
-      use Particles,Only: tpid
+      use Particles,Only: tbirthpid
       type(ParticleGroup):: pgroup
       integer(ISZ):: npart,ipmin
       real(kind=8):: dz
 
 c Add temperature to injected particles when they cross virtual surface
-c at distance inj_dtemp from emitter. The time of creation array pid(:,tpid)
+c at distance inj_dtemp from emitter. The time of creation array pid(:,tbirthpid)
 c is used to flag particles that not have had temperature added yet.
 
       real(kind=8),allocatable:: xx(:),yy(:),zz(:)
@@ -4197,7 +4193,7 @@ c     real(kind=8):: wrandomgauss
 
       if (inject <= 0) return
       if (.not. l_inj_delay_temp) return
-      if (injpid == 0) return
+      if (injdatapid == 0) return
 
       allocate(xx(npart),yy(npart),zz(npart))
       allocate(vx(npart),vy(npart),vz(npart))
@@ -4209,14 +4205,14 @@ c     --- Transform the particles into the frame of the injection source
       xx = pgroup%xp(ipmin:ipmin+npart-1)
       yy = pgroup%yp(ipmin:ipmin+npart-1)
       zz = pgroup%zp(ipmin:ipmin+npart-1)
-      ijp = int(pgroup%pid(ipmin:ipmin+npart-1,injpid))
+      ijp = int(pgroup%pid(ipmin:ipmin+npart-1,injdatapid))
       call inj_transform(npart,xx,yy,zz,npart,ijp,-1,1)
 
 c     --- Loop over particles
       do ip=1,npart
 
-c       --- if pid(pi,tpid)>0., temperature has already been added
-        if(pgroup%pid(ip+ipmin-1,tpid)>0.) cycle
+c       --- if pid(pi,tbirthpid)>0., temperature has already been added
+        if(pgroup%pid(ip+ipmin-1,tbirthpid)>0.) cycle
 
 c       --- Get number of injection source of particle.  The particle id
 c       --- has the number of the injection source the particle was
@@ -4284,8 +4280,8 @@ c         wrandomgauss(vzrandom,ii,dig7,dig8,1,1,.false.)
           vy(ip) = - tz*sin(az)*sin(aa) + ty*cos(aty)
           vz(ip) = + tz*cos(az)         + tx*sin(atx) + ty*sin(aty)
 
-c         --- reverse sign of pid(,tpid) indicating that temperature has been added
-          pgroup%pid(ip+ipmin-1,tpid) = -pgroup%pid(ip+ipmin-1,tpid)
+c         --- reverse sign of pid(,tbirthpid) indicating that temperature has been added
+          pgroup%pid(ip+ipmin-1,tbirthpid) = -pgroup%pid(ip+ipmin-1,tbirthpid)
 
         endif
       enddo
@@ -4364,7 +4360,7 @@ c     --- Loop over species and particles
 
 c       --- Transform the particles into the frame of the injection source
         if (pgroup%nps(is) > 0) then
-          ijp(i1:i2) = int(pgroup%pid(i1:i2,injpid))
+          ijp(i1:i2) = int(pgroup%pid(i1:i2,injdatapid))
           call inj_transform(pgroup%nps(is),
      &                    pgroup%xp(i1:i2),pgroup%yp(i1:i2),pgroup%zp(i1:i2),
      &                    pgroup%nps(is),ijp(i1:i2),-1,1)
@@ -4377,7 +4373,7 @@ c         --- Get number of injection source of particle.  The particle id
 c         --- has the number of the injection source the particle was
 c         --- emitted from. The int is needed since it is doing double
 c         --- duty and has other information stored in the fractional part.
-          ij = int(pgroup%pid(ip,injpid))
+          ij = int(pgroup%pid(ip,injdatapid))
 
 c         --- Skip particles that did not come from an injection source.
 c         --- This is not necessarily the correct thing to do, but at least
@@ -4516,7 +4512,7 @@ c       --- Transform the particles into the frame of the injection source
 c       --- This is only really here to be consistent with the other routines.
 c       --- All that this should do is add zinject to zp.
         if (pgroup%nps(is) > 0) then
-          ijp(i1:i2) = int(pgroup%pid(i1:i2,injpid))
+          ijp(i1:i2) = int(pgroup%pid(i1:i2,injdatapid))
           call inj_transform(pgroup%nps(is),
      &                    pgroup%xp(i1:i2),pgroup%yp(i1:i2),pgroup%zp(i1:i2),
      &                    pgroup%nps(is),ijp(i1:i2),-1,1)
@@ -4529,7 +4525,7 @@ c         --- Get number of injection source of particle.  The particle id
 c         --- has the number of the injection source the particle was
 c         --- emitted from. The int is needed since it is doing double
 c         --- duty and has other information stored in the fractional part.
-          ij = int(pgroup%pid(ip,injpid))
+          ij = int(pgroup%pid(ip,injdatapid))
 
 c         --- Skip particles that did not come from an injection source.
 c         --- This is not necessarily the correct thing to do, but at least
@@ -4729,7 +4725,7 @@ c=============================================================================
       use Particles,Only: wpid
       use InGen,Only: laccumulate_rho
       use InGen3d
-      use InjectVars,Only: ninject,inj_d,injpid,rinject
+      use InjectVars,Only: ninject,inj_d,injdatapid,rinject
       use InjectVars3d
       type(ParticleGroup):: pgroup
 
@@ -4802,7 +4798,7 @@ c     --- Loop over species and particles
           i2 = pgroup%ins(is)+pgroup%nps(is)-1
 c         --- Transform the particles into the frame of the injection source
           if (pgroup%nps(is) > 0) then
-            ijp(i1:i2) = int(pgroup%pid(i1:i2,injpid))
+            ijp(i1:i2) = int(pgroup%pid(i1:i2,injdatapid))
             call inj_transform(pgroup%nps(is),
      &                   pgroup%xp(i1:i2),pgroup%yp(i1:i2),pgroup%zp(i1:i2),
      &                   pgroup%nps(is),ijp(i1:i2),-1,1)
@@ -4819,7 +4815,7 @@ c           --- Get number of injection source of particle.  The particle id
 c           --- has the number of the injection source the particle was
 c           --- emitted from. The int is needed since it is doing double
 c           --- duty and has other information stored in the fractional part.
-            ij = int(pgroup%pid(ip,injpid))
+            ij = int(pgroup%pid(ip,injdatapid))
 
 c           --- Skip particles that did not come from an injection source.
 c           --- This is not necessarily the correct thing to do, but at least
@@ -4928,7 +4924,7 @@ c         --- contributing area which is within the emitting surface.
           i2 = pgroup%ins(is)+pgroup%nps(is)-1
 c         --- Transform the particles into the frame of the injection source
           if (pgroup%nps(is) > 0) then
-            ijp(i1:i2) = int(pgroup%pid(i1:i2,injpid))
+            ijp(i1:i2) = int(pgroup%pid(i1:i2,injdatapid))
             call inj_transform(pgroup%nps(is),
      &                    pgroup%xp(i1:i2),pgroup%yp(i1:i2),pgroup%zp(i1:i2),
      &                    pgroup%nps(is),ijp(i1:i2),-1,1)
@@ -4947,7 +4943,7 @@ c           --- Get number of injection source of particle.  The particle id
 c           --- has the number of the injection source the particle was
 c           --- emitted from. The int is needed since it is doing double
 c           --- duty and has other information stored in the fractional part.
-            ij = int(pgroup%pid(ip,injpid))
+            ij = int(pgroup%pid(ip,injdatapid))
 
 c           --- Skip particles that did not come from an injection source.
 c           --- This is not necessarily the correct thing to do, but at least

@@ -1431,7 +1431,7 @@ inject    integer    /0/   # Type of injection, (0: turned off,
 inj_param real       /1./  # Relaxation parameter for inject.  Mainly used
                            # for Egun iterative mode - set to 1 for time
                            # dependent injection, 0 for steady-state injection.
-injpid    integer    /0/   # pid index for injection information for particles
+injdatapid integer   /0/   # pid index for injection information for particles
 ninject   integer    /1/   # Number of injection sources
 leninjct  real       /0./  # Length of region into which partcls are injected
 zinject(ninject)  _real /0./  # Z Start of injection in lab frame
@@ -2422,17 +2422,15 @@ pgroupstatic ParticleGroup +parallel # Main group holding the particles
 pgroup _ParticleGroup +parallel # Main group holding the particles
 nplive integer    /0/  # No. of "live" particles
 npid   integer    /0/  # number of columns for pid.
-spid   integer    /0/  # position of particles SSNs in array pid
+ssnpid integer    /0/  # position of particles SSNs in array pid
                        # (FORTRAN indexed: based 1)
-sppid  integer    /0/  # position of particles parent SSNs in array pid
+ssnparentpid  integer /0/ # position of particles parent SSNs in array pid
                        # (FORTRAN indexed: based 1)
 wpid   integer    /0/  # position of particle weights in array pid
                        # (FORTRAN indexed: based 1)
-tpid   integer    /0/  # position of particle creation time in array pid
+rbirthpid integer /0/  # position of particle initial radius in array pid
                        # (FORTRAN indexed: based 1)
-rpid   integer    /0/  # position of particle initial radius in array pid
-                       # (FORTRAN indexed: based 1)
-tbirthpid integer /0/  # time of particle birth in array pid
+tbirthpid integer /0/  # position of time of particle birth in array pid
                        # (FORTRAN indexed: based 1)
 xbirthpid integer /0/  # position of particle birth x in array pid
                        # (FORTRAN indexed: based 1)

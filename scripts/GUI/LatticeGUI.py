@@ -4,7 +4,7 @@ from wx import *
 from wx.lib.anchors import LayoutAnchors
 from warp import *
 import sortlattice
-import lattice
+from ..lattice import lattice
 import __main__
 
 def create(parent):
