@@ -3672,6 +3672,13 @@ c=============================================================================
       integer(ISZ):: nxlocalcoarse,nylocalcoarse,nzlocalcoarse
       real(kind=8):: lx,ly,lz
       real(kind=8):: dxcoarse,dycoarse,dzcoarse,cxf,cyf,czf
+      real(kind=8):: dummy(1)
+
+c     --- This is a hack that is needed for python3 on mac. There seems
+c     --- to be a memory problem related to the stack that causes bus
+c     --- errors. Makeing a subroutine call here gets around the crash.
+c     --- The cause is unknown.
+      call zeroarry(dummy, 1)
 
 c     --- Only do this calculation if it is needed. This
 c     --- is for parallel version. There, this is a global operation and
