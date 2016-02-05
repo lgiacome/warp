@@ -205,7 +205,7 @@ Function to do iterations.
                 self.printerror(err)
                 if klog == kprintlogmax: self.printparams()
             if self.picklehistfile is not None:
-                with open(self.picklehistfile,'a') as ff:
+                with open(self.picklehistfile,'ab') as ff:
                     cPickle.dump([self.k,self.unscaledparams(),latestloss],ff,-1)
         # --- Print out the resulting params
         self.printerror(err)

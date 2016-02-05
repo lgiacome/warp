@@ -87,13 +87,13 @@ Input:
 
             fileexists = os.access(self.filename,os.F_OK)
             if self.newfile or not fileexists:
-                self._f = open(self.filename,'w')
+                self._f = open(self.filename,'wb')
                 self.writeinitialdata()
             else:
                 self._f = None
 
         if self._f is None or self._f.closed:
-            self._f = open(self.filename,'a')
+            self._f = open(self.filename,'ab')
 
         # --- Write the data out as a named tuple
         cPickle.dump((name,val),self._f,-1)

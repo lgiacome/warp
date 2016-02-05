@@ -556,9 +556,9 @@ accumulated. If the data is being accumulated, any existing data is preserved.
                 if ff is None:
                     # --- Only create the file if there is data to write out.
                     if npes > 1:
-                        ff = open(self.name+'_%s_%05d_%05d.pkl'%(self.type,me,npes),'a')
+                        ff = open(self.name+'_%s_%05d_%05d.pkl'%(self.type,me,npes),'ab')
                     else:
-                        ff = open(self.name+'_%s.pkl'%self.type,'a')
+                        ff = open(self.name+'_%s.pkl'%self.type,'ab')
                 if ff is None:
                     print "%s: %s unable to dump data to file."%(self.topgroupname,self.name)
                     return
@@ -748,7 +748,7 @@ feature.
         # --- in the files from each of the processors.
         datadict = {}
         for file in files:
-            with open(file,'r') as ff:
+            with open(file,'rb') as ff:
                 while 1:
                     try:
                         data = cPickle.load(ff)
@@ -1995,7 +1995,7 @@ def dumpExtPart(object,filename):
     if me == 0:
         # --- Only PE0 writes the object to the file since it is the processor
         # --- where the data is gathered.
-        with open(filename,'w') as ff:
+        with open(filename,'wb') as ff:
             cPickle.dump(object,ff,1)
 
 def restoreExtPart(object,filename):
@@ -2003,7 +2003,7 @@ def restoreExtPart(object,filename):
     if me == 0:
         # --- Only PE0 wrote the object to the file since it is the processor
         # --- where the data was gathered.
-        with open(filename,'r') as ff:
+        with open(filename,'rb') as ff:
             result = cPickle.load(ff)
         result.enable()
         # --- Get the value of iz
@@ -2381,9 +2381,9 @@ class ExtPartDeprecated:
                 if ff is None:
                     # --- Only create the file if there is data to write out.
                     if npes > 1:
-                        ff = open(self.name+'_ep_%05d_%05d.pkl'%(me,npes),'a')
+                        ff = open(self.name+'_ep_%05d_%05d.pkl'%(me,npes),'ab')
                     else:
-                        ff = open(self.name+'_ep.pkl','a')
+                        ff = open(self.name+'_ep.pkl','ab')
                 if ff is None:
                     print "ExtPart: %s unable to dump data to file."%self.name
                     return
@@ -2527,7 +2527,7 @@ feature.
         # --- Read in all of the data into a dictionary.
         datadict = {}
         for file in files:
-            with open(file,'r') as ff:
+            with open(file,'rb') as ff:
                 while 1:
                     try:
                         data = cPickle.load(ff)

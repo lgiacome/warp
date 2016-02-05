@@ -34,11 +34,11 @@ which is useful for names that are not usable as python attributes.
     """
     file_type = 'pickle'
 
-    def __init__(self, filename):
+    def __init__(self, filename, loadkw={}):
         'PR(filename) opens file and reads in the pickled dictionary'
         self._filename = filename
         with open(filename, 'rb') as ff:
-            self._pickledict = cPickle.load(ff)
+            self._pickledict = cPickle.load(ff, **loadkw)
 
     def __getattr__(self, name):
         return self._pickledict[name]
