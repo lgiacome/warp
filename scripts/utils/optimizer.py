@@ -655,7 +655,7 @@ the previous best global parameters. The deceleration is also reset."""
         """Setup the neighbors for each particle.
         This uses a simple circle neighborhood"""
         self.neighborhoods = []
-        halfneigh = self.neighbors/2
+        halfneigh = self.neighbors//2
         for i in range(self.npop):
             self.neighborhoods.append([])
             for n in range(-halfneigh,halfneigh+1):
