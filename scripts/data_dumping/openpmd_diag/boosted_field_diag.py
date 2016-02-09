@@ -22,6 +22,7 @@ from scipy.constants import c
 from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
+import pdb
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
@@ -124,6 +125,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         # Every self.period, write the buffered slices to disk 
         if self.top.it % self.period == 0:
+
             self.flush_to_disk()
         
     def store_snapshot_slices( self ):
@@ -207,7 +209,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         """
         # Open the file without parallel I/O in this implementation
         f = self.open_file( snapshot.filename )
-
+        
         field_path = "/data/%d/fields/" %snapshot.iteration
         field_grp = f[field_path]
         
