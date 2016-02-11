@@ -154,6 +154,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 		grp.attrs["macroWeighted"] = macro_weighted_dict[quantity]
 		grp.attrs["weightingPower"] = weighting_power_dict[quantity]
 
+
 	def setup_openpmd_species_component( self, grp, quantity ) :
 		"""
 		Set the attributes that are specific to a species component
@@ -165,6 +166,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 		quantity : string
 			The name of the component
 		"""
+		
 		self.setup_openpmd_component( grp )
 		
 	def write_hdf5( self, iteration ) :
@@ -337,7 +339,100 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
 		return( select_array )
 
+	def create_file_empty_meshes( self, fullpath, iteration,
+								   time, dt ):
+		"""
+		Create an openPMD file with empty meshes and setup all its attributes
+
+		Parameters
+		----------
+		fullpath: string
+			The absolute path to the file to be created
+
+		iteration: int
+			The iteration number of this diagnostic
+
+		time: float (seconds)
+			The physical time at this iteration
+
+		numPart: int
+			The number of gridpoints along z in this diagnostics
+
+		zmin: float (meters)
+			The position of the left end of the box
+			
+		dz: float (meters)
+			The resolution in z of this diagnostic
+
+		dt: float (seconds)
+			The timestep of the simulation
+		"""
 		
+		# Create the file
+		p = self.open_file( fullpath )
+		# Setup the different layers of the openPMD file
+		# (f is None if this processor does not participate is writing data)
+		if p is not None:
+
+			# Setup the attributes of the top level of the file
+			self.setup_openpmd_file( p, iteration, time, dt )
+
+			# Setup the meshes group (contains all the fields)
+			particle_path = "/data/%d/particles/" %iteration
+			
+			particle_grp = p.require_group(particle_path)
+
+			for species_name, species in self.species_dict.iteritems():
+				species_path = particle_path+"%s/" %(species_name)
+				# Create and setup the h5py.Group species_grp
+				species_grp = p.require_group( species_path )
+				self.setup_openpmd_species_group( species_grp, species )
+
+			# Loop over the different quantities that should be written
+			# and setup the corresponding datasets
+			
+				for particle_var in self.particle_data:
+			
+					# Scalar field
+					if particle_var == "position":
+						# Setup the dataset
+						particle_path_pos=species_path+ "%s/" %particle_var
+						particle_grp_pos = p.require_group(particle_path_pos)
+						for coord in ["x","y","z"]:
+							dset = particle_grp_pos.create_dataset(
+								coord, (10,), 
+								maxshape=(None,), dtype='f')
+						
+						self.setup_openpmd_species_record( particle_grp_pos, particle_var)
+						self.setup_openpmd_species_component(particle_grp_pos, particle_var)
+
+					elif particle_var == "momentum":
+						particle_path_mom=species_path+"%s/" %particle_var
+						particle_grp_mom = p.require_group(particle_path_mom)
+						for coord in ["x","y","z"]:
+							quantity= "u%s" %coord
+							dset = particle_grp_mom.create_dataset(
+								quantity, (10,), 
+								maxshape=(None,), dtype='f')
+						self.setup_openpmd_species_record(particle_grp_mom,  particle_var )
+						self.setup_openpmd_species_component(particle_grp_mom, particle_var )
+						
+					elif particle_var == "weighting":
+						particle_grp_w = p.require_group(species_path)
+						dset = particle_grp_w.create_dataset(
+								particle_var, (10,), 
+								maxshape=(None,), dtype='f')
+						self.setup_openpmd_species_record(particle_grp_w,  particle_var )
+						self.setup_openpmd_species_component( particle_grp_w,  particle_var )                  
+
+					# Unknown field
+					else:
+						raise ValueError(
+							"Invalid string in particletypes: %s" %particle_var)
+
+			# Close the file
+			p.close()
+
 	def write_dataset( self, species_grp, species, path, quantity,
 					   n_rank, N, select_array ) :
 		"""
@@ -370,6 +465,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 			the rules of self.select
 		"""
 		# Create the dataset and setup its attributes
+
 		if self.lparallel_output == True or self.rank == 0 :
 			datashape = (N, )
 			dset = species_grp.require_dataset( path, datashape, dtype='f')
