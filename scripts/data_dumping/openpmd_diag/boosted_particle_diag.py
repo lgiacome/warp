@@ -91,13 +91,12 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 									zmin_lab + v_lab*t_lab,
 									top.dt,
 									zmax_lab + v_lab*t_lab,
-									self.write_dir, i )
+									self.write_dir, i ,self.species)
 			self.snapshots.append( snapshot )
 			# Initialize a corresponding empty file
-			#pdb.set_trace()
-			##problem with this line
-			#self.create_file_empty_meshes( snapshot.filename, i,
-			#	snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt )
+			self.create_file_empty_meshes( snapshot.filename, i,
+				snapshot.t_lab, self.top.dt )
+
 		# Print a message that records the time for initialization
 		measured_end= time.clock()
 		print('Time taken for initialization of the files: %.5f s' %(
@@ -115,8 +114,10 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		self.store_snapshot_slices()
 
 		# Every self.period, write the buffered slices to disk 
-
+		#print snapshot.buffered_slices
+		
 		if self.top.it % self.period == 0:
+			
 			self.flush_to_disk()
 		
 	def store_snapshot_slices( self ):
@@ -142,12 +143,11 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 			# - check if the output position *in the lab frame*
 			#   is within the lab-frame boundaries of the current snapshot
 			for species_name in self.species_dict:
-				species=self.species_dict[species_name]
-				slice_array		 = self.ParticleCatcher.extract_slice(species)
-				snapshot.register_slice( slice_array)
+				species     =self.species_dict[species_name]
+				slice_array = self.ParticleCatcher.extract_slice(species)
+				snapshot.register_slice( slice_array,species_name)
 
-
-	def flush_to_disk( self ):
+	def flush_to_disk( self):
 		"""
 		Writes the buffered slices of particles to the disk
 
@@ -158,18 +158,26 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
 			# Compact the successive slices that have been buffered
 			# over time into a single array
-			
-			particle_array = snapshot.compact_slices()
-			# Erase the memory buffers
-			snapshot.buffered_slices = []
+			for species_name in self.species_dict:
+				
+				particle_array = snapshot.compact_slices(species_name)
+				# Erase the memory buffers
+				snapshot.buffered_slices[species_name] = []
 
-			# Write this array to disk (if this snapshot has new slices)
-			if particle_array is not None:
+				# Write this array to disk (if this snapshot has new slices)
+				if len(particle_array[0])!=0:
+					
+					self.write_slices( particle_array, species_name,
+						snapshot, self.ParticleCatcher.particle_to_index )
 
-				self.write_slices( particle_array,
-					snapshot, self.ParticleCatcher.particle_to_index )
+	def write_boosted_dataset(self, species_grp,path, data):
+		dset = species_grp.require_dataset(path, (10,),maxshape=(None,),dtype='f')
+		#pdb.set_trace()
+		index=dset.shape[0]
+		dset.resize(index+len(data),axis=0)
+		dset [index:] = data
 
-	def write_slices( self, particle_array, snapshot, p2i ): 
+	def write_slices( self, particle_array, species_name, snapshot, p2i ): 
 		"""
 		For one given snapshot, write the slices of the
 		different fields to an openPMD file
@@ -193,44 +201,47 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		# Open the file without parallel I/O in this implementation
 		
 		f			= self.open_file( snapshot.filename )
-	
-		particle_path= "/data/%d/particles/" %snapshot.iteration
-		species_grp = f[particle_path]
 		
+		particle_path= "/data/%d/particles/%s/" %(snapshot.iteration,species_name)
+		
+		species_grp = f[particle_path]
 		# Loop over the different quantities that should be written
 		for particle_var in self.particle_data:
 			# Scalar field
 			if particle_var == "position":
 				for coord in ["x","y","z"]:
 					quantity= coord
-					path	= "%s/%s" %(particle_var, coord)
+					path	= "%s/%s" %(particle_var, quantity)
 					data	= particle_array[ p2i[ quantity ] ]
+					self.write_boosted_dataset( species_grp, path,data)
 	 
 			elif particle_var == "momentum":
 				for coord in ["x","y","z"]:
 					quantity= "u%s" %coord
-					path	= "%s/%s" %(particle_var, coord)
+					path	= "%s/%s" %(particle_var, quantity)
 					data	= particle_array[ p2i[ quantity ] ]
+					self.write_boosted_dataset( species_grp, path,data)
 				
-			
 			elif particle_var == "weighting":
 			   quantity= "w"
 			   path	= "weighting"
 			   data	= particle_array[ p2i[ quantity ] ]
-			pdb.set_trace()
+			   self.write_boosted_dataset( species_grp, path,data)
+			###this is where the bridging is done!!!
+			#you take the path and you take the other particle data and you write
 			##this is wrong, you have to write, 
-			##self.write_dataset( species_grp, species, path,
-						quantity, n_rank, N, select_array )
+			
 
 		# Close the file
 		f.close()
+
 
 class LabSnapshot:
 	"""
 	Class that stores data relative to one given snapshot
 	in the lab frame (i.e. one given *time* in the lab frame)
 	"""
-	def __init__(self, t_lab, zmin_lab, dt, zmax_lab, write_dir, i):
+	def __init__(self, t_lab, zmin_lab, dt, zmax_lab, write_dir, i, species_dict):
 		"""
 		Initialize a LabSnapshot 
 
@@ -263,8 +274,13 @@ class LabSnapshot:
 		self.current_z_lab  = 0
 		self.current_z_boost= 0
 
-		# Buffered field slice and corresponding array index in z
-		self.buffered_slices= []
+		# Buffered particle slice and corresponding array index in z
+
+		self.buffered_slices= {}
+		
+		for species in species_dict:
+			self.buffered_slices[species]=[]
+
 
 	def update_current_output_positions( self, t_boost, inv_gamma, inv_beta ):
 		"""
@@ -291,7 +307,7 @@ class LabSnapshot:
 		self.current_z_lab = ( t_lab - t_boost*inv_gamma )*c*inv_beta
 		self.prev_z_lab  = (t_lab_diff - t_boost_diff*inv_gamma)*c*inv_beta 
 
-	def register_slice( self, slice_array):
+	def register_slice( self, slice_array, species):
 		"""
 		Store the slice of fields represented by slice_array
 		and also store the z index at which this slice should be
@@ -309,9 +325,9 @@ class LabSnapshot:
 
 		# Store the values and the index
 
-		self.buffered_slices.append( slice_array)
+		self.buffered_slices[species].append( slice_array)
 
-	def compact_slices(self):
+	def compact_slices(self,species):
 		"""
 		Compact the successive slices that have been buffered
 		over time into a single array, and return the indices
@@ -329,7 +345,10 @@ class LabSnapshot:
 
 		Returns None if the slices are empty
 		"""
-		particle_array = np.stack( self.buffered_slices[::-1], axis=-1 )
+		
+
+		##problem here with stacking 
+		particle_array = np.concatenate( self.buffered_slices[species], axis=1 )
 
 		return particle_array
 
@@ -358,7 +377,7 @@ class ParticleCatcher:
 		# Create a dictionary that contains the correspondance
 		# between the field names and array index
 		self.particle_to_index = {'x':0, 'y':1, 'z':2, 'ux':3,
-				'uy':4, 'uz':5, 'weight':6, 'gamma_inv':7}
+				'uy':4, 'uz':5, 'w':6, 'gamma':7}
 			   
 	def particle_getter(self,species):
 		"""
@@ -404,7 +423,7 @@ class ParticleCatcher:
 		self.ux_captured=np.take(current_ux,ii)
 		self.uy_captured=np.take(current_uy,ii)
 		self.uz_captured=np.take(current_uz,ii)
-		self.weight_captured=np.take(current_weights,ii)
+		self.w_captured=np.take(current_weights,ii)
 		self.gamma_captured = np.sqrt(1.+(self.ux_captured**2+\
 			self.uy_captured**2+self.ux_captured**2)/c**2)
 
@@ -513,7 +532,7 @@ class ParticleCatcher:
 		slice_array = np.empty( (8, num_part,) )
                                                                                             
 		for quantity in self.particle_to_index.keys():
-			 # Here typical values for `quantity` are e.g. 'z', 'ux', 'gamma_inv'
+			 # Here typical values for `quantity` are e.g. 'z', 'ux', 'gamma'
 			 slice_array[ p2i[quantity], ... ] = self.gather_array(quantity)
 		return slice_array
 
