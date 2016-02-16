@@ -79,7 +79,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		
 		# Create the list of LabSnapshot objects
 		self.snapshots      = []
-		self.species        =species
+		self.species        = species
 		# Record the time it takes
 		measured_start      = time.clock()
 		print('\nInitializing the lab-frame diagnostics: %d files...' %(
@@ -87,6 +87,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		# Loop through the lab snapshots and create the corresponding files
 		for i in range( Ntot_snapshots_lab ):
 			t_lab   = i * dt_snapshots_lab
+			print "t_lab",t_lab
 			snapshot= LabSnapshot( t_lab,
 									zmin_lab + v_lab*t_lab,
 									top.dt,
@@ -111,8 +112,9 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		Should be registered with installafterstep in Warp
 		"""
 		# At each timestep, store a slice of the particles in memory buffers 
-		self.store_snapshot_slices()
 
+		self.store_snapshot_slices()
+		#pdb.set_trace()
 		# Every self.period, write the buffered slices to disk 
 		#print snapshot.buffered_slices
 		
@@ -171,8 +173,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 						snapshot, self.ParticleCatcher.particle_to_index )
 
 	def write_boosted_dataset(self, species_grp,path, data):
-		dset = species_grp.require_dataset(path, (10,),maxshape=(None,),dtype='f')
-		#pdb.set_trace()
+		dset = species_grp.require_dataset(path, (0,),maxshape=(None,),dtype='f')
 		index=dset.shape[0]
 		dset.resize(index+len(data),axis=0)
 		dset [index:] = data
@@ -299,13 +300,20 @@ class LabSnapshot:
 		t_lab = self.t_lab
 	
 		t_boost_diff = t_boost -self.dt
-		t_lab_diff = t_lab - self.dt
 		# This implements the Lorentz transformation formulas,
 		# for a snapshot having a fixed t_lab
 		self.current_z_boost = ( t_lab*inv_gamma - t_boost )*c*inv_beta
-		self.prev_z_boost   =  ( t_lab_diff*inv_gamma - t_boost_diff )*c*inv_beta
+		self.prev_z_boost   =  ( t_lab*inv_gamma - t_boost_diff )*c*inv_beta
+		self.delta_t_boost = (self.prev_z_boost-self.current_z_boost)/(c*inv_beta)
+		
+
 		self.current_z_lab = ( t_lab - t_boost*inv_gamma )*c*inv_beta
-		self.prev_z_lab  = (t_lab_diff - t_boost_diff*inv_gamma)*c*inv_beta 
+		self.prev_z_lab  = (t_lab - t_boost_diff*inv_gamma)*c*inv_beta 
+		print "current_z_boost", self.current_z_boost
+		print "prev_z_boost", self.prev_z_boost
+		print "current_z_lab", self.current_z_lab
+		print "prev_z_lab", self.prev_z_lab
+		pdb.set_trace()
 
 	def register_slice( self, slice_array, species):
 		"""

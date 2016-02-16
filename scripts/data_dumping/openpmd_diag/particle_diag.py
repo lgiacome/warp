@@ -400,7 +400,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 						particle_grp_pos = p.require_group(particle_path_pos)
 						for coord in ["x","y","z"]:
 							dset = particle_grp_pos.create_dataset(
-								coord, (10,), 
+								coord, (0,), 
 								maxshape=(None,), dtype='f')
 						
 						self.setup_openpmd_species_record( particle_grp_pos, particle_var)
@@ -412,7 +412,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 						for coord in ["x","y","z"]:
 							quantity= "u%s" %coord
 							dset = particle_grp_mom.create_dataset(
-								quantity, (10,), 
+								quantity, (0,), 
 								maxshape=(None,), dtype='f')
 						self.setup_openpmd_species_record(particle_grp_mom,  particle_var )
 						self.setup_openpmd_species_component(particle_grp_mom, particle_var )
@@ -420,7 +420,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 					elif particle_var == "weighting":
 						particle_grp_w = p.require_group(species_path)
 						dset = particle_grp_w.create_dataset(
-								particle_var, (10,), 
+								particle_var, (0,), 
 								maxshape=(None,), dtype='f')
 						self.setup_openpmd_species_record(particle_grp_w,  particle_var )
 						self.setup_openpmd_species_component( particle_grp_w,  particle_var )                  

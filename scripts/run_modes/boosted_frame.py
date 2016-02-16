@@ -3,6 +3,8 @@
 # with contributions from I. Dornmair, V. Hanus, S. Jalas, M. Kirchen
 
 from warp import *
+import string
+import pdb
 try:
   import h5py
   l_h5py=1 
@@ -255,7 +257,7 @@ to be lifted in the future.
                   if top.zoldpid>0:self.pgroup.pid[il:iu,top.zoldpid-1]=self.pgroup.zp[il:iu].copy()
                   self.pgroup.zp[il:iu]+=top.dt*self.vbeam
           # --- does injection for each particle group
-          if any(self.pgroup.nps>0):
+          if any(parallelsum(self.pgroup.nps)>0):
               do_inject = 1
               top.inject=1
               self.add_boosted_species()
@@ -345,13 +347,25 @@ to be lifted in the future.
         if self.pgroup.npid != top.pgroup.npid:
             self.pgroup.npid = top.pgroup.npid
             self.pgroup.gchange()
-#    if rstrip(top.depos.tostring())=='none': return
+#    if string.rstrip(top.depos.tostring())=='none': return
 #    w3d.lbeforelr=0
     fs=getregisteredsolver()
     top.depos=self.depos
-    for self.pgroup in self.pgroups:
-        particleboundaries3d(self.pgroup,-1,False)
-    fs.loadrho(pgroups=self.pgroups+[top.pgroup])
+    doit = True
+    for js in range(self.pgroup.ns):
+        if self.pgroup.nps[js]>0:
+            il=self.pgroup.ins[js]-1
+            iu=il+self.pgroup.nps[js]
+            doit = doit and (minnd(self.pgroup.xp[il:iu])>w3d.xmminlocal) and \
+               (maxnd(self.pgroup.xp[il:iu])<w3d.xmmaxlocal) and \
+               (minnd(self.pgroup.yp[il:iu])>w3d.ymminlocal) and \
+               (maxnd(self.pgroup.yp[il:iu])<w3d.ymmaxlocal) and \
+               (minnd(self.pgroup.zp[il:iu])>top.zgrid+w3d.zmminlocal) and \
+               (maxnd(self.pgroup.zp[il:iu])<top.zgrid+w3d.zmmaxlocal)
+    if doit:
+       fs.loadrho(pgroups=self.pgroups+[top.pgroup])
+    else:
+       fs.loadrho(pgroups=[top.pgroup])
     top.depos='none'
 #    w3d.lbeforelr=1
 
@@ -550,7 +564,7 @@ to be lifted in the future.
             else:
                 pid=None
         if me==0:
-            from ..data_dumping import PWpickle as PW
+            import PWpickle as PW
             f=PW.PW(filename)
             f.time=top.time
             f.x=x
@@ -717,7 +731,8 @@ to be lifted in the future.
                                 em   = None,
                                 density = 0.,
                                 l_beam = False,
-                                runid = ""
+                                runid = "",
+                                l_collapse=True,
                                 ):
       """Creates files for backtransformed lab frame data output. Files are created for each datatype (elec, field, beam)."""
       self.datatypes = datatypes
@@ -744,6 +759,14 @@ to be lifted in the future.
       self.density = density
       self.l_beam = l_beam
       self.runid = runid
+      self.l_collapse = l_collapse
+      
+      if not top.xoldpid:top.xoldpid=nextpid()
+      if not top.yoldpid:top.yoldpid=nextpid()
+      if not top.zoldpid:top.zoldpid=nextpid()
+      if not top.uxoldpid:top.uxoldpid=nextpid()
+      if not top.uyoldpid:top.uyoldpid=nextpid()
+      if not top.uzoldpid:top.uzoldpid=nextpid()
               
       if me==0:os.system('rm -fr '+output_dir)
       self.create_paths(output_dir)
@@ -852,7 +875,7 @@ to be lifted in the future.
     #dataset_list defines all output datasets available
     dataset_list = {'field_lab': ['Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz'],
                     'elec_lab': ['ne', 'phase_space', 'phase_space_low'],
-                    'beam_lab': ['gamma', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'w']}
+                    'beam_lab': ['gamma', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'w','t']}
 
     tn = n_lab_snapshots #number of snapshots defined in warp_run
     t = top.time #time in boosted frame
@@ -861,10 +884,15 @@ to be lifted in the future.
 
     i = numpy.array(numpy.arange(0,tn+1,1))     #create array with len(n_lab_snapshots)
 
-    zlab         = self.z_lab(t,i,tn)                #get array of accessible lab positions for current timestep and all snapshots
+    zlab         = self.z_lab(t,i,tn)
+    zlabo         = self.z_lab(t-top.dt*self.downsample_rate_lab_z,i,tn)
+  
+    #get array of accessible lab positions for current timestep and all snapshots
+     
     zlab_delta   = abs(self.z_lab(top.dt,0,tn))      #distance that zlab moves every top.dt
-    
-    zboost       = self.z_boost(t,i,tn)              #get array of accessible boosted frame positions for current timestep and all snapshots
+   
+    zboost       = self.z_boost(t,i,tn)
+    zboosto       = self.z_boost(t-top.dt*self.downsample_rate_lab_z,i,tn)#get array of accessible boosted frame positions for current timestep and all snapshots
     zboost_delta = abs(self.z_boost(top.dt,0,tn))    #distance that zboost moves every top.dt
     zboost_prev = self.z_boost(t-top.dt*self.downsample_rate_lab_z,i,tn) # positon of output plane one (downsampled) timestep earlier
 
@@ -884,6 +912,7 @@ to be lifted in the future.
         access.append(jjj) #add to access array
 
     ix       = access
+    pdb.set_trace()
     ix_field = [f_snap for f_snap in ix if f_snap in i[::self.field_snapshot_divider]] #filter ix (access) if there should be less field snapshots 
     ix_elec  = [e_snap for e_snap in ix if e_snap in i[::self.elec_snapshot_divider]]  #filter ix if there should be less elec snapshots
     
@@ -905,46 +934,91 @@ to be lifted in the future.
     
     gammainva = elec.getgaminv(gather = 0, bcast = 0)
     wa        = elec.getweights(gather = 0, bcast = 0)
-
-    iia = numpy.arange(len(za)) #create array of len(za) for filtering process
-
-    #SELECT PARTICLES
-    # calculate z positions one timestep earlier
-    z_preva = za - gammainva*uza*top.dt*self.downsample_rate_lab_z
     
+    if self.l_collapse:
+    	xao        = elec.getpid(id=top.xoldpid-1, gather = 0, bcast = 0)
+    	yao        = elec.getpid(id=top.yoldpid-1, gather = 0, bcast = 0)
+    	zao        = elec.getpid(id=top.zoldpid-1, gather = 0, bcast = 0)
+    	uxao        = elec.getpid(id=top.uxoldpid-1, gather = 0, bcast = 0)
+    	uyao        = elec.getpid(id=top.uyoldpid-1, gather = 0, bcast = 0)
+    	uzao        = elec.getpid(id=top.uzoldpid-1, gather = 0, bcast = 0)
+    
+    z_preva = za - gammainva*uza*top.dt*self.downsample_rate_lab_z
+    iia 		 = numpy.arange(len(za))
     # find particles that crossed the output plane
     ii = map((lambda x: numpy.compress(numpy.logical_or(
                                        numpy.logical_and(numpy.less_equal(zboost[x],za),numpy.less_equal(z_preva,zboost_prev[x])),
                                        numpy.logical_and(numpy.less_equal(za,zboost[x]),numpy.less_equal(zboost_prev[x],z_preva))
                                                         ),iia)), ix)
-
+    
+    #create array of len(za) for filtering process
     #Filter particle data and create array with particle data for each snapshot
+    
     x        = numpy.array(map(lambda x: xa[ii[x]], ia)) 
     y        = numpy.array(map(lambda x: ya[ii[x]], ia))
     z        = numpy.array(map(lambda x: za[ii[x]], ia))
-    
+    w        = numpy.array(map(lambda x: wa[ii[x]], ia))
     ux       = numpy.array(map(lambda x: uxa[ii[x]], ia)) 
     uy       = numpy.array(map(lambda x: uya[ii[x]], ia))
     uz       = numpy.array(map(lambda x: uza[ii[x]], ia))
+    		
     
+    if self.l_collapse:
+		
+				xo        = numpy.array(map(lambda x: xao[ii[x]], ia)) 
+				yo        = numpy.array(map(lambda x: yao[ii[x]], ia))
+				zo        = numpy.array(map(lambda x: zao[ii[x]], ia))
+				uxo       = numpy.array(map(lambda x: uxao[ii[x]], ia)) 
+				uyo       = numpy.array(map(lambda x: uyao[ii[x]], ia))
+				uzo       = numpy.array(map(lambda x: uzao[ii[x]], ia))
+		
     gammainv = numpy.array(map(lambda x: gammainva[ii[x]], ia))
-    w        = numpy.array(map(lambda x: wa[ii[x]], ia))
-
+    gammainvo    = numpy.array(map(lambda x: 1./sqrt(1.+(uxo[x]**2+uyo[x]**2+uzo[x]**2)/clight**2), ia))
+    uzfrm    = -betafrm*gammafrm*clight
+    #-- Conversion to the lab frame, zo, to, uxo, uyo, uzo
+    map(lambda x: setu_in_uzboosted_frame3d(shape(zo[x])[0], 
+																							uxo[x],
+																							uyo[x], 
+																							uzo[x], 
+																							gammainvo[x],
+																							uzfrm, gammafrm), ia) #back transformation of velocities to lab frame
+		#Conversion to the lab frame, z, t ux, uy, uz 
     map(lambda x: setu_in_uzboosted_frame3d(shape(z[x])[0], 
-                                            ux[x], 
-                                            uy[x], 
-                                            uz[x], 
-                                            gammainv[x], 
-                                            -betafrm*gammafrm*clight, gammafrm), ia) #back transformation of velocities to lab frame
-
-    # convert from u = gamma*v to v
+																							ux[x],
+																							uy[x], 
+																							uz[x], 
+																							gammainv[x],
+																							uzfrm, gammafrm), ia) #back transformation of velocities to lab frame
+																							
+    t	       = numpy.array(map(lambda x: gammafrm*top.time*numpy.ones(shape(z[x])[0])-uzfrm*z[x]/clight**2,ia))
+    to	     = numpy.array(map(lambda x: gammafrm*(top.time-top.dt)*numpy.ones(shape(z[x])[0])-uzfrm*zo[x]/clight**2,ia))
+    z        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(z[x]-zboost[x+ix[0]]) + zlab[x+ix[0]], ia)) #back transformation 
+    zo        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(zo[x]-zboosto[x+ix[0]]) + zlabo[x+ix[0]], ia))
     vx       = numpy.array(map(lambda x: ux[x]*gammainv[x], ia))
     vy       = numpy.array(map(lambda x: uy[x]*gammainv[x], ia))
     vz       = numpy.array(map(lambda x: uz[x]*gammainv[x], ia))
-
-    gamma    = numpy.array(map(lambda x: sqrt(1.+(ux[x]**2+uy[x]**2+uz[x]**2)/clight**2), ia))
-    z        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(z[x]-zboost[x+ix[0]]) + zlab[x+ix[0]], ia)) #back transformation of z positions in lab frame
-    uzn      = numpy.array(map(lambda x: uz[x]/clight, ia))
+    vxo       = numpy.array(map(lambda x: uxo[x]*gammainvo[x], ia))
+    vyo       = numpy.array(map(lambda x: uyo[x]*gammainvo[x], ia))
+    vzo       = numpy.array(map(lambda x: uzo[x]*gammainvo[x], ia))
+    #print "t", t
+    #print "to", to
+    tlab   = numpy.array(map(lambda x : (numpy.average(t[x]+to[x])/2), ia))
+    #print "tlab", tlab
+    #Interpolation
+		
+    if True:
+      x	  = numpy.array(map(lambda xx : xo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+x[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+      y	  = numpy.array(map(lambda xx : yo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+y[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+      vx  = numpy.array(map(lambda xx : vxo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+vx[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+      vy  = numpy.array(map(lambda xx : vyo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+vy[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+      vz  = numpy.array(map(lambda xx : vzo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+vz[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+      gammainv = numpy.array(map(lambda xx : gammainvo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+gammainv[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+      z	  = numpy.array(map(lambda xx : zo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+z[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+      t	  = numpy.array(map(lambda xx : to[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+t[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+      #print "t_new", t
+      #print "***t_lab***", tlab
+      gamma    = numpy.array(map(lambda x: sqrt(1.+(ux[x]**2+uy[x]**2+uz[x]**2)/clight**2), ia))
+      uzn      = numpy.array(map(lambda x: uz[x]/clight, ia))
 
     #FIELDS
     if dim == '2d':
@@ -1098,34 +1172,38 @@ to be lifted in the future.
       vz    = map(lambda x: numpy.array(gatherarray(vz[x][jj[x]])), ia)
 
       gamma = map(lambda x: numpy.array(gatherarray(gamma[x][jj[x]])), ia)
-
-
+      
+      
     #EXTERNAL BEAM
     if self.l_beam == 1:
 
       #Get beam particle positions, velocities, gamma and weights for all snapshots currently accessible.
-      xb        = beam.getx(gather = 0, bcast = 0)
-      yb        = beam.gety(gather = 0, bcast = 0)
-      zb        = beam.getz(gather = 0, bcast = 0)
+      xb        = beam.getx(gather = 0, bcast = 0).copy()
+      yb        = beam.gety(gather = 0, bcast = 0).copy()
+      zb        = beam.getz(gather = 0, bcast = 0).copy()
       
-      uxb       = beam.getux(gather = 0, bcast = 0)
-      uyb       = beam.getuy(gather = 0, bcast = 0)
-      uzb       = beam.getuz(gather = 0, bcast = 0)
-    
+      uxb       = beam.getux(gather = 0, bcast = 0).copy()
+      uyb       = beam.getuy(gather = 0, bcast = 0).copy()
+      uzb       = beam.getuz(gather = 0, bcast = 0).copy()
+      
       gammainvb = beam.getgaminv(gather = 0, bcast = 0)
       wb        = beam.getweights(gather = 0, bcast = 0)
-
-      iib = numpy.arange(len(zb))
       
+      if self.l_collapse:
+					xbo        = beam.getpid(id=top.xoldpid-1, gather = 0, bcast = 0)
+					ybo        = beam.getpid(id=top.yoldpid-1, gather = 0, bcast = 0)
+					zbo        = beam.getpid(id=top.zoldpid-1, gather = 0, bcast = 0)
+					uxbo        = beam.getpid(id=top.uxoldpid-1, gather = 0, bcast = 0)
+					uybo        = beam.getpid(id=top.uyoldpid-1, gather = 0, bcast = 0)
+					uzbo        = beam.getpid(id=top.uzoldpid-1, gather = 0, bcast = 0)	
+      iib = numpy.arange(len(zb))
       # calculate z positions one timestep earlier
-      z_prevb = zb - gammainvb*uzb*top.dt*self.downsample_rate_lab_z
+      #z_prevb = zb - gammainvb*uzb*top.dt*self.downsample_rate_lab_z
+      #ii = map((lambda x: numpy.compress(numpy.logical_and(numpy.less_equal(zboost[x],zb),numpy.less_equal(z_prevb,zboost_prev[x])),iib)), ix)
 
       # find particles that crossed the output plane
-      ii = map((lambda x: numpy.compress(numpy.logical_or(
-                                         numpy.logical_and(numpy.less_equal(zboost[x],zb),numpy.less_equal(z_prevb,zboost_prev[x])),
-                                         numpy.logical_and(numpy.less_equal(zb,zboost[x]),numpy.less_equal(zboost_prev[x],z_prevb))
-                                                         ),iib)), ix)
-
+      ii = map((lambda x: numpy.compress(numpy.logical_or(numpy.logical_and(numpy.less_equal(zboost[x],zb),numpy.less_equal(zbo,zboost_prev[x])),numpy.logical_and(numpy.less_equal(zb,zboost[x]),numpy.less_equal(zboost_prev[x],zbo))),iib)), ix)
+		
       #Filter particle data and create array with particle data for each snapshot
       x        = numpy.array(map(lambda x: xb[ii[x]], ia)) 
       y        = numpy.array(map(lambda x: yb[ii[x]], ia))
@@ -1134,40 +1212,87 @@ to be lifted in the future.
       ux       = numpy.array(map(lambda x: uxb[ii[x]], ia)) 
       uy       = numpy.array(map(lambda x: uyb[ii[x]], ia))
       uz       = numpy.array(map(lambda x: uzb[ii[x]], ia))
-      
+	
+      if self.l_collapse:
+		
+        xo        = numpy.array(map(lambda x: xbo[ii[x]], ia)) 
+        yo        = numpy.array(map(lambda x: ybo[ii[x]], ia))
+        zo        = numpy.array(map(lambda x: zbo[ii[x]], ia))
+        uxo       = numpy.array(map(lambda x: uxbo[ii[x]], ia)) 
+        uyo       = numpy.array(map(lambda x: uybo[ii[x]], ia))
+        uzo       = numpy.array(map(lambda x: uzbo[ii[x]], ia))
+				
       gammainv = numpy.array(map(lambda x: gammainvb[ii[x]], ia))
+      gammainvo    = numpy.array(map(lambda x: 1./sqrt(1.+(uxo[x]**2+uyo[x]**2+uzo[x]**2)/clight**2), ia))
+
       w        = numpy.array(map(lambda x: wb[ii[x]], ia))
-
+      uzfrm    = -betafrm*gammafrm*clight
+		
+      #-- Conversion to the lab frame, zo, to, uxo, uyo, uzo
+      map(lambda x: setu_in_uzboosted_frame3d(shape(zo[x])[0], 
+																							uxo[x],
+																							uyo[x], 
+																							uzo[x], 
+																							gammainvo[x],
+																							uzfrm, gammafrm), ia) #back transformation of velocities to lab frame
+	 
+      #Conversion to the lab frame, z, t ux, uy, uz 
       map(lambda x: setu_in_uzboosted_frame3d(shape(z[x])[0], 
-                                              ux[x],
-                                              uy[x], 
-                                              uz[x], 
-                                              gammainv[x],
-                                              -betafrm*gammafrm*clight, gammafrm), ia) #back transformation of verlocities to lab frame
-
+																							ux[x],
+																							uy[x], 
+																							uz[x], 
+																							gammainv[x],
+																							uzfrm, gammafrm), ia) #back transformation of velocities to lab frame
+	 
+      t	       = numpy.array(map(lambda x: gammafrm*top.time*numpy.ones(shape(z[x])[0])-uzfrm*z[x]/clight**2,ia))
+      to	     = numpy.array(map(lambda x: gammafrm*(top.time-top.dt)*numpy.ones(shape(z[x])[0])-uzfrm*zo[x]/clight**2,ia))
+      z        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(z[x]-zboost[x+ix[0]]) + zlab[x+ix[0]], ia)) #back transformation 
+      zo        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(zo[x]-zboosto[x+ix[0]]) + zlabo[x+ix[0]], ia))
+		
       vx       = numpy.array(map(lambda x: ux[x]*gammainv[x], ia))
       vy       = numpy.array(map(lambda x: uy[x]*gammainv[x], ia))
       vz       = numpy.array(map(lambda x: uz[x]*gammainv[x], ia))
+      vxo       = numpy.array(map(lambda x: uxo[x]*gammainvo[x], ia))
+      vyo       = numpy.array(map(lambda x: uyo[x]*gammainvo[x], ia))
+      vzo       = numpy.array(map(lambda x: uzo[x]*gammainvo[x], ia))
+      #print "t", t
+      #print "to", to
+      tlab   = numpy.array(map(lambda x : (numpy.average(t[x]+to[x])/2), ia))
+      #print "tlab", tlab
+		
+      #Interpolation
+      if True:
+        x	  = numpy.array(map(lambda xx : xo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+x[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+        y	  = numpy.array(map(lambda xx : yo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+y[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+        vx  = numpy.array(map(lambda xx : vxo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+vx[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+        vy  = numpy.array(map(lambda xx : vyo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+vy[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+        vz  = numpy.array(map(lambda xx : vzo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+vz[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+        gammainv = numpy.array(map(lambda xx : gammainvo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+gammainv[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+        z	  = numpy.array(map(lambda xx : zo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+z[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
+        t	  = numpy.array(map(lambda xx : to[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+t[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
 
-      gamma    = numpy.array(map(lambda x: sqrt(1.+(ux[x]**2+uy[x]**2+uz[x]**2)/clight**2), ia))
-      z        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(z[x]-zboost[x+ix[0]]) + zlab[x+ix[0]], ia)) #back transformation of z positions in lab frame
-      uzn      = numpy.array(map(lambda x: uz[x]/clight, ia))
+		
+				#print "t_new", t
+				#print "***t_lab***", tlab
+			
+        gamma    = numpy.array(map(lambda x: sqrt(1.+(ux[x]**2+uy[x]**2+uz[x]**2)/clight**2), ia))
+        uzn      = numpy.array(map(lambda x: uz[x]/clight, ia))
 
-      #Gather
-      x     = map(lambda xx: numpy.array(gatherarray(x[xx])), ia)
-      y     = map(lambda x: numpy.array(gatherarray(y[x])), ia)
-      z     = map(lambda x: numpy.array(gatherarray(z[x])), ia)
+        #Gather
+        x     = map(lambda xx: numpy.array(gatherarray(x[xx])), ia)
+        y     = map(lambda x: numpy.array(gatherarray(y[x])), ia)
+        z     = map(lambda x: numpy.array(gatherarray(z[x])), ia)
 
-      w     = map(lambda x: numpy.array(gatherarray(w[x])), ia)
+        w     = map(lambda x: numpy.array(gatherarray(w[x])), ia)
 
-      vx    = map(lambda x: numpy.array(gatherarray(vx[x])), ia)
-      vy    = map(lambda x: numpy.array(gatherarray(vy[x])), ia)
-      vz    = map(lambda x: numpy.array(gatherarray(vz[x])), ia)
+        vx    = map(lambda x: numpy.array(gatherarray(vx[x])), ia)
+        vy    = map(lambda x: numpy.array(gatherarray(vy[x])), ia)
+        vz    = map(lambda x: numpy.array(gatherarray(vz[x])), ia)
 
-      gamma = map(lambda x: numpy.array(gatherarray(gamma[x])), ia)
+        gamma = map(lambda x: numpy.array(gatherarray(gamma[x])), ia)
 
-    
-    beam_data = [gamma, x, y, z, vx, vy, vz, w] #write data to array beam_data for writing process
+
+    beam_data = [gamma, x, y, z, vx, vy, vz, w, t] #write data to array beam_data for writing process
 
     def write_data(x):
       #Mappable function which writes the lab data slices to the corresponding position of the h5 datasets.
@@ -1275,7 +1400,10 @@ to be lifted in the future.
     zmax = self.window_velocity_lab*i*self.simulation_time_lab/tn + self.zmax_window_lab
     
     return zmin, zmax
-
+    
+  def time_of_snapshot_lab(self,i,tn):
+  	return i*self.simulation_time_lab/tn
+		
   def set_common_attrs_snapshots(self,h5file,i,tn,datatype):
    """
    Stores in h5file some values that can be useful during data visualization
