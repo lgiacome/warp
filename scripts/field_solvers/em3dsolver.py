@@ -25,7 +25,8 @@ class EM3D(SubcycledPoissonSolver):
                       'norderx':2,'nordery':2,'norderz':2,
                       'l_particles_weight':false,'l_usecoeffs':false,
                       'l_pushf':false,'l_pushpot':false,'l_verbose':false,
-                      'l_nodalgrid':false,'l_pushg':false,
+                      'l_nodalgrid':false, # flag for nodal/staggered grid
+                      'l_pushg':false,
                       'laser_func':None,
                       'laser_amplitude':1.,'laser_profile':None,'laser_phase':0.,
                       'laser_gauss_widthx':None,'laser_gauss_centerx':0.,
@@ -53,8 +54,10 @@ class EM3D(SubcycledPoissonSolver):
                       'autoset_timestep':true,'dtcoef':1.,#0.99,
                       'deposit_energy_density':false,'refinement':None,
                       'l_force_nzlocal2nz':false,'isactiveem':None,
-                      'l_coarse_patch':false,'stencil':false,
-                      'l_esirkepov':true,'l_getrho':false,'theta_damp':0.,
+                      'l_coarse_patch':false,
+                      'stencil':false, # 0=Yee; 1=Cole-Karkkainen, 3=Lehe; if spectral=1, is used only for computing time step according to Courant condition of selected solver
+                      'l_esirkepov':true, # flag for deposition using Esirkepov algorithm (real space on staggered grid with Yee EM solver)
+                      'l_getrho':false,'theta_damp':0.,
                       'sigmae':0.,'sigmab':0.,
                       'colecoefs':None,'l_setcowancoefs':False,
                       'pml_method':1,
