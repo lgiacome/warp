@@ -113,7 +113,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # LabSnapshot, and abstracts the dimension
         self.slice_handler = SliceHandler(
             self.gamma_boost, self.beta_boost, self.dim )
-
+        pdb.set_trace()
     def write( self ):
         """
         Redefines the method write of the parent class FieldDiagnostic
@@ -295,7 +295,7 @@ class LabSnapshot:
            Number of the file where this snapshot is to be written
         """
         # Deduce the name of the filename where this snapshot writes
-        self.filename = os.path.join( write_dir, 'hdf5/data%05d.h5' %i)
+        self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
         self.iteration = i
 
         # Time and boundaries in the lab frame (constants quantities)

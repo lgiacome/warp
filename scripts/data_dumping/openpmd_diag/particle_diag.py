@@ -19,6 +19,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 	After initialization, the diagnostic is called by using the
 	`write` method.
 	"""
+	
 
 	def __init__(self, period, top, w3d, comm_world=None,
 				 species = {"electrons": None},
@@ -339,7 +340,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
 		return( select_array )
 
-	def create_file_empty_meshes( self, fullpath, iteration,
+	def create_file_empty_slice( self, fullpath, iteration,
 								   time, dt ):
 		"""
 		Create an openPMD file with empty meshes and setup all its attributes
@@ -369,25 +370,27 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 		"""
 		
 		# Create the file
-		p = self.open_file( fullpath )
+		f = self.open_file( fullpath )
+
 		# Setup the different layers of the openPMD file
 		# (f is None if this processor does not participate is writing data)
-		if p is not None:
+		
+		if f is not None:
 
 			# Setup the attributes of the top level of the file
-			self.setup_openpmd_file( p, iteration, time, dt )
 
+			self.setup_openpmd_file( f, iteration, time, dt )
 			# Setup the meshes group (contains all the fields)
 			particle_path = "/data/%d/particles/" %iteration
 			
-			particle_grp = p.require_group(particle_path)
-
+			particle_grp = f.require_group(particle_path)
+			pdb.set_trace()
 			for species_name, species in self.species_dict.iteritems():
 				species_path = particle_path+"%s/" %(species_name)
 				# Create and setup the h5py.Group species_grp
-				species_grp = p.require_group( species_path )
+				species_grp = f.require_group( species_path )
 				self.setup_openpmd_species_group( species_grp, species )
-
+				pdb.set_trace()
 			# Loop over the different quantities that should be written
 			# and setup the corresponding datasets
 			
@@ -397,7 +400,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 					if particle_var == "position":
 						# Setup the dataset
 						particle_path_pos=species_path+ "%s/" %particle_var
-						particle_grp_pos = p.require_group(particle_path_pos)
+						particle_grp_pos = f.require_group(particle_path_pos)
 						for coord in ["x","y","z"]:
 							dset = particle_grp_pos.create_dataset(
 								coord, (0,), 
@@ -408,7 +411,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
 					elif particle_var == "momentum":
 						particle_path_mom=species_path+"%s/" %particle_var
-						particle_grp_mom = p.require_group(particle_path_mom)
+						particle_grp_mom = f.require_group(particle_path_mom)
 						for coord in ["x","y","z"]:
 							quantity= "u%s" %coord
 							dset = particle_grp_mom.create_dataset(
@@ -418,7 +421,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 						self.setup_openpmd_species_component(particle_grp_mom, particle_var )
 						
 					elif particle_var == "weighting":
-						particle_grp_w = p.require_group(species_path)
+						particle_grp_w = f.require_group(species_path)
 						dset = particle_grp_w.create_dataset(
 								particle_var, (0,), 
 								maxshape=(None,), dtype='f')
@@ -431,7 +434,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 							"Invalid string in particletypes: %s" %particle_var)
 
 			# Close the file
-			p.close()
+			f.close()
 
 	def write_dataset( self, species_grp, species, path, quantity,
 					   n_rank, N, select_array ) :

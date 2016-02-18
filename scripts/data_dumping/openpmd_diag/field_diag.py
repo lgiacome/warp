@@ -6,7 +6,7 @@ import numpy as np
 from generic_diag import OpenPMDDiagnostic
 from field_extraction import get_circ_dataset, \
      get_cart3d_dataset, get_cart2d_dataset
-
+import pdb
 # Import a number of useful dictionaries
 from data_dict import field_boundary_dict, particle_boundary_dict, \
      field_solver_dict, x_offset_dict, y_offset_dict, z_offset_dict
@@ -288,7 +288,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             field_path = "/data/%d/fields/" %iteration
             field_grp = f.require_group(field_path)
             self.setup_openpmd_meshes_group(field_grp)
-
+         
             # Loop over the different quantities that should be written
             # and setup the corresponding datasets
             for fieldtype in self.fieldtypes:

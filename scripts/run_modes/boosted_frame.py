@@ -767,7 +767,8 @@ to be lifted in the future.
       if not top.uxoldpid:top.uxoldpid=nextpid()
       if not top.uyoldpid:top.uyoldpid=nextpid()
       if not top.uzoldpid:top.uzoldpid=nextpid()
-              
+  
+      
       if me==0:os.system('rm -fr '+output_dir)
       self.create_paths(output_dir)
       self.snapshots = {}
@@ -912,7 +913,7 @@ to be lifted in the future.
         access.append(jjj) #add to access array
 
     ix       = access
-    pdb.set_trace()
+    
     ix_field = [f_snap for f_snap in ix if f_snap in i[::self.field_snapshot_divider]] #filter ix (access) if there should be less field snapshots 
     ix_elec  = [e_snap for e_snap in ix if e_snap in i[::self.elec_snapshot_divider]]  #filter ix if there should be less elec snapshots
     
@@ -950,7 +951,8 @@ to be lifted in the future.
                                        numpy.logical_and(numpy.less_equal(zboost[x],za),numpy.less_equal(z_preva,zboost_prev[x])),
                                        numpy.logical_and(numpy.less_equal(za,zboost[x]),numpy.less_equal(zboost_prev[x],z_preva))
                                                         ),iia)), ix)
-    
+    print len(ii)
+
     #create array of len(za) for filtering process
     #Filter particle data and create array with particle data for each snapshot
     
@@ -1323,9 +1325,10 @@ to be lifted in the future.
           if 'elec_lab' in datatypes and x in ix_elec:
                         
             f = snapshots['elec_lab'][x] #get snapshot file
-
+            pdb.set_trace()
             for dataset in datatypes['elec_lab']:
                 #iterates over all datasets defined in datatypes.
+               
                 dset = f['%s' %(dataset)] #open dataset
                 #Write density
                 if dataset == 'ne':

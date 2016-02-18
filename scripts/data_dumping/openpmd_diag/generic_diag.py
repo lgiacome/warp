@@ -75,7 +75,7 @@ class OpenPMDDiagnostic(object) :
         self.create_dir("")
         # If the directory hdf5 exists, remove it. (Otherwise the code
         # may crash if the directory hdf5 contains preexisting files.)
-        self.create_dir("hdf5", remove_existing=True)
+        self.create_dir("hdf5")
 
     def open_file( self, fullpath ):
         """

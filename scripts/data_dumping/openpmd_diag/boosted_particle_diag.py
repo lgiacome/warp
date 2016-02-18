@@ -30,6 +30,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 				 comm_world=None, particle_data=["position", "momentum", "weighting"],
 				 select=None, write_dir=None, lparallel_output=False,
 				 species = {"electrons": None}):
+		
 		"""
 		Initialize diagnostics that retrieve the data in the lab frame,
 			as a series of snapshot (one file per snapshot),
@@ -80,14 +81,14 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		# Create the list of LabSnapshot objects
 		self.snapshots      = []
 		self.species        = species
+
 		# Record the time it takes
 		measured_start      = time.clock()
 		print('\nInitializing the lab-frame diagnostics: %d files...' %(
 			Ntot_snapshots_lab) )
 		# Loop through the lab snapshots and create the corresponding files
 		for i in range( Ntot_snapshots_lab ):
-			t_lab   = i * dt_snapshots_lab
-			print "t_lab",t_lab
+			t_lab   = i * dt_snapshots_lab/Ntot_snapshots_lab
 			snapshot= LabSnapshot( t_lab,
 									zmin_lab + v_lab*t_lab,
 									top.dt,
@@ -95,7 +96,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 									self.write_dir, i ,self.species)
 			self.snapshots.append( snapshot )
 			# Initialize a corresponding empty file
-			self.create_file_empty_meshes( snapshot.filename, i,
+			self.create_file_empty_slice( snapshot.filename, i,
 				snapshot.t_lab, self.top.dt )
 
 		# Print a message that records the time for initialization
@@ -104,8 +105,10 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 			measured_end-measured_start) )
 
 		self.ParticleCatcher= ParticleCatcher(self.gamma_boost, self.beta_boost,top)
+		self.ParticleCatcher.initialize_pevious_instant()
 
 	def write( self ):
+		
 		"""
 		Redefines the method write of the parent class ParticleDiagnostic
 
@@ -119,7 +122,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		#print snapshot.buffered_slices
 		
 		if self.top.it % self.period == 0:
-			
 			self.flush_to_disk()
 		
 	def store_snapshot_slices( self ):
@@ -148,6 +150,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 				species     =self.species_dict[species_name]
 				slice_array = self.ParticleCatcher.extract_slice(species)
 				snapshot.register_slice( slice_array,species_name)
+		return 
 
 	def flush_to_disk( self):
 		"""
@@ -156,24 +159,24 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		Erase the buffered slices of the LabSnapshot objects
 		"""
 		# Loop through the labsnapshots and flush the data
+		
 		for snapshot in self.snapshots:
-
+			
 			# Compact the successive slices that have been buffered
 			# over time into a single array
 			for species_name in self.species_dict:
-				
 				particle_array = snapshot.compact_slices(species_name)
+				
 				# Erase the memory buffers
 				snapshot.buffered_slices[species_name] = []
-
 				# Write this array to disk (if this snapshot has new slices)
 				if len(particle_array[0])!=0:
 					
 					self.write_slices( particle_array, species_name,
 						snapshot, self.ParticleCatcher.particle_to_index )
 
-	def write_boosted_dataset(self, species_grp,path, data):
-		dset = species_grp.require_dataset(path, (0,),maxshape=(None,),dtype='f')
+	def write_boosted_dataset(self, species_grp,  path, data, quantity):
+		dset = species_grp[path]
 		index=dset.shape[0]
 		dset.resize(index+len(data),axis=0)
 		dset [index:] = data
@@ -203,8 +206,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		
 		f			= self.open_file( snapshot.filename )
 		
-		particle_path= "/data/%d/particles/%s/" %(snapshot.iteration,species_name)
-		
+		particle_path= "/data/%d/particles/%s" %(snapshot.iteration,species_name)
 		species_grp = f[particle_path]
 		# Loop over the different quantities that should be written
 		for particle_var in self.particle_data:
@@ -214,23 +216,20 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 					quantity= coord
 					path	= "%s/%s" %(particle_var, quantity)
 					data	= particle_array[ p2i[ quantity ] ]
-					self.write_boosted_dataset( species_grp, path,data)
+					self.write_boosted_dataset( species_grp, path,data,quantity)
 	 
 			elif particle_var == "momentum":
 				for coord in ["x","y","z"]:
 					quantity= "u%s" %coord
-					path	= "%s/%s" %(particle_var, quantity)
+					path	= "%s/%s" %(particle_var,quantity)
 					data	= particle_array[ p2i[ quantity ] ]
-					self.write_boosted_dataset( species_grp, path,data)
+					self.write_boosted_dataset( species_grp ,path,data,quantity)
 				
 			elif particle_var == "weighting":
 			   quantity= "w"
-			   path	= "weighting"
+			   path	= 'weighting'
 			   data	= particle_array[ p2i[ quantity ] ]
-			   self.write_boosted_dataset( species_grp, path,data)
-			###this is where the bridging is done!!!
-			#you take the path and you take the other particle data and you write
-			##this is wrong, you have to write, 
+			   self.write_boosted_dataset( species_grp, path,data,quantity)
 			
 
 		# Close the file
@@ -262,7 +261,7 @@ class LabSnapshot:
 		   Number of the file where this snapshot is to be written
 		"""
 		# Deduce the name of the filename where this snapshot writes
-		self.filename       = os.path.join( write_dir, 'hdf5/data%05d.h5' %i)
+		self.filename       = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
 		self.iteration      = i
 		self.dt             = dt
 		# Time and boundaries in the lab frame (constants quantities)
@@ -280,7 +279,9 @@ class LabSnapshot:
 		self.buffered_slices= {}
 		
 		for species in species_dict:
+		
 			self.buffered_slices[species]=[]
+			
 
 
 	def update_current_output_positions( self, t_boost, inv_gamma, inv_beta ):
@@ -309,11 +310,6 @@ class LabSnapshot:
 
 		self.current_z_lab = ( t_lab - t_boost*inv_gamma )*c*inv_beta
 		self.prev_z_lab  = (t_lab - t_boost_diff*inv_gamma)*c*inv_beta 
-		print "current_z_boost", self.current_z_boost
-		print "prev_z_boost", self.prev_z_boost
-		print "current_z_lab", self.current_z_lab
-		print "prev_z_lab", self.prev_z_lab
-		pdb.set_trace()
 
 	def register_slice( self, slice_array, species):
 		"""
@@ -332,8 +328,9 @@ class LabSnapshot:
 		"""
 
 		# Store the values and the index
-
+		
 		self.buffered_slices[species].append( slice_array)
+
 
 	def compact_slices(self,species):
 		"""
@@ -423,6 +420,7 @@ class ParticleCatcher:
 		
 		ii=np.compress((((current_z>=self.zboost) & (previous_z<= self.zboost_prev)) |
 			((current_z<=self.zboost) & (previous_z>= self.zboost_prev))),z_array)
+		#print "zboost, zboostprev", self.zboost, self.zboost_prev
 		
 		## particle quantities that satisfy the aforementioned condition
 		self.x_captured=np.take(current_x,ii)
@@ -443,7 +441,6 @@ class ParticleCatcher:
 		self.uz_prev_captured=np.take(previous_uz,ii)
 		self.gamma_prev_captured = np.sqrt(1.+(self.ux_prev_captured**2+\
 			self.uy_prev_captured**2+self.ux_prev_captured**2)/c**2)
-
 		num_part = len(ii)
 		return num_part
 
@@ -531,6 +528,7 @@ class ParticleCatcher:
 		p2i     =self.particle_to_index
 
 		num_part=self.particle_getter(species)
+
 		# Transform the particles from boosted frame back to lab frame
 		self.transform_particles_to_lab_frame()
 		# Collapse the particle quantities using interpolation to
@@ -592,16 +590,24 @@ class ParticleCatcher:
 		"""
 		# Extract the chosen quantities
 		if quantity == "x" :
-			quantity_array = species.getpid(id=self.top.xoldpid-1, gather=False).flatten()
+			quantity_array = species.getpid(id=self.top.xoldpid-1, gather=0,bcast=0).flatten()
 		elif quantity == "y" :
-			quantity_array = species.getpid(id=self.top.yoldpid-1, gather=False).flatten()
+			quantity_array = species.getpid(id=self.top.yoldpid-1, gather=0,bcast=0).flatten()
 		elif quantity == "z" :
-			quantity_array = species.getpid(id=self.top.zoldpid-1, gather=False).flatten()
+			quantity_array = species.getpid(id=self.top.zoldpid-1, gather=0,bcast=0).flatten()
 		elif quantity == "ux" :
-			quantity_array = species.getpid(id=self.top.uxoldpid-1, gather=False).flatten()
+			quantity_array = species.getpid(id=self.top.uxoldpid-1, gather=0,bcast=0).flatten()
 		elif quantity == "uy" :
-			quantity_array = species.getpid(id=self.top.uyoldpid-1, gather=False).flatten()
+			quantity_array = species.getpid(id=self.top.uyoldpid-1, gather=0,bcast=0).flatten()
 		elif quantity == "uz" :
-			quantity_array = species.getpid(id=self.top.uzoldpid-1, gather=False).flatten()
+			quantity_array = species.getpid(id=self.top.uzoldpid-1, gather=0,bcast=0).flatten()
 		
 		return( quantity_array )
+
+	def initialize_pevious_instant(self):
+		if not self.top.xoldpid:self.top.xoldpid=self.top.nextpid()
+		if not self.top.yoldpid:self.top.yoldpid=self.top.nextpid()
+		if not self.top.zoldpid:self.top.zoldpid=self.top.nextpid()
+		if not self.top.uxoldpid:self.top.uxoldpid=self.top.nextpid()
+		if not self.top.uyoldpid:self.top.uyoldpid=self.top.nextpid()
+		if not self.top.uzoldpid:self.top.uzoldpid=self.top.nextpid()
