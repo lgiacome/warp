@@ -124,7 +124,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 		for quantity in ["charge", "mass", "positionOffset/x",
 							"positionOffset/y", "positionOffset/z"] :
 			grp.require_group(quantity)
-			self.setup_openpmd_species_component( grp[quantity], quantity )
+			self.setup_openpmd_species_component( grp[quantity] )
 			grp[quantity].attrs["shape"] = np.array([1], dtype=np.uint64)
 			# Required. Since it is not really used, the shape is 1 here.
 		# Set the corresponding values
@@ -156,7 +156,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 		grp.attrs["weightingPower"] = weighting_power_dict[quantity]
 
 
-	def setup_openpmd_species_component( self, grp, quantity ) :
+	def setup_openpmd_species_component( self, grp ) :
 		"""
 		Set the attributes that are specific to a species component
 
@@ -382,20 +382,19 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 			self.setup_openpmd_file( f, iteration, time, dt )
 			# Setup the meshes group (contains all the fields)
 			particle_path = "/data/%d/particles/" %iteration
-			
 			particle_grp = f.require_group(particle_path)
-			pdb.set_trace()
+
 			for species_name, species in self.species_dict.iteritems():
 				species_path = particle_path+"%s/" %(species_name)
 				# Create and setup the h5py.Group species_grp
 				species_grp = f.require_group( species_path )
 				self.setup_openpmd_species_group( species_grp, species )
-				pdb.set_trace()
+				
 			# Loop over the different quantities that should be written
 			# and setup the corresponding datasets
 			
 				for particle_var in self.particle_data:
-			
+
 					# Scalar field
 					if particle_var == "position":
 						# Setup the dataset
@@ -404,10 +403,10 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 						for coord in ["x","y","z"]:
 							dset = particle_grp_pos.create_dataset(
 								coord, (0,), 
-								maxshape=(None,), dtype='f')
-						
+								maxshape=(None,), dtype='f')		
+							self.setup_openpmd_species_component( dset )
 						self.setup_openpmd_species_record( particle_grp_pos, particle_var)
-						self.setup_openpmd_species_component(particle_grp_pos, particle_var)
+						
 
 					elif particle_var == "momentum":
 						particle_path_mom=species_path+"%s/" %particle_var
@@ -415,18 +414,20 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 						for coord in ["x","y","z"]:
 							quantity= "u%s" %coord
 							dset = particle_grp_mom.create_dataset(
-								quantity, (0,), 
+								coord, (0,), 
 								maxshape=(None,), dtype='f')
+								
+							self.setup_openpmd_species_component( dset )
 						self.setup_openpmd_species_record(particle_grp_mom,  particle_var )
-						self.setup_openpmd_species_component(particle_grp_mom, particle_var )
 						
 					elif particle_var == "weighting":
 						particle_grp_w = f.require_group(species_path)
 						dset = particle_grp_w.create_dataset(
 								particle_var, (0,), 
 								maxshape=(None,), dtype='f')
+						self.setup_openpmd_species_component( dset )	
 						self.setup_openpmd_species_record(particle_grp_w,  particle_var )
-						self.setup_openpmd_species_component( particle_grp_w,  particle_var )                  
+			
 
 					# Unknown field
 					else:
@@ -472,7 +473,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 		if self.lparallel_output == True or self.rank == 0 :
 			datashape = (N, )
 			dset = species_grp.require_dataset( path, datashape, dtype='f')
-			self.setup_openpmd_species_component( dset, quantity )
+			self.setup_openpmd_species_component( dset)
 		else :
 			dset = None
 			
@@ -561,6 +562,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 			quantity_array = species.getuz(gather=False)
 		elif quantity == "w" :
 			quantity_array = species.getweights(gather=False)
+	
 
 		return( quantity_array )
 

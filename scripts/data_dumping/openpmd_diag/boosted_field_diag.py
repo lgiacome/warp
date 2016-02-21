@@ -113,7 +113,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # LabSnapshot, and abstracts the dimension
         self.slice_handler = SliceHandler(
             self.gamma_boost, self.beta_boost, self.dim )
-        pdb.set_trace()
+
     def write( self ):
         """
         Redefines the method write of the parent class FieldDiagnostic
@@ -150,6 +150,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             #   is in the current local domain
             # - check if the output position *in the lab frame*
             #   is within the lab-frame boundaries of the current snapshot
+            #pdb.set_trace()
             if ( (snapshot.current_z_boost > zmin_boost) and \
                  (snapshot.current_z_boost < zmax_boost) and \
                  (snapshot.current_z_lab > snapshot.zmin_lab) and \
