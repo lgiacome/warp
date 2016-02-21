@@ -507,7 +507,9 @@ class ParticleCatcher:
 		t_prev and t_current
 
 		"""
-		t_mid=np.mean(self.t+self.t_prev)
+		time=[self.t, self.t_prev]
+		t_mid=np.mean(time, axis=0)
+
 		self.x_captured	 = self.x_prev_captured*(self.t-t_mid)/(self.t-self.t_prev)\
 							+self.x_captured*(t_mid-self.t_prev)/(self.t-self.t_prev)
 		self.y_captured	 = self.y_prev_captured*(self.t-t_mid)/(self.t-self.t_prev)\
@@ -523,11 +525,6 @@ class ParticleCatcher:
 		self.gamma_captured	 = self.gamma_prev_captured*(self.t-t_mid)/\
 		(self.t-self.t_prev)+self.gamma_captured*(t_mid-self.t_prev)/\
 		(self.t-self.t_prev)
-
-		#normalizing momentum quantities
-		#self.ux_captured *= species.mass
-		#self.uy_captured *= species.mass
-		#self.uz_captured *= species.mass
 
 	def gather_array(self, quantity,species):
 		ar=np.zeros(np.shape(self.x_captured)[0])
@@ -572,7 +569,7 @@ class ParticleCatcher:
 		self.transform_particles_to_lab_frame()
 		# Collapse the particle quantities using interpolation to
 		# the the midpoint of t and t_prev
-		#self.collapse_to_mid_point()
+		self.collapse_to_mid_point()
 
 		slice_array = np.empty( (8, num_part,) )
                                                                                             
