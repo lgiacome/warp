@@ -17,12 +17,10 @@ Remaining questions:
 import os
 import numpy as np
 import time
-import h5py
 from scipy.constants import c
 from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
-import pdb
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
@@ -150,7 +148,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             #   is in the current local domain
             # - check if the output position *in the lab frame*
             #   is within the lab-frame boundaries of the current snapshot
-            #pdb.set_trace()
             if ( (snapshot.current_z_boost > zmin_boost) and \
                  (snapshot.current_z_boost < zmax_boost) and \
                  (snapshot.current_z_lab > snapshot.zmin_lab) and \

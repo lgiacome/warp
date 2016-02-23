@@ -2,25 +2,16 @@
 This file defines the class BoostedParticleDiagnostic
 
 Major features:
-- The class reuses the existing methods of FieldDiagnostic
+- The class reuses the existing methods of ParticleDiagnostic
   as much as possible, through class inheritance
 - The class implements memory buffering of the slices, so as
   not to write to disk at every timestep
-
-Remaining questions:
-- Should one use the IO collectives when only a few proc modify a given file?
-- Should we just have the proc writing directly to the file ?
-  Should we gather on the first proc ?
-- Is it better to write all the attributes of the openPMD file
-  with only one proc ?
 """
 import os
 import numpy as np
 import time
-import h5py
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
-from data_dict import z_offset_dict
 from parallel import gatherarray
 
 class BoostedParticleDiagnostic(ParticleDiagnostic):
@@ -30,7 +21,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 				 particle_data=["position", "momentum", "weighting"],
 				 select=None, write_dir=None, lparallel_output=False,
 				 species = {"electrons": None}):
-		
 		"""
 		Initialize diagnostics that retrieve the data in the lab frame,
 		as a series of snapshot (one file per snapshot),
@@ -75,7 +65,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		# Find the z resolution and size of the diagnostic *in the lab frame*
 		# (Needed to initialize metadata in the openPMD file)
 		dz_lab = c*self.top.dt*self.inv_beta_boost*self.inv_gamma_boost
-		Nz = int((zmax_lab - zmin_lab)/dz_lab)
 		self.inv_dz_lab = 1./dz_lab
 		
 		# Create the list of LabSnapshot objects
@@ -377,7 +366,7 @@ class LabSnapshot:
 		Returns
 		-------
 		paticle_array: an array of reals of shape
-		- (7, numPart) regardless of the dimension
+		- (8, numPart) regardless of the dimension
 
 		species: String, key of the species_dict
 			Act as the key for the buffered_slices dictionary
