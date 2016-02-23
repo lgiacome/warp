@@ -65,11 +65,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		self.beta_boost = np.sqrt(1. - self.inv_gamma_boost**2)
 		self.inv_beta_boost = 1./self.beta_boost
 		
-		# Find the z resolution and size of the diagnostic *in the lab frame*
-		# (Needed to initialize metadata in the openPMD file)
-		dz_lab = c*self.top.dt*self.inv_beta_boost*self.inv_gamma_boost
-		self.inv_dz_lab = 1./dz_lab
-		
 		# Create the list of LabSnapshot objects
 		self.snapshots = []
 		self.species = species
