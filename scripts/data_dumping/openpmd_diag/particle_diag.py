@@ -320,7 +320,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 		the rules of self.select
 		"""
 		# Initialize an array filled with True
-		select_array = np.ones( species.getn(gather=0), dtype='bool' )
+		select_array = np.ones( species.getn(gather = 0), dtype='bool' )
 
 		# Apply the rules successively
 		if self.select is not None :
@@ -562,7 +562,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 			quantity_array = species.getuz(gather=False)
 		elif quantity == "w" :
 			quantity_array = species.getweights(gather=False)
-	
+
 
 		return( quantity_array )
 
