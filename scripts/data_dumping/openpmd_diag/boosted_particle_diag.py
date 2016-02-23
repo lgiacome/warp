@@ -48,7 +48,10 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 		See the documentation of ParticleDiagnostic for the other parameters
 
 		"""
-		
+
+		# Do not leave write_dir as None, as this may conflict with
+        # the default directory ('./diags') in which diagnostics in the
+        # boosted frame are written
 		if write_dir is None:
 			write_dir='lab_diags'
 		
