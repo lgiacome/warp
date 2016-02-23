@@ -22,7 +22,6 @@ from scipy.constants import c
 from particle_diag import ParticleDiagnostic
 from data_dict import z_offset_dict
 from parallel import gatherarray
-import pdb
 
 class BoostedParticleDiagnostic(ParticleDiagnostic):
 	def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
