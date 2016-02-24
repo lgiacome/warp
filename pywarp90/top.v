@@ -3385,6 +3385,7 @@ mpi_comm_z integer # MPI communicator grouping processors along the z axis.
 ******* Parallel dump:
 comm_world    integer /0/ -dump   # world communicator used by Warp
 lcomm_world_initted logical /.false./ # set to true with comm_world has been set
+lcomm_cartesian logical /.false./ # set to true if you want a cartesian topology for the communicator 
 nprocs        integer /1/ -dump   # Number of parallel processors
 nslaves       integer /1/         # Obsolete
 my_index      integer /0/ +parallel -dump # Processor index to array of task ids

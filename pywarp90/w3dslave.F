@@ -61,27 +61,41 @@ c get number of slaves and my_pe
       end
 c===========================================================================
       subroutine initializedecomp_work(decomp)
-      use Parallel,Only: comm_world
+      use Parallel,Only: comm_world, lcomm_cartesian
       use Decompositionmodule
       type(Decomposition):: decomp
 
       integer(MPIISZ):: mpierror,comm_world_mpiisz
       include "mpif.h"
       comm_world_mpiisz = comm_world
-
-      call MPI_COMM_DUP(comm_world_mpiisz,decomp%mpi_comm,mpierror)
-
+      if (lcomm_cartesian) THEN 
+      ! Communicator for current decomposition already created 
 c     --- Create communicator groups for processors along each axis.
-      call MPI_COMM_SPLIT(decomp%mpi_comm,
+        call MPI_COMM_SPLIT(decomp%mpi_comm,
      &                    decomp%iyproc+decomp%izproc*decomp%nyprocs,
      &                    decomp%my_index,decomp%mpi_comm_x,mpierror)
-      call MPI_COMM_SPLIT(decomp%mpi_comm,
+        call MPI_COMM_SPLIT(decomp%mpi_comm,
      &                    decomp%izproc+decomp%ixproc*decomp%nzprocs,
      &                    decomp%my_index,decomp%mpi_comm_y,mpierror)
-      call MPI_COMM_SPLIT(decomp%mpi_comm,
+        call MPI_COMM_SPLIT(decomp%mpi_comm,
      &                    decomp%ixproc+decomp%iyproc*decomp%nxprocs,
      &                    decomp%my_index,decomp%mpi_comm_z,mpierror)
+      else 
+      ! Copy communicator 
+        call MPI_COMM_DUP(comm_world_mpiisz,decomp%mpi_comm,mpierror)
 
+c     --- Create communicator groups for processors along each axis.
+        call MPI_COMM_SPLIT(decomp%mpi_comm,
+     &                    decomp%iyproc+decomp%izproc*decomp%nyprocs,
+     &                    decomp%my_index,decomp%mpi_comm_x,mpierror)
+        call MPI_COMM_SPLIT(decomp%mpi_comm,
+     &                    decomp%izproc+decomp%ixproc*decomp%nzprocs,
+     &                    decomp%my_index,decomp%mpi_comm_y,mpierror)
+        call MPI_COMM_SPLIT(decomp%mpi_comm,
+     &                    decomp%ixproc+decomp%iyproc*decomp%nxprocs,
+     &                    decomp%my_index,decomp%mpi_comm_z,mpierror)      
+      
+      endif
       return
       end
 c===========================================================================
