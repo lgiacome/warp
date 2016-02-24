@@ -123,7 +123,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         # Every self.period, write the buffered slices to disk 
         if self.top.it % self.period == 0:
-
             self.flush_to_disk()
         
     def store_snapshot_slices( self ):

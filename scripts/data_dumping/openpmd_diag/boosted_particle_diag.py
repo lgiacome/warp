@@ -15,6 +15,15 @@ from particle_diag import ParticleDiagnostic
 from parallel import gatherarray
 
 class BoostedParticleDiagnostic(ParticleDiagnostic):
+    """
+    Class that writes the particles *in the lab frame*, 
+    from a simulation in the boosted frame
+
+    Usage
+    -----
+    After initialization, the diagnostic is called by using 
+    the 'write' method.
+    """
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period, 
                  em, top, w3d, comm_world=None, 
@@ -48,12 +57,11 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         See the documentation of ParticleDiagnostic for the other parameters
 
         """
-
         # Do not leave write_dir as None, as this may conflict with
         # the default directory ('./diags') in which diagnostics in the
         # boosted frame are written
         if write_dir is None:
-            write_dir='lab_diags'
+            write_dir = 'lab_diags'
         
         #initialize Particle diagnostic normal attributes
         ParticleDiagnostic.__init__(self, period, top, w3d, comm_world,
@@ -75,9 +83,9 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             Ntot_snapshots_lab) )
 
         # Loop through the lab snapshots and create the corresponding files
-        self.ParticleCatcher = ParticleCatcher(
+        self.particle_catcher = ParticleCatcher(
             self.gamma_boost, self.beta_boost,top)
-        self.ParticleCatcher.initialize_previous_instant()
+        self.particle_catcher.initialize_previous_instant()
 
         for i in range( Ntot_snapshots_lab ):
             t_lab = i*dt_snapshots_lab
@@ -96,8 +104,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         print('Time taken for initialization of the files: %.5f s' %(
             measured_end-measured_start) )
 
-    def write(self ):
-        
+    def write(self ): 
         """
         Redefines the method write of the parent class ParticleDiagnostic
 
@@ -106,7 +113,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         # At each timestep, store a slice of the particles in memory buffers 
         self.store_snapshot_slices()
         # Every self.period, write the buffered slices to disk 
-        #print snapshot.buffered_slices
         if self.top.it % self.period == 0:
             self.flush_to_disk()
         
@@ -115,7 +121,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         Store slices of the particles in the memory buffers of the
         corresponding lab snapshots
         """
-
         # Loop through the labsnapshots
         for snapshot in self.snapshots:
 
@@ -126,28 +131,25 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             
             # Setting up PartcleCatcher attributes with the updated snapshot 
             # attributes
-            self.ParticleCatcher.zboost = snapshot.current_z_boost
-            self.ParticleCatcher.zboost_prev = snapshot.prev_z_boost
-            self.ParticleCatcher.zlab = snapshot.current_z_lab
-            self.ParticleCatcher.zlab_prev = snapshot.prev_z_lab
-            self.ParticleCatcher.zmin_lab = snapshot.zmin_lab
-            self.ParticleCatcher.zmax_lab = snapshot.zmax_lab
+            self.particle_catcher.zboost = snapshot.current_z_boost
+            self.particle_catcher.zboost_prev = snapshot.prev_z_boost
+            self.particle_catcher.zlab = snapshot.current_z_lab
+            self.particle_catcher.zlab_prev = snapshot.prev_z_lab
+            self.particle_catcher.zmin_lab = snapshot.zmin_lab
+            self.particle_catcher.zmax_lab = snapshot.zmax_lab
 
             for species_name in self.species_dict:
                 species = self.species_dict[species_name]
-                self.ParticleCatcher.species = species
-                slice_array = self.ParticleCatcher.extract_slice(
-                    species, self.select)
+                self.particle_catcher.species = species
+                slice_array = self.particle_catcher.extract_slice(self.select)
                 snapshot.register_slice(slice_array, species_name)
 
     def flush_to_disk(self):
         """
-        Writes the buffered slices of particles to the disk
-
-        Erase the buffered slices of the LabSnapshot objects
+        Writes the buffered slices of particles to the disk. Erase the 
+        buffered slices of the LabSnapshot objects
         """
         # Loop through the labsnapshots and flush the data
-        
         for snapshot in self.snapshots:
             
             # Compact the successive slices that have been buffered
@@ -159,7 +161,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                 
                 if particle_array.size:
                     self.write_slices(particle_array, species_name, 
-                        snapshot, self.ParticleCatcher.particle_to_index)
+                        snapshot, self.particle_catcher.particle_to_index)
 
             # Erase the memory buffers
             snapshot.buffer_initialization(self.species_dict)
@@ -170,7 +172,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         Writes each quantity of the buffered dataset to the disk, the 
         final step of the writing
         """
-
         dset = species_grp[path]
         index = dset.shape[0]
 
@@ -183,17 +184,15 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
     def write_slices( self, particle_array, species_name, snapshot, p2i ): 
         """
         For one given snapshot, write the slices of the
-        different fields to an openPMD file
+        different species to an openPMD file
 
         Parameters
         ----------
         particle_array: array of reals
-            Array of shape
-            - (10, num_part, nslices) 
+            Array of shape (8, num_part) 
 
-        iz_min, iz_max: integers
-            The indices between which the slices will be written
-            iz_min is inclusice and iz_max is exclusive
+        species_name: String
+            A String that acts as the key for the buffered_slices dictionary
 
         snapshot: a LabSnaphot object
 
@@ -202,7 +201,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             and the integer index in the particle_array
         """
         # Open the file without parallel I/O in this implementation
-        
         f = self.open_file(snapshot.filename)
         particle_path = "/data/%d/particles/%s" %(snapshot.iteration, 
             species_name)
@@ -273,7 +271,6 @@ class LabSnapshot:
             Contains all the species name of the species object 
             (inherited from Warp)
         """
-
         # Deduce the name of the filename where this snapshot writes
         self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
         self.iteration = i
@@ -301,7 +298,6 @@ class LabSnapshot:
             Contains all the species name of the species object 
             (inherited from Warp)
         """
-
         self.buffered_slices = {}
         
         for species in species_dict:
@@ -321,7 +317,6 @@ class LabSnapshot:
             Inverse of the Lorentz factor of the boost, and inverse
             of the corresponding beta
         """
-
         # Some shorcuts for further calculation's purposes
         t_lab = self.t_lab  
         t_boost_diff = t_boost + self.dt
@@ -345,33 +340,29 @@ class LabSnapshot:
             An array of packed fields that corresponds to one slice,
             as given by the SliceHandler object
 
-        inv_dz_lab: float
-            Inverse of the grid spacing in z, *in the lab frame*
-
         species: String, key of the species_dict
             Act as the key for the buffered_slices dictionary
         """
-
         # Store the values and the index
         self.buffered_slices[species].append(slice_array)
 
     def compact_slices(self, species):
         """
         Compact the successive slices that have been buffered
-        over time into a single array, and return the indices
-        at which this array should be written.
+        over time into a single array.
 
-        Returns
-        -------
-        paticle_array: an array of reals of shape
-        - (8, numPart) regardless of the dimension
-
+        Parameters
+        ----------
         species: String, key of the species_dict
             Act as the key for the buffered_slices dictionary
 
+        Returns
+        -------
+        paticle_array: an array of reals of shape (8, numPart) 
+        regardless of the dimension
+
         Returns None if the slices are empty
         """
-        
         particle_array = np.concatenate(self.buffered_slices[species], axis=1)
         
         return particle_array
@@ -382,7 +373,7 @@ class ParticleCatcher:
     """
     def __init__(self, gamma_boost, beta_boost, top):
         """
-        Initialize the ParticleHandler object
+        Initialize the ParticleCatcher object
 
         Parameters
         ----------
@@ -391,7 +382,6 @@ class ParticleCatcher:
 
         top: WARP object
         """
-
         # Some attributes neccessary for particle selections
         self.gamma_boost = gamma_boost
         self.beta_boost = beta_boost
@@ -403,25 +393,23 @@ class ParticleCatcher:
         self.zlab_max = 0.0
         self.top = top
         self.species = None
-
-        #self.top.allspecl = True
         
         # Create a dictionary that contains the correspondance
-        # between the field names and array index
+        # between the particles quantity and array index
         self.particle_to_index = {'x':0, 'y':1, 'z':2, 'ux':3,
                 'uy':4, 'uz':5, 'w':6, 'gamma':7}
                
     def particle_getter(self):
         """
-        Returns the quantities of the particle at each time step
+        Select the particles for the current slice, and extract their 
+        positions and momenta at the current and previous timestep
 
         Returns
         -------
-        species : a warp Species object
-        an array of quantities that are ready to be written in the buffer
+        num_part: int
+            Number of selected particles
         """
-
-        # the current quantities
+        # Quantities at current time step
         current_x = self.get_quantity("x")
         current_y = self.get_quantity("y")
         current_z = self.get_quantity("z")
@@ -430,7 +418,7 @@ class ParticleCatcher:
         current_uz = self.get_quantity("uz")
         current_weights = self.get_quantity( "w")
 
-        # the previous quantities
+        # Quantities at previous time step
         previous_x = self.get_quantity("x", l_prev = 1)
         previous_y = self.get_quantity("y", l_prev = 1)
         previous_z = self.get_quantity("z", l_prev = 1)
@@ -438,44 +426,48 @@ class ParticleCatcher:
         previous_uy = self.get_quantity("uy", l_prev = 1)
         previous_uz = self.get_quantity("uz", l_prev = 1)
         
-        # an array for mapping purpose
-        z_array = np.arange(len(current_z))
+        # A particle array for mapping purposes
+        particle_indices = np.arange(len(current_z))
             
         # For this snapshot:
         # - check if the output position *in the boosted frame*
         #   crosses the zboost in a forward motion
         # - check if the output position *in the lab frame*
-        #   rosses the zboost_prev in a backward motion
-        ii=np.compress((((current_z >= self.zboost) & 
+        #   crosses the zboost_prev in a backward motion
+        selected_indices = np.compress((((current_z >= self.zboost) & 
             (previous_z <= self.zboost_prev)) |
             ((current_z <= self.zboost) & 
-            (previous_z >= self.zboost_prev))),z_array)
+            (previous_z >= self.zboost_prev))), particle_indices)
         
-        ## particle quantities that satisfy the aforementioned condition
-        self.x_captured = np.take(current_x,ii)
-        self.y_captured = np.take(current_y,ii)
-        self.z_captured = np.take(current_z,ii)
-        self.ux_captured = np.take(current_ux,ii)
-        self.uy_captured = np.take(current_uy,ii)
-        self.uz_captured = np.take(current_uz,ii)
-        self.w_captured = np.take(current_weights,ii)
-        self.gamma_captured = np.sqrt(1.+(self.ux_captured**2+\
-            self.uy_captured**2+self.ux_captured**2)/c**2)
+        ## Particle quantities that satisfy the aforementioned condition
+        self.x_captured = np.take(current_x, selected_indices)
+        self.y_captured = np.take(current_y, selected_indices)
+        self.z_captured = np.take(current_z, selected_indices)
+        self.ux_captured = np.take(current_ux, selected_indices)
+        self.uy_captured = np.take(current_uy, selected_indices)
+        self.uz_captured = np.take(current_uz, selected_indices)
+        self.w_captured = np.take(current_weights, selected_indices)
+        self.gamma_captured = np.sqrt(1. + (self.ux_captured**2+\
+            self.uy_captured**2 + self.ux_captured**2)/c**2)
 
-        self.x_prev_captured = np.take(previous_x,ii)
-        self.y_prev_captured = np.take(previous_y,ii)
-        self.z_prev_captured = np.take(previous_z,ii)
-        self.ux_prev_captured = np.take(previous_ux,ii)
-        self.uy_prev_captured = np.take(previous_uy,ii)
-        self.uz_prev_captured = np.take(previous_uz,ii)
-        self.gamma_prev_captured = np.sqrt(1.+(self.ux_prev_captured**2+\
-            self.uy_prev_captured**2+self.ux_prev_captured**2)/c**2)
+        self.x_prev_captured = np.take(previous_x, selected_indices)
+        self.y_prev_captured = np.take(previous_y, selected_indices)
+        self.z_prev_captured = np.take(previous_z, selected_indices)
+        self.ux_prev_captured = np.take(previous_ux, selected_indices)
+        self.uy_prev_captured = np.take(previous_uy, selected_indices)
+        self.uz_prev_captured = np.take(previous_uz, selected_indices)
+        self.gamma_prev_captured = np.sqrt(1. + (self.ux_prev_captured**2+\
+            self.uy_prev_captured**2 + self.ux_prev_captured**2)/c**2)
 
-        num_part = np.shape(ii)[0]
+        num_part = np.shape(selected_indices)[0]
 
         return num_part
 
     def transform_particles_to_lab_frame(self):
+        """
+        Transform the particles quantities from the boosted frame to the
+        lab frame
+        """
         uzfrm =- self.beta_boost*self.gamma_boost*c
         len_z = np.shape(self.z_captured)[0]
         
@@ -495,19 +487,18 @@ class ParticleCatcher:
                 1./self.gamma_prev_captured,
                 uzfrm, self.gamma_boost)
     
-        self.z_captured = (self.z_captured-self.zboost) + self.zlab 
-        self.z_prev_captured = (self.z_prev_captured-self.zboost_prev) \
+        self.z_captured = (self.z_captured - self.zboost) + self.zlab 
+        self.z_prev_captured = (self.z_prev_captured - self.zboost_prev) \
         + self.zlab_prev
         self.t = self.gamma_boost*self.top.time*np.ones(len_z) \
-        -uzfrm*self.z_captured/c**2
-        self.t_prev = self.gamma_boost*(self.top.time-self.top.dt)\
-        *np.ones(len_prev_z) -uzfrm*self.z_prev_captured/c**2
+        - uzfrm*self.z_captured/c**2
+        self.t_prev = self.gamma_boost*(self.top.time - self.top.dt)\
+        *np.ones(len_prev_z) - uzfrm*self.z_prev_captured/c**2
 
     def collapse_to_mid_point(self):
         """
-        collapse the particle quantities to the mid point between 
+        Collapse the particle quantities to the mid point between 
         t_prev and t_current
-
         """
         # Putting particles' current and previous time in an array for 
         # convenience in mean calculation
@@ -537,40 +528,57 @@ class ParticleCatcher:
         (self.t-self.t_prev)
 
     def gather_array(self, quantity):
-        ar=np.zeros(np.shape(self.x_captured)[0])
-
-        if quantity == "x" :
-            ar=np.array(gatherarray(self.x_captured))
-        elif quantity == "y":
-            ar=np.array(gatherarray(self.y_captured))
-        elif quantity == "z":
-            ar=np.array(gatherarray(self.z_captured))
-        elif quantity == "ux":
-            ar=np.array(gatherarray(self.ux_captured*self.species.mass))
-        elif quantity == "uy":
-            ar=np.array(gatherarray(self.uy_captured*self.species.mass))
-        elif quantity == "uz":
-            ar=np.array(gatherarray(self.uz_captured*self.species.mass))
-        elif quantity == "w":
-            ar=np.array(gatherarray(self.w_captured))
-        elif quantity == "gamma":
-            ar=np.array(gatherarray(self.gamma_captured))
-        return ar
-
-    def extract_slice(self, species, select = None):
         """
-        Extract a slice of the particles at z_boost, using interpolation in z
-
-        See the docstring of extract_slice for the parameters.
+        Gather the quantity arrays and normalize the momenta
+        Parameters
+        ----------
+        quantity: String
+            Quantity of the particles that is wished to be gathered
 
         Returns
         -------
-        An array that packs together the slices of the different particles.
-            The shape of this arrays is:
-             (8, num_part,)  
-
+        ar: array of reals
+            An array of gathered particle's quantity
         """
-        # declare an attribute for convenience
+        ar = np.zeros(np.shape(self.x_captured)[0])
+
+        if quantity == "x" :
+            ar = np.array(gatherarray(self.x_captured))
+        elif quantity == "y":
+            ar = np.array(gatherarray(self.y_captured))
+        elif quantity == "z":
+            ar = np.array(gatherarray(self.z_captured))
+        elif quantity == "ux":
+            ar = np.array(gatherarray(self.ux_captured*self.species.mass))
+        elif quantity == "uy":
+            ar = np.array(gatherarray(self.uy_captured*self.species.mass))
+        elif quantity == "uz":
+            ar = np.array(gatherarray(self.uz_captured*self.species.mass))
+        elif quantity == "w":
+            ar = np.array(gatherarray(self.w_captured))
+        elif quantity == "gamma":
+            ar = np.array(gatherarray(self.gamma_captured))
+        return ar
+
+    def extract_slice(self, select = None):
+        """
+        Extract a slice of the particles at z_boost and if select is present,
+        extract only the particles that satisfy the given criteria 
+
+        Parameters
+        ----------
+        select: dict 
+            A set of rules defined by the users in selecting the particles
+            Ex: {"uz" : [50/c, 100/c]} for particles which have normalized 
+            values between 50 and 100
+
+        Returns
+        -------
+        slice_array: An array of reals of shape (8, numPart) 
+            An array that packs together the slices of the different 
+            particles.
+        """
+        # Declare an attribute for convenience
         p2i = self.particle_to_index
 
         # Get the particles
@@ -663,9 +671,7 @@ class ParticleCatcher:
         """
         Initialize the top.'quantity'oldpid array. This is used to store
         the previous values of the quantities.
-
         """
-
         if not self.top.xoldpid:self.top.xoldpid = self.top.nextpid()
         if not self.top.yoldpid:self.top.yoldpid = self.top.nextpid()
         if not self.top.zoldpid:self.top.zoldpid = self.top.nextpid()
@@ -689,7 +695,6 @@ class ParticleCatcher:
         containing True for the particles that satify all
         the rules of self.select
         """
-
         p2i = self.particle_to_index
 
         # Initialize an array filled with True

@@ -8,7 +8,6 @@ from scipy import constants
 from generic_diag import OpenPMDDiagnostic
 from parallel import gatherarray
 from data_dict import macro_weighted_dict, weighting_power_dict
-import pdb
 
 class ParticleDiagnostic(OpenPMDDiagnostic) :
     """
@@ -356,19 +355,9 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         time: float (seconds)
             The physical time at this iteration
 
-        numPart: int
-            The number of gridpoints along z in this diagnostics
-
-        zmin: float (meters)
-            The position of the left end of the box
-            
-        dz: float (meters)
-            The resolution in z of this diagnostic
-
         dt: float (seconds)
             The timestep of the simulation
-        """
-        
+        """ 
         # Create the file
         f = self.open_file( fullpath )
 
@@ -380,7 +369,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             # Setup the attributes of the top level of the file
 
             self.setup_openpmd_file( f, iteration, time, dt )
-            # Setup the meshes group (contains all the fields)
+            # Setup the meshes group (contains all the particles)
             particle_path = "/data/%d/particles/" %iteration
             particle_grp = f.require_group(particle_path)
 
@@ -532,7 +521,6 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         else :
             return(gatherarray( quantity_array, root=0, comm=self.comm_world ))
 
-            
     def get_quantity( self, species, quantity ) :
         """
         Get a given quantity
@@ -563,6 +551,4 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         elif quantity == "w" :
             quantity_array = species.getweights(gather=False)
 
-
         return( quantity_array )
-
