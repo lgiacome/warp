@@ -41,7 +41,7 @@ Input:
 
         self.initted = False
 
-        self.f = open(self.filename,'r')
+        self.f = open(self.filename,'rb')
         self.readinitdata()
 
         # --- Install the routines that do the work.

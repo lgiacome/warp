@@ -159,7 +159,7 @@ class LatticeGenerator:
     #---------------------------------------------------------------------------
     # --- Write data out to a pickle file
     def saveself(s,filename):
-        with open(filename,'w') as ff:
+        with open(filename,'wb') as ff:
             cPickle.dump(s,ff,1)
 
     #---------------------------------------------------------------------------

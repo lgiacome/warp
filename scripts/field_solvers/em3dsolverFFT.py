@@ -26,7 +26,8 @@ class EM3DFFT(EM3D):
         EM3D.__init__(self,kwdict=kw)
         self.l_spectral_staggered = not self.l_nodalgrid
         
-        if self.boris_cor:self.l_getrho=True
+        self.l_getrho=True
+        self.pml_method=2
 
     def finalize(self,lforce=False):
         if self.finalized and not lforce: return

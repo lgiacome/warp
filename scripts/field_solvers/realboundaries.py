@@ -1218,7 +1218,7 @@ def saveRealBoundary(object,filename):
     if currpkg != 'wxy' or (currpkg == 'wxy' and w3d.solvergeom==w3d.XYgeom):return
     # --- This is only do by the first processor on a parallel machine.
     if me == 0:
-        with open(filename,'w') as ff:
+        with open(filename,'wb') as ff:
             cPickle.dump(object,ff,1)
 #-----------------------------------------------------------------------------
 def restoreRealBoundary(filename):
@@ -1232,7 +1232,7 @@ def restoreRealBoundary(filename):
     # --- function should work before the generate is done, in which case
     # --- the package generally has not been set yet.
     #if currpkg != 'wxy' or (currpkg == 'wxy' and w3d.solvergeom==w3d.XYgeom):return
-    with open(filename,'r') as ff:
+    with open(filename,'rb') as ff:
         result = cPickle.load(ff)
     result.enable()
     return result

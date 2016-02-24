@@ -205,7 +205,7 @@ Function to do iterations.
                 self.printerror(err)
                 if klog == kprintlogmax: self.printparams()
             if self.picklehistfile is not None:
-                with open(self.picklehistfile,'a') as ff:
+                with open(self.picklehistfile,'ab') as ff:
                     cPickle.dump([self.k,self.unscaledparams(),latestloss],ff,-1)
         # --- Print out the resulting params
         self.printerror(err)
@@ -655,7 +655,7 @@ the previous best global parameters. The deceleration is also reset."""
         """Setup the neighbors for each particle.
         This uses a simple circle neighborhood"""
         self.neighborhoods = []
-        halfneigh = self.neighbors/2
+        halfneigh = self.neighbors//2
         for i in range(self.npop):
             self.neighborhoods.append([])
             for n in range(-halfneigh,halfneigh+1):

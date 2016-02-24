@@ -599,7 +599,7 @@ data will be preserved.
     def dodumptofilePickle(self,zbeam):
         if me != 0: return
         if not os.path.exists(self.dumptofile+'_gridcrossing.pkl'):
-            ff = open(self.dumptofile+'_gridcrossing.pkl','w')
+            ff = open(self.dumptofile+'_gridcrossing.pkl','wb')
             # --- Save the input parameters to the file.
             cPickle.dump(('jslist',self.jslist),ff,-1)
             cPickle.dump(('zmmin',self.zmmin),ff,-1)
@@ -633,7 +633,7 @@ data will be preserved.
                 cPickle.dump(('scintdx',self.scintdx),ff,-1)
                 cPickle.dump(('scintdy',self.scintdy),ff,-1)
         else:
-            ff = open(self.dumptofile+'_gridcrossing.pkl','a')
+            ff = open(self.dumptofile+'_gridcrossing.pkl','ab')
         suffix = "_%08d"%(top.it)
         cPickle.dump(('time'+suffix,self._time[0]),ff,-1)
         cPickle.dump(('zbeam'+suffix,self._zbeam[0]),ff,-1)
@@ -693,7 +693,7 @@ after simulation when the dumptofile flag was on.
         # --- This reads in everything at the beginning of the file until
         # --- the time data is found, which starts the data section of the
         # --- file.
-        with open(files[0],'r') as ff:
+        with open(files[0],'rb') as ff:
             data = cPickle.load(ff)
             while data[0][0:4] != 'time':
                 setattr(self,data[0],data[1])
@@ -704,7 +704,7 @@ after simulation when the dumptofile flag was on.
         keepdata = 0
         datadict = {}
         for file in files:
-            with open(file,'r') as ff:
+            with open(file,'rb') as ff:
                 while 1:
                     try:
                         tell = ff.tell()
@@ -853,7 +853,7 @@ after simulation when the dumptofile flag was on.
         if file is None:
             file = self.dumptofile+'_gridcrossing.pkl'
 
-        with open(file,'r') as ff:
+        with open(file,'rb') as ff:
             ff.seek(self._scintillator[i])
             data = cPickle.load(ff)
         return data[1]
@@ -2175,7 +2175,7 @@ be unreliable.
     def dodumptofilePickle(self,zbeam):
         if me != 0: return
         if not os.path.exists(self.dumptofile+'_gridcrossing.pkl'):
-            ff = open(self.dumptofile+'_gridcrossing.pkl','w')
+            ff = open(self.dumptofile+'_gridcrossing.pkl','wb')
             # --- Save the input parameters to the file.
             cPickle.dump(('js',self.js),ff,-1)
             cPickle.dump(('zmmin',self.zmmin),ff,-1)
@@ -2206,7 +2206,7 @@ be unreliable.
                 cPickle.dump(('scintdx',self.scintdx),ff,-1)
                 cPickle.dump(('scintdy',self.scintdy),ff,-1)
         else:
-            ff = open(self.dumptofile+'_gridcrossing.pkl','a')
+            ff = open(self.dumptofile+'_gridcrossing.pkl','ab')
         suffix = "_%08d"%(top.it)
         cPickle.dump(('time'+suffix,self._time[0]),ff,-1)
         cPickle.dump(('zbeam'+suffix,self._zbeam[0]),ff,-1)
@@ -2310,7 +2310,7 @@ be unreliable.
         # --- This reads in everything at the beginning of the file until
         # --- the time data is found, which starts the data section of the
         # --- file.
-        with open(files[0],'r') as ff:
+        with open(files[0],'rb') as ff:
             data = cPickle.load(ff)
             while data[0][0:4] != 'time':
                 setattr(self,data[0],data[1])
@@ -2321,7 +2321,7 @@ be unreliable.
         keepdata = 0
         datadict = {}
         for file in files:
-            with open(file,'r') as ff:
+            with open(file,'rb') as ff:
                 while 1:
                     try:
                         tell = ff.tell()
@@ -2411,7 +2411,7 @@ be unreliable.
         if file is None:
             file = self.dumptofile+'_gridcrossing.pkl'
 
-        with open(file,'r') as ff:
+        with open(file,'rb') as ff:
             ff.seek(self._scintillator[i])
             data = cPickle.load(ff)
         return data[1]
