@@ -509,14 +509,14 @@ case(0,1,3) ! Yee stencil on the E push
    ! Lehe stencil on the B push in case 3)
  if (f%sigmae==0.) then
   if(f%nconds>0 .and. .not. f%l_macroscopic) then 
-      call push_em3d_evec_cond(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%J, &
+      call push_em3d_evec_cond(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%Jx,f%Jy,f%Jz, &
                        mudt,dtsdx,dtsdy,dtsdz, &
                        f%nx,f%ny,f%nz, &
                        f%nxguard,f%nyguard,f%nzguard, &
                        f%l_2dxz,f%l_2drz,f%xmin,f%zmin,f%dx,f%dz,f%incond)
   else
    if (f%l_macroscopic) then
-      call push_em3d_evec_macroscopic(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%J, &
+      call push_em3d_evec_macroscopic(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%Jx,f%Jy,f%Jz, &
                        mudt,dtsdx,dtsdy,dtsdz, &
                        f%nx,f%ny,f%nz, &
                        f%nxguard,f%nyguard,f%nzguard, &
@@ -526,7 +526,7 @@ case(0,1,3) ! Yee stencil on the E push
                        f%mux,f%muy,f%muz,f%sigma_method)
    else
     if ((f%norderx==2) .and. (f%nordery==2) .and. (f%norderz==2) .and. .not. f%l_nodalgrid) then
-     call push_em3d_evec(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%J, &
+     call push_em3d_evec(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%Jx,f%Jy,f%Jz, &
                           mudt,dtsdx,dtsdy,dtsdz, &
                           f%nx,f%ny,f%nz, &
                           f%nxguard,f%nyguard,f%nzguard, &
@@ -535,11 +535,11 @@ case(0,1,3) ! Yee stencil on the E push
                           f%dx,f%dy,f%dz,f%clight)
      if (f%circ_m>0) &
        call push_em3d_evec_circ(f%ex_circ,f%ey_circ,f%ez_circ, &
-                                f%bx_circ,f%by_circ,f%bz_circ,f%J_circ, &
+                                f%bx_circ,f%by_circ,f%bz_circ,f%J1_circ,f%J2_circ,f%J3_circ, &
                                 mudt,dtsdx,dtsdz,f%nx,f%nz,f%nxguard,f%nzguard, &
                                 f%xmin,f%zmin,f%dx,f%dz,f%clight,f%circ_m)
     else
-     call push_em3d_evec_norder(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%J, &
+     call push_em3d_evec_norder(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%Jx,f%Jy,f%Jz, &
                           mudt,dtsdx*f%xcoefs,dtsdy*f%ycoefs,dtsdz*f%zcoefs, &
                           f%nx,f%ny,f%nz, &
                           f%norderx,f%nordery,f%norderz, &
@@ -554,7 +554,7 @@ case(0,1,3) ! Yee stencil on the E push
  endif
 
 case(2)  ! Cole-Karkkainen stencil on the E push (Note : Yee stencil on the B push )
-  call push_em3d_kyeevec(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%J, &
+  call push_em3d_kyeevec(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%Jx,f%Jy,f%Jz, &
                          mudt,dtsdx,dtsdy,dtsdz, &
                          f%nx,f%ny,f%nz, &
                          f%nxguard,f%nyguard,f%nzguard,f%E_inz_pos,f%Ex_inz,f%Ey_inz,f%l_2dxz,f%zmin,f%dz)
@@ -5966,11 +5966,11 @@ integer(ISZ):: n,i,it,xl,xr
   call shift_3darray_ncells_x(f%By,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   call shift_3darray_ncells_x(f%Bz,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   do it=1,f%ntimes
-    call shift_3darray_ncells_x(f%Jarray(:,:,:,1,it), &
+    call shift_3darray_ncells_x(f%J1array(:,:,:,it), &
                                     f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-    call shift_3darray_ncells_x(f%Jarray(:,:,:,2,it), &
+    call shift_3darray_ncells_x(f%J2array(:,:,:,it), &
                                     f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-    call shift_3darray_ncells_x(f%Jarray(:,:,:,3,it), &
+    call shift_3darray_ncells_x(f%J3array(:,:,:,it), &
                                     f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   end do
   if (f%nxf>0) then
@@ -6368,7 +6368,7 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
   ! For guards at the lower and upper bound in y, in the Dirichlet case
   if (ylbnd==dirichlet) then
      f%jx(:,f%iymin:f%iymin+f%nyguard,:) = f%jx(:,f%iymin:f%iymin+f%nyguard,:) &
-                                              - f%jx(:,f%iymin:f%iymin-f%nyguard:-1)
+                                              - f%jx(:,f%iymin:f%iymin-f%nyguard:-1,:)
      f%jz(:,f%iymin:f%iymin+f%nyguard,:) = f%jy(:,f%iymin:f%iymin+f%nyguard,:) &
                                               - f%jy(:,f%iymin:f%iymin-f%nyguard:-1,:)
      f%jy(:,f%iymin:f%iymin+f%nyguard-1,:) = f%jz(:,f%iymin:f%iymin+f%nyguard-1,:) + f%jz(:,f%iymin-1:f%iymin-f%nyguard:-1,:)
@@ -8168,13 +8168,13 @@ subroutine em3d_exchange_bndj_x(fl,fu,ibuf)
                 + yfl%Jy(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
            yfu%Jz(-nguardinu:yfu%nxguard,:,:)  = yfu%Jz(-nguardinu:yfu%nxguard,:,:)  &
                 + yfl%Jz(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
-           yfl%Jx(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:,1) = yfu%Jx(-nguardinu:yfu%nxguard-1,:,:,1)
+           yfl%Jx(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:) = yfu%Jx(-nguardinu:yfu%nxguard-1,:,:)
            yfl%Jy(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:) = yfu%Jy(-nguardinu:yfu%nxguard,:,:)
            yfl%Jz(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:) = yfu%Jz(-nguardinu:yfu%nxguard,:,:)
 
            if (yfu%circ_m > 0) then
               yfu%J1_circ(-nguardinu:yfu%nxguard-1,:,:) = yfu%J1_circ(-nguardinu:yfu%nxguard-1,:,:)  &
-                   + yfl%J1_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,1,:) 
+                   + yfl%J1_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:) 
               yfu%J2_circ(-nguardinu:yfu%nxguard,:,:) = yfu%J2_circ(-nguardinu:yfu%nxguard,:,:)  &
                    + yfl%J2_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
               yfu%J3_circ(-nguardinu:yfu%nxguard,:,:) = yfu%J3_circ(-nguardinu:yfu%nxguard,:,:)  &

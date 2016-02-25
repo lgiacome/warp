@@ -1,7 +1,7 @@
 #include "top.h"
 
 subroutine depose_j_n_1dz(jx,jy,jz,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
-                                                 dt,dz,nz,nzguard,noz,l_particles_weight)
+                          dt,dz,nz,nzguard,noz,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nz,nzguard,noz
    real(kind=8), dimension(-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -279,7 +279,8 @@ subroutine depose_j_serial_1d(jx,jy,jz,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
   return
 end subroutine depose_j_serial_1d
 
-subroutine depose_jxjy_esirkepov_linear_serial_2d(jx,jy,jz,np,xp,yp,xpold,ypold,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
+subroutine depose_jxjy_esirkepov_linear_serial_2d(jx,jy,jz,np,xp,yp,xpold,ypold,uzp,gaminv,w,q, &
+                                                     xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nx,ny
    real(kind=8), dimension(-1:nx+1,-1:ny+1), intent(in out) :: jx,jy,jz
@@ -470,11 +471,11 @@ subroutine depose_jxjy_esirkepov_linear_serial_2d(jx,jy,jz,np,xp,yp,xpold,ypold,
         
       
     end do
-    write(0,*) '*** sum j',sum(j(:,:,1)),sum(j(:,:,2)),sum(j(:,:,3))
+    write(0,*) '*** sum j',sum(jx(:,:)),sum(jy(:,:)),sum(jz(:,:))
   return
 end subroutine depose_jxjy_esirkepov_linear_serial_2d
 
-subroutine depose_jxjyjz_esirkepov_n_2d(jx,jy,jz,,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,zmin, &
+subroutine depose_jxjyjz_esirkepov_n_2d(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,zmin, &
                                                  dt,dx,dz,nx,nz,nxguard,nzguard, &
                                                  nox,noz,l_particles_weight,l4symtry,l_2drz,type_rz_depose)
    use Constant, only: clight
@@ -2500,8 +2501,8 @@ subroutine depose_jxjyjz_esirkepov_n(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q
   return
 end subroutine depose_jxjyjz_esirkepov_n
 
-subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,m,xmin,ymin,zmin, &
-                                                 dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight,l_relativ)
+subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q, &
+              m,xmin,ymin,zmin, dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight,l_relativ)
    ! mp is the the kinetic energy density
     use Constant
   implicit none
@@ -2654,8 +2655,8 @@ end subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial
 
 ! THIS SUBROUTINE IS NOT IN EM3D.v file 
 subroutine deposcor_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,bx,by,bz, &
-                                                          np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,m,xmin,ymin,zmin, &
-                                                          dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight,l_relativ)
+                           np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,m,xmin,ymin,zmin, &
+                           dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight,l_relativ)
    ! mp is the the kinetic energy density
     use Constant
   implicit none
@@ -2794,7 +2795,7 @@ subroutine deposcor_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,bx,by,bz, 
           do i = -1, 1
            sdx(i,:,:)  = wx(i,:,:)
            if (i>-1) sdx(i,j,k)=sdx(i,j,k)+sdx(i-1,j,k)
-           total_field_density = (0.5*(cj(iixp0+i,ijxp0+j,ikxp0+k,1)*dt)**2/eps0)*vol
+           total_field_density = (0.5*(jx(iixp0+i,ijxp0+j,ikxp0+k)*dt)**2/eps0)*vol
            thispart_field_density = (0.5*(wq*sdx(i,j,k)*dt)**2/eps0)*vol
            total_kinetic_energy = mp(iixp0+i,ijxp0+j,ikxp0+k,1)
            thispart_kinetic_energy = wp*vx*sdx(i,j,k)
@@ -2817,7 +2818,7 @@ subroutine deposcor_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,bx,by,bz, 
            sdz(i,j,k)  = wz(i,j,k)
            if (k>-1) sdz(i,j,k)=sdz(i,j,k)+sdz(i,j,k-1)
 
-           total_field_density     = (0.5*(cj(iixp0+i,ijxp0+j,ikxp0+k,3)*dt)**2/eps0)*vol
+           total_field_density     = (0.5*(jz(iixp0+i,ijxp0+j,ikxp0+k)*dt)**2/eps0)*vol
 
            thispart_field_density  = (0.5*(wq*sdz(i,j,k)*dt)**2/eps0)*vol
 
@@ -2861,7 +2862,8 @@ subroutine deposcor_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,bx,by,bz, 
   return
 end subroutine deposcor_jxjyjz_pxpypz_esirkepov_linear_serial
 
-subroutine depose_rho_linear_serial(rho,np,xp,yp,zp,w,q,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight)
+subroutine depose_rho_linear_serial(rho,np,xp,yp,zp,w,q,xmin,ymin,zmin, &
+            dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: rho
@@ -5926,7 +5928,11 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
    irapz = 1./rapz
    invrapvol = irapx*irapy*irapz/novercycle
 
-   if(icycle==0) jcoarse(:,:,:,:) = 0.
+   if(icycle==0) then 
+       jxcoarse(:,:,:) = 0.
+       jycoarse(:,:,:) = 0.
+       jzcoarse(:,:,:) = 0.
+    endif
    
    ixmin = -nxguard
    ixmax = nxf+nxguard

@@ -3,7 +3,8 @@ module em2d_depos
 use EM2D_FIELDtypemodule
 contains
 ! THIS SUBROUTINE IS NOT IN EM2d.v file 
-subroutine depose_jxjy_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,xpold,ypold,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
+subroutine depose_jxjy_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,xpold,ypold,uzp,gaminv, &
+           w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nx,ny
    real(kind=8), dimension(-1:nx+2,-1:ny+1), intent(in out) :: jx,jy,jz
@@ -558,7 +559,7 @@ subroutine depose_current_em2d(np,xp,yp,uxp,uyp,uzp,gaminv,w,q,dt,l_particles_we
    ff => fpatchfine
 
    if (l_onegrid) then
-     call depose_jxjy_esirkepov_linear_serial(f%J,np,xp,yp,uxp,uyp,uzp,gaminv, &
+     call depose_jxjy_esirkepov_linear_serial(f%Jx,f%Jy,f%Jz,np,xp,yp,uxp,uyp,uzp,gaminv, &
                                               w,q,f%xmin,f%ymin,dt,f%dx,f%dy, &
                                               f%nx,f%ny,l_particles_weight)
    else
@@ -573,7 +574,7 @@ subroutine depose_current_em2d(np,xp,yp,uxp,uyp,uzp,gaminv,w,q,dt,l_particles_we
        END if
      end do
      if (np-np_inpatch>0) then
-       call depose_jxjy_esirkepov_linear_serial(f%J,np-np_inpatch, &
+       call depose_jxjy_esirkepov_linear_serial(f%Jx,f%Jy,f%Jz,np-np_inpatch, &
                                                 pack(xp,.not. l_inpatch), &
                                                 pack(yp,.not. l_inpatch), &
                                                 pack(uxp,.not. l_inpatch), &
@@ -585,7 +586,7 @@ subroutine depose_current_em2d(np,xp,yp,uxp,uyp,uzp,gaminv,w,q,dt,l_particles_we
                                                 f%dx,f%dy,f%nx,f%ny,l_particles_weight)
      end if
      if (np_inpatch>0) then
-       call depose_jxjy_esirkepov_linear_serial(ff%J,np_inpatch, &
+       call depose_jxjy_esirkepov_linear_serial(f%Jx,f%Jy,f%Jz,np_inpatch, &
                                                 pack(xp,l_inpatch), &
                                                 pack(yp,l_inpatch), &
                                                 pack(uxp,l_inpatch), &
@@ -806,7 +807,8 @@ subroutine em2d_getf2d_linear_serial(np,xp,yp,fx,fy,fz,xmin,ymin,dx,dy,nx,ny,fxg
   return
 end subroutine em2d_getf2d_linear_serial
 
-subroutine em2d_depose_jxjy_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
+subroutine em2d_depose_jxjy_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,uxp,uyp,uzp,gaminv, &
+            w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
   use em2d_depos,Only: depose_jxjy_esirkepov_linear_serial
   integer(ISZ) :: np,nx,ny
   real(kind=8), dimension(-1:nx+2,-1:ny+1), intent(in out) :: jx,jy,jz
@@ -814,12 +816,14 @@ subroutine em2d_depose_jxjy_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,uxp,uyp,uz
   real(kind=8) :: q,dt,dx,dy,xmin,ymin
   logical(ISZ) :: l_particles_weight
 
-  call depose_jxjy_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
+  call depose_jxjy_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,uxp,uyp,uzp,gaminv, &
+            w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
 
   return
 end subroutine em2d_depose_jxjy_esirkepov_linear_serial
 
-subroutine em2d_depose_rho_esirkepov_linear_serial(rho,np,xp,yp,w,q,xmin,ymin,dx,dy,nx,ny,l_particles_weight)
+subroutine em2d_depose_rho_esirkepov_linear_serial(rho,np,xp,yp,w,q, &
+            xmin,ymin,dx,dy,nx,ny,l_particles_weight)
   use em2d_depos,Only: depose_rho_esirkepov_linear_serial
   integer(ISZ) :: np,nx,ny
   real(kind=8), dimension(-1:nx+2,-1:ny+1), intent(in out) :: rho

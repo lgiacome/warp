@@ -1296,7 +1296,7 @@ INTEGER :: which,i,j
         w = REAL(MOD(k,rap))/rap
         do j = 0, nxfin-1
           jg = j/rap
-          jxcoarse(jg,kg, ) = jxcoarse(jg,kg  ) + (1.-w)*jxfin(j,k)*invrapvol
+          jxcoarse(jg,kg  ) = jxcoarse(jg,kg  ) + (1.-w)*jxfin(j,k)*invrapvol
           jxcoarse(jg,kg+1) = jxcoarse(jg,kg+1) +     w *jxfin(j,k)*invrapvol
         end do
       end do
@@ -1839,7 +1839,9 @@ end if
 	f%By = 0.
 	f%Bz = 0.
 	
-	f%J = 0.
+	f%Jx = 0.
+	f%Jy = 0.
+	f%Jz = 0.
 
 	f%Bz_in = 0.
 	f%Ey_in = 0.
