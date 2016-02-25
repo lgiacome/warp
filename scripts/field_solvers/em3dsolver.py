@@ -1002,7 +1002,9 @@ class EM3D(SubcycledPoissonSolver):
         if top.ndts[0]<>1:
             print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
             raise
-        f.J = self.fields.Jarray[:,:,:,:,0]
+        f.Jx = self.fields.J1array[:,:,:,0]
+        f.Jy = self.fields.J2array[:,:,:,0]
+        f.Jz = self.fields.J3array[:,:,:,0]
         f.Rho = self.fields.Rhoarray[:,:,:,0]
 
         for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
@@ -1181,7 +1183,9 @@ class EM3D(SubcycledPoissonSolver):
         if top.ndts[0]<>1:
             print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
             raise
-        f.J = self.fields.Jarray[:,:,:,:,0]
+        f.Jx = self.fields.J1array[:,:,:,0]
+        f.Jy = self.fields.J2array[:,:,:,0]
+        f.Jz = self.fields.J3array[:,:,:,0]
         f.Rho = self.fields.Rhoarray[:,:,:,0]
 
         for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
@@ -1745,7 +1749,9 @@ class EM3D(SubcycledPoissonSolver):
     def setsourcepforparticles(self,isourcepndtscopies,indts,iselfb):
         if self.l_verbose:print 'setsourcepforparticles'
         # --- point J array to proper Jarray slice
-        self.fields.J = self.fields.Jarray[:,:,:,:,indts]
+        self.fields.Jx = self.fields.J1array[:,:,:,indts]
+        self.fields.Jy = self.fields.J2array[:,:,:,indts]
+        self.fields.Jz = self.fields.J3array[:,:,:,indts]
         if self.l_getrho: self.fields.Rho = self.fields.Rhoarray[:,:,:,indts]
 
     def add_source_ndts_slices(self):
@@ -1794,7 +1800,9 @@ class EM3D(SubcycledPoissonSolver):
 
     def apply_current_bc(self,block):
         # --- point J to first slice of Jarray
-        block.core.yf.J = block.core.yf.Jarray[:,:,:,:,0]
+        block.core.yf.Jx = block.core.yf.J1array[:,:,:,0]
+        block.core.yf.Jy = block.core.yf.J2array[:,:,:,0]
+        block.core.yf.Jz = block.core.yf.J3array[:,:,:,0]
         em3d_applybc_j(block.core.yf,
                        block.xlbnd,
                        block.xrbnd,
@@ -1819,11 +1827,11 @@ class EM3D(SubcycledPoissonSolver):
             j1 = self.fields.J1array[0,:,:,0]*0.
             j2 = self.fields.J2array[0,:,:,0]*0.
             j3 = self.fields.J3array[0,:,:,0]*0.
-            for i in range(shape(self.fields.Jarray)[0]):
+            for i in range(shape(self.fields.J1array)[0]):
                 j1+=self.fields.J1array[i,:,:,0]
                 j2+=self.fields.J2array[i,:,:,0]
                 j3+=self.fields.J3array[i,:,:,0]
-            for i in range(shape(self.fields.Jarray)[0]):
+            for i in range(shape(self.fields.J1array)[0]):
                 self.fields.J1array[i,:,:,0]=j1.copy()
                 self.fields.J2array[i,:,:,0]=j2.copy()
                 self.fields.J3array[i,:,:,0]=j3.copy()
@@ -6839,7 +6847,9 @@ def pyinit_3dem_block(nx, ny, nz,
     f.Bx[...] = 0.
     f.By[...] = 0.
     f.Bz[...] = 0.
-    f.Jarray[...] = 0.
+    f.J1array[...] = 0.
+    f.J2array[...] = 0.
+    f.J3array[...] = 0.
     if l_getrho :
         f.Rhoarray[...] = 0.
     if f.circ_m>0:
