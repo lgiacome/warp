@@ -2,10 +2,11 @@
 module em2d_depos
 use EM2D_FIELDtypemodule
 contains
-subroutine depose_jxjy_esirkepov_linear_serial(j,np,xp,yp,xpold,ypold,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
+! THIS SUBROUTINE IS NOT IN EM2d.v file 
+subroutine depose_jxjy_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,xpold,ypold,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nx,ny
-   real(kind=8), dimension(-1:nx+2,-1:ny+1,3), intent(in out) :: j
+   real(kind=8), dimension(-1:nx+2,-1:ny+1), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,yp,xpold,ypold,uzp,gaminv,w
    real(kind=8) :: q,dt,dx,dy,xmin,ymin
    logical(ISZ) :: l_particles_weight
@@ -147,25 +148,25 @@ subroutine depose_jxjy_esirkepov_linear_serial(j,np,xp,yp,xpold,ypold,uzp,gaminv
         sd(15) = wy(4,2)+sd(12)
         sd(18) = wy(4,4)+sd(15)
 
-        j(iixp0,  ijxp0  ,1)=j(iixp0  ,ijxp0  ,1)-sd(1)
-        j(iixp0+1,ijxp0  ,1)=j(iixp0+1,ijxp0  ,1)-sd(2)
-        j(iixp0+2,ijxp0  ,1)=j(iixp0+2,ijxp0  ,1)-sd(3)
-        j(iixp0,  ijxp0+1,1)=j(iixp0  ,ijxp0+1,1)-sd(4)
-        j(iixp0+1,ijxp0+1,1)=j(iixp0+1,ijxp0+1,1)-sd(5)
-        j(iixp0+2,ijxp0+1,1)=j(iixp0+2,ijxp0+1,1)-sd(6)
-        j(iixp0,  ijxp0+2,1)=j(iixp0  ,ijxp0+2,1)-sd(7)
-        j(iixp0+1,ijxp0+2,1)=j(iixp0+1,ijxp0+2,1)-sd(8)
-        j(iixp0+2,ijxp0+2,1)=j(iixp0+2,ijxp0+2,1)-sd(9)
+        jx(iixp0,  ijxp0  )=jx(iixp0  ,ijxp0  )-sd(1)
+        jx(iixp0+1,ijxp0  )=jx(iixp0+1,ijxp0  )-sd(2)
+        jx(iixp0+2,ijxp0  )=jx(iixp0+2,ijxp0  )-sd(3)
+        jx(iixp0,  ijxp0+1)=jx(iixp0  ,ijxp0+1)-sd(4)
+        jx(iixp0+1,ijxp0+1)=jx(iixp0+1,ijxp0+1)-sd(5)
+        jx(iixp0+2,ijxp0+1)=jx(iixp0+2,ijxp0+1)-sd(6)
+        jx(iixp0,  ijxp0+2)=jx(iixp0  ,ijxp0+2)-sd(7)
+        jx(iixp0+1,ijxp0+2)=jx(iixp0+1,ijxp0+2)-sd(8)
+        jx(iixp0+2,ijxp0+2)=jx(iixp0+2,ijxp0+2)-sd(9)
             
-        j(iixp0,  ijxp0  ,2)=j(iixp0  ,ijxp0  ,2)-sd(10)
-        j(iixp0+1,ijxp0  ,2)=j(iixp0+1,ijxp0  ,2)-sd(11)
-        j(iixp0+2,ijxp0  ,2)=j(iixp0+2,ijxp0  ,2)-sd(12)
-        j(iixp0,  ijxp0+1,2)=j(iixp0  ,ijxp0+1,2)-sd(13)
-        j(iixp0+1,ijxp0+1,2)=j(iixp0+1,ijxp0+1,2)-sd(14)
-        j(iixp0+2,ijxp0+1,2)=j(iixp0+2,ijxp0+1,2)-sd(15)
-        j(iixp0,  ijxp0+2,2)=j(iixp0  ,ijxp0+2,2)-sd(16)
-        j(iixp0+1,ijxp0+2,2)=j(iixp0+1,ijxp0+2,2)-sd(17)
-        j(iixp0+2,ijxp0+2,2)=j(iixp0+2,ijxp0+2,2)-sd(18)
+        jy(iixp0,  ijxp0  )=jy(iixp0  ,ijxp0  )-sd(10)
+        jy(iixp0+1,ijxp0  )=jy(iixp0+1,ijxp0  )-sd(11)
+        jy(iixp0+2,ijxp0  )=jy(iixp0+2,ijxp0  )-sd(12)
+        jy(iixp0,  ijxp0+1)=jy(iixp0  ,ijxp0+1)-sd(13)
+        jy(iixp0+1,ijxp0+1)=jy(iixp0+1,ijxp0+1)-sd(14)
+        jy(iixp0+2,ijxp0+1)=jy(iixp0+2,ijxp0+1)-sd(15)
+        jy(iixp0,  ijxp0+2)=jy(iixp0  ,ijxp0+2)-sd(16)
+        jy(iixp0+1,ijxp0+2)=jy(iixp0+1,ijxp0+2)-sd(17)
+        jy(iixp0+2,ijxp0+2)=jy(iixp0+2,ijxp0+2)-sd(18)
       
         ! Esirkepov deposition of Jx and Jy is over; now starts linear deposition of Jz
 !        xmid=x-dts2dx*vx
@@ -194,10 +195,10 @@ subroutine depose_jxjy_esirkepov_linear_serial(j,np,xp,yp,xpold,ypold,uzp,gaminv
         s1y = 1.-yint
         s2y = yint
 
-        j(iixp  ,ijxp  ,3)=j(iixp  ,ijxp  ,3)+s1x*s1y*wq
-        j(iixp+1,ijxp  ,3)=j(iixp+1,ijxp  ,3)+s2x*s1y*wq
-        j(iixp  ,ijxp+1,3)=j(iixp  ,ijxp+1,3)+s1x*s2y*wq
-        j(iixp+1,ijxp+1,3)=j(iixp+1,ijxp+1,3)+s2x*s2y*wq
+        jz(iixp  ,ijxp  )=jz(iixp  ,ijxp  )+s1x*s1y*wq
+        jz(iixp+1,ijxp  )=jz(iixp+1,ijxp  )+s2x*s1y*wq
+        jz(iixp  ,ijxp+1)=jz(iixp  ,ijxp+1)+s1x*s2y*wq
+        jz(iixp+1,ijxp+1)=jz(iixp+1,ijxp+1)+s2x*s2y*wq
         
       
     end do
@@ -205,11 +206,12 @@ subroutine depose_jxjy_esirkepov_linear_serial(j,np,xp,yp,xpold,ypold,uzp,gaminv
   return
 end subroutine depose_jxjy_esirkepov_linear_serial
 
-subroutine depose_jxjy_esirkepov_n_serial(cj,np,xp,yp,xpold,ypold,uzp,gaminv,w,q,xmin,ymin, &
+! THIS SUBROUTINE IS NOT IN EM2d.v file 
+subroutine depose_jxjy_esirkepov_n_serial(jx,jy,jz,np,xp,yp,xpold,ypold,uzp,gaminv,w,q,xmin,ymin, &
                                                  dt,dx,dy,nx,ny,nox,noy,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nx,ny,nox,noy
-   real(kind=8), dimension(-1:nx+1,-1:ny+1,3), intent(in out) :: cj
+   real(kind=8), dimension(-1:nx+1,-1:ny+1), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,yp,xpold,ypold,uzp,gaminv,w
    real(kind=8) :: q,dt,dx,dy,xmin,ymin
    logical(ISZ) :: l_particles_weight
@@ -333,13 +335,13 @@ subroutine depose_jxjy_esirkepov_n_serial(cj,np,xp,yp,xpold,ypold,uzp,gaminv,w,q
         do i = -nox, nox
           sdx(i,:)  = wx(i,:)
           if (i>-1) sdx(i,:)=sdx(i,:)+sdx(i-1,:)
-          cj(iixp0+i,ijxp0-1:ijxp0+2,1) = cj(iixp0+i,ijxp0-1:ijxp0+2,1)+sdx(i,:)
+          jx(iixp0+i,ijxp0-1:ijxp0+2) = jx(iixp0+i,ijxp0-1:ijxp0+2)+sdx(i,:)
         end do        
 
         do j = -noy, noy
           sdy(:,j)  = wy(:,j)
           if (j>-1) sdy(:,j)=sdy(:,j)+sdy(:,j-1)
-          cj(iixp0-1:iixp0+2,ijxp0+j,2) = cj(iixp0-1:iixp0+2,ijxp0+j,2)+sdy(:,j)
+          jy(iixp0-1:iixp0+2,ijxp0+j) = jy(iixp0-1:iixp0+2,ijxp0+j)+sdy(:,j)
         end do        
 
      
@@ -384,7 +386,7 @@ subroutine depose_jxjy_esirkepov_n_serial(cj,np,xp,yp,xpold,ypold,uzp,gaminv,w,q
 
         do j = -noy+1,noy
           do i = -nox+1,nox
-            cj(iixp+i  ,ijxp+j  ,3)=cj(iixp+i  ,ijxp+j  ,3)+sx0(j)*sy0(k)*wq
+            jz(iixp+i  ,ijxp+j  )=jz(iixp+i  ,ijxp+j  )+sx0(j)*sy0(k)*wq
           end do
         end do
         
@@ -394,7 +396,7 @@ subroutine depose_jxjy_esirkepov_n_serial(cj,np,xp,yp,xpold,ypold,uzp,gaminv,w,q
 end subroutine depose_jxjy_esirkepov_n_serial
 
 
-
+! THIS SUBROUTINE IS NOT IN EM2d.v file 
 subroutine depose_rho_esirkepov_linear_serial(rho,np,xp,yp,w,q,xmin,ymin,dx,dy,nx,ny,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nx,ny
@@ -443,6 +445,8 @@ subroutine depose_rho_esirkepov_linear_serial(rho,np,xp,yp,w,q,xmin,ymin,dx,dy,n
 
   return
 end subroutine depose_rho_esirkepov_linear_serial
+
+! THIS SUBROUTINE IS NOT IN EM2d.v file 
 subroutine geteb2d_linear_serial(np,xp,yp,ex,ey,ez,bx,by,bz,xmin,ymin,dx,dy,nx,ny,exg,eyg,ezg,bxg,byg,bzg)
    
       integer(ISZ) :: np,nx,ny
@@ -489,6 +493,7 @@ subroutine geteb2d_linear_serial(np,xp,yp,ex,ey,ez,bx,by,bz,xmin,ymin,dx,dy,nx,n
    return
  end subroutine geteb2d_linear_serial
  
+ ! THIS SUBROUTINE IS NOT IN EM2d.v file 
  subroutine getf2d_linear_serial(np,xp,yp,fx,fy,fz,xmin,ymin,dx,dy,nx,ny,fxg,fyg,fzg)
    
       integer(ISZ) :: np,nx,ny
@@ -532,6 +537,7 @@ subroutine geteb2d_linear_serial(np,xp,yp,ex,ey,ez,bx,by,bz,xmin,ymin,dx,dy,nx,n
  end subroutine getf2d_linear_serial
 end module em2d_depos
 
+! THIS SUBROUTINE IS NOT IN EM2d.v file 
 subroutine depose_current_em2d(np,xp,yp,uxp,uyp,uzp,gaminv,w,q,dt,l_particles_weight,field,fpatchfine)
    use EM2D_FIELDtypemodule
    use EM2D_FIELDobjects
@@ -593,6 +599,7 @@ subroutine depose_current_em2d(np,xp,yp,uxp,uyp,uzp,gaminv,w,q,dt,l_particles_we
    endif
 end subroutine depose_current_em2d
 
+! THIS SUBROUTINE IS NOT IN EM2d.v file 
 subroutine geteb_em2d(np,xp,yp,ex,ey,ez,bx,by,bz,field,fpatchfine)
    use EM2D_FIELDtypemodule
    use EM2D_FIELDobjects
@@ -799,15 +806,15 @@ subroutine em2d_getf2d_linear_serial(np,xp,yp,fx,fy,fz,xmin,ymin,dx,dy,nx,ny,fxg
   return
 end subroutine em2d_getf2d_linear_serial
 
-subroutine em2d_depose_jxjy_esirkepov_linear_serial(j,np,xp,yp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
+subroutine em2d_depose_jxjy_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
   use em2d_depos,Only: depose_jxjy_esirkepov_linear_serial
   integer(ISZ) :: np,nx,ny
-  real(kind=8), dimension(-1:nx+2,-1:ny+1,3), intent(in out) :: j
+  real(kind=8), dimension(-1:nx+2,-1:ny+1), intent(in out) :: jx,jy,jz
   real(kind=8), dimension(np) :: xp,yp,uxp,uyp,uzp,gaminv,w
   real(kind=8) :: q,dt,dx,dy,xmin,ymin
   logical(ISZ) :: l_particles_weight
 
-  call depose_jxjy_esirkepov_linear_serial(j,np,xp,yp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
+  call depose_jxjy_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
 
   return
 end subroutine em2d_depose_jxjy_esirkepov_linear_serial
@@ -824,6 +831,7 @@ subroutine em2d_depose_rho_esirkepov_linear_serial(rho,np,xp,yp,w,q,xmin,ymin,dx
 
   return
 end subroutine em2d_depose_rho_esirkepov_linear_serial
+
 
 subroutine smooth2d_lindman(q,nx,ny)
  implicit none
@@ -896,6 +904,7 @@ subroutine smooth2d_lindman(q,nx,ny)
 
       return
       end subroutine smooth2d_lindman
+
 
 subroutine smooth2d_121(q,nx,ny)
  implicit none

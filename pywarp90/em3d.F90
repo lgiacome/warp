@@ -1,10 +1,10 @@
 #include "top.h"
 
-subroutine depose_j_n_1dz(CJ,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
+subroutine depose_j_n_1dz(jx,jy,jz,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
                                                  dt,dz,nz,nzguard,noz,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nz,nzguard,noz
-   real(kind=8), dimension(-nzguard:nz+nzguard,3), intent(in out) :: CJ
+   real(kind=8), dimension(-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,dt,dz,zmin
    logical(ISZ) :: l_particles_weight
@@ -128,13 +128,13 @@ subroutine depose_j_n_1dz(CJ,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
         izmax = max(0,diz)+int((noz+1)/2)
 
         do k=izmin, izmax
-          cj(ikxp0+k,1) = cj(ikxp0+k,1) + wq*vx*invvol*( sz0(k)+0.5*dsz(k) )
-          cj(ikxp0+k,2) = cj(ikxp0+k,2) + wq*vy*invvol*( sz0(k)+0.5*dsz(k) )
+          jx(ikxp0+k) = jx(ikxp0+k) + wq*vx*invvol*( sz0(k)+0.5*dsz(k) )
+          jy(ikxp0+k) = jy(ikxp0+k) + wq*vy*invvol*( sz0(k)+0.5*dsz(k) )
         end do        
         do k=izmin, izmax-1
           sdz(k)  = wqz*dsz(k)
           if (k>izmin) sdz(k)=sdz(k)+sdz(k-1)
-          cj(ikxp0+k,3) = cj(ikxp0+k,3)+sdz(k)
+          jz(ikxp0+k) = jz(ikxp0+k)+sdz(k)
         end do        
 
         ! Esirkepov deposition of Jz is over; now starts linear deposition of Jx and Jy
@@ -176,8 +176,8 @@ subroutine depose_j_n_1dz(CJ,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
 !        izmin = -int(noz/2)
 !        izmax = int((noz+1)/2)
 !        do k=izmin, izmax
-!          cj(ikxp+k,1) = cj(ikxp+k,1)+sz(k)*wqx
-!          cj(ikxp+k,2) = cj(ikxp+k,2)+sz(k)*wqy
+!          jx(ikxp+k) = jx(ikxp+k)+sz(k)*wqx
+!          jy(ikxp+k) = jy(ikxp+k)+sz(k)*wqy
 !        end do
         
     end do
@@ -185,11 +185,12 @@ subroutine depose_j_n_1dz(CJ,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
   return
 end subroutine depose_j_n_1dz
 
-subroutine depose_j_serial_1d(CJ,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
+! THIS SUBROUTINE IS NOT IN EM3D.v file 
+subroutine depose_j_serial_1d(jx,jy,jz,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
                                                  dt,dz,nz,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nz
-   real(kind=8), dimension(-1:nz+1,3), intent(in out) :: CJ
+   real(kind=8), dimension(-1:nz+1), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,dt,dz,zmin
    logical(ISZ) :: l_particles_weight
@@ -252,7 +253,7 @@ subroutine depose_j_serial_1d(CJ,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
         do k = -1, 1
           sdz(k)  = wqz*dsz(k)
           if (k>-1) sdz(k)=sdz(k)+sdz(k-1)
-          cj(ikxp0+K,3) = cj(ikxp0+k,3)+sdz(k)
+          jz(ikxp0+K) = jz(ikxp0+k)+sdz(k)
         end do        
 
         ! Esirkepov deposition of Jz is over; now starts linear deposition of Jx and Jy
@@ -268,20 +269,20 @@ subroutine depose_j_serial_1d(CJ,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
         s1z = 1.-zint
         s2z = zint
 
-        cj(ikxp  ,1)=cj(ikxp  ,1)+s1z*wqx
-        cj(ikxp+1,1)=cj(ikxp+1,1)+s2z*wqx
-        cj(ikxp  ,2)=cj(ikxp  ,2)+s1z*wqy
-        cj(ikxp+1,2)=cj(ikxp+1,2)+s2z*wqy
+        jx(ikxp  )=jx(ikxp  )+s1z*wqx
+        jx(ikxp+1)=jx(ikxp+1)+s2z*wqx
+        jy(ikxp  )=jy(ikxp  )+s1z*wqy
+        jy(ikxp+1)=jy(ikxp+1)+s2z*wqy
         
     end do
 
   return
 end subroutine depose_j_serial_1d
 
-subroutine depose_jxjy_esirkepov_linear_serial_2d(j,np,xp,yp,xpold,ypold,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
+subroutine depose_jxjy_esirkepov_linear_serial_2d(jx,jy,jz,np,xp,yp,xpold,ypold,uzp,gaminv,w,q,xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nx,ny
-   real(kind=8), dimension(-1:nx+1,-1:ny+1,3), intent(in out) :: j
+   real(kind=8), dimension(-1:nx+1,-1:ny+1), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,yp,xpold,ypold,uzp,gaminv,w
    real(kind=8) :: q,dt,dx,dy,xmin,ymin
    logical(ISZ) :: l_particles_weight
@@ -427,25 +428,25 @@ subroutine depose_jxjy_esirkepov_linear_serial_2d(j,np,xp,yp,xpold,ypold,uzp,gam
         sd(15) = wy(4,2)+sd(12)
         sd(18) = wy(4,4)+sd(15)
 
-        j(iixp0,  ijxp0  ,1)=j(iixp0  ,ijxp0  ,1)-sd(1)
-        j(iixp0+1,ijxp0  ,1)=j(iixp0+1,ijxp0  ,1)-sd(2)
-        j(iixp0+2,ijxp0  ,1)=j(iixp0+2,ijxp0  ,1)-sd(3)
-        j(iixp0,  ijxp0+1,1)=j(iixp0  ,ijxp0+1,1)-sd(4)
-        j(iixp0+1,ijxp0+1,1)=j(iixp0+1,ijxp0+1,1)-sd(5)
-        j(iixp0+2,ijxp0+1,1)=j(iixp0+2,ijxp0+1,1)-sd(6)
-        j(iixp0,  ijxp0+2,1)=j(iixp0  ,ijxp0+2,1)-sd(7)
-        j(iixp0+1,ijxp0+2,1)=j(iixp0+1,ijxp0+2,1)-sd(8)
-        j(iixp0+2,ijxp0+2,1)=j(iixp0+2,ijxp0+2,1)-sd(9)
+        jx(iixp0,  ijxp0  )=jx(iixp0  ,ijxp0  )-sd(1)
+        jx(iixp0+1,ijxp0  )=jx(iixp0+1,ijxp0  )-sd(2)
+        jx(iixp0+2,ijxp0  )=jx(iixp0+2,ijxp0  )-sd(3)
+        jx(iixp0,  ijxp0+1)=jx(iixp0  ,ijxp0+1)-sd(4)
+        jx(iixp0+1,ijxp0+1)=jx(iixp0+1,ijxp0+1)-sd(5)
+        jx(iixp0+2,ijxp0+1)=jx(iixp0+2,ijxp0+1)-sd(6)
+        jx(iixp0,  ijxp0+2)=jx(iixp0  ,ijxp0+2)-sd(7)
+        jx(iixp0+1,ijxp0+2)=jx(iixp0+1,ijxp0+2)-sd(8)
+        jx(iixp0+2,ijxp0+2)=jx(iixp0+2,ijxp0+2)-sd(9)
             
-        j(iixp0,  ijxp0  ,3)=j(iixp0  ,ijxp0  ,3)-sd(10)
-        j(iixp0+1,ijxp0  ,3)=j(iixp0+1,ijxp0  ,3)-sd(11)
-        j(iixp0+2,ijxp0  ,3)=j(iixp0+2,ijxp0  ,3)-sd(12)
-        j(iixp0,  ijxp0+1,3)=j(iixp0  ,ijxp0+1,3)-sd(13)
-        j(iixp0+1,ijxp0+1,3)=j(iixp0+1,ijxp0+1,3)-sd(14)
-        j(iixp0+2,ijxp0+1,3)=j(iixp0+2,ijxp0+1,3)-sd(15)
-        j(iixp0,  ijxp0+2,3)=j(iixp0  ,ijxp0+2,3)-sd(16)
-        j(iixp0+1,ijxp0+2,3)=j(iixp0+1,ijxp0+2,3)-sd(17)
-        j(iixp0+2,ijxp0+2,3)=j(iixp0+2,ijxp0+2,3)-sd(18)
+        jz(iixp0,  ijxp0  )=jz(iixp0  ,ijxp0  )-sd(10)
+        jz(iixp0+1,ijxp0  )=jz(iixp0+1,ijxp0  )-sd(11)
+        jz(iixp0+2,ijxp0  )=jz(iixp0+2,ijxp0  )-sd(12)
+        jz(iixp0,  ijxp0+1)=jz(iixp0  ,ijxp0+1)-sd(13)
+        jz(iixp0+1,ijxp0+1)=jz(iixp0+1,ijxp0+1)-sd(14)
+        jz(iixp0+2,ijxp0+1)=jz(iixp0+2,ijxp0+1)-sd(15)
+        jz(iixp0,  ijxp0+2)=jz(iixp0  ,ijxp0+2)-sd(16)
+        jz(iixp0+1,ijxp0+2)=jz(iixp0+1,ijxp0+2)-sd(17)
+        jz(iixp0+2,ijxp0+2)=jz(iixp0+2,ijxp0+2)-sd(18)
       
         ! Esirkepov deposition of Jx and Jz is over; now starts linear deposition of Jy
         wq = wq*vz*invsurf
@@ -462,10 +463,10 @@ subroutine depose_jxjy_esirkepov_linear_serial_2d(j,np,xp,yp,xpold,ypold,uzp,gam
         s1y = 1.-yint
         s2y = yint
 
-        j(iixp  ,ijxp  ,2)=j(iixp  ,ijxp  ,2)+s1x*s1y*wq
-        j(iixp+1,ijxp  ,2)=j(iixp+1,ijxp  ,2)+s2x*s1y*wq
-        j(iixp  ,ijxp+1,2)=j(iixp  ,ijxp+1,2)+s1x*s2y*wq
-        j(iixp+1,ijxp+1,2)=j(iixp+1,ijxp+1,2)+s2x*s2y*wq
+        jy(iixp  ,ijxp  )=jy(iixp  ,ijxp  )+s1x*s1y*wq
+        jy(iixp+1,ijxp  )=jy(iixp+1,ijxp  )+s2x*s1y*wq
+        jy(iixp  ,ijxp+1)=jy(iixp  ,ijxp+1)+s1x*s2y*wq
+        jy(iixp+1,ijxp+1)=jy(iixp+1,ijxp+1)+s2x*s2y*wq
         
       
     end do
@@ -473,13 +474,13 @@ subroutine depose_jxjy_esirkepov_linear_serial_2d(j,np,xp,yp,xpold,ypold,uzp,gam
   return
 end subroutine depose_jxjy_esirkepov_linear_serial_2d
 
-subroutine depose_jxjyjz_esirkepov_n_2d(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,zmin, &
+subroutine depose_jxjyjz_esirkepov_n_2d(jx,jy,jz,,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,zmin, &
                                                  dt,dx,dz,nx,nz,nxguard,nzguard, &
                                                  nox,noz,l_particles_weight,l4symtry,l_2drz,type_rz_depose)
    use Constant, only: clight
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard,type_rz_depose
-   real(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard,3), intent(in out) :: cj
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,yp,zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,dt,dx,dz,xmin,zmin
    logical(ISZ) :: l_particles_weight,l4symtry,l_2drz
@@ -761,18 +762,18 @@ subroutine depose_jxjyjz_esirkepov_n_2d(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xm
               if(i<ixmax) then
                  sdx(i,k)  = wqx*dsx(i)*( sz0(k) + 0.5*dsz(k) )    ! Wx coefficient from esirkepov
                  if (i>ixmin) sdx(i,k)=sdx(i,k)+sdx(i-1,k)         ! Integration of Wx along x
-                 cj(ic,kc,1) = cj(ic,kc,1) + sdx(i,k)              ! Deposition on the current
+                 jx(ic,kc) = jx(ic,kc) + sdx(i,k)              ! Deposition on the current
               end if
               
               ! -- Jy (2D Esirkepov scheme)
-              cj(ic,kc,2) = cj(ic,kc,2) + wq*vy*invvol/ncells* &
+              jy(ic,kc) = jy(ic,kc) + wq*vy*invvol/ncells* &
                    ( (sz0(k)+0.5*dsz(k))*sx0(i) + (0.5*sz0(k)+1./3.*dsz(k))*dsx(i) )
 
               ! -- Jz
               if(k<izmax) then
                  sdz(i,k)  = wqz*dsz(k)*(sx0(i)+0.5*dsx(i))        ! Wz coefficient from esirkepov
                  if (k>izmin) sdz(i,k)=sdz(i,k)+sdz(i,k-1)         ! Integration of Wz along z
-                 cj(ic,kc,3) = cj(ic,kc,3) + sdz(i,k)              ! Deposition on the current
+                 jz(ic,kc) = jz(ic,kc) + sdz(i,k)              ! Deposition on the current
                  
               end if
            end do
@@ -787,13 +788,13 @@ subroutine depose_jxjyjz_esirkepov_n_2d(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xm
   return
 end subroutine depose_jxjyjz_esirkepov_n_2d
 
-subroutine depose_jxjyjz_esirkepov_n_2d_circ(cj,cj_circ,circ_m,np,xp,yp,zp,uxp,uyp,uzp,gaminv, &
+subroutine depose_jxjyjz_esirkepov_n_2d_circ(jx,jy,jz,jx_circ,jy_circ,jz_circ,circ_m,np,xp,yp,zp,uxp,uyp,uzp,gaminv, &
      w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz,l_particles_weight,type_rz_depose)
    use Constant, only: clight
   implicit none
   integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard,circ_m,type_rz_depose
-  real(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard,3), intent(in out) :: cj
-  complex(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard,3,circ_m), intent(in out) :: cj_circ
+  real(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
+  complex(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard,circ_m), intent(in out) :: jx_circ,jy_circ,jz_circ
   real(kind=8), dimension(np) :: xp,yp,zp,uxp,uyp,uzp,gaminv,w
   real(kind=8) :: q,dt,dx,dz,xmin,zmin
   logical(ISZ) :: l_particles_weight
@@ -1095,10 +1096,10 @@ subroutine depose_jxjyjz_esirkepov_n_2d_circ(cj,cj_circ,circ_m,np,xp,yp,zp,uxp,u
               if(i<ixmax) then
                  sdx(i,k)  = wqx*dsx(i)*( sz0(k) + 0.5*dsz(k) )    ! Wr coefficient from esirkepov
                  if (i>ixmin) sdx(i,k)=sdx(i,k)+sdx(i-1,k)         ! Integration of Wr along r
-                 cj(ic,kc,1) = cj(ic,kc,1) + sdx(i,k)              ! Deposition on the mode m = 0
+                 jx(ic,kc) = jx(ic,kc) + sdx(i,k)              ! Deposition on the mode m = 0
                  xymid = xymid0 ! Throughout the following loop, xymid takes the value e^{i m theta}
                  do m = 1, circ_m                                  ! Deposition on the modes m>0
-                    cj_circ(ic,kc,1,m) = cj_circ(ic,kc,1,m) + 2.*sdx(i,k)*xymid
+                    jx_circ(ic,kc,m) = jx_circ(ic,kc,m) + 2.*sdx(i,k)*xymid
                     ! The factor 2 comes from the normalization of the modes
                     xymid = xymid*xymid0
                  enddo
@@ -1106,13 +1107,13 @@ subroutine depose_jxjyjz_esirkepov_n_2d_circ(cj,cj_circ,circ_m,np,xp,yp,zp,uxp,u
 
               ! -- Jtheta
               ! Mode m = 0 : similar to the 2D Esirkepov scheme
-              cj(ic,kc,2) = cj(ic,kc,2) + wq*vy*invvol/ncells* &
+              jy(ic,kc) = jy(ic,kc) + wq*vy*invvol/ncells* &
                    ( (sz0(k)+0.5*dsz(k))*sx0(i) + (0.5*sz0(k)+1./3.*dsz(k))*dsx(i) )
               ! Mode m > 0 : see Davidson et al. JCP 281 (2014)
               xy = xy0 ; xymid = xymid0 ; xyold = xyold0
               ! Throughout the following loop, xy_ takes the value e^{i m theta_}
               do m = 1, circ_m
-                 cj_circ(ic,kc,2,m) = cj_circ(ic,kc,2,m) - 2*im*(ic+xmin*dxi)*wqt(m) * &
+                 jy_circ(ic,kc,m) = jy_circ(ic,kc,m) - 2*im*(ic+xmin*dxi)*wqt(m) * &
                       ( sx0(i)*sz0(k)*(xy-xymid) + sx(i)*sz(k)*(xymid-xyold) )
                  ! The factor 2 comes from the normalization of the modes
                  ! The minus sign comes from the different convention with respect to Davidson et al.
@@ -1123,10 +1124,10 @@ subroutine depose_jxjyjz_esirkepov_n_2d_circ(cj,cj_circ,circ_m,np,xp,yp,zp,uxp,u
               if(k<izmax) then
                  sdz(i,k)  = wqz*dsz(k)*(sx0(i)+0.5*dsx(i))        ! Wz coefficient from esirkepov
                  if (k>izmin) sdz(i,k)=sdz(i,k)+sdz(i,k-1)         ! Integration of Wz along z
-                 cj(ic,kc,3) = cj(ic,kc,3) + sdz(i,k)              ! Deposition on the mode m=0
+                 jz(ic,kc) = jz(ic,kc) + sdz(i,k)              ! Deposition on the mode m=0
                  xymid = xymid0 ! Throughout the following loop, xymid takes the value e^{i m theta}
                  do m = 1, circ_m                                  ! Deposition on the modes m>0
-                    cj_circ(ic,kc,3,m) = cj_circ(ic,kc,3,m) + 2.*sdz(i,k)*xymid
+                    jz_circ(ic,kc,m) = jz_circ(ic,kc,m) + 2.*sdz(i,k)*xymid
                     ! The factor 2 comes from the normalization of the modes
                     xymid = xymid*xymid0
                  enddo
@@ -1143,12 +1144,12 @@ subroutine depose_jxjyjz_esirkepov_n_2d_circ(cj,cj_circ,circ_m,np,xp,yp,zp,uxp,u
   return
 end subroutine depose_jxjyjz_esirkepov_n_2d_circ
 
-subroutine depose_jxjyjz_villasenor_n_2d(cj,np,xp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,zmin, &
+subroutine depose_jxjyjz_villasenor_n_2d(jx,jy,jz,np,xp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,zmin, &
                                                  dt,dx,dz,nx,nz,nxguard,nzguard, &
                                                  nox,noz,l_particles_weight,l4symtry)
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard,3), intent(in out) :: cj
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,dt,dx,dz,xmin,zmin
    logical(ISZ) :: l_particles_weight,l4symtry
@@ -1288,10 +1289,10 @@ subroutine depose_jxjyjz_villasenor_n_2d(cj,np,xp,zp,uxp,uyp,uzp,gaminv,w,q,xmin
 
         write(0,*) jn,ln,curx,curz,xmoy,zmoy,interx,interz,length
 
-        cj (jn,  ln,  1) = cj (jn  ,ln  ,1) + curx * (1. - zmoy)
-        cj (jn,  ln+1,1) = cj (jn  ,ln+1,1) + curx * zmoy
-        cj (jn,  ln,  3) = cj (jn  ,ln  ,3) + curz * (1. - xmoy)
-        cj (jn+1,ln,  3) = cj (jn+1,ln  ,3) + curz * xmoy
+        jx (jn,  ln  ) = jx (jn  ,ln  ) + curx * (1. - zmoy)
+        jx (jn,  ln+1) = jx (jn  ,ln+1) + curx * zmoy
+        jz (jn,  ln  ) = jz (jn  ,ln  ) + curz * (1. - xmoy)
+        jz (jn+1,ln  ) = jz (jn+1,ln  ) + curz * xmoy
 
         if (interx/=0 .or. interz/=0) then
           x1 = x2
@@ -1312,11 +1313,12 @@ subroutine depose_jxjyjz_villasenor_n_2d(cj,np,xp,zp,uxp,uyp,uzp,gaminv,w,q,xmin
   return
 end subroutine depose_jxjyjz_villasenor_n_2d
 
-subroutine depose_jxjyjz_esirkepov_linear_serialold(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
+! THIS SUBROUTINE IS NOT IN EM3D.v file 
+subroutine depose_jxjyjz_esirkepov_linear_serialold(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight)
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3), intent(in out) :: cj
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) ::jx,jy,jz
    real(kind=8), dimension(np) :: xp,yp,zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,dt,dx,dy,dz,xmin,ymin,zmin
    logical(ISZ) :: l_particles_weight
@@ -1429,22 +1431,22 @@ subroutine depose_jxjyjz_esirkepov_linear_serialold(cj,np,xp,yp,zp,uxp,uyp,uzp,g
         do i = ixmin, ixmax
           sdx(i,:,:)  = wx(i,:,:)
           if (i>ixmin) sdx(i,:,:)=sdx(i,:,:)+sdx(i-1,:,:)
-          cj(iixp0+i,ijxp0+iymin:ijxp0+iymax+1,ikxp0+izmin:ikxp0+izmax+1,1) = &
-          cj(iixp0+i,ijxp0+iymin:ijxp0+iymax+1,ikxp0+izmin:ikxp0+izmax+1,1) + sdx(i,iymin:iymax+1,izmin:izmax+1)
+          jx(iixp0+i,ijxp0+iymin:ijxp0+iymax+1,ikxp0+izmin:ikxp0+izmax+1) = &
+          jx(iixp0+i,ijxp0+iymin:ijxp0+iymax+1,ikxp0+izmin:ikxp0+izmax+1) + sdx(i,iymin:iymax+1,izmin:izmax+1)
         end do        
         
         do j = iymin, iymax
           sdy(:,j,:)  = wy(:,j,:)
           if (j>iymin) sdy(:,j,:)=sdy(:,j,:)+sdy(:,j-1,:)
-          cj(iixp0+ixmin:iixp0+ixmax+1,ijxp0+j,ikxp0+izmin:ikxp0+izmax+1,2) = &
-          cj(iixp0+ixmin:iixp0+ixmax+1,ijxp0+j,ikxp0+izmin:ikxp0+izmax+1,2) + sdy(ixmin:ixmax+1,j,izmin:izmax+1)
+          jy(iixp0+ixmin:iixp0+ixmax+1,ijxp0+j,ikxp0+izmin:ikxp0+izmax+1) = &
+          jy(iixp0+ixmin:iixp0+ixmax+1,ijxp0+j,ikxp0+izmin:ikxp0+izmax+1) + sdy(ixmin:ixmax+1,j,izmin:izmax+1)
         end do        
 
         do k = izmin, izmax
           sdz(:,:,k)  = wz(:,:,k)
           if (k>izmin) sdz(:,:,k)=sdz(:,:,k)+sdz(:,:,k-1)
-          cj(iixp0+ixmin:iixp0+ixmax+1,ijxp0+iymin:ijxp0+iymax+1,ikxp0+K,3) = &
-          cj(iixp0+ixmin:iixp0+ixmax+1,ijxp0+iymin:ijxp0+iymax+1,ikxp0+k,3) + sdz(ixmin:ixmax+1,iymin:iymax+1,k)
+          jz(iixp0+ixmin:iixp0+ixmax+1,ijxp0+iymin:ijxp0+iymax+1,ikxp0+K) = &
+          jz(iixp0+ixmin:iixp0+ixmax+1,ijxp0+iymin:ijxp0+iymax+1,ikxp0+k) + sdz(ixmin:ixmax+1,iymin:iymax+1,k)
         end do        
 
     end do
@@ -1452,12 +1454,13 @@ subroutine depose_jxjyjz_esirkepov_linear_serialold(cj,np,xp,yp,zp,uxp,uyp,uzp,g
   return
 end subroutine depose_jxjyjz_esirkepov_linear_serialold
 
-subroutine depose_jxjyjz_esirkepov_linear_serialnew(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
+! THIS SUBROUTINE IS NOT IN EM3D.v file 
+subroutine depose_jxjyjz_esirkepov_linear_serialnew(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard, &
                                                  l_particles_weight)
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3), intent(in out) :: cj
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,yp,zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,dt,dx,dy,dz,xmin,ymin,zmin
    logical(ISZ) :: l_particles_weight,l4symtry
@@ -1636,11 +1639,11 @@ subroutine depose_jxjyjz_esirkepov_linear_serialnew(cj,np,xp,yp,zp,uxp,uyp,uzp,g
         iymax2 = ijxp0+iymax
         izmin2 = ikxp0+izmin
         izmax2 = ikxp0+izmax
-        cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,1) = cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,1) &
+        jx(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) = jx(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) &
                                                         + sdx(ixmin:ixmax,iymin:iymax,izmin:izmax)
-        cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,2) = cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,2) &
+        jy(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) = jy(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) &
                                                         + sdy(ixmin:ixmax,iymin:iymax,izmin:izmax)
-        cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,3) = cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,3) &
+        jz(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) = jz(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) &
                                                         + sdz(ixmin:ixmax,iymin:iymax,izmin:izmax)
 
       end do
@@ -1650,12 +1653,12 @@ subroutine depose_jxjyjz_esirkepov_linear_serialnew(cj,np,xp,yp,zp,uxp,uyp,uzp,g
   return
 end subroutine depose_jxjyjz_esirkepov_linear_serialnew
 
-subroutine depose_jxjyjz_esirkepov_linear_serial(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
+subroutine depose_jxjyjz_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard, &
                                                  l_particles_weight)
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3), intent(in out) :: cj
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,yp,zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,dt,dx,dy,dz,xmin,ymin,zmin
    logical(ISZ) :: l_particles_weight,l4symtry
@@ -1797,17 +1800,17 @@ subroutine depose_jxjyjz_esirkepov_linear_serial(cj,np,xp,yp,zp,uxp,uyp,uzp,gami
               if(i<ixmax) then
                 sdx(i,j,k)  = wqx*dsx(i)*( (sy0(j)+0.5*dsy(j))*sz0(k) + (0.5*sy0(j)+1./3.*dsy(j))*dsz(k))
                 if (i>ixmin) sdx(i,j,k)=sdx(i,j,k)+sdx(i-1,j,k)
-                cj(ic,jc,kc,1) = cj(ic,jc,kc,1) + sdx(i,j,k)
+                jx(ic,jc,kc) = jx(ic,jc,kc) + sdx(i,j,k)
               end if
               if(j<iymax) then
                 sdy(i,j,k)  = wqy*dsy(j)*( (sz0(k)+0.5*dsz(k))*sx0(i) + (0.5*sz0(k)+1./3.*dsz(k))*dsx(i))
                 if (j>iymin) sdy(i,j,k)=sdy(i,j,k)+sdy(i,j-1,k)
-                cj(ic,jc,kc,2) = cj(ic,jc,kc,2) + sdy(i,j,k)
+                jy(ic,jc,kc) = jy(ic,jc,kc) + sdy(i,j,k)
               end if
               if(k<izmax) then
                 sdz(i,j,k)  = wqz*dsz(k)*( (sx0(i)+0.5*dsx(i))*sy0(j) + (0.5*sx0(i)+1./3.*dsx(i))*dsy(j))
                 if (k>izmin) sdz(i,j,k)=sdz(i,j,k)+sdz(i,j,k-1)
-                cj(ic,jc,kc,3) = cj(ic,jc,kc,3) + sdz(i,j,k)
+                jz(ic,jc,kc) = jz(ic,jc,kc) + sdz(i,j,k)
               end if
             end do        
           end do        
@@ -1820,13 +1823,14 @@ subroutine depose_jxjyjz_esirkepov_linear_serial(cj,np,xp,yp,zp,uxp,uyp,uzp,gami
   return
 end subroutine depose_jxjyjz_esirkepov_linear_serial
 
-subroutine depose_jxjyjz_esirkepov_nnew(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
+! THIS SUBROUTINE IS NOT IN EM3D.v file 
+subroutine depose_jxjyjz_esirkepov_nnew(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard, &
                                                  nox,noy,noz,l_particles_weight,l4symtry)
 ! although it vectorizes better, this version is slower than the old one
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3), intent(in out) :: cj
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,yp,zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,dt,dx,dy,dz,xmin,ymin,zmin
    logical(ISZ) :: l_particles_weight,l4symtry
@@ -2134,11 +2138,11 @@ subroutine depose_jxjyjz_esirkepov_nnew(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xm
         iymax2 = ijxp0+iymax
         izmin2 = ikxp0+izmin
         izmax2 = ikxp0+izmax
-        cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,1) = cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,1) &
+        jx(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) = jx(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) &
                                                         + sdx(ixmin:ixmax,iymin:iymax,izmin:izmax)
-        cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,2) = cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,2) &
+        jy(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) = jy(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) &
                                                         + sdy(ixmin:ixmax,iymin:iymax,izmin:izmax)
-        cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,3) = cj(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2,3) &
+        jz(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) = jz(ixmin2:ixmax2,iymin2:iymax2,izmin2:izmax2) &
                                                         + sdz(ixmin:ixmax,iymin:iymax,izmin:izmax)
 
 
@@ -2149,13 +2153,13 @@ subroutine depose_jxjyjz_esirkepov_nnew(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xm
   return
 end subroutine depose_jxjyjz_esirkepov_nnew
 
-subroutine depose_jxjyjz_esirkepov_n(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
+subroutine depose_jxjyjz_esirkepov_n(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard, &
                                                  nox,noy,noz,l_particles_weight,l4symtry)
    use Constant, only: clight
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3), intent(in out) :: cj
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: jx, jy, jz
    real(kind=8), dimension(np) :: xp,yp,zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,dt,dx,dy,dz,xmin,ymin,zmin
    logical(ISZ) :: l_particles_weight,l4symtry
@@ -2471,17 +2475,17 @@ subroutine depose_jxjyjz_esirkepov_n(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,
               if(i<ixmax) then
                 sdx(i,j,k)  = wqx*dsx(i)*( (sy0(j)+0.5*dsy(j))*sz0(k) + (0.5*sy0(j)+1./3.*dsy(j))*dsz(k))
                 if (i>ixmin) sdx(i,j,k)=sdx(i,j,k)+sdx(i-1,j,k)
-                cj(ic,jc,kc,1) = cj(ic,jc,kc,1) + sdx(i,j,k)
+                jx(ic,jc,kc) = jx(ic,jc,kc) + sdx(i,j,k)
               end if
               if(j<iymax) then
                 sdy(i,j,k)  = wqy*dsy(j)*( (sz0(k)+0.5*dsz(k))*sx0(i) + (0.5*sz0(k)+1./3.*dsz(k))*dsx(i))
                 if (j>iymin) sdy(i,j,k)=sdy(i,j,k)+sdy(i,j-1,k)
-                cj(ic,jc,kc,2) = cj(ic,jc,kc,2) + sdy(i,j,k)
+                jy(ic,jc,kc) = jy(ic,jc,kc) + sdy(i,j,k)
               end if
               if(k<izmax) then
                 sdz(i,j,k)  = wqz*dsz(k)*( (sx0(i)+0.5*dsx(i))*sy0(j) + (0.5*sx0(i)+1./3.*dsx(i))*dsy(j))
                 if (k>izmin) sdz(i,j,k)=sdz(i,j,k)+sdz(i,j,k-1)
-                cj(ic,jc,kc,3) = cj(ic,jc,kc,3) + sdz(i,j,k)
+                jz(ic,jc,kc) = jz(ic,jc,kc) + sdz(i,j,k)
               end if
             end do        
           end do        
@@ -2496,13 +2500,14 @@ subroutine depose_jxjyjz_esirkepov_n(cj,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,
   return
 end subroutine depose_jxjyjz_esirkepov_n
 
-subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial(cj,mp,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,m,xmin,ymin,zmin, &
+subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,m,xmin,ymin,zmin, &
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight,l_relativ)
    ! mp is the the kinetic energy density
     use Constant
   implicit none
    integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3), intent(in out) :: cj,mp
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3), intent(in out) :: mp
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,yp,zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,m,dt,dx,dy,dz,xmin,ymin,zmin
    logical(ISZ) :: l_particles_weight, l_relativ
@@ -2624,21 +2629,21 @@ subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial(cj,mp,np,xp,yp,zp,uxp,uy
         do i = -1, 1
           sdx(i,:,:)  = wx(i,:,:)
           if (i>-1) sdx(i,:,:)=sdx(i,:,:)+sdx(i-1,:,:)
-          cj(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2,1) = cj(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2,1)+wq*sdx(i,:,:)
+          jx(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2) = jx(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2)+wq*sdx(i,:,:)
           mp(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2,1) = mp(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2,1)+wp*vx*sdx(i,:,:)
         end do        
 
         do j = -1, 1
           sdy(:,j,:)  = wy(:,j,:)
           if (j>-1) sdy(:,j,:)=sdy(:,j,:)+sdy(:,j-1,:)
-          cj(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2) = cj(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2)+wq*sdy(:,j,:)
+          jy(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2) = jy(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2)+wq*sdy(:,j,:)
           mp(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2) = mp(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2)+wp*vy*sdy(:,j,:)
         end do        
 
         do k = -1, 1
           sdz(:,:,k)  = wz(:,:,k)
           if (k>-1) sdz(:,:,k)=sdz(:,:,k)+sdz(:,:,k-1)
-          cj(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+K,3) = cj(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+k,3)+wq*sdz(:,:,k)
+          jz(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+K) = jz(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+k)+wq*sdz(:,:,k)
           mp(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+K,3) = mp(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+k,3)+wp*vz*sdz(:,:,k)
         end do        
 
@@ -2647,14 +2652,16 @@ subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial(cj,mp,np,xp,yp,zp,uxp,uy
   return
 end subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial
 
-subroutine deposcor_jxjyjz_pxpypz_esirkepov_linear_serial(cj,mp,bx,by,bz, &
+! THIS SUBROUTINE IS NOT IN EM3D.v file 
+subroutine deposcor_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,bx,by,bz, &
                                                           np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,m,xmin,ymin,zmin, &
                                                           dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight,l_relativ)
    ! mp is the the kinetic energy density
     use Constant
   implicit none
    integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3), intent(in out) :: cj,mp
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3), intent(in out) :: mp
+   real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in) :: bx,by,bz
    real(kind=8), dimension(np) :: xp,yp,zp,uxp,uyp,uzp,gaminv,w
    real(kind=8) :: q,m,dt,dx,dy,dz,xmin,ymin,zmin
@@ -2800,7 +2807,7 @@ subroutine deposcor_jxjyjz_pxpypz_esirkepov_linear_serial(cj,mp,bx,by,bz, &
         do j = -1, 1
           sdy(:,j,:)  = wy(:,j,:)
           if (j>-1) sdy(:,j,:)=sdy(:,j,:)+sdy(:,j-1,:)
-          cj(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2) = cj(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2)+wq*sdy(:,j,:)
+          jy(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2) = jy(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2)+wq*sdy(:,j,:)
           mp(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2) = mp(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2)+wp*vy*sdy(:,j,:)
         end do        
         
@@ -2831,21 +2838,21 @@ subroutine deposcor_jxjyjz_pxpypz_esirkepov_linear_serial(cj,mp,bx,by,bz, &
         do i = -1, 1
           sdx(i,:,:)  = wx(i,:,:)
           if (i>-1) sdx(i,:,:)=sdx(i,:,:)+sdx(i-1,:,:)
-          cj(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2,1) = cj(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2,1)+wq*sdx(i,:,:)
+          jx(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2) = jx(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2)+wq*sdx(i,:,:)
           mp(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2,1) = mp(iixp0+i,ijxp0-1:ijxp0+2,ikxp0-1:ikxp0+2,1)+wp*vx*sdx(i,:,:)
         end do        
 
         do j = -1, 1
           sdy(:,j,:)  = wy(:,j,:)
           if (j>-1) sdy(:,j,:)=sdy(:,j,:)+sdy(:,j-1,:)
-          cj(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2) = cj(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2)+wq*sdy(:,j,:)
+          jy(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2) = jy(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2)+wq*sdy(:,j,:)
           mp(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2) = mp(iixp0-1:iixp0+2,ijxp0+j,ikxp0-1:ikxp0+2,2)+wp*vy*sdy(:,j,:)
         end do        
 
         do k = -1, 1
           sdz(:,:,k)  = wz(:,:,k)
           if (k>-1) sdz(:,:,k)=sdz(:,:,k)+sdz(:,:,k-1)
-          cj(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+K,3) = cj(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+k,3)+wq*sdz(:,:,k)
+          jz(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+K) = jz(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+k)+wq*sdz(:,:,k)
           mp(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+K,3) = mp(iixp0-1:iixp0+2,ijxp0-1:ijxp0+2,ikxp0+k,3)+wp*vz*sdz(:,:,k)
         end do        
 
@@ -3342,11 +3349,11 @@ subroutine depose_rho_n(rho,np,xp,yp,zp,w,q,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz,nxg
   return
 end subroutine depose_rho_n
 
-subroutine depose_j_n_2dxz(cj,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
+subroutine depose_j_n_2dxz(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
                         l_particles_weight,l4symtry)
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard,3), intent(in out) :: cj
+   real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,zp,w,ux,uy,uz,gaminv
    real(kind=8) :: q,dt,dx,dz,xmin,zmin
    logical(ISZ) :: l_particles_weight,l4symtry
@@ -3447,11 +3454,11 @@ subroutine depose_j_n_2dxz(cj,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx
 
          do ll = izmin, izmax
             do jj = ixmin, ixmax
-              cj(j+jj  ,0,l+ll  ,1) = cj(j+jj  ,0,l+ll  ,1) + sx(jj)*sz(ll)*wq*vx*0.5
-              cj(j+jj-1,0,l+ll  ,1) = cj(j+jj-1,0,l+ll  ,1) + sx(jj)*sz(ll)*wq*vx*0.5
-              cj(j+jj  ,0,l+ll  ,2) = cj(j+jj  ,0,l+ll  ,2) + sx(jj)*sz(ll)*wq*vy
-              cj(j+jj  ,0,l+ll  ,3) = cj(j+jj  ,0,l+ll  ,3) + sx(jj)*sz(ll)*wq*vz*0.5
-              cj(j+jj  ,0,l+ll-1,3) = cj(j+jj  ,0,l+ll-1,3) + sx(jj)*sz(ll)*wq*vz*0.5
+              jx(j+jj  ,0,l+ll  ) = jx(j+jj  ,0,l+ll  ) + sx(jj)*sz(ll)*wq*vx*0.5
+              jx(j+jj-1,0,l+ll  ) = jx(j+jj-1,0,l+ll  ) + sx(jj)*sz(ll)*wq*vx*0.5
+              jy(j+jj  ,0,l+ll  ) = jy(j+jj  ,0,l+ll  ) + sx(jj)*sz(ll)*wq*vy
+              jz(j+jj  ,0,l+ll  ) = jz(j+jj  ,0,l+ll  ) + sx(jj)*sz(ll)*wq*vz*0.5
+              jz(j+jj  ,0,l+ll-1) = jz(j+jj  ,0,l+ll-1) + sx(jj)*sz(ll)*wq*vz*0.5
             end do
         end do
 
@@ -5898,15 +5905,18 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
    return
  end subroutine getb3d_n_energy_conserving
 
- subroutine project_jxjyjz(jfine,jcoarse,jcoarse_mother,nxf,nyf,nzf,nxc,nyc,nzc, &
+ subroutine project_jxjyjz(jxfine,jyfine,jzfine,jxcoarse, jycoarse, jzcoarse,                        &
+                           jxcoarse_mother,jycoarse_mother,jzcoarse_mother, nxf,nyf,nzf,nxc,nyc,nzc, &
                            nxguard,nyguard,nzguard,rapx,rapy,rapz,ixc,iyc,izc,l_2dxz,icycle,novercycle)
  ! Projection of J from one fine grid onto a coarse grid
  implicit none
  logical(ISZ) :: l_2dxz
  integer(ISZ) :: nxf,nyf,nzf,nxc,nyc,nzc,ixc,iyc,izc,rapx,rapy,rapz,nxguard,nyguard,nzguard,icycle,novercycle
- real(kind=8), DIMENSION(-nxguard:nxf+nxguard,-nyguard:nyf+nyguard,-nzguard:nzf+nzguard,3) :: jfine
- real(kind=8), DIMENSION(-nxguard:nxf/rapx+nxguard,-nyguard:nyf/rapy+nyguard,-nzguard:nzf/rapz+nzguard,3) :: jcoarse
- real(kind=8), DIMENSION(-nxguard:nxc+nxguard,-nyguard:nyc+nyguard,-nzguard:nzc+nzguard,3) :: jcoarse_mother
+ real(kind=8), DIMENSION(-nxguard:nxf+nxguard,-nyguard:nyf+nyguard,-nzguard:nzf+nzguard) :: jxfine, jyfine, jzfine
+ real(kind=8), DIMENSION(-nxguard:nxf/rapx+nxguard,-nyguard:nyf/rapy+nyguard,-nzguard:nzf/rapz+nzguard) :: jxcoarse, &
+                                                                                jycoarse, jzcoarse 
+ real(kind=8), DIMENSION(-nxguard:nxc+nxguard,-nyguard:nyc+nyguard,-nzguard:nzc+nzguard) :: jxcoarse_mother, & 
+                                                                                jycoarse_mother, jzcoarse_mother
 
  INTEGER :: j, k, l, jg, kg, lg, ixmin, ixmax, iymin, iymax, izmin, izmax
  real(kind=8) :: wx, wy, wz, owx, owy, owz, invrapvol, irapx, irapy, irapz
@@ -5937,13 +5947,13 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
          owy= 1.-wy
          do j = ixmin, ixmax-1
             jg = floor(j*irapx)
-            jcoarse(jg,kg  ,lg  ,1) = jcoarse(jg,kg  ,lg  ,1) + owy*owz*jfine(j,k,l,1)*invrapvol
+            jxcoarse(jg,kg  ,lg  ) = jxcoarse(jg,kg  ,lg  ) + owy*owz*jxfine(j,k,l)*invrapvol
             if (kg<iymax) &
-            jcoarse(jg,kg+1,lg  ,1) = jcoarse(jg,kg+1,lg  ,1) +  wy*owz*jfine(j,k,l,1)*invrapvol
+            jxcoarse(jg,kg+1,lg  ) = jxcoarse(jg,kg+1,lg  ) +  wy*owz*jxfine(j,k,l)*invrapvol
             if (lg<izmax) &
-            jcoarse(jg,kg  ,lg+1,1) = jcoarse(jg,kg  ,lg+1,1) + owy* wz*jfine(j,k,l,1)*invrapvol
+            jxcoarse(jg,kg  ,lg+1) = jxcoarse(jg,kg  ,lg+1) + owy* wz*jxfine(j,k,l)*invrapvol
             if (kg<iymax .and. lg<izmax) &
-            jcoarse(jg,kg+1,lg+1,1) = jcoarse(jg,kg+1,lg+1,1) +  wy* wz*jfine(j,k,l,1)*invrapvol
+            jxcoarse(jg,kg+1,lg+1) = jxcoarse(jg,kg+1,lg+1) +  wy* wz*jxfine(j,k,l)*invrapvol
          end do
       end do
    end do
@@ -5958,13 +5968,13 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
             jg = floor(j*irapx)
             wx = REAL(MOD(j+nxguard*rapx,rapx))*irapx
             owx= 1.-wx
-            jcoarse(jg  ,kg,lg  ,2) = jcoarse(jg  ,kg,lg  ,2) + owx*owz*jfine(j,k,l,2)*invrapvol
+            jycoarse(jg  ,kg,lg  ) = jycoarse(jg  ,kg,lg  ) + owx*owz*jyfine(j,k,l)*invrapvol
             if (jg<ixmax) &
-            jcoarse(jg+1,kg,lg  ,2) = jcoarse(jg+1,kg,lg  ,2) +  wx*owz*jfine(j,k,l,2)*invrapvol
+            jycoarse(jg+1,kg,lg  ) = jycoarse(jg+1,kg,lg  ) +  wx*owz*jyfine(j,k,l)*invrapvol
             if (lg<izmax) &
-            jcoarse(jg  ,kg,lg+1,2) = jcoarse(jg  ,kg,lg+1,2) + owx* wz*jfine(j,k,l,2)*invrapvol
+            jycoarse(jg  ,kg,lg+1) = jycoarse(jg  ,kg,lg+1) + owx* wz*jyfine(j,k,l)*invrapvol
             if (jg<ixmax .and. lg<izmax) &
-            jcoarse(jg+1,kg,lg+1,2) = jcoarse(jg+1,kg,lg+1,2) +  wx* wz*jfine(j,k,l,2)*invrapvol
+            jycoarse(jg+1,kg,lg+1) = jycoarse(jg+1,kg,lg+1) +  wx* wz*jyfine(j,k,l)*invrapvol
          end do
       end do
    end do
@@ -5979,13 +5989,13 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
             jg = floor(j*irapx)
             wx = REAL(MOD(j+nxguard*rapx,rapx))*irapx
             owx= 1.-wx
-            jcoarse(jg  ,kg  ,lg,3) = jcoarse(jg  ,kg  ,lg,3) + owy*owx*jfine(j,k,l,3)*invrapvol
+            jzcoarse(jg  ,kg  ,lg) = jzcoarse(jg  ,kg  ,lg) + owy*owx*jzfine(j,k,l)*invrapvol
             if (kg<iymax) &
-            jcoarse(jg  ,kg+1,lg,3) = jcoarse(jg  ,kg+1,lg,3) +  wy*owx*jfine(j,k,l,3)*invrapvol
+            jzcoarse(jg  ,kg+1,lg) = jzcoarse(jg  ,kg+1,lg) +  wy*owx*jzfine(j,k,l)*invrapvol
             if (jg<ixmax) &
-            jcoarse(jg+1,kg  ,lg,3) = jcoarse(jg+1,kg  ,lg,3) + owy* wx*jfine(j,k,l,3)*invrapvol
+            jzcoarse(jg+1,kg  ,lg) = jzcoarse(jg+1,kg  ,lg) + owy* wx*jzfine(j,k,l)*invrapvol
             if (jg<ixmax .and. kg<iymax) &
-            jcoarse(jg+1,kg+1,lg,3) = jcoarse(jg+1,kg+1,lg,3) +  wy* wx*jfine(j,k,l,3)*invrapvol
+            jzcoarse(jg+1,kg+1,lg) = jzcoarse(jg+1,kg+1,lg) +  wy* wx*jzfine(j,k,l)*invrapvol
          end do
       end do
    end do
@@ -6000,9 +6010,9 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
       owz= 1.-wz
          do j = ixmin, ixmax-1
             jg = floor(j*irapx)
-            jcoarse(jg,kg  ,lg  ,1) = jcoarse(jg,kg  ,lg  ,1) + owz*jfine(j,k,l,1)*invrapvol
+            jxcoarse(jg,kg  ,lg  ) = jxcoarse(jg,kg  ,lg  ) + owz*jxfine(j,k,l)*invrapvol
             if (lg<izmax) &
-            jcoarse(jg,kg  ,lg+1,1) = jcoarse(jg,kg  ,lg+1,1) +  wz*jfine(j,k,l,1)*invrapvol
+            jxcoarse(jg,kg  ,lg+1) = jxcoarse(jg,kg  ,lg+1) +  wz*jxfine(j,k,l)*invrapvol
          end do
    end do
 
@@ -6014,13 +6024,13 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
             jg = floor(j*irapx)
             wx = REAL(MOD(j+nxguard*rapx,rapx))*irapx
             owx= 1.-wx
-            jcoarse(jg  ,kg,lg  ,2) = jcoarse(jg  ,kg,lg  ,2) + owx*owz*jfine(j,k,l,2)*invrapvol
+            jycoarse(jg  ,kg,lg  ) = jycoarse(jg  ,kg,lg  ) + owx*owz*jyfine(j,k,l)*invrapvol
             if (jg<ixmax) &
-            jcoarse(jg+1,kg,lg  ,2) = jcoarse(jg+1,kg,lg  ,2) +  wx*owz*jfine(j,k,l,2)*invrapvol
+            jycoarse(jg+1,kg,lg  ) = jycoarse(jg+1,kg,lg  ) +  wx*owz*jyfine(j,k,l)*invrapvol
             if (lg<izmax) &
-            jcoarse(jg  ,kg,lg+1,2) = jcoarse(jg  ,kg,lg+1,2) + owx* wz*jfine(j,k,l,2)*invrapvol
+            jycoarse(jg  ,kg,lg+1) = jycoarse(jg  ,kg,lg+1) + owx* wz*jyfine(j,k,l)*invrapvol
             if (jg<ixmax .and. lg<izmax) &
-            jcoarse(jg+1,kg,lg+1,2) = jcoarse(jg+1,kg,lg+1,2) +  wx* wz*jfine(j,k,l,2)*invrapvol
+            jycoarse(jg+1,kg,lg+1) = jycoarse(jg+1,kg,lg+1) +  wx* wz*jyfine(j,k,l)*invrapvol
          end do
    end do
 
@@ -6030,18 +6040,24 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
             jg = floor(j*irapx)
             wx = REAL(MOD(j+nxguard*rapx,rapx))*irapx
             owx= 1.-wx
-            jcoarse(jg  ,kg  ,lg,3) = jcoarse(jg  ,kg  ,lg,3) + owx*jfine(j,k,l,3)*invrapvol
+            jzcoarse(jg  ,kg  ,lg) = jzcoarse(jg  ,kg  ,lg) + owx*jzfine(j,k,l)*invrapvol
             if (jg<ixmax) &
-            jcoarse(jg+1,kg  ,lg,3) = jcoarse(jg+1,kg  ,lg,3) +  wx*jfine(j,k,l,3)*invrapvol
+            jzcoarse(jg+1,kg  ,lg) = jzcoarse(jg+1,kg  ,lg) +  wx*jzfine(j,k,l)*invrapvol
          end do
    end do
 
    endif
    
-   jcoarse_mother(ixc-nxguard:ixc+nxf/rapx+nxguard,iyc-nyguard:iyc+nyf/rapy+nyguard,izc-nzguard:izc+nzf/rapz+nzguard,:) = &
-   jcoarse_mother(ixc-nxguard:ixc+nxf/rapx+nxguard,iyc-nyguard:iyc+nyf/rapy+nyguard,izc-nzguard:izc+nzf/rapz+nzguard,:) + &
-   jcoarse(:,:,:,:)
-
+   jxcoarse_mother(ixc-nxguard:ixc+nxf/rapx+nxguard,iyc-nyguard:iyc+nyf/rapy+nyguard,izc-nzguard:izc+nzf/rapz+nzguard) = &
+   jxcoarse_mother(ixc-nxguard:ixc+nxf/rapx+nxguard,iyc-nyguard:iyc+nyf/rapy+nyguard,izc-nzguard:izc+nzf/rapz+nzguard) + &
+   jxcoarse(:,:,:)
+   jycoarse_mother(ixc-nxguard:ixc+nxf/rapx+nxguard,iyc-nyguard:iyc+nyf/rapy+nyguard,izc-nzguard:izc+nzf/rapz+nzguard) = &
+   jycoarse_mother(ixc-nxguard:ixc+nxf/rapx+nxguard,iyc-nyguard:iyc+nyf/rapy+nyguard,izc-nzguard:izc+nzf/rapz+nzguard) + &
+   jycoarse(:,:,:)
+   jzcoarse_mother(ixc-nxguard:ixc+nxf/rapx+nxguard,iyc-nyguard:iyc+nyf/rapy+nyguard,izc-nzguard:izc+nzf/rapz+nzguard) = &
+   jzcoarse_mother(ixc-nxguard:ixc+nxf/rapx+nxguard,iyc-nyguard:iyc+nyf/rapy+nyguard,izc-nzguard:izc+nzf/rapz+nzguard) + &
+   jzcoarse(:,:,:)
+   
    return
  end subroutine project_jxjyjz
 
@@ -6136,14 +6152,14 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
    return
  end subroutine project_rho
 
-subroutine apply_dmask(rho,jc,dmaskx,dmasky,dmaskz,bounds,nguarddepos,ntrans,nx,ny,nz,nxguard,nyguard,nzguard,l_getrho,l_2dxz)
+subroutine apply_dmask(rho,jx,jy,jz,dmaskx,dmasky,dmaskz,bounds,nguarddepos,ntrans,nx,ny,nz,nxguard,nyguard,nzguard,l_getrho,l_2dxz)
  ! Projection of J from one fine grid onto a coarse grid
  use EM3D_FIELDobjects, only : otherproc
  implicit none
  logical(ISZ) :: l_2dxz, l_getrho
  integer(ISZ) :: nx,ny,nz,nxguard,nyguard,nzguard,bounds(10),nguarddepos(3),ntrans(3)
  real(kind=8), DIMENSION(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: rho
- real(kind=8), DIMENSION(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3) :: jc
+ real(kind=8), DIMENSION(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: jx,jy,jz
  real(kind=8), DIMENSION(-nxguard:nx+nxguard) :: dmaskx
  real(kind=8), DIMENSION(-nyguard:ny+nyguard) :: dmasky
  real(kind=8), DIMENSION(-nzguard:nz+nzguard) :: dmaskz
@@ -6219,21 +6235,21 @@ dmaskz=1.
    do l = 0, nz
       do k = 0, ny
          do j = 0, nx
-           jc(j,k,l,1) = jc(j,k,l,1) * 0.5*(dmaskx(j)+dmaskx(j+1)) * dmasky(k) * dmaskz(l)
+           jx(j,k,l) = jx(j,k,l) * 0.5*(dmaskx(j)+dmaskx(j+1)) * dmasky(k) * dmaskz(l)
        end do
       end do
    end do
    do l = 0, nz
       do k = 0, ny
          do j = 0, nx
-           jc(j,k,l,2) = jc(j,k,l,2) * 0.5*(dmasky(k)+dmasky(k+1)) * dmaskx(j) * dmaskz(l)
+           jy(j,k,l) = jy(j,k,l) * 0.5*(dmasky(k)+dmasky(k+1)) * dmaskx(j) * dmaskz(l)
        end do
       end do
    end do
    do l = 0, nz
       do k = 0, ny
          do j = 0, nx
-           jc(j,k,l,3) = jc(j,k,l,3) * 0.5*(dmaskz(l)+dmaskz(l+1)) * dmaskx(j) * dmasky(k)
+           jz(j,k,l) = jz(j,k,l) * 0.5*(dmaskz(l)+dmaskz(l+1)) * dmaskx(j) * dmasky(k)
        end do
       end do
    end do
@@ -6252,17 +6268,17 @@ dmaskz=1.
 
    do l = 0, nz
          do j = 0, nx
-           jc(j,k,l,1) = jc(j,k,l,1) * 0.5*(dmaskx(j)+dmaskx(j+1)) * dmaskz(l)
+           jx(j,k,l) = jx(j,k,l) * 0.5*(dmaskx(j)+dmaskx(j+1)) * dmaskz(l)
        end do
    end do
    do l = 0, nz
          do j = 0, nx
-           jc(j,k,l,2) = jc(j,k,l,2) * dmaskx(j) * dmaskz(l)
+           jy(j,k,l) = jy(j,k,l) * dmaskx(j) * dmaskz(l)
        end do
    end do
    do l = 0, nz
          do j = 0, nx
-           jc(j,k,l,3) = jc(j,k,l,3) * 0.5*(dmaskz(l)+dmaskz(l+1)) * dmaskx(j) 
+           jz(j,k,l) = jz(j,k,l) * 0.5*(dmaskz(l)+dmaskz(l+1)) * dmaskx(j) 
        end do
    end do
    if (l_getrho) then
@@ -6856,11 +6872,11 @@ subroutine addsubstractfields_nodal(child,child_coarse,parent,lc,ref,l_2dxz)
    return
  end subroutine addsubstractfields_nodal
 
-subroutine depose_j_n_2dxz_spectral(cj,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
+subroutine depose_j_n_2dxz_spectral(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
                         l_particles_weight,l4symtry)
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard,3), intent(in out) :: cj
+   real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,zp,w,ux,uy,uz,gaminv
    real(kind=8) :: q,dt,dx,dz,xmin,zmin
    logical(ISZ) :: l_particles_weight,l4symtry
@@ -7041,20 +7057,20 @@ subroutine depose_j_n_2dxz_spectral(cj,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt
          do ll = izmin, izmax
             do jj = ixmin, ixmax
 
-              cj(j+jj   ,0,l+ll   ,2) = cj(j+jj   ,0,l+ll   ,2) + 0.25*sx   (jj)*sz   (ll)*wq*vy*dt
-              cj(jold+jj,0,l+ll   ,2) = cj(jold+jj,0,l+ll   ,2) + 0.25*sxold(jj)*sz   (ll)*wq*vy*dt
-              cj(j+jj   ,0,lold+ll,2) = cj(j+jj   ,0,lold+ll,2) + 0.25*sx   (jj)*szold(ll)*wq*vy*dt
-              cj(jold+jj,0,lold+ll,2) = cj(jold+jj,0,lold+ll,2) + 0.25*sxold(jj)*szold(ll)*wq*vy*dt
+              jy(j+jj   ,0,l+ll   ) = jy(j+jj   ,0,l+ll   ) + 0.25*sx   (jj)*sz   (ll)*wq*vy*dt
+              jy(jold+jj,0,l+ll   ) = jy(jold+jj,0,l+ll   ) + 0.25*sxold(jj)*sz   (ll)*wq*vy*dt
+              jy(j+jj   ,0,lold+ll) = jy(j+jj   ,0,lold+ll) + 0.25*sx   (jj)*szold(ll)*wq*vy*dt
+              jy(jold+jj,0,lold+ll) = jy(jold+jj,0,lold+ll) + 0.25*sxold(jj)*szold(ll)*wq*vy*dt
             
-              cj(j   +jj,0,l   +ll,1)=cj(j   +jj,0,l   +ll,1)+0.5*sx   (jj)*sz   (ll)*wq
-              cj(j   +jj,0,lold+ll,1)=cj(j   +jj,0,lold+ll,1)+0.5*sx   (jj)*szold(ll)*wq
-              cj(jold+jj,0,l   +ll,1)=cj(jold+jj,0,l   +ll,1)-0.5*sxold(jj)*sz   (ll)*wq
-              cj(jold+jj,0,lold+ll,1)=cj(jold+jj,0,lold+ll,1)-0.5*sxold(jj)*szold(ll)*wq
+              jx(j   +jj,0,l   +ll)=jx(j   +jj,0,l   +ll)+0.5*sx   (jj)*sz   (ll)*wq
+              jx(j   +jj,0,lold+ll)=jx(j   +jj,0,lold+ll)+0.5*sx   (jj)*szold(ll)*wq
+              jx(jold+jj,0,l   +ll)=jx(jold+jj,0,l   +ll)-0.5*sxold(jj)*sz   (ll)*wq
+              jx(jold+jj,0,lold+ll)=jx(jold+jj,0,lold+ll)-0.5*sxold(jj)*szold(ll)*wq
 
-              cj(j   +jj,0,l   +ll,3)=cj(j   +jj,0,l   +ll,3)+0.5*sx   (jj)*sz   (ll)*wq
-              cj(jold+jj,0,l   +ll,3)=cj(jold+jj,0,l   +ll,3)+0.5*sxold(jj)*sz   (ll)*wq
-              cj(j   +jj,0,lold+ll,3)=cj(j   +jj,0,lold+ll,3)-0.5*sx   (jj)*szold(ll)*wq
-              cj(jold+jj,0,lold+ll,3)=cj(jold+jj,0,lold+ll,3)-0.5*sxold(jj)*szold(ll)*wq
+              jz(j   +jj,0,l   +ll)=jz(j   +jj,0,l   +ll)+0.5*sx   (jj)*sz   (ll)*wq
+              jz(jold+jj,0,l   +ll)=jz(jold+jj,0,l   +ll)+0.5*sxold(jj)*sz   (ll)*wq
+              jz(j   +jj,0,lold+ll)=jz(j   +jj,0,lold+ll)-0.5*sx   (jj)*szold(ll)*wq
+              jz(jold+jj,0,lold+ll)=jz(jold+jj,0,lold+ll)-0.5*sxold(jj)*szold(ll)*wq
 
             end do
         end do
@@ -7064,11 +7080,12 @@ subroutine depose_j_n_2dxz_spectral(cj,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt
   return
 end subroutine depose_j_n_2dxz_spectral
 
-subroutine depose_j_n_2dxz_direct(cj,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
+! THIS SUBROUTINE IS NOT IN EM3D.v file 
+subroutine depose_j_n_2dxz_direct(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
                         l_particles_weight,l4symtry)
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard,3), intent(in out) :: cj
+   real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,zp,w,ux,uy,uz,gaminv
    real(kind=8) :: q,dt,dx,dz,xmin,zmin
    logical(ISZ) :: l_particles_weight,l4symtry
@@ -7178,9 +7195,9 @@ subroutine depose_j_n_2dxz_direct(cj,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,d
 
          do ll = izmin, izmax
             do jj = ixmin, ixmax
-              cj(j+jj  ,0,l+ll  ,1) = cj(j+jj  ,0,l+ll  ,1) + sx(jj)*sz(ll)*wq*vx
-              cj(j+jj  ,0,l+ll  ,2) = cj(j+jj  ,0,l+ll  ,2) + sx(jj)*sz(ll)*wq*vy
-              cj(j+jj  ,0,l+ll  ,3) = cj(j+jj  ,0,l+ll  ,3) + sx(jj)*sz(ll)*wq*vz
+              jx(j+jj  ,0,l+ll  ) = jx(j+jj  ,0,l+ll  ) + sx(jj)*sz(ll)*wq*vx
+              jy(j+jj  ,0,l+ll  ) = jy(j+jj  ,0,l+ll  ) + sx(jj)*sz(ll)*wq*vy
+              jz(j+jj  ,0,l+ll  ) = jz(j+jj  ,0,l+ll  ) + sx(jj)*sz(ll)*wq*vz
             end do
         end do
       end do

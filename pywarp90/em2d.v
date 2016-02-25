@@ -82,7 +82,7 @@ em2d_getf2d_linear_serial(n:integer,x(n):real,y(n):real,
                           nx:integer,ny:integer,
                           fxg(0:nx+3,0:ny+2):real,fyg(0:nx+3,0:ny+2):real,
                           fzg(0:nx+3,0:ny+2):real) subroutine
-em2d_depose_jxjy_esirkepov_linear_serial(j:real,
+em2d_depose_jxjy_esirkepov_linear_serial(jx:real,jy:real,jz:real,
                            n:integer,x(n):real,y(n):real,
                            xold(n):real,yold(n):real,uz(n):real,
                            gaminv(n):real,w(n):real,q:real,
@@ -270,7 +270,9 @@ cBzy(0:nxcoeffs+3,0:nycoeffs+2) _real
 Excopy(0:nxcopy+3,0:nycopy+2) _real
 Eycopy(0:nxcopy+3,0:nycopy+2) _real
 Bzcopy(0:nxcopy+3,0:nycopy+2) _real
-J(0:nx+3,0:ny+2,3) _real
+Jx(0:nx+3,0:ny+2) _real
+Jy(0:nx+3,0:ny+2) _real
+Jz(0:nx+3,0:ny+2) _real
 Jarray(0:nx+3,0:ny+2,3,ntimes) _real
 Rho(0:nxf+3,0:nyf+2) _real
 nxfsum integer /0/
