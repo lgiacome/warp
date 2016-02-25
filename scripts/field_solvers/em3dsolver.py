@@ -1530,10 +1530,10 @@ class EM3D(SubcycledPoissonSolver):
     def depose_current_density(self,n,f,x,y,z,ux,uy,uz,gaminv,dt,wfact,zgrid,q,w,nox,noy,noz,l_particles_weight):
         if not self.deposit_energy_density:
             if self.l_1dz:
-                if 0:
-                    jx = self.fields.J[self.fields.nxguard,self.fields.nyguard,:,0]*0.
-                    jy = self.fields.J[self.fields.nxguard,self.fields.nyguard,:,0]*0.
-                    jz = self.fields.J[self.fields.nxguard,self.fields.nyguard,:,0]*0.
+                if 0: 
+                    jx = self.fields.Jx[self.fields.nxguard,self.fields.nyguard,:]*0.
+                    jy = self.fields.Jy[self.fields.nxguard,self.fields.nyguard,:]*0.
+                    jz = self.fields.Jz[self.fields.nxguard,self.fields.nyguard,:]*0.
                     depose_jxjyjz_esirkepov_linear_serial1d(jx,jy,jz,n,x*0.,y,z,ux,uy,uz,gaminv,
                                                       wfact*w,q/w3d.dx,
                                                       -0.5,-0.5,f.zmin+self.zgrid,
@@ -1542,13 +1542,15 @@ class EM3D(SubcycledPoissonSolver):
                                                       self.fields.nz,
                                                       l_particles_weight)
 #          for j in range(1,shape(self.fields.Jarray)[0]-1):
-                    for j in range(shape(self.fields.Jarray)[0]):
-                        self.fields.Jarray[j,self.fields.nyguard,:,0,0]+=jx
-                        self.fields.Jarray[j,self.fields.nyguard,:,1,0]+=jy
-                        self.fields.Jarray[j,self.fields.nyguard,:,2,0]+=jz
+                    for j in range(shape(self.fields.J1array)[0]):
+                        self.fields.J1array[j,self.fields.nyguard,:,0]+=jx
+                        self.fields.J2array[j,self.fields.nyguard,:,0]+=jy
+                        self.fields.J3array[j,self.fields.nyguard,:,0]+=jz
                 else:
-                    j = self.fields.J[self.fields.nxguard,self.fields.nyguard,:,:]
-                    depose_j_n_1dz(j,n,z,ux,uy,uz,gaminv,
+                    jx = self.fields.Jx[self.fields.nxguard,self.fields.nyguard,:]
+                    jy = self.fields.Jy[self.fields.nxguard,self.fields.nyguard,:]
+                    jz = self.fields.Jz[self.fields.nxguard,self.fields.nyguard,:]
+                    depose_j_n_1dz(jx,jy,jz,n,z,ux,uy,uz,gaminv,
                                                       wfact,q*w,
                                                       f.zmin+self.zgrid,
                                                       dt,
@@ -1558,8 +1560,13 @@ class EM3D(SubcycledPoissonSolver):
                                                       noz,
                                                       l_particles_weight)
             elif self.l_2dxz:
-                j = self.fields.J[:,self.fields.nyguard,:,:]
-                if self.fields.circ_m:j_circ = self.fields.J_circ
+                jx = self.fields.Jx[:,self.fields.nyguard,:]
+                jy = self.fields.Jy[:,self.fields.nyguard,:]
+                jz = self.fields.Jz[:,self.fields.nyguard,:]
+                if self.fields.circ_m:
+                    j1_circ = self.fields.J1_circ
+                    j2_circ = self.fields.J2_circ
+                    j3_circ = self.fields.J3_circ
                 if 0:
 #          depose_jxjy_esirkepov_linear_serial_2d(j,n,z,x,z-gaminv*uz*top.dt,x-gaminv*ux*top.dt,
 #                                                 uy,gaminv,
@@ -1569,7 +1576,7 @@ class EM3D(SubcycledPoissonSolver):
 #                                            f.dz,f.dx,
 #                                            f.nz,f.nx,
 #                                           l_particles_weight)
-                    depose_jxjy_esirkepov_linear_serial_2d(j,n,x,z,x-gaminv*ux*top.dt,z-gaminv*uz*top.dt,
+                    depose_jxjy_esirkepov_linear_serial_2d(jx,jy,jz,n,x,z,x-gaminv*ux*top.dt,z-gaminv*uz*top.dt,
                                                            uy,gaminv,
                                                       wfact,q*w,
                                                       f.xmin,f.zmin+self.zgrid,
@@ -1580,7 +1587,7 @@ class EM3D(SubcycledPoissonSolver):
                 else:
                     if self.l_esirkepov:
                         if self.circ_m==0:
-                            depose_jxjyjz_esirkepov_n_2d(j,n,
+                            depose_jxjyjz_esirkepov_n_2d(jx,jy,jz,n,
                                                 x,y,z,ux,uy,uz,
                                                 gaminv,wfact,q*w,
                                                 f.xmin,f.zmin+self.zgrid,
@@ -1594,7 +1601,7 @@ class EM3D(SubcycledPoissonSolver):
                                                 w3d.l4symtry,self.l_2drz,
                                                 self.type_rz_depose)
                         else:
-                            depose_jxjyjz_esirkepov_n_2d_circ(j,j_circ,f.circ_m,n,
+                            depose_jxjyjz_esirkepov_n_2d_circ(jx,jy,jz,j1_circ,j2_circ,j3_circf.circ_m,n,
                                                     x,y,z,ux,uy,uz,
                                                     gaminv,wfact,q*w,
                                                     f.xmin,f.zmin+self.zgrid,
@@ -1607,7 +1614,7 @@ class EM3D(SubcycledPoissonSolver):
                                                     l_particles_weight,
                                                     self.type_rz_depose)
                     else:
-                        depose_j_n_2dxz(j,n,x,z,ux,uy,uz,
+                        depose_j_n_2dxz(jx,jy,jz,n,x,z,ux,uy,uz,
                                         gaminv,wfact,q*w,
                                         f.xmin,f.zmin+self.zgrid,
                                         dt,
@@ -1619,7 +1626,7 @@ class EM3D(SubcycledPoissonSolver):
                                         l_particles_weight,w3d.l4symtry)
             else:
                 if 0:#nox==1 and noy==1 and noz==1 and not w3d.l4symtry:
-                    depose_jxjyjz_esirkepov_linear_serial(self.fields.J,n,
+                    depose_jxjyjz_esirkepov_linear_serial(self.fields.Jx,self.fields.Jy,self.fields.Jz,n,
                                                       x,y,z,ux,uy,uz,
                                                       gaminv,wfact,q*w,
                                                       f.xmin,f.ymin,f.zmin+self.zgrid,
@@ -1629,7 +1636,7 @@ class EM3D(SubcycledPoissonSolver):
                                                       f.nxguard,f.nyguard,f.nzguard,
                                                       l_particles_weight)
                 else:
-                    depose_jxjyjz_esirkepov_n(self.fields.J,n,
+                    depose_jxjyjz_esirkepov_n(self.fields.Jx,self.fields.Jy,self.fields.Jz,n,
                                                       x,y,z,ux,uy,uz,
                                                       gaminv,wfact,q*w,
                                                       f.xmin,f.ymin,f.zmin+self.zgrid,
@@ -1642,7 +1649,8 @@ class EM3D(SubcycledPoissonSolver):
                                                       noz,
                                                       l_particles_weight,w3d.l4symtry)
         else:
-            depose_jxjyjz_pxpypz_esirkepov_linear_serial(self.fields.J,self.fields.Mp,n,
+            depose_jxjyjz_pxpypz_esirkepov_linear_serial(self.fields.Jx,self.fields.Jy,self.fields.Jz,
+                                              self.fields.Mp,n,
                                               x,y,z,ux,uy,uz,
                                               gaminv,wfact,q*w,m,
                                               f.xmin,f.ymin,f.zmin+self.zgrid,
@@ -1716,9 +1724,13 @@ class EM3D(SubcycledPoissonSolver):
         # --- zero proper portion of Jarray
         for indts in range(top.nsndts):
             if top.ldts[indts]:
-                self.fields.Jarray[...,indts] = 0.
+                self.fields.J1array[...,indts] = 0.
+                self.fields.J2array[...,indts] = 0.
+                self.fields.J3array[...,indts] = 0.
                 if self.fields.circ_m:
-                    self.fields.J_circ[...] = 0.
+                    self.fields.J1_circ[...] = 0.
+                    self.fields.J2_circ[...] = 0.
+                    self.fields.J3_circ[...] = 0.
 #        if self.refinement is not None:
 #          self.field_coarse.fields.Jarray[...,indts] = 0.
                 if self.l_getrho:
@@ -1804,21 +1816,29 @@ class EM3D(SubcycledPoissonSolver):
                 self.apply_rho_bc(self.field_coarse.block)
 
         if self.l_sumjx:
-            j = self.fields.Jarray[0,:,:,:,0]*0.
+            j1 = self.fields.J1array[0,:,:,0]*0.
+            j2 = self.fields.J2array[0,:,:,0]*0.
+            j3 = self.fields.J3array[0,:,:,0]*0.
             for i in range(shape(self.fields.Jarray)[0]):
-                j+=self.fields.Jarray[i,:,:,:,0]
+                j1+=self.fields.J1array[i,:,:,0]
+                j2+=self.fields.J2array[i,:,:,0]
+                j3+=self.fields.J3array[i,:,:,0]
             for i in range(shape(self.fields.Jarray)[0]):
-                self.fields.Jarray[i,:,:,:,0]=j.copy()
+                self.fields.J1array[i,:,:,0]=j1.copy()
+                self.fields.J2array[i,:,:,0]=j2.copy()
+                self.fields.J3array[i,:,:,0]=j3.copy()
 
         # --- point J to first slice of Jarray
-        self.fields.J = self.fields.Jarray[:,:,:,:,0]
+        self.fields.Jx = self.fields.J1array[:,:,:,0]
+        self.fields.Jy = self.fields.J2array[:,:,:,0]
+        self.fields.Jz = self.fields.J3array[:,:,:,0]
         if self.l_getrho:self.fields.Rho = self.fields.Rhoarray[:,:,:,0]
 
     def smoothdensity(self):
         if all(self.npass_smooth==0):return
-        nx,ny,nz = shape(self.fields.J[...,0])
+        nx,ny,nz = shape(self.fields.Jx)
         if self.circ_m > 0 :
-            nxc, nzc, circ_m = shape(self.fields.J_circ[:,:,0,:])
+            nxc, nzc, circ_m = shape(self.fields.J1_circ[:,:,:])
         nsm = shape(self.npass_smooth)[1]
         l_mask_method=1
         if self.mask_smooth is None:
@@ -1826,28 +1846,30 @@ class EM3D(SubcycledPoissonSolver):
             for js in range(nsm):
                 self.mask_smooth.append(None)
         if l_mask_method==2:
-            Jcopy = self.fields.J.copy()
+            Jxcopy = self.fields.Jx.copy()
+            Jycopy = self.fields.Jy.copy()
+            Jzcopy = self.fields.Jz.copy()
             if self.l_getrho:
                 Rhocopy = self.fields.Rho.copy()
         for js in range(nsm):
             if self.mask_smooth[js] is None or l_mask_method==2:
-                smooth3d_121_stride( self.fields.J[...,0],
+                smooth3d_121_stride( self.fields.Jx,
                     nx-1, ny-1, nz-1, self.npass_smooth[:,js].copy(),
                     self.alpha_smooth[:,js].copy(), self.stride_smooth[:,js].copy())
-                smooth3d_121_stride( self.fields.J[...,1],
+                smooth3d_121_stride( self.fields.Jy,
                     nx-1, ny-1, nz-1, self.npass_smooth[:,js].copy(),
                     self.alpha_smooth[:,js].copy(), self.stride_smooth[:,js].copy())
-                smooth3d_121_stride( self.fields.J[...,2],
+                smooth3d_121_stride( self.fields.Jz,
                     nx-1, ny-1, nz-1, self.npass_smooth[:,js].copy(),
                     self.alpha_smooth[:,js].copy(),self.stride_smooth[:,js].copy())
                 if self.circ_m > 0 :
-                    smoothcirc_121_stride( self.fields.J_circ[...,0,:],
+                    smoothcirc_121_stride( self.fields.J1_circ,
                         nxc-1, nzc-1, circ_m-1, self.npass_smooth[:,js].copy(),
                         self.alpha_smooth[:,js].copy(), self.stride_smooth[:,js].copy())
-                    smoothcirc_121_stride( self.fields.J_circ[...,1,:],
+                    smoothcirc_121_stride( self.fields.J2_circ,
                         nxc-1, nzc-1, circ_m-1, self.npass_smooth[:,js].copy(),
                         self.alpha_smooth[:,js].copy(), self.stride_smooth[:,js].copy())
-                    smoothcirc_121_stride( self.fields.J_circ[...,2,:],
+                    smoothcirc_121_stride( self.fields.J3_circ,
                         nxc-1, nzc-1, circ_m-1, self.npass_smooth[:,js].copy(),
                         self.alpha_smooth[:,js].copy(), self.stride_smooth[:,js].copy())
                 if self.l_getrho:
@@ -1859,15 +1881,15 @@ class EM3D(SubcycledPoissonSolver):
                         nxc-1, nzc-1, circ_m-1, self.npass_smooth[:,js].copy(),
                         self.alpha_smooth[:,js].copy(), self.stride_smooth[:,js].copy())
             else:
-                smooth3d_121_stride_mask( self.fields.J[...,0],
+                smooth3d_121_stride_mask( self.fields.Jx,
                     self.mask_smooth[js], nx-1, ny-1, nz-1,
                     self.npass_smooth[:,js].copy(), self.alpha_smooth[:,js].copy(),
                     self.stride_smooth[:,js].copy())
-                smooth3d_121_stride_mask( self.fields.J[...,1],
+                smooth3d_121_stride_mask( self.fields.Jy,
                     self.mask_smooth[js], nx-1, ny-1, nz-1,
                     self.npass_smooth[:,js].copy(), self.alpha_smooth[:,js].copy(),
                     self.stride_smooth[:,js].copy())
-                smooth3d_121_stride_mask( self.fields.J[...,2],
+                smooth3d_121_stride_mask( self.fields.Jz,
                     self.mask_smooth[js], nx-1, ny-1, nz-1,
                     self.npass_smooth[:,js].copy(), self.alpha_smooth[:,js].copy(),
                     self.stride_smooth[:,js].copy())
@@ -1877,9 +1899,12 @@ class EM3D(SubcycledPoissonSolver):
                         self.npass_smooth[:,js].copy(), self.alpha_smooth[:,js].copy(),
                         self.stride_smooth[:,js].copy())
         if l_mask_method==2:
-            for i in range(3):
-                self.fields.J[...,i] *= self.mask_smooth
-                self.fields.J[...,i] += Jcopy[...,i]*(1.-self.mask_smooth)
+            self.fields.Jx *= self.mask_smooth
+            self.fields.Jx += Jxcopy*(1.-self.mask_smooth)
+            self.fields.Jy *= self.mask_smooth
+            self.fields.Jy += Jycopy*(1.-self.mask_smooth)
+            self.fields.Jz *= self.mask_smooth
+            self.fields.Jz += Jzcopy*(1.-self.mask_smooth)
             if self.l_getrho:
                 self.fields.Rho *= self.mask_smooth
                 self.fields.Rho += Rhocopy*(1.-self.mask_smooth)
@@ -1903,7 +1928,7 @@ class EM3D(SubcycledPoissonSolver):
                                          self.stride_smooth[:,js].copy())
 
     def smoothfields(self):
-        nx,ny,nz = shape(self.fields.J[...,0])
+        nx,ny,nz = shape(self.fields.Jx)
         nsm = shape(self.npass_smooth)[1]
         l_mask_method=1
         if self.mask_smooth is None:
@@ -4146,14 +4171,14 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            jr0 = self.gatherarray( self.getarray( self.fields.J[:,:,:,0],guards,overlap=True) ) 
-            jtheta0 = self.gatherarray(self.getarray(self.fields.J[:,:,:,1],guards,overlap=True) )
+            jr0 = self.gatherarray( self.getarray( self.fields.Jx,guards,overlap=True) ) 
+            jtheta0 = self.gatherarray(self.getarray(self.fields.Jy,guards,overlap=True) )
             # Modes > 0
             if self.circ_m > 0 :
                 jr = self.gatherarray( self.getarray_circ( \
-                                        self.fields.J_circ[:,:,0,:],guards,overlap=True ) )  
+                                        self.fields.J1_circ,guards,overlap=True ) )  
                 jtheta = self.gatherarray( self.getarray_circ( \
-                                        self.fields.J_circ[:,:,1,:],guards,overlap=True ) )
+                                        self.fields.J2_circ,guards,overlap=True ) )
             else :
                 jr = None
                 jtheta = None
@@ -4163,7 +4188,7 @@ class EM3D(SubcycledPoissonSolver):
                             output=output, show=show, **kw )
             
         else: # Cartesian fields
-            f =  self.getarray(self.fields.J[...,0],
+            f =  self.getarray(self.fields.Jx,
                                guards,overlap=True)
             if show :
                 self.genericpfem3d( f, 'J_x', direction=direction,**kw)
@@ -4214,13 +4239,13 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            jr0 = self.gatherarray( self.getarray( self.fields.J[:,:,:,0],guards,overlap=True) )
-            jtheta0 = self.gatherarray(self.getarray(self.fields.J[:,:,:,1],guards,overlap=True))  
+            jr0 = self.gatherarray( self.getarray( self.fields.Jx,guards,overlap=True) )
+            jtheta0 = self.gatherarray(self.getarray(self.fields.Jy,guards,overlap=True))  
             if self.circ_m > 0 :
                 jr = self.gatherarray( self.getarray_circ( \
-                                        self.fields.J_circ[:,:,0,:],guards,overlap=True ) )  
+                                        self.fields.J1_circ,guards,overlap=True ) )  
                 jtheta = self.gatherarray( self.getarray_circ( \
-                                        self.fields.J_circ[:,:,1,:],guards,overlap=True ) ) 
+                                        self.fields.J2_circ,guards,overlap=True ) ) 
             else :
                 jr = None
                 jtheta = None
@@ -4230,7 +4255,7 @@ class EM3D(SubcycledPoissonSolver):
                              output=output, show=show, **kw )
             
         else: # Cartesian fields
-            f = self.getarray(self.fields.J[...,1],guards,
+            f = self.getarray(self.fields.Jy,guards,
                               overlap=True)
             if show :
                 self.genericpfem3d( f, 'J_y', direction=direction,**kw)
@@ -4282,11 +4307,11 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            jz0 = self.gatherarray( self.getarray( self.fields.J[:,:,:,2],guards,overlap=True) )
+            jz0 = self.gatherarray( self.getarray( self.fields.Jz,guards,overlap=True) )
             # Modes > 0
             if self.circ_m > 0 :
                 jz = self.gatherarray(self.getarray_circ( \
-                                    self.fields.J_circ[:,:,2,:],guards,overlap=True ) )  
+                                    self.fields.J3_circ,guards,overlap=True ) )  
             else :
                 jz = None
             # Sum and plot them
@@ -4294,7 +4319,7 @@ class EM3D(SubcycledPoissonSolver):
                 direction=direction, output=output, show=show, **kw )
             
         else: # Cartesian fields
-            f = self.getarray(self.fields.J[...,2],guards,
+            f = self.getarray(self.fields.Jz,guards,
                               overlap=True)
             if show :
                 self.genericpfem3d( f, 'J_z', direction=direction,**kw)
@@ -4346,11 +4371,11 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            jr0 = self.gatherarray( self.getarray( self.fields.J[:,:,:,0],guards,overlap=True) )
+            jr0 = self.gatherarray( self.getarray( self.fields.Jx,guards,overlap=True) )
             # Modes > 0  
             if self.circ_m > 0 :
                 jr = self.gatherarray( self.getarray_circ( \
-                                    self.fields.J_circ[:,:,0,:],guards,overlap=True ) )  
+                                    self.fields.J1_circ,guards,overlap=True ) )  
             else :
                 jr = None
             # Sum and plot them
@@ -4403,11 +4428,11 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            jt0 = self.gatherarray( self.getarray( self.fields.J[:,:,:,1],guards,overlap=True) )  
+            jt0 = self.gatherarray( self.getarray( self.fields.Jy,guards,overlap=True) )  
             # Modes > 0
             if self.circ_m > 0 :
                 jt = self.gatherarray( self.getarray_circ( \
-                                    self.fields.J_circ[:,:,1,:],guards,overlap=True ) ) 
+                                    self.fields.J2_circ,guards,overlap=True ) ) 
             else :
                 jt = None
             # Sum and plot them
@@ -5059,13 +5084,13 @@ class EM3D(SubcycledPoissonSolver):
     
 
     def getjx(self,guards=0,overlap=0):
-        return self.getarray(self.fields.J[:,:,:,0],guards,overlap)
+        return self.getarray(self.fields.Jx,guards,overlap)
 
     def getjy(self,guards=0,overlap=0):
-        return self.getarray(self.fields.J[:,:,:,1],guards,overlap)
+        return self.getarray(self.fields.Jy,guards,overlap)
 
     def getjz(self,guards=0,overlap=0):
-        return self.getarray(self.fields.J[:,:,:,2],guards,overlap)
+        return self.getarray(self.fields.Jz,guards,overlap)
 
     def getex(self,guards=0,overlap=0):
         return self.getarray(self.fields.Exp,guards,overlap)
@@ -5132,13 +5157,13 @@ class EM3D(SubcycledPoissonSolver):
         return self.getarray_circ(self.fields.F_circ,guards,overlap)
 
     def getjx_circ(self,guards=0,overlap=0):
-        return self.getarray_circ(self.fields.J_circ[:,:,0,:],guards,overlap)
+        return self.getarray_circ(self.fields.J1_circ,guards,overlap)
 
     def getjy_circ(self,guards=0,overlap=0):
-        return self.getarray_circ(self.fields.J_circ[:,:,1,:],guards,overlap)
+        return self.getarray_circ(self.fields.J2_circ,guards,overlap)
 
     def getjz_circ(self,guards=0,overlap=0):
-        return self.getarray_circ(self.fields.J_circ[:,:,2,:],guards,overlap)
+        return self.getarray_circ(self.fields.J3_circ,guards,overlap)
 
     def getrho_circ(self,guards=0,overlap=0):
         return self.getarray_circ(self.fields.Rho_circ,guards,overlap)
@@ -5174,7 +5199,7 @@ class EM3D(SubcycledPoissonSolver):
     def getdivj(self,guards=0,overlap=0):
         divj = zeros(shape(self.fields.Ex),'d')
         f = self.fields
-        getdive(f.J[...,0],f.J[...,1],f.J[...,2],divj,f.dx,f.dy,f.dz,
+        getdive(f.Jx,f.Jy,f.Jz,divj,f.dx,f.dy,f.dz,
                 f.nx,f.ny,f.nz,f.nxguard,f.nyguard,f.nzguard,
                 f.xmin,
                 self.l_2dxz,self.l_2drz,self.l_nodalgrid)

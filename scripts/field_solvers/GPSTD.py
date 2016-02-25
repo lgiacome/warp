@@ -892,7 +892,7 @@ class GPSTD_Maxwell(GPSTD):
 #            self.add_fields({"rho":yf.Rho},True)
         self.add_fields({"rho":yf.Rho},True)
         self.add_fields({"drho":yf.Rhoold},True)
-        self.add_fields({"jx":yf.J[...,0],"jy":yf.J[...,1],"jz":yf.J[...,2]},True)
+        self.add_fields({"jx":yf.Jx,"jy":yf.Jy,"jz":yf.Jz},True)
         
         self.get_Ffields()
 
@@ -1055,7 +1055,7 @@ class PSATD_Maxwell(GPSTD):
             self.add_fields({"g":yf.G})
         self.add_fields({"rho":yf.Rho},True)
         self.add_fields({"rhoold":yf.Rhoold},True)
-        self.add_fields({"jx":yf.J[...,0],"jy":yf.J[...,1],"jz":yf.J[...,2]},True)
+        self.add_fields({"jx":yf.Jx,"jy":yf.Jy,"jz":yf.z},True)
         
         self.get_Ffields()
 

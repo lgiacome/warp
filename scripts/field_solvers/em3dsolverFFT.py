@@ -393,8 +393,10 @@ class EM3DFFT(EM3D):
         if self.l_1dz:
             raise Exception('Need to add spectral current deposition in 1-D')
         elif self.l_2dxz:
-            j = self.fields.J[:,self.fields.nyguard,:,:]
-            depose_j_n_2dxz_spectral(j,n,
+            jx = self.fields.Jx[:,self.fields.nyguard,:]
+            jy = self.fields.Jy[:,self.fields.nyguard,:]
+            jz = self.fields.Jz[:,self.fields.nyguard,:]
+            depose_j_n_2dxz_spectral(jx,jy,jz,n,
                                                             x,z,ux,uy,uz,
                                                             gaminv,wfact,q*w,
                                                             f.xmin,f.zmin+self.zgrid,
@@ -466,9 +468,9 @@ class EM3DFFT(EM3D):
 
         fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
   
-        if emK.nx>1:JxF = fft.fftn(squeeze(f.J[ixl:ixu,iyl:iyu,izl:izu,0]))
-        if emK.ny>1:JyF = fft.fftn(squeeze(f.J[ixl:ixu,iyl:iyu,izl:izu,1]))
-        if emK.nz>1:JzF = fft.fftn(squeeze(f.J[ixl:ixu,iyl:iyu,izl:izu,2]))
+        if emK.nx>1:JxF = fft.fftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.ny>1:JyF = fft.fftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.nz>1:JzF = fft.fftn(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))
 
         em.dRhoodtF = fft.fftn(squeeze(f.DRhoodt[ixl:ixu,iyl:iyu,izl:izu]))
 
@@ -510,15 +512,15 @@ class EM3DFFT(EM3D):
         if emK.nx>1:
             Jx = fft.ifftn(JxF)
             Jx.resize(fields_shape)
-            f.J[ixl:ixu,iyl:iyu,izl:izu,0] = Jx.real
+            f.Jx[ixl:ixu,iyl:iyu,izl:izu] = Jx.real
         if emK.ny>1:
             Jy = fft.ifftn(JyF)
             Jy.resize(fields_shape)
-            f.J[ixl:ixu,iyl:iyu,izl:izu,1] = Jy.real
+            f.Jy[ixl:ixu,iyl:iyu,izl:izu] = Jy.real
         if emK.nz>1:
             Jz = fft.ifftn(JzF)
             Jz.resize(fields_shape)
-            f.J[ixl:ixu,iyl:iyu,izl:izu,2] = Jz.real
+            f.Jz[ixl:ixu,iyl:iyu,izl:izu] = Jz.real
 
     def getcurrent_spectral(self):
         if not self.spectral_current:return
@@ -538,8 +540,8 @@ class EM3DFFT(EM3D):
         else:
             ngz=0
         
-        JxF = fft.fft(f.J[ngx:-ngx-1,0,ngz:-ngz-1,0],axis=0)
-        JzF = fft.fft(f.J[ngx:-ngx-1,0,ngz:-ngz-1,2],axis=1)
+        JxF = fft.fft(f.Jx[ngx:-ngx-1,0,ngz:-ngz-1],axis=0)
+        JzF = fft.fft(f.Jz[ngx:-ngx-1,0,ngz:-ngz-1],axis=1)
 
         if self.l_spectral_staggered:
             JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx*exp(-j*emK.kx_unmod*self.dx/2))
@@ -566,19 +568,19 @@ class EM3DFFT(EM3D):
 
         # --- adjust average current values
         if emK.nx>1:
-            Jxcs=ave(cumsum(f.J[ngx:-ngx-1,0,ngz:-ngz-1,0],0),0)
+            Jxcs=ave(cumsum(f.Jx[ngx:-ngx-1,0,ngz:-ngz-1],0),0)
             Jx=fft.ifft(JxF,axis=0).real
             for i in range(shape(Jx)[1]):
                 Jx[:,i]-=Jxcs[i]*self.dx
 
         if emK.nz>1:
-            Jzcs=ave(cumsum(f.J[ngx:-ngx-1,0,ngz:-ngz-1,2],1),1)
+            Jzcs=ave(cumsum(f.Jz[ngx:-ngx-1,0,ngz:-ngz-1],1),1)
             Jz=fft.ifft(JzF,axis=1).real
             for i in range(shape(Jz)[0]):
                 Jz[i,:]-=Jzcs[i]*self.dz
 
-        f.J[ngx:-ngx-1,0,ngz:-ngz-1,0]=Jx
-        f.J[ngx:-ngx-1,0,ngz:-ngz-1,2]=Jz
+        f.Jx[ngx:-ngx-1,0,ngz:-ngz-1]=Jx
+        f.Jz[ngx:-ngx-1,0,ngz:-ngz-1]=Jz
 
         self.JxF=JxF
         self.JzF=JzF
@@ -588,7 +590,7 @@ class EM3DFFT(EM3D):
     def smoothdensity(self):
         if all(self.npass_smooth==0):return
         EM3D.smoothdensity(self)
-        nx,ny,nz = shape(self.fields.J[...,0])
+        nx,ny,nz = shape(self.fields.Jx)
         nsm = shape(self.npass_smooth)[1]
         l_mask_method=1
         if self.mask_smooth is None:
@@ -659,9 +661,9 @@ class EM3DFFT(EM3D):
 #            self.GPSTDMaxwell.fields['rho']=self.fields.Rho
             self.GPSTDMaxwell.fields['drho']=self.fields.Rho-self.fields.Rhoold
             if self.l_getrho:self.GPSTDMaxwell.fields['rho']=self.fields.Rhoold
-        self.GPSTDMaxwell.fields['jx']=self.fields.J[...,0]
-        self.GPSTDMaxwell.fields['jy']=self.fields.J[...,1]
-        self.GPSTDMaxwell.fields['jz']=self.fields.J[...,2]
+        self.GPSTDMaxwell.fields['jx']=self.fields.Jx
+        self.GPSTDMaxwell.fields['jy']=self.fields.Jy
+        self.GPSTDMaxwell.fields['jz']=self.fields.Jz
         
 #        J = self.fields.J.copy()
         

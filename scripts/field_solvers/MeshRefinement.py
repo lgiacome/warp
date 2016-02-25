@@ -3583,12 +3583,12 @@ class EMMRBlock(MeshRefinement,EM3D):
         kw['cmin'] = cmin
         kw['cmax'] = cmax
         kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.J[:,:,:,0],guards,overlap=True),'J_x',**kw)
+        self.genericpfem3d(self.getarray(self.fields.Jx,guards,overlap=True),'J_x',**kw)
         if l_children:
             for i in range(1,len(self.blocklists)):
                 for c in self.blocklists[i]:
                     if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.J[:,:,:,0],guards,overlap=True),'J_x',**kw)
+                        c.genericpfem3d(c.getarray(c.fields.Jx,guards,overlap=True),'J_x',**kw)
                     else:
                         c.genericpfem3d(None,'J_x',**kw)
 
@@ -3597,12 +3597,12 @@ class EMMRBlock(MeshRefinement,EM3D):
         kw['cmin'] = cmin
         kw['cmax'] = cmax
         kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.J[:,:,:,1],guards,overlap=True),'J_y',**kw)
+        self.genericpfem3d(self.getarray(self.fields.Jy,guards,overlap=True),'J_y',**kw)
         if l_children:
             for i in range(1,len(self.blocklists)):
                 for c in self.blocklists[i]:
                     if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.J[:,:,:,1],guards,overlap=True),'J_y',**kw)
+                        c.genericpfem3d(c.getarray(c.fields.Jy,guards,overlap=True),'J_y',**kw)
                     else:
                         c.genericpfem3d(None,'J_y',**kw)
 
@@ -3611,12 +3611,12 @@ class EMMRBlock(MeshRefinement,EM3D):
         kw['cmin'] = cmin
         kw['cmax'] = cmax
         kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.J[:,:,:,2],guards,overlap=True),'J_z',**kw)
+        self.genericpfem3d(self.getarray(self.fields.Jz,guards,overlap=True),'J_z',**kw)
         if l_children:
             for i in range(1,len(self.blocklists)):
                 for c in self.blocklists[i]:
                     if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.J[:,:,:,2],guards,overlap=True),'J_z',**kw)
+                        c.genericpfem3d(c.getarray(c.fields.Jz,guards,overlap=True),'J_z',**kw)
                     else:
                         c.genericpfem3d(None,'J_z',**kw)
 
