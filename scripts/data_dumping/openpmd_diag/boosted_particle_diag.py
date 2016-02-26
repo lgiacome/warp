@@ -13,7 +13,7 @@ import time
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
 from parallel import gatherarray
-import pdb
+
 class BoostedParticleDiagnostic(ParticleDiagnostic):
     """
     Class that writes the particles *in the lab frame*, 
