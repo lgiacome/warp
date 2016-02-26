@@ -535,7 +535,7 @@ case(0,1,3) ! Yee stencil on the E push
                           f%dx,f%dy,f%dz,f%clight)
      if (f%circ_m>0) &
        call push_em3d_evec_circ(f%ex_circ,f%ey_circ,f%ez_circ, &
-                                f%bx_circ,f%by_circ,f%bz_circ,f%J1_circ,f%J2_circ,f%J3_circ, &
+                                f%bx_circ,f%by_circ,f%bz_circ,f%Jx_circ,f%Jy_circ,f%Jz_circ, &
                                 mudt,dtsdx,dtsdz,f%nx,f%nz,f%nxguard,f%nzguard, &
                                 f%xmin,f%zmin,f%dx,f%dz,f%clight,f%circ_m)
     else
@@ -6444,81 +6444,81 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
            else
               ifact=-1
            end if 
-           f%j2_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) = f%j2_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) &
-                + ifact*f%j2_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,m)
-           f%j3_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) = f%j3_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) &
-                + ifact*f%j3_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,m)
-           f%j1_circ(f%ixmin:f%ixmin+f%nxguard-1,:,m) = f%j1_circ(f%ixmin:f%ixmin+f%nxguard-1,:,m) &
-                - ifact*f%j1_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,m)
+           f%Jy_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) = f%Jy_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) &
+                + ifact*f%Jy_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,m)
+           f%Jz_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) = f%Jz_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) &
+                + ifact*f%Jz_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,m)
+           f%Jx_circ(f%ixmin:f%ixmin+f%nxguard-1,:,m) = f%Jx_circ(f%ixmin:f%ixmin+f%nxguard-1,:,m) &
+                - ifact*f%Jx_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,m)
         end do
      end if
 
     if (xlbnd==dirichlet) then
-     f%j2_circ(f%ixmin:f%ixmin+f%nxguard,:,:) = f%j2_circ(f%ixmin:f%ixmin+f%nxguard,:,:) &
-                                                 - f%j2_circ(f%ixmin:f%ixmin-f%nxguard:-1,:,:)
-     f%j3_circ(f%ixmin:f%ixmin+f%nxguard,:,:) = f%j3_circ(f%ixmin:f%ixmin+f%nxguard,:,:) &
-                                                 - f%j3_circ(f%ixmin:f%ixmin-f%nxguard:-1,:,:)
-     f%j1_circ(f%ixmin:f%ixmin+f%nxguard-1,:,:) = f%j1_circ(f%ixmin:f%ixmin+f%nxguard-1,:,:) &
-                                                 + f%j1_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,:)
+     f%Jy_circ(f%ixmin:f%ixmin+f%nxguard,:,:) = f%Jy_circ(f%ixmin:f%ixmin+f%nxguard,:,:) &
+                                                 - f%Jy_circ(f%ixmin:f%ixmin-f%nxguard:-1,:,:)
+     f%Jz_circ(f%ixmin:f%ixmin+f%nxguard,:,:) = f%Jz_circ(f%ixmin:f%ixmin+f%nxguard,:,:) &
+                                                 - f%Jz_circ(f%ixmin:f%ixmin-f%nxguard:-1,:,:)
+     f%Jx_circ(f%ixmin:f%ixmin+f%nxguard-1,:,:) = f%Jx_circ(f%ixmin:f%ixmin+f%nxguard-1,:,:) &
+                                                 + f%Jx_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,:)
     end if
     if (xrbnd==dirichlet) then
-     f%j2_circ(f%ixmax-f%nxguard:f%ixmax,:,:) = f%j2_circ(f%ixmax-f%nxguard:f%ixmax,:,:) &
-                                                 - f%j2_circ(f%ixmax+f%nxguard:f%ixmax:-1,:,:)
-     f%j3_circ(f%ixmax-f%nxguard:f%ixmax,:,:) = f%j3_circ(f%ixmax-f%nxguard:f%ixmax,:,:) &
-                                                 - f%j3_circ(f%ixmax+f%nxguard:f%ixmax:-1,:,:)
-     f%j1_circ(f%ixmax-f%nxguard:f%ixmax-1,:,:) = f%j1_circ(f%ixmax-f%nxguard:f%ixmax-1,:,:) &
-                                                 + f%j1_circ(f%ixmax+f%nxguard-1:f%ixmax:-1,:,:)
+     f%Jy_circ(f%ixmax-f%nxguard:f%ixmax,:,:) = f%Jy_circ(f%ixmax-f%nxguard:f%ixmax,:,:) &
+                                                 - f%Jy_circ(f%ixmax+f%nxguard:f%ixmax:-1,:,:)
+     f%Jz_circ(f%ixmax-f%nxguard:f%ixmax,:,:) = f%Jz_circ(f%ixmax-f%nxguard:f%ixmax,:,:) &
+                                                 - f%Jz_circ(f%ixmax+f%nxguard:f%ixmax:-1,:,:)
+     f%Jx_circ(f%ixmax-f%nxguard:f%ixmax-1,:,:) = f%Jx_circ(f%ixmax-f%nxguard:f%ixmax-1,:,:) &
+                                                 + f%Jx_circ(f%ixmax+f%nxguard-1:f%ixmax:-1,:,:)
     end if
 
     if (zlbnd==dirichlet) then
-     f%j1_circ(:,f%izmin:f%izmin+f%nzguard,:) = f%j1_circ(:,f%izmin:f%izmin+f%nzguard,:) &
-                                                 - f%j1_circ(:,f%izmin:f%izmin-f%nzguard:-1,:)
-     f%j2_circ(:,f%izmin:f%izmin+f%nzguard,:) = f%j2_circ(:,f%izmin:f%izmin+f%nzguard,:) &
-                                                 - f%j2_circ(:,f%izmin:f%izmin-f%nzguard:-1,:)
-     f%j3_circ(:,f%izmin:f%izmin+f%nzguard-1,:) = f%j3_circ(:,f%izmin:f%izmin+f%nzguard-1,:) &
-                                                 + f%j3_circ(:,f%izmin-1:f%izmin-f%nzguard:-1,:)
+     f%Jx_circ(:,f%izmin:f%izmin+f%nzguard,:) = f%Jx_circ(:,f%izmin:f%izmin+f%nzguard,:) &
+                                                 - f%Jx_circ(:,f%izmin:f%izmin-f%nzguard:-1,:)
+     f%Jy_circ(:,f%izmin:f%izmin+f%nzguard,:) = f%Jy_circ(:,f%izmin:f%izmin+f%nzguard,:) &
+                                                 - f%Jy_circ(:,f%izmin:f%izmin-f%nzguard:-1,:)
+     f%Jz_circ(:,f%izmin:f%izmin+f%nzguard-1,:) = f%Jz_circ(:,f%izmin:f%izmin+f%nzguard-1,:) &
+                                                 + f%Jz_circ(:,f%izmin-1:f%izmin-f%nzguard:-1,:)
     end if
     if (zrbnd==dirichlet) then
-     f%j1_circ(:,f%izmax-f%nzguard:f%izmax,:) = f%j1_circ(:,f%izmax-f%nzguard:f%izmax,:) &
-                                                 - f%j1_circ(:,f%izmax+f%nzguard:f%izmax:-1,:)
-     f%j2_circ(:,f%izmax-f%nzguard:f%izmax,:) = f%j2_circ(:,f%izmax-f%nzguard:f%izmax,:) &
-                                                 - f%j2_circ(:,f%izmax+f%nzguard:f%izmax:-1,:)
-     f%j3_circ(:,f%izmax-f%nzguard:f%izmax-1,:) = f%j3_circ(:,f%izmax-f%nzguard:f%izmax-1,:) &
-                                                 + f%j3_circ(:,f%izmax+f%nzguard-1:f%izmax:-1,:)
+     f%Jx_circ(:,f%izmax-f%nzguard:f%izmax,:) = f%Jx_circ(:,f%izmax-f%nzguard:f%izmax,:) &
+                                                 - f%Jx_circ(:,f%izmax+f%nzguard:f%izmax:-1,:)
+     f%Jy_circ(:,f%izmax-f%nzguard:f%izmax,:) = f%Jy_circ(:,f%izmax-f%nzguard:f%izmax,:) &
+                                                 - f%Jy_circ(:,f%izmax+f%nzguard:f%izmax:-1,:)
+     f%Jz_circ(:,f%izmax-f%nzguard:f%izmax-1,:) = f%Jz_circ(:,f%izmax-f%nzguard:f%izmax-1,:) &
+                                                 + f%Jz_circ(:,f%izmax+f%nzguard-1:f%izmax:-1,:)
     end if
 
     if (xlbnd==neumann) then
-     f%j2_circ(f%ixmin:f%ixmin+f%nxguard,:,:) = f%j2_circ(f%ixmin:f%ixmin+f%nxguard,:,:) &
-                                                 + f%j2_circ(f%ixmin:f%ixmin-f%nxguard:-1,:,:)
-     f%j3_circ(f%ixmin:f%ixmin+f%nxguard,:,:) = f%j3_circ(f%ixmin:f%ixmin+f%nxguard,:,:) &
-                                                 + f%j3_circ(f%ixmin:f%ixmin-f%nxguard:-1,:,:)
-     f%j1_circ(f%ixmin:f%ixmin+f%nxguard-1,:,:) = f%j1_circ(f%ixmin:f%ixmin+f%nxguard-1,:,:) &
-                                                 - f%j1_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,:)
+     f%Jy_circ(f%ixmin:f%ixmin+f%nxguard,:,:) = f%Jy_circ(f%ixmin:f%ixmin+f%nxguard,:,:) &
+                                                 + f%Jy_circ(f%ixmin:f%ixmin-f%nxguard:-1,:,:)
+     f%Jz_circ(f%ixmin:f%ixmin+f%nxguard,:,:) = f%Jz_circ(f%ixmin:f%ixmin+f%nxguard,:,:) &
+                                                 + f%Jz_circ(f%ixmin:f%ixmin-f%nxguard:-1,:,:)
+     f%Jx_circ(f%ixmin:f%ixmin+f%nxguard-1,:,:) = f%Jx_circ(f%ixmin:f%ixmin+f%nxguard-1,:,:) &
+                                                 - f%Jx_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,:)
     end if
     if (xrbnd==neumann) then
-     f%j2_circ(f%ixmax-f%nxguard:f%ixmax,:,:) = f%j2_circ(f%ixmax-f%nxguard:f%ixmax,:,:) &
-                                                 + f%j2_circ(f%ixmax+f%nxguard:f%ixmax:-1,:,:)
-     f%j3_circ(f%ixmax-f%nxguard:f%ixmax,:,:) = f%j3_circ(f%ixmax-f%nxguard:f%ixmax,:,:) &
-                                                 + f%j3_circ(f%ixmax+f%nxguard:f%ixmax:-1,:,:)
-     f%j1_circ(f%ixmax-f%nxguard:f%ixmax-1,:,:) = f%j1_circ(f%ixmax-f%nxguard:f%ixmax-1,:,:) &
-                                                 - f%j1_circ(f%ixmax+f%nxguard-1:f%ixmax:-1,:,:)
+     f%Jy_circ(f%ixmax-f%nxguard:f%ixmax,:,:) = f%Jy_circ(f%ixmax-f%nxguard:f%ixmax,:,:) &
+                                                 + f%Jy_circ(f%ixmax+f%nxguard:f%ixmax:-1,:,:)
+     f%Jz_circ(f%ixmax-f%nxguard:f%ixmax,:,:) = f%Jz_circ(f%ixmax-f%nxguard:f%ixmax,:,:) &
+                                                 + f%Jz_circ(f%ixmax+f%nxguard:f%ixmax:-1,:,:)
+     f%Jx_circ(f%ixmax-f%nxguard:f%ixmax-1,:,:) = f%Jx_circ(f%ixmax-f%nxguard:f%ixmax-1,:,:) &
+                                                 - f%Jx_circ(f%ixmax+f%nxguard-1:f%ixmax:-1,:,:)
     end if
 
     if (zlbnd==neumann) then
-     f%j1_circ(:,f%izmin:f%izmin+f%nzguard,:) = f%j1_circ(:,f%izmin:f%izmin+f%nzguard,:) &
-                                                 + f%j1_circ(:,f%izmin:f%izmin-f%nzguard:-1,:)
-     f%j2_circ(:,f%izmin:f%izmin+f%nzguard,:) = f%j2_circ(:,f%izmin:f%izmin+f%nzguard,:) &
-                                                 + f%j2_circ(:,f%izmin:f%izmin-f%nzguard:-1,:)
-     f%j3_circ(:,f%izmin:f%izmin+f%nzguard-1,:) = f%j3_circ(:,f%izmin:f%izmin+f%nzguard-1,:) &
-                                                 - f%j3_circ(:,f%izmin-1:f%izmin-f%nzguard:-1,:)
+     f%Jx_circ(:,f%izmin:f%izmin+f%nzguard,:) = f%Jx_circ(:,f%izmin:f%izmin+f%nzguard,:) &
+                                                 + f%Jx_circ(:,f%izmin:f%izmin-f%nzguard:-1,:)
+     f%Jy_circ(:,f%izmin:f%izmin+f%nzguard,:) = f%Jy_circ(:,f%izmin:f%izmin+f%nzguard,:) &
+                                                 + f%Jy_circ(:,f%izmin:f%izmin-f%nzguard:-1,:)
+     f%Jz_circ(:,f%izmin:f%izmin+f%nzguard-1,:) = f%Jz_circ(:,f%izmin:f%izmin+f%nzguard-1,:) &
+                                                 - f%Jz_circ(:,f%izmin-1:f%izmin-f%nzguard:-1,:)
     end if
     if (zrbnd==neumann) then
-     f%j1_circ(:,f%izmax-f%nzguard:f%izmax,:) = f%j1_circ(:,f%izmax-f%nzguard:f%izmax,:) &
-                                                 + f%j1_circ(:,f%izmax+f%nzguard:f%izmax:-1,:)
-     f%j2_circ(:,f%izmax-f%nzguard:f%izmax,:) = f%j2_circ(:,f%izmax-f%nzguard:f%izmax,:) &
-                                                 + f%j2_circ(:,f%izmax+f%nzguard:f%izmax:-1,:)
-     f%j3_circ(:,f%izmax-f%nzguard:f%izmax-1,:) = f%j3_circ(:,f%izmax-f%nzguard:f%izmax-1,:) &
-                                                 - f%j3_circ(:,f%izmax+f%nzguard-1:f%izmax:-1,:)
+     f%Jx_circ(:,f%izmax-f%nzguard:f%izmax,:) = f%Jx_circ(:,f%izmax-f%nzguard:f%izmax,:) &
+                                                 + f%Jx_circ(:,f%izmax+f%nzguard:f%izmax:-1,:)
+     f%Jy_circ(:,f%izmax-f%nzguard:f%izmax,:) = f%Jy_circ(:,f%izmax-f%nzguard:f%izmax,:) &
+                                                 + f%Jy_circ(:,f%izmax+f%nzguard:f%izmax:-1,:)
+     f%Jz_circ(:,f%izmax-f%nzguard:f%izmax-1,:) = f%Jz_circ(:,f%izmax-f%nzguard:f%izmax-1,:) &
+                                                 - f%Jz_circ(:,f%izmax+f%nzguard-1:f%izmax:-1,:)
     end if
   end if
 
@@ -6532,7 +6532,7 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
        do j=f%ixmin-f%nxguard,f%ixmax+f%nxguard
           r = abs(f%xmin+(float(j)+0.5)*f%dx)
           f%jx(j,:,:) = f%jx(j,:,:)/(2.*pi*r)
-          if (f%circ_m>0) f%j1_circ(j,:,:) = f%j1_circ(j,:,:)/(2.*pi*r)
+          if (f%circ_m>0) f%Jx_circ(j,:,:) = f%Jx_circ(j,:,:)/(2.*pi*r)
        end do
 
      ! -- Jtheta and Jz
@@ -6543,8 +6543,8 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
         f%jy(j,:,:) = f%jy(j,:,:)/(2.*pi*r)    ! Mode 0
         f%jz(j,:,:) = f%jz(j,:,:)/(2.*pi*r)    ! Mode 0
         if (f%circ_m>0) then 
-            f%j2_circ(j,:,:) = f%j2_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
-            f%j3_circ(j,:,:) = f%j3_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
+            f%Jy_circ(j,:,:) = f%Jy_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
+            f%Jz_circ(j,:,:) = f%Jz_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
         endif
      end do
      
@@ -6559,12 +6559,12 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
            f%jz(j,:,:) = f%jz(j,:,:)/(pi*f%dx/4.)
         endif
         ! Jz, modes > 0
-        if (f%circ_m>0) f%j3_circ(j,:,:) = 0. ! Mode > 0 : Jz is zero on axis.
+        if (f%circ_m>0) f%Jz_circ(j,:,:) = 0. ! Mode > 0 : Jz is zero on axis.
         ! Jt, mode 0 and modes > 1 
         f%jy(j,:,:)= 0. ! Mode 0 : Jt is zero on axis.
-        if (f%circ_m>1) f%j2_circ(j,:,2:) = 0. ! Modes > 1 : Jt = 0.
+        if (f%circ_m>1) f%Jy_circ(j,:,2:) = 0. ! Modes > 1 : Jt = 0.
         ! Jt, mode 1
-        if (f%circ_m>0) f%j2_circ(j,:,1) = -I*f%j1_circ(j,:,1)
+        if (f%circ_m>0) f%Jy_circ(j,:,1) = -I*f%Jx_circ(j,:,1)
         ! Because the previous line uses Jr, it is important that Jr be properly calculated first
      else
         ! Not the axis
@@ -6572,8 +6572,8 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
         f%jy(j,:,:) = f%jy(j,:,:)/(2.*pi*r)    ! Mode 0
         f%jz(j,:,:) = f%jz(j,:,:)/(2.*pi*r)    ! Mode 0
         if (f%circ_m>0) then   
-            f%j2_circ(j,:,:) = f%j2_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
-            f%j3_circ(j,:,:) = f%j3_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
+            f%Jy_circ(j,:,:) = f%Jy_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
+            f%Jz_circ(j,:,:) = f%Jz_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
         endif
      end if
      
@@ -6583,8 +6583,8 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
         f%jy(j,:,:) = f%jy(j,:,:)/(2.*pi*r)
         f%jz(j,:,:) = f%jz(j,:,:)/(2.*pi*r)
         if (f%circ_m>0) then 
-            f%j2_circ(j,:,:) = f%j2_circ(j,:,:)/(2.*pi*r)
-            f%j3_circ(j,:,:) = f%j3_circ(j,:,:)/(2.*pi*r)
+            f%Jy_circ(j,:,:) = f%Jy_circ(j,:,:)/(2.*pi*r)
+            f%Jz_circ(j,:,:) = f%Jz_circ(j,:,:)/(2.*pi*r)
         endif 
      end do
   end if
@@ -8105,22 +8105,22 @@ subroutine em3d_exchange_bndj_x(fl,fu,ibuf)
            ! Check whether to also pack the circ arrays
            if (yfu%circ_m > 0) &
                 ! Factor 2 since a complex takes up twice more space
-                bufsize = bufsize + 2*n_slices*size(yfu%J1_circ(0,:,:))
+                bufsize = bufsize + 2*n_slices*size(yfu%Jx_circ(0,:,:))
            ! Allocate a buffer array in mpibuffer
            call mpi_packbuffer_init( bufsize, ibuf )
            ! Successively pack the Jx, Jy and Jz slices into that buffer
            ! Jx
            do ix = -yfu%nxguard,-1+nguardinu
               call mympi_pack(yfu%Jx(ix,:,:),ibuf)
-              if (yfu%circ_m > 0) call mympi_pack(yfu%J1_circ(ix,:,:),ibuf)
+              if (yfu%circ_m > 0) call mympi_pack(yfu%Jx_circ(ix,:,:),ibuf)
            end do
            ! Jy and Jz
            do ix = -yfu%nxguard,nguardinu
               call mympi_pack(yfu%Jy(ix,:,:),ibuf)
               call mympi_pack(yfu%Jz(ix,:,:),ibuf)
               if (yfu%circ_m > 0) then
-                 call mympi_pack( yfu%J2_circ(ix,:,:), ibuf)
-                 call mympi_pack( yfu%J3_circ(ix,:,:), ibuf)
+                 call mympi_pack( yfu%Jy_circ(ix,:,:), ibuf)
+                 call mympi_pack( yfu%Jz_circ(ix,:,:), ibuf)
               endif
            end do
            call mpi_isend_pack(fl%proc,1,ibuf)
@@ -8135,22 +8135,22 @@ subroutine em3d_exchange_bndj_x(fl,fu,ibuf)
            ! Check whether to also pack the circ arrays
            if (yfl%circ_m > 0) &
                 ! Factor 2 since a complex takes up twice more space
-                bufsize = bufsize + 2*n_slices*size(yfl%J1_circ(0,:,:))
+                bufsize = bufsize + 2*n_slices*size(yfl%Jx_circ(0,:,:))
            ! Allocate a buffer array in mpibuffer
            call mpi_packbuffer_init( bufsize, ibuf )
            ! Successively pack the Jx, Jy and Jz slices into that buffer
            ! Jx
            do ix = yfl%nx-nguardinl, yfl%nx+yfl%nxguard-1
               call mympi_pack(yfl%Jx(ix,:,:),ibuf)
-              if (yfl%circ_m > 0) call mympi_pack(yfl%J1_circ(ix,:,:),ibuf)
+              if (yfl%circ_m > 0) call mympi_pack(yfl%Jx_circ(ix,:,:),ibuf)
            end do
            ! Jy and Jz
            do ix = yfl%nx-nguardinl, yfl%nx+yfl%nxguard
               call mympi_pack(yfl%Jy(ix,:,:),ibuf)
               call mympi_pack(yfl%Jz(ix,:,:),ibuf)
               if (yfl%circ_m > 0) then
-                 call mympi_pack( yfl%J2_circ(ix,:,:),ibuf )
-                 call mympi_pack( yfl%J3_circ(ix,:,:),ibuf )
+                 call mympi_pack( yfl%Jy_circ(ix,:,:),ibuf )
+                 call mympi_pack( yfl%Jz_circ(ix,:,:),ibuf )
               endif
            end do
            call mpi_isend_pack(fu%proc,2,ibuf)
@@ -8173,15 +8173,15 @@ subroutine em3d_exchange_bndj_x(fl,fu,ibuf)
            yfl%Jz(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:) = yfu%Jz(-nguardinu:yfu%nxguard,:,:)
 
            if (yfu%circ_m > 0) then
-              yfu%J1_circ(-nguardinu:yfu%nxguard-1,:,:) = yfu%J1_circ(-nguardinu:yfu%nxguard-1,:,:)  &
-                   + yfl%J1_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:) 
-              yfu%J2_circ(-nguardinu:yfu%nxguard,:,:) = yfu%J2_circ(-nguardinu:yfu%nxguard,:,:)  &
-                   + yfl%J2_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
-              yfu%J3_circ(-nguardinu:yfu%nxguard,:,:) = yfu%J3_circ(-nguardinu:yfu%nxguard,:,:)  &
-                   + yfl%J3_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
-              yfl%J1_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:) = yfu%J1_circ(-nguardinu:yfu%nxguard-1,:,:)
-              yfl%J2_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:) = yfu%J2_circ(-nguardinu:yfu%nxguard,:,:)
-              yfl%J3_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:) = yfu%J3_circ(-nguardinu:yfu%nxguard,:,:)
+              yfu%Jx_circ(-nguardinu:yfu%nxguard-1,:,:) = yfu%Jx_circ(-nguardinu:yfu%nxguard-1,:,:)  &
+                   + yfl%Jx_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:) 
+              yfu%Jy_circ(-nguardinu:yfu%nxguard,:,:) = yfu%Jy_circ(-nguardinu:yfu%nxguard,:,:)  &
+                   + yfl%Jy_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
+              yfu%Jz_circ(-nguardinu:yfu%nxguard,:,:) = yfu%Jz_circ(-nguardinu:yfu%nxguard,:,:)  &
+                   + yfl%Jz_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
+              yfl%Jx_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:) = yfu%Jx_circ(-nguardinu:yfu%nxguard-1,:,:)
+              yfl%Jy_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:) = yfu%Jy_circ(-nguardinu:yfu%nxguard,:,:)
+              yfl%Jz_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:) = yfu%Jz_circ(-nguardinu:yfu%nxguard,:,:)
            endif
            
 #ifdef MPIPARALLEL
@@ -8226,7 +8226,7 @@ subroutine em3d_exchange_bndj_xrecv(fl,fu,ibuf)
            ! Check whether to also pack the circ arrays
            if (yfu%circ_m > 0) &
                 ! Factor 2 since a complex takes up twice more space
-                bufsize = bufsize + 2*n_slices*size(yfu%J1_circ(0,:,:))
+                bufsize = bufsize + 2*n_slices*size(yfu%Jx_circ(0,:,:))
            ! Allocate a buffer array in mpibuffer
            call mpi_packbuffer_init( bufsize, ibuf )
            ! Successively receive the Jx, Jy and Jz slices from that buffer
@@ -8235,8 +8235,8 @@ subroutine em3d_exchange_bndj_xrecv(fl,fu,ibuf)
               yfu%Jx(ix,:,:) = yfu%Jx(ix,:,:) + reshape(mpi_unpack_real_array( size(yfu%Jx(0,:,:)),ibuf), &
                    shape(yfu%Jx(0,:,:)))
               if ( yfu%circ_m > 0 ) &
-                   yfu%J1_circ(ix,:,:) = yfu%J1_circ(ix,:,:) + reshape( mpi_unpack_complex_array( &
-                   size(yfu%J1_circ(0,:,:)),ibuf), shape(yfu%J1_circ(0,:,:)) )
+                   yfu%Jx_circ(ix,:,:) = yfu%Jx_circ(ix,:,:) + reshape( mpi_unpack_complex_array( &
+                   size(yfu%Jx_circ(0,:,:)),ibuf), shape(yfu%Jx_circ(0,:,:)) )
            end do
            do ix = -nguardinu,yfu%nxguard
               yfu%Jy(ix,:,:) = yfu%Jy(ix,:,:) + reshape(mpi_unpack_real_array( size(yfu%Jx(0,:,:)),ibuf), &
@@ -8244,10 +8244,10 @@ subroutine em3d_exchange_bndj_xrecv(fl,fu,ibuf)
               yfu%Jz(ix,:,:) = yfu%Jz(ix,:,:) + reshape(mpi_unpack_real_array( size(yfu%Jx(0,:,:)),ibuf), &
                    shape(yfu%Jx(0,:,:)))
               if ( yfu%circ_m > 0 ) then
-                 yfu%J2_circ(ix,:,:) = yfu%J2_circ(ix,:,:) + reshape( mpi_unpack_complex_array( &
-                      size(yfu%J2_circ(0,:,:)),ibuf), shape(yfu%J2_circ(0,:,:)) )
-                 yfu%J3_circ(ix,:,:) = yfu%J3_circ(ix,:,:) + reshape( mpi_unpack_complex_array( &
-                      size(yfu%J3_circ(0,:,:)),ibuf), shape(yfu%J3_circ(0,:,:)) )
+                 yfu%Jy_circ(ix,:,:) = yfu%Jy_circ(ix,:,:) + reshape( mpi_unpack_complex_array( &
+                      size(yfu%Jy_circ(0,:,:)),ibuf), shape(yfu%Jy_circ(0,:,:)) )
+                 yfu%Jz_circ(ix,:,:) = yfu%Jz_circ(ix,:,:) + reshape( mpi_unpack_complex_array( &
+                      size(yfu%Jz_circ(0,:,:)),ibuf), shape(yfu%Jz_circ(0,:,:)) )
               endif
            end do
 
@@ -8261,7 +8261,7 @@ subroutine em3d_exchange_bndj_xrecv(fl,fu,ibuf)
            ! Check whether to also pack the circ arrays
            if (yfl%circ_m > 0) &
                 ! Factor 2 since a complex takes up twice more space
-                bufsize = bufsize + 2*n_slices*size(yfl%J1_circ(0,:,:))
+                bufsize = bufsize + 2*n_slices*size(yfl%Jx_circ(0,:,:))
            ! Allocate a buffer array in mpibuffer
            call mpi_packbuffer_init( bufsize, ibuf )
            ! Successively receive the Jx, Jy and Jz slices from that buffer
@@ -8270,8 +8270,8 @@ subroutine em3d_exchange_bndj_xrecv(fl,fu,ibuf)
               yfl%Jx(yfl%nx+ix,:,:) = yfl%Jx(yfl%nx+ix,:,:) + reshape( &
                    mpi_unpack_real_array( size(yfl%Jx(yfl%nx-1,:,:)),ibuf), shape(yfl%Jx(yfl%nx-1,:,:)))
               if ( yfl%circ_m > 0 ) &
-                   yfl%J1_circ(yfl%nx+ix,:,:) = yfl%J1_circ(yfl%nx+ix,:,:) + reshape( &
-                   mpi_unpack_complex_array( size(yfl%J1_circ(yfl%nx-1,:,:)),ibuf), shape(yfl%J1_circ(yfl%nx-1,:,:)))
+                   yfl%Jx_circ(yfl%nx+ix,:,:) = yfl%Jx_circ(yfl%nx+ix,:,:) + reshape( &
+                   mpi_unpack_complex_array( size(yfl%Jx_circ(yfl%nx-1,:,:)),ibuf), shape(yfl%Jx_circ(yfl%nx-1,:,:)))
            end do
            do ix = -yfl%nxguard,nguardinl
               yfl%Jy(yfl%nx+ix,:,:) = yfl%Jy(yfl%nx+ix,:,:) + reshape( &
@@ -8279,10 +8279,10 @@ subroutine em3d_exchange_bndj_xrecv(fl,fu,ibuf)
               yfl%Jz(yfl%nx+ix,:,:) = yfl%Jz(yfl%nx+ix,:,:) + reshape( &
                    mpi_unpack_real_array( size(yfl%Jz(yfl%nx-1,:,:)),ibuf), shape(yfl%Jz(yfl%nx-1,:,:)))
               if ( yfl%circ_m > 0 ) then
-                 yfl%J2_circ(yfl%nx+ix,:,:) = yfl%J2_circ(yfl%nx+ix,:,:) + reshape( &
-                      mpi_unpack_complex_array( size(yfl%J2_circ(yfl%nx-1,:,:)),ibuf), shape(yfl%J2_circ(yfl%nx-1,:,:)))
-                 yfl%J3_circ(yfl%nx+ix,:,:) = yfl%J3_circ(yfl%nx+ix,:,:) + reshape( &
-                      mpi_unpack_complex_array( size(yfl%J3_circ(yfl%nx-1,:,:)),ibuf), shape(yfl%J3_circ(yfl%nx-1,:,:)))
+                 yfl%Jy_circ(yfl%nx+ix,:,:) = yfl%Jy_circ(yfl%nx+ix,:,:) + reshape( &
+                      mpi_unpack_complex_array( size(yfl%Jy_circ(yfl%nx-1,:,:)),ibuf), shape(yfl%Jy_circ(yfl%nx-1,:,:)))
+                 yfl%Jz_circ(yfl%nx+ix,:,:) = yfl%Jz_circ(yfl%nx+ix,:,:) + reshape( &
+                      mpi_unpack_complex_array( size(yfl%Jz_circ(yfl%nx-1,:,:)),ibuf), shape(yfl%Jz_circ(yfl%nx-1,:,:)))
               endif
            end do
         end if
@@ -10731,7 +10731,7 @@ subroutine em3d_exchange_bndj_z(fl,fu,ibuf)
            ! Check whether to also pack the circ arrays
            if (yfu%circ_m > 0) &
                 ! Factor 2 since a complex takes up twice more space
-                bufsize = bufsize + 2*n_slices*size(yfu%J1_circ(:,0,:))
+                bufsize = bufsize + 2*n_slices*size(yfu%Jx_circ(:,0,:))
            ! Allocate a buffer array in mpibuffer
            call mpi_packbuffer_init( bufsize, ibuf )
            ! Successively pack the Jx, Jy and Jz slices into that buffer
@@ -10739,19 +10739,19 @@ subroutine em3d_exchange_bndj_z(fl,fu,ibuf)
            do iz = -yfu%nzguard,nguardinu
               call mympi_pack(yfu%Jx(:,:,iz),ibuf)
               if (yfu%circ_m > 0) &
-                   call mympi_pack(yfu%J1_circ(:,iz,:),ibuf)
+                   call mympi_pack(yfu%Jx_circ(:,iz,:),ibuf)
            end do
            ! Jy
            do iz = -yfu%nzguard,nguardinu
               call mympi_pack(yfu%Jy(:,:,iz),ibuf)
               if (yfu%circ_m > 0) &
-                   call mympi_pack(yfu%J2_circ(:,iz,:),ibuf)
+                   call mympi_pack(yfu%Jy_circ(:,iz,:),ibuf)
            end do
            ! Jz
            do iz = -yfu%nzguard,nguardinu-1
               call mympi_pack(yfu%Jz(:,:,iz),ibuf)
               if (yfu%circ_m > 0) &
-                   call mympi_pack(yfu%J3_circ(:,iz,:),ibuf)
+                   call mympi_pack(yfu%Jz_circ(:,iz,:),ibuf)
            end do
            call mpi_isend_pack(fl%proc,1,ibuf)
 
@@ -10765,7 +10765,7 @@ subroutine em3d_exchange_bndj_z(fl,fu,ibuf)
            ! Check whether to also pack the circ arrays
            if (yfl%circ_m > 0) &
                 ! Factor 2 since a complex takes up twice more space
-                bufsize = bufsize + 2*n_slices*size(yfl%J1_circ(:,0,:))
+                bufsize = bufsize + 2*n_slices*size(yfl%Jx_circ(:,0,:))
            ! Allocate a buffer array in mpibuffer
            call mpi_packbuffer_init( bufsize, ibuf )
            ! Successively pack the Jx, Jy and Jz slices into that buffer
@@ -10773,17 +10773,17 @@ subroutine em3d_exchange_bndj_z(fl,fu,ibuf)
            do iz = yfl%nz-nguardinl, yfl%nz+yfl%nzguard
               call mympi_pack(yfl%Jx(:,:,iz),ibuf)
               if (yfl%circ_m > 0) &
-                   call mympi_pack(yfl%J1_circ(:,iz,:),ibuf)
+                   call mympi_pack(yfl%Jx_circ(:,iz,:),ibuf)
            end do
            do iz = yfl%nz-nguardinl, yfl%nz+yfl%nzguard
               call mympi_pack(yfl%Jy(:,:,iz),ibuf)
               if (yfl%circ_m > 0) &
-                   call mympi_pack(yfl%J2_circ(:,iz,:),ibuf)
+                   call mympi_pack(yfl%Jy_circ(:,iz,:),ibuf)
            end do
            do iz = yfl%nz-nguardinl, yfl%nz+yfl%nzguard-1
               call mympi_pack(yfl%Jz(:,:,iz),ibuf)
               if (yfl%circ_m > 0) &
-                   call mympi_pack(yfl%J3_circ(:,iz,:),ibuf)
+                   call mympi_pack(yfl%Jz_circ(:,iz,:),ibuf)
            end do
            call mpi_isend_pack(fu%proc,2,ibuf)
 
@@ -10805,18 +10805,18 @@ subroutine em3d_exchange_bndj_z(fl,fu,ibuf)
            yfl%Jz(:,:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1) = yfu%Jz(:,:,-nguardinu:yfu%nzguard-1)
 
            if (yfu%circ_m > 0) then
-              yfu%J1_circ(:,-nguardinu:yfu%nzguard,:) = yfu%J1_circ(:,-nguardinu:yfu%nzguard,:) &
-                   + yfl%J1_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:)
-              yfu%J2_circ(:,-nguardinu:yfu%nzguard,:) = yfu%J2_circ(:,-nguardinu:yfu%nzguard,:) &
-                   + yfl%J2_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:)
-              yfu%J3_circ(:,-nguardinu:yfu%nzguard-1,:) = yfu%J3_circ(:,-nguardinu:yfu%nzguard-1,:) &
-                   + yfl%J3_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1,:) 
-              yfl%J1_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:) = &
-                   yfu%J1_circ(:,-nguardinu:yfu%nzguard,:)
-              yfl%J2_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:) = &
-                   yfu%J2_circ(:,-nguardinu:yfu%nzguard,:)
-              yfl%J3_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1,:) = &
-                   yfu%J3_circ(:,-nguardinu:yfu%nzguard-1,:)
+              yfu%Jx_circ(:,-nguardinu:yfu%nzguard,:) = yfu%Jx_circ(:,-nguardinu:yfu%nzguard,:) &
+                   + yfl%Jx_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:)
+              yfu%Jy_circ(:,-nguardinu:yfu%nzguard,:) = yfu%Jy_circ(:,-nguardinu:yfu%nzguard,:) &
+                   + yfl%Jy_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:)
+              yfu%Jz_circ(:,-nguardinu:yfu%nzguard-1,:) = yfu%Jz_circ(:,-nguardinu:yfu%nzguard-1,:) &
+                   + yfl%Jz_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1,:) 
+              yfl%Jx_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:) = &
+                   yfu%Jx_circ(:,-nguardinu:yfu%nzguard,:)
+              yfl%Jy_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:) = &
+                   yfu%Jy_circ(:,-nguardinu:yfu%nzguard,:)
+              yfl%Jz_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1,:) = &
+                   yfu%Jz_circ(:,-nguardinu:yfu%nzguard-1,:)
            endif
            
 #ifdef MPIPARALLEL
@@ -10861,7 +10861,7 @@ subroutine em3d_exchange_bndj_zrecv(fl,fu,ibuf)
            ! Check whether to also pack the circ arrays
            if (yfu%circ_m > 0) &
                 ! Factor 2 since a complex takes up twice more space
-                bufsize = bufsize + 2*n_slices*size(yfu%J1_circ(:,0,:))
+                bufsize = bufsize + 2*n_slices*size(yfu%Jx_circ(:,0,:))
            ! Allocate a buffer array in mpibuffer
            call mpi_packbuffer_init( bufsize, ibuf )
            ! Successively receive the Jx, Jy and Jz slices from that buffer
@@ -10870,22 +10870,22 @@ subroutine em3d_exchange_bndj_zrecv(fl,fu,ibuf)
               yfu%Jx(:,:,iz) = yfu%Jx(:,:,iz) + reshape(mpi_unpack_real_array( size(yfu%Jx(:,:,0)),ibuf), &
                    shape(yfu%Jx(:,:,0)))
               if ( yfu%circ_m > 0 ) &
-                   yfu%J1_circ(:,iz,:) = yfu%J1_circ(:,iz,:) + reshape( mpi_unpack_complex_array( &
-                   size(yfu%J1_circ(:,0,:)),ibuf), shape(yfu%J1_circ(:,0,:)) )
+                   yfu%Jx_circ(:,iz,:) = yfu%Jx_circ(:,iz,:) + reshape( mpi_unpack_complex_array( &
+                   size(yfu%Jx_circ(:,0,:)),ibuf), shape(yfu%Jx_circ(:,0,:)) )
            end do
            do iz = -nguardinu,yfu%nzguard
               yfu%Jy(:,:,iz) = yfu%Jy(:,:,iz) + reshape(mpi_unpack_real_array( size(yfu%Jx(:,:,0)),ibuf), &
                    shape(yfu%Jx(:,:,0)))
               if ( yfu%circ_m > 0 ) &
-                   yfu%J2_circ(:,iz,:) = yfu%J2_circ(:,iz,:) + reshape( mpi_unpack_complex_array( &
-                   size(yfu%J2_circ(:,0,:)),ibuf), shape(yfu%J2_circ(:,0,:)) )
+                   yfu%Jy_circ(:,iz,:) = yfu%Jy_circ(:,iz,:) + reshape( mpi_unpack_complex_array( &
+                   size(yfu%Jy_circ(:,0,:)),ibuf), shape(yfu%Jy_circ(:,0,:)) )
            end do
            do iz = -nguardinu,yfu%nzguard-1
               yfu%Jz(:,:,iz) = yfu%Jz(:,:,iz) + reshape(mpi_unpack_real_array( size(yfu%Jx(:,:,0)),ibuf), &
                    shape(yfu%Jx(:,:,0)))
               if ( yfu%circ_m > 0 ) &
-                   yfu%J3_circ(:,iz,:) = yfu%J3_circ(:,iz,:) + reshape( mpi_unpack_complex_array( &
-                   size(yfu%J3_circ(:,0,:)),ibuf), shape(yfu%J3_circ(:,0,:)) )
+                   yfu%Jz_circ(:,iz,:) = yfu%Jz_circ(:,iz,:) + reshape( mpi_unpack_complex_array( &
+                   size(yfu%Jz_circ(:,0,:)),ibuf), shape(yfu%Jz_circ(:,0,:)) )
            end do
 
         else if (fu%proc/=my_index) then
@@ -10898,7 +10898,7 @@ subroutine em3d_exchange_bndj_zrecv(fl,fu,ibuf)
            ! Check whether to also pack the circ arrays
            if (yfl%circ_m > 0) &
                 ! Factor 2 since a complex takes up twice more space
-                bufsize = bufsize + 2*n_slices*size(yfl%J1_circ(:,0,:))
+                bufsize = bufsize + 2*n_slices*size(yfl%Jx_circ(:,0,:))
            ! Allocate a buffer array in mpibuffer
            call mpi_packbuffer_init( bufsize, ibuf )
            ! Successively receive the Jx, Jy and Jz slices from that buffer
@@ -10908,27 +10908,27 @@ subroutine em3d_exchange_bndj_zrecv(fl,fu,ibuf)
                    reshape(mpi_unpack_real_array( &
                    size(yfl%Jx(:,:,yfl%nz-1)),ibuf), shape(yfl%Jx(:,:,yfl%nz-1)))
               if ( yfl%circ_m > 0 ) &
-                   yfl%J1_circ(:,yfl%nz+iz,:) = yfl%J1_circ(:,yfl%nz+iz,:) + &
+                   yfl%Jx_circ(:,yfl%nz+iz,:) = yfl%Jx_circ(:,yfl%nz+iz,:) + &
                    reshape( mpi_unpack_complex_array( &
-                   size(yfl%J1_circ(:,0,:)),ibuf), shape(yfl%J1_circ(:,0,:)) )
+                   size(yfl%Jx_circ(:,0,:)),ibuf), shape(yfl%Jx_circ(:,0,:)) )
            end do
            do iz = -yfl%nzguard,nguardinl
               yfl%Jy(:,:,yfl%nz+iz) = yfl%Jy(:,:,yfl%nz+iz) + &
                    reshape(mpi_unpack_real_array( &
                    size(yfl%Jy(:,:,yfl%nz-1)),ibuf), shape(yfl%Jy(:,:,yfl%nz-1)))
               if ( yfl%circ_m > 0 ) &
-                   yfl%J2_circ(:,yfl%nz+iz,:) = yfl%J2_circ(:,yfl%nz+iz,:) + &
+                   yfl%Jy_circ(:,yfl%nz+iz,:) = yfl%Jy_circ(:,yfl%nz+iz,:) + &
                    reshape( mpi_unpack_complex_array( &
-                   size(yfl%J2_circ(:,0,:)),ibuf), shape(yfl%J2_circ(:,0,:)) )
+                   size(yfl%Jy_circ(:,0,:)),ibuf), shape(yfl%Jy_circ(:,0,:)) )
            end do
            do iz = -yfl%nzguard,nguardinl-1
               yfl%Jz(:,:,yfl%nz+iz) = yfl%Jz(:,:,yfl%nz+iz) + &
                    reshape(mpi_unpack_real_array( &
                    size(yfl%Jz(:,:,yfl%nz-1)),ibuf), shape(yfl%Jz(:,:,yfl%nz-1)))
               if ( yfl%circ_m > 0 ) &
-                   yfl%J3_circ(:,yfl%nz+iz,:) = yfl%J3_circ(:,yfl%nz+iz,:) + &
+                   yfl%Jz_circ(:,yfl%nz+iz,:) = yfl%Jz_circ(:,yfl%nz+iz,:) + &
                    reshape( mpi_unpack_complex_array( &
-                   size(yfl%J3_circ(:,0,:)),ibuf), shape(yfl%J3_circ(:,0,:)) )
+                   size(yfl%Jz_circ(:,0,:)),ibuf), shape(yfl%Jz_circ(:,0,:)) )
            end do
         end if
      end select

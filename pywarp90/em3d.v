@@ -757,9 +757,9 @@ Bzp_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
 F_circ(-nxguard:nxf+nxguard,-nzguard:nzf+nzguard,1:circ_m) _complex
 Rho_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
 Rhoarray_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,ntimes,1:circ_m) _complex
-J1_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
-J2_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
-J3_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
+Jx_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
+Jy_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
+Jz_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
 Jarray_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,3,ntimes,1:circ_m) _complex
 Ax(-nxguard:nxpo+nxguard,-nyguard:nypo+nyguard,-nzguard:nzpo+nzguard) _real
 Ay(-nxguard:nxpo+nxguard,-nyguard:nypo+nyguard,-nzguard:nzpo+nzguard) _real
