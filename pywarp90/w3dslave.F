@@ -68,21 +68,12 @@ c===========================================================================
       integer(MPIISZ):: mpierror,comm_world_mpiisz
       include "mpif.h"
       comm_world_mpiisz = comm_world
-      if (lcomm_cartesian) THEN 
-      ! Communicator for current decomposition already created 
-c     --- Create communicator groups for processors along each axis.
-        call MPI_COMM_SPLIT(decomp%mpi_comm,
-     &                    decomp%iyproc+decomp%izproc*decomp%nyprocs,
-     &                    decomp%my_index,decomp%mpi_comm_x,mpierror)
-        call MPI_COMM_SPLIT(decomp%mpi_comm,
-     &                    decomp%izproc+decomp%ixproc*decomp%nzprocs,
-     &                    decomp%my_index,decomp%mpi_comm_y,mpierror)
-        call MPI_COMM_SPLIT(decomp%mpi_comm,
-     &                    decomp%ixproc+decomp%iyproc*decomp%nxprocs,
-     &                    decomp%my_index,decomp%mpi_comm_z,mpierror)
-      else 
-      ! Copy communicator 
+      
+!     --- If cartesian communicator not created, use a duplicate of mpi_comm_world instead
+      if (.NOT. lcomm_cartesian) THEN 
+        ! Copy communicator 
         call MPI_COMM_DUP(comm_world_mpiisz,decomp%mpi_comm,mpierror)
+      endif 
 
 c     --- Create communicator groups for processors along each axis.
         call MPI_COMM_SPLIT(decomp%mpi_comm,
@@ -95,7 +86,6 @@ c     --- Create communicator groups for processors along each axis.
      &                    decomp%ixproc+decomp%iyproc*decomp%nxprocs,
      &                    decomp%my_index,decomp%mpi_comm_z,mpierror)      
       
-      endif
       return
       end
 c===========================================================================
