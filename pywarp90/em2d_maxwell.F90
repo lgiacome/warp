@@ -279,7 +279,7 @@ if (f%l_usecoeffs) then
       f%Ex(j,k) = f%aEx(j,k)*f%Ex(j,k)   &
                 + f%bEx(j,k)*f%Bz(j,k)   &
                 + f%cEx(j,k)*f%Bz(j,k-1) &
-                - f%Ex(j,k)*f%Jx(j,k)
+                - f%Ex(j,k)*f%J(j,k,1)
     end do
   end do
 
@@ -289,7 +289,7 @@ if (f%l_usecoeffs) then
       f%Ey(j,k) = f%aEy(j,k)*f%Ey(j,k)   &
                 - f%bEy(j,k)*f%Bz(j,k)   &
                 - f%cEy(j,k)*f%Bz(j-1,k) &
-                - f%dEy(j,k)*f%Jy(j,k)
+                - f%dEy(j,k)*f%J(j,k,2)
     end do
   end do
 
@@ -301,7 +301,7 @@ if (f%l_usecoeffs) then
                 + f%cEzx(j,k)*f%By(j,k)   &
                 - f%bEzy(j,k)*f%Bx(j,k+1) &
                 - f%cEzy(j,k)*f%Bx(j,k)   &
-                - f%dEz(j,k)*f%Jz(j,k)
+                - f%dEz(j,k)*f%J(j,k,3)
     end do
   end do
 else
@@ -313,21 +313,21 @@ else
   ! advance Ex
   do k = 1, f%ny+1
 !    j = 0
-!      f%Ex(j,k) = 1.e10!f%Ex(j,k) + dtsdy * (f%Bz(j,k)   - f%Bz(j,k-1)) - mudt  * f%Jx(j,k)
+!      f%Ex(j,k) = 1.e10!f%Ex(j,k) + dtsdy * (f%Bz(j,k)   - f%Bz(j,k-1)) - mudt  * f%J(j,k,1)
 !    j = f%nx+1
-!      f%Ex(j,k) = 1.e10!f%Ex(j,k) + dtsdy * (f%Bz(j,k)   - f%Bz(j,k-1)) - mudt  * f%Jx(j,k)
+!      f%Ex(j,k) = 1.e10!f%Ex(j,k) + dtsdy * (f%Bz(j,k)   - f%Bz(j,k-1)) - mudt  * f%J(j,k,1)
     do j = 1, f%nx
-      f%Exdj(j,k) = - f%a*mudt  * f%Jx(j,k)  &
-                    - f%b*mudt  * f%Jx(j+1,k)  &
-                    - f%b*mudt  * f%Jx(j-1,k)  &
+      f%Exdj(j,k) = - f%a*mudt  * f%J(j,k,1)  &
+                    - f%b*mudt  * f%J(j+1,k,1)  &
+                    - f%b*mudt  * f%J(j-1,k,1)  &
                     - f%Exdj(j,k)
-      f%Ex(j,k) = f%Ex(j,k) + f%a * (dtsdy * (f%Bz(j,  k)   - f%Bz(j,  k-1)) - mudt * f%Jx(j,  k)) &
-                            + f%b * (dtsdy * (f%Bz(j+1,k)   - f%Bz(j+1,k-1)) - mudt * f%Jx(j+1,k)) &
-                            + f%b * (dtsdy * (f%Bz(j-1,k)   - f%Bz(j-1,k-1)) - mudt * f%Jx(j-1,k)) &
+      f%Ex(j,k) = f%Ex(j,k) + f%a * (dtsdy * (f%Bz(j,  k)   - f%Bz(j,  k-1)) - mudt * f%J(j,  k,1)) &
+                            + f%b * (dtsdy * (f%Bz(j+1,k)   - f%Bz(j+1,k-1)) - mudt * f%J(j+1,k,1)) &
+                            + f%b * (dtsdy * (f%Bz(j-1,k)   - f%Bz(j-1,k-1)) - mudt * f%J(j-1,k,1)) &
                             - 0.5*f%Exdj(j,k) * 0.
-      f%Exdj(j,k) = - f%a*mudt  * f%Jx(j,k)  &
-                    - f%b*mudt  * f%Jx(j+1,k)  &
-                    - f%b*mudt  * f%Jx(j-1,k)  
+      f%Exdj(j,k) = - f%a*mudt  * f%J(j,k,1)  &
+                    - f%b*mudt  * f%J(j+1,k,1)  &
+                    - f%b*mudt  * f%J(j-1,k,1)  
     end do
   end do
 
@@ -336,21 +336,21 @@ else
   do k = 0, f%ny+1
     if(k==0 .or. k==f%ny+1) then
 !      do j = 1, f%nx+1
-!        f%Ey(j,k) = 0.e10!f%Ey(j,k) - dtsdx * (f%Bz(j,k)   - f%Bz(j-1,k)) - mudt  * f%Jy(j,k)
+!        f%Ey(j,k) = 0.e10!f%Ey(j,k) - dtsdx * (f%Bz(j,k)   - f%Bz(j-1,k)) - mudt  * f%J(j,k,2)
 !      end do
     else
       do j = 1, f%nx+1
-      f%Eydj(j,k) = - f%a*mudt  * f%Jy(j,k)  &
-                    - f%b*mudt  * f%Jy(j,k+1)  &
-                    - f%b*mudt  * f%Jy(j,k-1)  &
+      f%Eydj(j,k) = - f%a*mudt  * f%J(j,k,2)  &
+                    - f%b*mudt  * f%J(j,k+1,2)  &
+                    - f%b*mudt  * f%J(j,k-1,2)  &
                     - f%Eydj(j,k)
-        f%Ey(j,k) = f%Ey(j,k) - f%a * (dtsdx * (f%Bz(j,k)   - f%Bz(j-1,k  )) + mudt * f%Jy(j,k  )) &
-                              - f%b * (dtsdx * (f%Bz(j,k+1) - f%Bz(j-1,k+1)) + mudt * f%Jy(j,k+1)) &
-                              - f%b * (dtsdx * (f%Bz(j,k-1) - f%Bz(j-1,k-1)) + mudt * f%Jy(j,k-1)) &
+        f%Ey(j,k) = f%Ey(j,k) - f%a * (dtsdx * (f%Bz(j,k)   - f%Bz(j-1,k  )) + mudt * f%J(j,k  ,2)) &
+                              - f%b * (dtsdx * (f%Bz(j,k+1) - f%Bz(j-1,k+1)) + mudt * f%J(j,k+1,2)) &
+                              - f%b * (dtsdx * (f%Bz(j,k-1) - f%Bz(j-1,k-1)) + mudt * f%J(j,k-1,2)) &
                             - 0.5*f%Eydj(j,k)      * 0.                        
-      f%Eydj(j,k) = - f%a*mudt  * f%Jy(j,k)  &
-                    - f%b*mudt  * f%Jy(j,k+1)  &
-                    - f%b*mudt  * f%Jy(j,k-1)  
+      f%Eydj(j,k) = - f%a*mudt  * f%J(j,k,2)  &
+                    - f%b*mudt  * f%J(j,k+1,2)  &
+                    - f%b*mudt  * f%J(j,k-1,2)  
       end do
     end if
   end do
@@ -361,19 +361,19 @@ else
   ! advance Ez 
   do k = 0, f%ny+1
     do j = 0, f%nx+1
-      f%Ezdj(j,k) = - mudt  * f%Jz(j,k) - f%Ezdj(j,k)
+      f%Ezdj(j,k) = - mudt  * f%J(j,k,3) - f%Ezdj(j,k)
       if (j==0 .or. j==f%nx+1 .or. k==0 .or. k==f%ny+1) then 
       f%Ez(j,k) = f%Ez(j,k) + dtsdx * (f%By(j+1,k) - f%By(j,k)) &
                             - dtsdy * (f%Bx(j,k+1) - f%Bx(j,k)) &
-                            - mudt  * f%Jz(j,k) &
+                            - mudt  * f%J(j,k,3) &
                             - 0.5 * f%Ezdj(j,k) * 0.
       else
       f%Ez(j,k) = f%Ez(j,k) + dtsdx * (f%By(j+1,k) - f%By(j,k)) &
                             - dtsdy * (f%Bx(j,k+1) - f%Bx(j,k)) &
-                            - mudt  * f%Jz(j,k) &
+                            - mudt  * f%J(j,k,3) &
                             - 0.5 * f%Ezdj(j,k) * 0.
       end if      
-      f%Ezdj(j,k) = - mudt  * f%Jz(j,k)
+      f%Ezdj(j,k) = - mudt  * f%J(j,k,3)
     end do
   end do
 
@@ -383,7 +383,7 @@ else
   do k = 1, f%ny+1
     do j = 0, f%nx+1
       f%Ex(j,k) = f%Ex(j,k) + dtsdy * (f%Bz(j,k)   - f%Bz(j,k-1)) &
-                            - mudt  * f%Jx(j,k)
+                            - mudt  * f%J(j,k,1)
     end do
   end do
 
@@ -391,7 +391,7 @@ else
   do k = 0, f%ny+1
     do j = 1, f%nx+1
       f%Ey(j,k) = f%Ey(j,k) - dtsdx * (f%Bz(j,k)   - f%Bz(j-1,k)) &
-                            - mudt  * f%Jy(j,k)
+                            - mudt  * f%J(j,k,2)
     end do
   end do
 
@@ -400,7 +400,7 @@ else
     do j = 0, f%nx+1
       f%Ez(j,k) = f%Ez(j,k) + dtsdx * (f%By(j+1,k) - f%By(j,k)) &
                             - dtsdy * (f%Bx(j,k+1) - f%Bx(j,k)) &
-                            - mudt  * f%Jz(j,k)
+                            - mudt  * f%J(j,k,3)
     end do
   end do
  end if
@@ -421,14 +421,14 @@ if (f%dirprop/=0) then
     do j = 0, f%nx+1
       f%Ez_s(j,k) = f%Ez_s(j,k) - 2.*dtsdx * f%By_sbnd(j,k) &
 !                                - 1.*dtsdy * (f%Bx(j,k+1) - f%Bx(j,k)) &
-                                - mudt  * f%Jz(j,k)   
+                                - mudt  * f%J(j,k,3)   
       f%Ey_sbnd(j,k) = f%cst1*f%Ey_sbnd(j,k) + f%cst2*f%Bz_s(j,k)
       f%Ezx_s(j,k) = f%Ezx_s(j,k) + dtsdx * (f%By(j+1,k) - f%By(j,k)) &
                             - 0.5*dtsdy * (f%Bx(j,k+1) - f%Bx(j,k)) &
-                            - 0.5*mudt  * f%Jz(j,k)
+                            - 0.5*mudt  * f%J(j,k,3)
       f%Ez(j,k) = f%Ez(j,k)  &
 !                            + 0.5*dtsdy * (f%Bx(j,k+1) - f%Bx(j,k)) &
-                            + 0.5*mudt  * f%Jz(j,k)
+                            + 0.5*mudt  * f%J(j,k,3)
       f%Ezx_s(j,k) = f%Ez(j,k)
     end do
   end do
@@ -1264,7 +1264,7 @@ INTEGER :: which,i,j
 
       return
       end subroutine smooth
-   subroutine project_jxjy(jxfin,jyfin,jxcoarse,jycoarse,rap)
+   subroutine project_jxjy(jxjyfin,jxjycoarse,rap)
    ! Routine de projection des J d'une grille fine sur une grille coarsesiere.
    ! Soit nx*ny la taille de la grille coarsesiere en nombre de mailles.
    ! On suppose que la maille fine a un nombre de mailles rap*nx*rap*ny.
@@ -1272,7 +1272,7 @@ INTEGER :: which,i,j
    ! pour chaque dimension de facon a pouvoir utiliser la fonction modulo
    ! pour calculer les poids. Les tailles des tableaux passes sont
    ! en definitive jxjycoarse(0:nx+1,0:ny+1,2) et jxjyfin(0:rap*nx+1,0:rap*ny+1,2).
-   real(kind=8), DIMENSION(0:,0:) :: jxfin, jyfin,jxcoarse, jycoarse
+   real(kind=8), DIMENSION(0:,0:,:) :: jxjyfin,jxjycoarse
    INTEGER :: rap
 
    INTEGER :: nxfin, nyfin, nxcoarse, nycoarse, j, k, jg, kg
@@ -1281,10 +1281,10 @@ INTEGER :: which,i,j
 !      invrapvol = 1./rap!**2
       invrapvol = 1./rap**2
 
-      nxfin = SIZE(jxfin,1)-2
-      nyfin = SIZE(jxfin,2)-2
-      nxcoarse = SIZE(jxcoarse,1)-2
-      nycoarse = SIZE(jxcoarse,2)-2
+      nxfin = SIZE(jxjyfin,1)-2
+      nyfin = SIZE(jxjyfin,2)-2
+      nxcoarse = SIZE(jxjycoarse,1)-2
+      nycoarse = SIZE(jxjycoarse,2)-2
 
       IF(nxcoarse*rap/=nxfin .OR. nycoarse*rap/=nyfin) then
         call kaboom("Error in project_jxjy: rap does not match grid sizes.")
@@ -1296,8 +1296,8 @@ INTEGER :: which,i,j
         w = REAL(MOD(k,rap))/rap
         do j = 0, nxfin-1
           jg = j/rap
-          jxcoarse(jg,kg  ) = jxcoarse(jg,kg  ) + (1.-w)*jxfin(j,k)*invrapvol
-          jxcoarse(jg,kg+1) = jxcoarse(jg,kg+1) +     w *jxfin(j,k)*invrapvol
+          jxjycoarse(jg,kg,  1) = jxjycoarse(jg,kg,  1) + (1.-w)*jxjyfin(j,k,1)*invrapvol
+          jxjycoarse(jg,kg+1,1) = jxjycoarse(jg,kg+1,1) +     w *jxjyfin(j,k,1)*invrapvol
         end do
       end do
 
@@ -1306,14 +1306,14 @@ INTEGER :: which,i,j
         do j = 0, nxfin
           jg = j/rap
           w = REAL(MOD(j,rap))/rap
-          jycoarse(jg,  kg) = jycoarse(jg  ,kg) + (1.-w)*jyfin(j,k)*invrapvol
-          jycoarse(jg+1,kg) = jycoarse(jg+1,kg) +     w *jyfin(j,k)*invrapvol
+          jxjycoarse(jg,  kg,2) = jxjycoarse(jg  ,kg,2) + (1.-w)*jxjyfin(j,k,2)*invrapvol
+          jxjycoarse(jg+1,kg,2) = jxjycoarse(jg+1,kg,2) +     w *jxjyfin(j,k,2)*invrapvol
         end do
       end do
 
    end subroutine project_jxjy
 
-   subroutine interpol_jxjy(jxfin,jyfin,jxcoarse, jycoarse,rap)
+   subroutine interpol_jxjy(jxjyfin,jxjycoarse,rap)
    ! Routine d'interpolation-soustraction des J d'une grille coarsesiere sur une grille fine.
    ! Soit nx*ny la taille de la grille coarsesiere en nombre de mailles.
    ! On suppose que la maille fine a un nombre de mailles rap*nx*rap*ny.
@@ -1321,18 +1321,18 @@ INTEGER :: which,i,j
    ! pour chaque dimension de facon a pouvoir utiliser la fonction modulo
    ! pour calculer les poids. Les tailles des tableaux passes sont
    ! en definitive jxjycoarse(0:nx+1,0:ny+1,2) et jxjyfin(0:rap*nx+1,0:rap*ny+1,2).
-   real(kind=8), DIMENSION(0:,0:) :: jxfin, jyfin,jxcoarse, jycoarse
+   real(kind=8), DIMENSION(0:,0:,:) :: jxjyfin,jxjycoarse
    INTEGER :: rap
 
    INTEGER :: nxfin, nyfin, nxcoarse, nycoarse, j, k, jg, kg
    real(kind=8) :: w
    logical :: l_onfinegridfirst = .true.
-   real(kind=8), DIMENSION(:,:), allocatable :: jxfin_new, jyfin_new
+   real(kind=8), DIMENSION(:,:,:), allocatable :: jxjyfin_new
 
-      nxfin = SIZE(jxfin,1)-2
-      nyfin = SIZE(jxfin,2)-2
-      nxcoarse = SIZE(jxcoarse,1)-2
-      nycoarse = SIZE(jxcoarse,2)-2
+      nxfin = SIZE(jxjyfin,1)-2
+      nyfin = SIZE(jxjyfin,2)-2
+      nxcoarse = SIZE(jxjycoarse,1)-2
+      nycoarse = SIZE(jxjycoarse,2)-2
 
       IF(nxcoarse*rap/=nxfin .OR. nycoarse*rap/=nyfin) then
         call kaboom("Error in interpol_jxjy: rap does not match grid sizes.")
@@ -1345,7 +1345,7 @@ INTEGER :: which,i,j
           w = REAL(MOD(k,rap))/rap
           do j = 0, nxfin-1
             jg = j/rap
-            jxfin(j,k) = jxfin(j,k)-((1.-w)*jxcoarse(jg,kg)+w*jxcoarse(jg,kg+1))/rap
+            jxjyfin(j,k,1) = jxjyfin(j,k,1)-((1.-w)*jxjycoarse(jg,kg,1)+w*jxjycoarse(jg,kg+1,1))/rap
           end do
         end do
 
@@ -1354,36 +1354,34 @@ INTEGER :: which,i,j
           do j = 0, nxfin
             jg = j/rap
             w = REAL(MOD(j,rap))/rap
-            jyfin(j,k) = jyfin(j,k)-((1.-w)*jycoarse(jg,kg)+w*jycoarse(jg+1,kg))/rap
+            jxjyfin(j,k,2) = jxjyfin(j,k,2)-((1.-w)*jxjycoarse(jg,kg,2)+w*jxjycoarse(jg+1,kg,2))/rap
           end do
         end do
       else
-        allocate(jxfin_new(0:nxfin+1,0:nyfin+1),jyfin_new(0:nxfin+1,0:nyfin+1))
-    jxfin_new=0.
-	jyfin_new=0.
+        allocate(jxjyfin_new(0:nxfin+1,0:nyfin+1,2))
+	jxjyfin_new=0.
         do k = 0, nyfin
           do j = 0, nxfin-1
-!            jxfin_new(j,  k) = jxfin_new(j,  k) +      jxfin(j,k)
-            jxfin_new(j+1,  k) = jxfin_new(j+1,  k) - 0.25*jxfin(j,k)
-            jxfin_new(j-1,  k) = jxfin_new(j-1,  k) - 0.25*jxfin(j,k)
-            jxfin_new(j,  k+1) = jxfin_new(j,  k+1) - 0.25*jxfin(j,k)
-            jxfin_new(j,  k-1) = jxfin_new(j,  k-1) - 0.25*jxfin(j,k)
+!            jxjyfin_new(j,  k,  1) = jxjyfin_new(j,  k,  1) +      jxjyfin(j,k,1)
+            jxjyfin_new(j+1,k,  1) = jxjyfin_new(j+1,k,  1) - 0.25*jxjyfin(j,k,1)
+            jxjyfin_new(j-1,k,  1) = jxjyfin_new(j-1,k,  1) - 0.25*jxjyfin(j,k,1)
+            jxjyfin_new(j,  k+1,1) = jxjyfin_new(j,  k+1,1) - 0.25*jxjyfin(j,k,1)
+            jxjyfin_new(j,  k-1,1) = jxjyfin_new(j,  k-1,1) - 0.25*jxjyfin(j,k,1)
           end do
         end do
 
         do k = 0, nyfin-1
           do j = 0, nxfin
-!            jyfin_new(j,  k) = jyfin_new(j,  k) +      jyfin(j,k)
-            jyfin_new(j+1,  k) = jyfin_new(j+1,  k) - 0.25*jyfin(j,k)
-            jyfin_new(j-1,  k) = jyfin_new(j-1,  k) - 0.25*jyfin(j,k)
-            jyfin_new(j,  k+1) = jyfin_new(j,  k+1) - 0.25*jyfin(j,k)
-            jyfin_new(j,  k-1) = jyfin_new(j,  k-1) - 0.25*jyfin(j,k)
+!            jxjyfin_new(j,  k,  2) = jxjyfin_new(j,  k,  2) +      jxjyfin(j,k,2)
+            jxjyfin_new(j+1,k,  2) = jxjyfin_new(j+1,k,  2) - 0.25*jxjyfin(j,k,2)
+            jxjyfin_new(j-1,k,  2) = jxjyfin_new(j-1,k,  2) - 0.25*jxjyfin(j,k,2)
+            jxjyfin_new(j,  k+1,2) = jxjyfin_new(j,  k+1,2) - 0.25*jxjyfin(j,k,2)
+            jxjyfin_new(j,  k-1,2) = jxjyfin_new(j,  k-1,2) - 0.25*jxjyfin(j,k,2)
           end do
         end do	
 	
-	jxfin = 0.5*jxfin_new
-	jyfin = 0.5*jyfin_new
-	deallocate(jxfin_new,jyfin_new)
+	jxjyfin = 0.5*jxjyfin_new
+	deallocate(jxjyfin_new)
       end if
    end subroutine interpol_jxjy
 
@@ -1593,9 +1591,9 @@ TYPE(EM2D_FIELDtype) :: f
           f%Bx(ix,iy) = f%Bx(ix,iy+f%rap)
           f%By(ix,iy) = f%By(ix,iy+f%rap)
           f%Bz(ix,iy) = f%Bz(ix,iy+f%rap)
-          f%Jx(ix,iy) = f%Jx(ix,iy+f%rap)
-          f%Jy(ix,iy) = f%Jy(ix,iy+f%rap)
-          f%Jz(ix,iy) = f%Jz(ix,iy+f%rap)
+          f%J(ix,iy,1) = f%J(ix,iy+f%rap,1)
+          f%J(ix,iy,2) = f%J(ix,iy+f%rap,2)
+          f%J(ix,iy,3) = f%J(ix,iy+f%rap,3)
         enddo
       enddo
 
@@ -1607,9 +1605,9 @@ TYPE(EM2D_FIELDtype) :: f
           f%Bx(ix,iy) = 0.
           f%By(ix,iy) = 0.
           f%Bz(ix,iy) = 0.
-          f%Jx(ix,iy) = 0.
-          f%Jy(ix,iy) = 0.
-          f%Jz(ix,iy) = 0.
+          f%J(ix,iy,1) = 0.
+          f%J(ix,iy,2) = 0.
+          f%J(ix,iy,3) = 0.
         enddo
       enddo
 
@@ -1622,9 +1620,9 @@ TYPE(EM2D_FIELDtype) :: f
           f%Bx(ix,iy) = f%Bx(ix+f%rap,iy)
           f%By(ix,iy) = f%By(ix+f%rap,iy)
           f%Bz(ix,iy) = f%Bz(ix+f%rap,iy)
-          f%Jx(ix,iy) = f%Jx(ix+f%rap,iy)
-          f%Jy(ix,iy) = f%Jy(ix+f%rap,iy)
-          f%Jz(ix,iy) = f%Jz(ix+f%rap,iy)
+          f%J(ix,iy,1) = f%J(ix+f%rap,iy,1)
+          f%J(ix,iy,2) = f%J(ix+f%rap,iy,2)
+          f%J(ix,iy,3) = f%J(ix+f%rap,iy,3)
         enddo
       enddo
 
@@ -1636,9 +1634,9 @@ TYPE(EM2D_FIELDtype) :: f
           f%Bx(ix,iy) = 0.
           f%By(ix,iy) = 0.
           f%Bz(ix,iy) = 0.
-          f%Jx(ix,iy) = 0.
-          f%Jy(ix,iy) = 0.
-          f%Jz(ix,iy) = 0.
+          f%J(ix,iy,1) = 0.
+          f%J(ix,iy,2) = 0.
+          f%J(ix,iy,3) = 0.
         enddo
       enddo
     end if
@@ -1839,9 +1837,7 @@ end if
 	f%By = 0.
 	f%Bz = 0.
 	
-	f%Jx = 0.
-	f%Jy = 0.
-	f%Jz = 0.
+	f%J = 0.
 
 	f%Bz_in = 0.
 	f%Ey_in = 0.
@@ -1991,15 +1987,10 @@ subroutine project_j(f,fc,ff)
    nypatch = fc%ny
    ixpatch = nint((fc%xmin-f%xmin)/f%dx)
    iypatch = nint((fc%ymin-f%ymin)/f%dy)
-   call project_jxjy(        ff%Jx(1:ff%nx+2, 1:ff%ny+2),ff%Jy(1:ff%nx+2, 1:ff%ny+2), &
-                     fc%Jx(1:fc%nx+2, 1:fc%ny+2),fc%Jy(1:fc%nx+2, 1:fc%ny+2), ff%rap)
-   call project_jz(ff%Jz(0:ff%nx+1, 0:ff%ny+1),   fc%Jz(0:fc%nx+1, 0:fc%ny+1),   ff%rap)
-   f%Jx(ixpatch:ixpatch+nxpatch+3,iypatch:iypatch+nypatch+2) = &
-   f%Jx(ixpatch:ixpatch+nxpatch+3,iypatch:iypatch+nypatch+2) + fc%Jx
-   f%Jy(ixpatch:ixpatch+nxpatch+3,iypatch:iypatch+nypatch+2) = &
-   f%Jy(ixpatch:ixpatch+nxpatch+3,iypatch:iypatch+nypatch+2) + fc%Jy
-   f%Jz(ixpatch:ixpatch+nxpatch+3,iypatch:iypatch+nypatch+2) = &
-   f%Jz(ixpatch:ixpatch+nxpatch+3,iypatch:iypatch+nypatch+2) + fc%Jz
+   call project_jxjy(        ff%J(1:ff%nx+2, 1:ff%ny+2, 1:2), fc%J(1:fc%nx+2, 1:fc%ny+2, 1:2), ff%rap)
+   call project_jz(ff%J(0:ff%nx+1, 0:ff%ny+1, 3),   fc%J(0:fc%nx+1, 0:fc%ny+1, 3),   ff%rap)
+   f%J(ixpatch:ixpatch+nxpatch+3,iypatch:iypatch+nypatch+2,:) = &
+   f%J(ixpatch:ixpatch+nxpatch+3,iypatch:iypatch+nypatch+2,:) + fc%J
 
    return
 end subroutine project_j
