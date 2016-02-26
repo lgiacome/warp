@@ -95,7 +95,7 @@ class EM3D(SubcycledPoissonSolver):
             self.l_2dxz=True
             self.l_1dz=True
         if self.l_2dxz: w3d.solvergeom=w3d.XZgeom
-        if self.l_2drz: 
+        if self.l_2drz:
         	w3d.solvergeom=w3d.RZgeom
         	self.l_2dxz=True
         if self.l_1dz:
@@ -124,7 +124,7 @@ class EM3D(SubcycledPoissonSolver):
 
         # --- Impose type_rz_depose = 0 if not in circ mode
         if self.l_2drz == False :
-            self.type_rz_depose = 0 
+            self.type_rz_depose = 0
 
 		# --- smoothing lists to arrays if needed
         self.npass_smooth  = array(self.npass_smooth)
@@ -213,7 +213,7 @@ class EM3D(SubcycledPoissonSolver):
 
         # --- sets coefficients of Cole solver
         # Lehe stencil (see Lehe et al., PRSTAB 16 021301 (2013))
-        if self.stencil == 3 : 
+        if self.stencil == 3 :
         # Warning : the coefficients alphaz and deltaz are calculated
         # later in the file, i.e. only once the dt has been calculated.
             if self.l_2dxz:
@@ -370,7 +370,7 @@ class EM3D(SubcycledPoissonSolver):
             top.dt = 0.75*self.dz/clight
 
         self.dtinit = top.dt
-        
+
         if self.stencil == 3 : # Lehe stencil, calculation of the remaining coefficients
             em3d.deltaz = -0.25*( self.dz**2/(clight*top.dt)**2 * sin( pi*clight*top.dt/(2.*self.dz) )**2 - 1 )
             em3d.alphaz = 1. - 2.*em3d.betazx - 2.* em3d.betazy - 3.*em3d.deltaz
@@ -785,7 +785,7 @@ class EM3D(SubcycledPoissonSolver):
         f = self.block.core.yf
         betafrm = -self.laser_source_v/clight
         gammafrm = 1./sqrt((1.-betafrm)*(1.+betafrm))
-        
+
         # Determine the laser amplitude at this present time (and at the current position of the antenna.)
         # - either from the user-provided function
         if self.laser_amplitude_func is not None:
@@ -796,7 +796,7 @@ class EM3D(SubcycledPoissonSolver):
                 self.laser_amplitude = self.laser_amplitude_table[0,0]
             elif top.time >= self.laser_amplitude_table[-1,1]: # The time is out of the provided table bounds
                 self.laser_amplitude = self.laser_amplitude_table[-1,0]
-            else: # The time is within the provided table bounds : interpolate between the nearest table points 
+            else: # The time is within the provided table bounds : interpolate between the nearest table points
                 i = self.laser_amplitude_table_i
                 while top.time > self.laser_amplitude_table[i+1,1]:
                     i = i + 1
@@ -806,7 +806,7 @@ class EM3D(SubcycledPoissonSolver):
                    (self.laser_amplitude_table[i+1,1]-self.laser_amplitude_table[i,1]))
                 self.laser_amplitude = ((1.-ww)*self.laser_amplitude_table[i,0] +
                                             ww *self.laser_amplitude_table[i+1,0])
-                
+
         # Determine the laser transverse profile at this present time, and at the positions of
         # the fictious macroparticles of the antenna.
         if self.laser_profile_func is not None:
@@ -818,22 +818,22 @@ class EM3D(SubcycledPoissonSolver):
         # the fictious macroparticles of the antenna.
         if self.laser_frequency is not None:
             # If the user provided a phase function, use it
-            if self.laser_phase_func is not None: 
+            if self.laser_phase_func is not None:
                 t = top.time*(1.-self.laser_source_v/clight)
-                if self.laser_mode==1: 
+                if self.laser_mode==1:
                     x = self.xxex
                     y = self.yyex
                     phaseex = self.laser_phase_func(x,y,t)
                     x = self.xxey
                     y = self.yyey
                     phaseey = self.laser_phase_func(x,y,t)
-                else: 
+                else:
                     x = self.laser_xx
                     y = self.laser_yy
                     phase = self.laser_phase_func(x,y,t)
             # If the user did not provide a phase function, imprint either the phase of a focusing laser
             # or that of a plane wave propagating at a given angle
-            else:  
+            else:
                 if self.laser_mode==1:
                     if self.laser_focus_z is not None: # Focusing laser
                         z0 = self.laser_focus_z
@@ -846,8 +846,8 @@ class EM3D(SubcycledPoissonSolver):
                     else: # Plane wave propagating at a given angle
                         phaseex = ((self.xxex*sin(self.laser_anglex)+self.yyex*sin(self.laser_angley))/clight-top.time*(1.-self.laser_source_v/clight))*self.laser_frequency
                         phaseey = ((self.xxey*sin(self.laser_anglex)+self.yyey*sin(self.laser_angley))/clight-top.time*(1.-self.laser_source_v/clight))*self.laser_frequency
-                            
-                elif self.laser_mode==2: 
+
+                elif self.laser_mode==2:
                     if 0:
                         z0 = self.laser_focus_z
 #         phase = sin(-self.laser_frequency*top.time+z0*(self.laser_xx**2+self.laser_yy**2)/(SIGMAR*SIGMAR*(1+X^2))-0.5*atan(X))
@@ -872,25 +872,25 @@ class EM3D(SubcycledPoissonSolver):
             if self.l_1dz: # 1D case
                 f.Ex_inz[f.jxmin,f.jymin] = laser_amplitude*self.laser_profile[0]*cos(phaseex)*cos(self.laser_polangle)*(1.-self.laser_source_v/clight)
                 f.Ey_inz[f.jxmin,f.jymin] = laser_amplitude*self.laser_profile[1]*cos(phaseey)*sin(self.laser_polangle)*(1.-self.laser_source_v/clight)
-                
+
             elif self.l_2dxz: # 2D case
                 f.Ex_inz[f.jxmin:f.jxmax  ,f.jymin] = laser_amplitude*self.laser_profile[0]*cos(phaseex)*cos(self.laser_polangle)*(1.-self.laser_source_v/clight)
                 f.Ey_inz[f.jxmin:f.jxmax+1,f.jymin] = laser_amplitude*self.laser_profile[1]*cos(phaseey)*sin(self.laser_polangle)*(1.-self.laser_source_v/clight)
-                
+
             else: # 3D case
                 f.Ex_inz[f.jxmin:f.jxmax  ,f.jymin:f.jymax+1] = laser_amplitude*self.laser_profile[0]*cos(phaseex)*cos(self.laser_polangle)*(1.-self.laser_source_v/clight)
                 f.Ey_inz[f.jxmin:f.jxmax+1,f.jymin:f.jymax  ] = laser_amplitude*self.laser_profile[1]*cos(phaseey)*sin(self.laser_polangle)*(1.-self.laser_source_v/clight)
             f.Ez_inz[...]=0.
-            
+
         elif self.laser_mode==2:
-        
+
             self.submethod_laser=2.1 # uses 2.1; 2.2 is not complete (accumulation of displaced charge missing)
             if self.submethod_laser==2.1:
                 # --- displaces fixed weight particles on "continuous" trajectories
                 dispmax = 0.01*clight
                 # Determine the amplitude of the laser along both directions (laser_amplitude_x, laser_amplitude_y)
                 # - If a laser function is provided, it overrides the above profile parameters.
-                if self.laser_func is not None: 
+                if self.laser_func is not None:
                     x = self.laser_xx
                     y = self.laser_yy
                     t = top.time*(1.-self.laser_source_v/clight)
@@ -969,8 +969,8 @@ class EM3D(SubcycledPoissonSolver):
             # Depose the current of the antenna
             self.depose_j_laser(f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight)
 
-        
-#===============================================================================            
+
+#===============================================================================
     def depose_j_laser(self,f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight):
         """
         Depose the current that generates the laser, on the grid (generation of the laser by an antenna)
@@ -989,7 +989,7 @@ class EM3D(SubcycledPoissonSolver):
             the macroparticles with respect to their mean position along x and y.
 
         laser_ux, laser_uy : 1darray
-            1d arrays with one element per fictious macroparticles, containing the normalized momenta 
+            1d arrays with one element per fictious macroparticles, containing the normalized momenta
             of the particles along each direction.
 
         weights : 1darray
@@ -998,7 +998,7 @@ class EM3D(SubcycledPoissonSolver):
         l_particles_weight : bool
             A flag indicating whether the different fictious macroparticles have different weights
         """
-        
+
         if top.ndts[0]<>1:
             print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
             raise
@@ -1009,7 +1009,7 @@ class EM3D(SubcycledPoissonSolver):
 
         for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
             # The antenna is made of two types of fictious particles : positive and negative
-            
+
             if self.l_2dxz:
 
                 if self.l_1dz: # 1D case
@@ -1053,7 +1053,7 @@ class EM3D(SubcycledPoissonSolver):
                                                 l_particles_weight,
                                                 w3d.l4symtry,
                                                 self.l_2drz, self.type_rz_depose)
-                        
+
                     else: # Circ case
                         depose_jxjyjz_esirkepov_n_2d_circ(f.J,f.J_circ,f.circ_m,
                                                 self.laser_nn,
@@ -1074,7 +1074,7 @@ class EM3D(SubcycledPoissonSolver):
                                                 self.laser_depos_order_x,
                                                 self.laser_depos_order_z,
                                                 l_particles_weight, self.type_rz_depose)
-                        
+
             else: # 3D case
                 depose_jxjyjz_esirkepov_n(f.J,
                                              self.laser_nn,
@@ -1098,7 +1098,7 @@ class EM3D(SubcycledPoissonSolver):
                                              l_particles_weight,
                                              w3d.l4symtry)
 
-            # --- now deposits Rho if needed 
+            # --- now deposits Rho if needed
             if self.l_getrho :
                 if self.l_2dxz:
                     if self.circ_m==0:  # pure 2D case
@@ -1151,7 +1151,7 @@ class EM3D(SubcycledPoissonSolver):
                                              self.laser_depos_order_z,
                                        l_particles_weight,w3d.l4symtry)
 
-#===============================================================================            
+#===============================================================================
     def depose_j_laser(self,f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight):
         """
         Depose the current that generates the laser, on the grid (generation of the laser by an antenna)
@@ -1170,7 +1170,7 @@ class EM3D(SubcycledPoissonSolver):
             the macroparticles with respect to their mean position along x and y.
 
         laser_ux, laser_uy : 1darray
-            1d arrays with one element per fictious macroparticles, containing the normalized momenta 
+            1d arrays with one element per fictious macroparticles, containing the normalized momenta
             of the particles along each direction.
 
         weights : 1darray
@@ -1179,7 +1179,7 @@ class EM3D(SubcycledPoissonSolver):
         l_particles_weight : bool
             A flag indicating whether the different fictious macroparticles have different weights
         """
-        
+
         if top.ndts[0]<>1:
             print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
             raise
@@ -1190,7 +1190,7 @@ class EM3D(SubcycledPoissonSolver):
 
         for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
             # The antenna is made of two types of fictious particles : positive and negative
-            
+
             self.depose_current_density(
                                              self.laser_nn,
                                              f,
@@ -1247,7 +1247,7 @@ class EM3D(SubcycledPoissonSolver):
 #    if (not (self.getconductorobject(top.fselfb[iselfb]).lcorrectede or
 #    else:
         f = self.block.core.yf
-        
+
         # --- fetch e
         if top.efetch[w3d.jsfsapi] in [1,3,5]:
             if self.l_1dz:
@@ -1519,7 +1519,7 @@ class EM3D(SubcycledPoissonSolver):
         noy = top.depos_order[1,js]
         noz = top.depos_order[2,js]
         dt = top.dt*top.pgroup.ndts[js]
-        
+
         if top.wpid==0:
             wfact = ones((1,),'d')
             l_particles_weight = false
@@ -1534,7 +1534,7 @@ class EM3D(SubcycledPoissonSolver):
     def depose_current_density(self,n,f,x,y,z,ux,uy,uz,gaminv,dt,wfact,zgrid,q,w,nox,noy,noz,l_particles_weight):
         if not self.deposit_energy_density:
             if self.l_1dz:
-                if 0: 
+                if 0:
                     jx = self.fields.Jx[self.fields.nxguard,self.fields.nyguard,:]*0.
                     jy = self.fields.Jy[self.fields.nxguard,self.fields.nyguard,:]*0.
                     jz = self.fields.Jz[self.fields.nxguard,self.fields.nyguard,:]*0.
@@ -1605,7 +1605,9 @@ class EM3D(SubcycledPoissonSolver):
                                                 w3d.l4symtry,self.l_2drz,
                                                 self.type_rz_depose)
                         else:
-                            depose_jxjyjz_esirkepov_n_2d_circ(jx,jy,jz,jx_circ,jy_circ,jz_circ,circ_m,n,
+                            depose_jxjyjz_esirkepov_n_2d_circ(jx,jy,jz,
+                                                    jx_circ,jy_circ,jz_circ,
+                                                    self.circ_m,n,
                                                     x,y,z,ux,uy,uz,
                                                     gaminv,wfact,q*w,
                                                     f.xmin,f.zmin+self.zgrid,
@@ -2520,7 +2522,7 @@ class EM3D(SubcycledPoissonSolver):
             self.__class__.__bases__[1].push_b_part_1(self.field_coarse,dir)
 
     def push_b_part_2(self):
-        if top.efetch[0] != 4 and (self.refinement is None):self.node2yee3d() 
+        if top.efetch[0] != 4 and (self.refinement is None):self.node2yee3d()
         dt = top.dt/self.ntsub
         if self.ntsub<1.:
             self.novercycle = nint(1./self.ntsub)
@@ -2975,7 +2977,7 @@ class EM3D(SubcycledPoissonSolver):
 
     ########################################################
     # Gather the requested array on processor 0.
-    ########################################################    
+    ########################################################
     def gatherarray(self,data,direction=None,slice=None,procs=None,guards=0) :
         """
         Gather the requested array on processor 0.
@@ -2987,7 +2989,7 @@ class EM3D(SubcycledPoissonSolver):
             An array of dimension ndim, containing the field on the local processor
             (without the guard cells) and which has to be combined with that of the
             other processors.
-            
+
         direction : int
             A flag indicating the direction of the slice to be selected.
             If direction is not provided (slice=None), the function returns the full array.
@@ -3010,9 +3012,9 @@ class EM3D(SubcycledPoissonSolver):
         A ndarray containing the values of the fields.
         If there is slicing (direction in [0,1,2]), the resulting array has dimension
         ndim-1. Otherwise, the array has dimension ndim.
-        
+
         """
-        
+
         if self.isactive: # If the local processor is active
 
             # Determine the shape of the data array
@@ -3037,12 +3039,12 @@ class EM3D(SubcycledPoissonSolver):
             if self.l_1dz : direction = None
             # Slicing in y (xz slice) has no meaning in the 2D and Circ case
             # Instead, return full array
-            if self.l_2dxz == 1 : 
+            if self.l_2dxz == 1 :
                 if direction == 1 : direction = None
-                
+
             # yz slice, at a given index and position in x
-            if direction==0 : 
-                if slice is None : 
+            if direction==0 :
+                if slice is None :
                     if self.l4symtry:
                         slice=0
                     else:
@@ -3114,8 +3116,8 @@ class EM3D(SubcycledPoissonSolver):
                 nzg=0
 
         # GATHER OPERATION
-                
-        # If there is slicing                
+
+        # If there is slicing
         if direction in [0,1,2] and not (direction==1 and self.l_2dxz):
             if me==0:
                 # Prepare the global array on the local processor
@@ -3146,11 +3148,11 @@ class EM3D(SubcycledPoissonSolver):
                     data  = alldata[i][-1]
                     if data is not None:
                         if self.l_2dxz : # 2D and Circ
-                            if direction==0: 
+                            if direction==0:
                                 ny = shape(data)[0]
                                 iymin = nint((yminp-self.zmmin)/self.dz)+nzg
                                 datag[iymin:iymin+ny] = data[...]
-                            if direction==2: 
+                            if direction==2:
                                 nx = shape(data)[0]
                                 ixmin = nint((xminp-self.xmmin)/self.dx)+nxg
                                 datag[ixmin:ixmin+nx] = data[...]
@@ -3191,8 +3193,8 @@ class EM3D(SubcycledPoissonSolver):
             dy=self.block.dy
             dz=self.block.dz
             # Determine the list of procs that have to send data
-            if procs is None : procs=range(npes) 
-            if type(procs) is int : procs=[procs] 
+            if procs is None : procs=range(npes)
+            if type(procs) is int : procs=[procs]
             # Send the data
             if me>0 and me in procs:
                 mpisend((xmin,xmax,dx,ymin,ymax,dy,zmin,zmax,dz,data), dest = 0, tag = 3)
@@ -3225,8 +3227,8 @@ class EM3D(SubcycledPoissonSolver):
             barrier() # This ensures that processor 0 will not bet overflowed with messages
 
         # Return the global array
-        return(datag) 
-        
+        return(datag)
+
     def getarray(self,g,guards=0,overlap=0):
         if guards:
             return g
@@ -3271,11 +3273,11 @@ class EM3D(SubcycledPoissonSolver):
                 else:
                     l_last=0
             self.onestep(l_first,l_last)
-       
+
     def onestep(self,l_first,l_last):
         # --- call beforestep functions
         callbeforestepfuncs.callfuncsinlist()
-    
+
         top.zgrid+=top.vbeamfrm*top.dt
         top.zbeam=top.zgrid
 
@@ -3284,12 +3286,12 @@ class EM3D(SubcycledPoissonSolver):
 #        for js in range(top.pgroup.ns):
 #          self.fetcheb(js)
 
-        # --- push 
+        # --- push
         if l_first:
             for js in range(top.pgroup.ns):
                 self.push_velocity_second_half(js)
                 self.push_positions(js)
-        else:        
+        else:
             for js in range(top.pgroup.ns):
                 self.push_velocity_full(js)
                 self.push_positions(js)
@@ -3301,14 +3303,14 @@ class EM3D(SubcycledPoissonSolver):
 #        self.loadsource()
         self.loadrho()
         self.loadj()
-                      
+
 #        self.solve2ndhalf()
         self.dosolve()
-    
+
         w3d.pgroupfsapi = top.pgroup
         for js in range(top.pgroup.ns):
           self.fetcheb(js)
-    
+
         if l_last:
             for js in range(top.pgroup.ns):
                 self.push_velocity_first_half(js)
@@ -3322,7 +3324,7 @@ class EM3D(SubcycledPoissonSolver):
 
         # --- call afterstep functions
         callafterstepfuncs.callfuncsinlist()
-       
+
     def fetcheb(self,js,pg=None):
         if self.l_verbose:print me,'enter fetcheb'
         if pg is None:
@@ -3358,17 +3360,17 @@ class EM3D(SubcycledPoissonSolver):
         else:
           # --- push velocity from electric field (half step)
           epush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
-                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu], 
+                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu],
                      pg.sq[js],pg.sm[js],0.5*top.dt)
           # --- update gamma
           self.set_gamma(js,pg)
           # --- push velocity from magnetic field
           bpush3d (np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
-                      pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu], 
+                      pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu],
                       pg.sq[js],pg.sm[js],0.5*top.dt, top.ibpush)
 
         if self.l_verbose:print me,'exit push_ions_velocity_first_half'
-    
+
     def push_velocity_full(self,js,pg=None):
         if self.l_verbose:print me,'enter push_ions_velocity_first_half'
         if pg is None:
@@ -3385,23 +3387,23 @@ class EM3D(SubcycledPoissonSolver):
         else:
           # --- push velocity from electric field (half step)
           epush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
-                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu], 
+                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu],
                      pg.sq[js],pg.sm[js],0.5*top.dt)
           # --- update gamma
           self.set_gamma(js,pg)
           # --- push velocity from magnetic field
           bpush3d (np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
-                      pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu], 
+                      pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu],
                       pg.sq[js],pg.sm[js],top.dt, top.ibpush)
           # --- push velocity from electric field (half step)
           epush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
-                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu], 
+                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu],
                      pg.sq[js],pg.sm[js],0.5*top.dt)
           # --- update gamma
           self.set_gamma(js,pg)
 
         if self.l_verbose:print me,'exit push_ions_velocity_first_half'
-    
+
     def push_velocity_second_half(self,js,pg=None):
         if self.l_verbose:print me,'enter push_ions_velocity_second_half'
         if pg is None:
@@ -3418,17 +3420,17 @@ class EM3D(SubcycledPoissonSolver):
         else:
           # --- push velocity from magnetic field
           bpush3d (np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],pg.gaminv[il:iu],
-                      pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu], 
+                      pg.bx[il:iu], pg.by[il:iu], pg.bz[il:iu],
                       pg.sq[js],pg.sm[js],0.5*top.dt, top.ibpush)
           # --- push velocity from electric field (half step)
           epush3d(np,pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
-                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu], 
+                     pg.ex[il:iu], pg.ey[il:iu], pg.ez[il:iu],
                      pg.sq[js],pg.sm[js],0.5*top.dt)
         # --- update gamma
         self.set_gamma(js,pg)
 
         if self.l_verbose:print me,'exit push_ions_velocity_second_half'
-    
+
     def set_gamma(self,js,pg=None):
         if self.l_verbose:print me,'enter set_gamma'
         if pg is None:
@@ -3442,7 +3444,7 @@ class EM3D(SubcycledPoissonSolver):
                  top.gamadv,top.lrelativ)
 
         if self.l_verbose:print me,'exit push_ions_velocity_second_half'
-    
+
     def push_positions(self,js,pg=None):
         if self.l_verbose:print me,'enter push_ions_positions'
         if pg is None:
@@ -3453,7 +3455,7 @@ class EM3D(SubcycledPoissonSolver):
         iu = il+pg.nps[js]
         xpush3d(np,pg.xp[il:iu],pg.yp[il:iu],pg.zp[il:iu],
                        pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
-                       pg.gaminv[il:iu],top.dt)      
+                       pg.gaminv[il:iu],top.dt)
 
         if self.l_verbose:print me,'exit push_ions_positions'
 
@@ -3465,7 +3467,7 @@ class EM3D(SubcycledPoissonSolver):
         if pg.nps[js]==0:return
         self.apply_bnd_conditions(js,pg)
         if self.l_verbose:print me,'exit apply_ions_bndconditions'
-    
+
     def apply_bnd_conditions(self,js,pg=None):
         if self.l_verbose:print me,'enter apply_bnd_conditions'
         if pg is None:
@@ -3496,7 +3498,7 @@ class EM3D(SubcycledPoissonSolver):
         if self.scraper is not None:self.scraper.scrape(js)
         processlostpart(pg,js+1,top.clearlostpart,top.time+top.dt*pg.ndts[js],top.zbeam)
         if self.l_verbose:print me,'enter apply_bnd_conditions'
-       
+
     #############################################################
     #                   Plotting methods                        #
     #############################################################
@@ -3538,20 +3540,20 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-        
+
         See the docstring of pfvec_circ and genericpfem3d for further options
-        
+
         """
-        
+
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            er0 = self.gatherarray( self.getarray( self.fields.Exp,guards,overlap=True) )  
+            er0 = self.gatherarray( self.getarray( self.fields.Exp,guards,overlap=True) )
             etheta0 = self.gatherarray( self.getarray( self.fields.Eyp,guards,overlap=True) )
             # Modes > 0
             if self.circ_m > 0 :
                 er = self.gatherarray( \
-                            self.getarray_circ( self.fields.Exp_circ,guards,overlap=True) )  
+                            self.getarray_circ( self.fields.Exp_circ,guards,overlap=True) )
                 etheta = self.gatherarray( \
                             self.getarray_circ( self.fields.Eyp_circ,guards,overlap=True ) )
             else :
@@ -3561,7 +3563,7 @@ class EM3D(SubcycledPoissonSolver):
             f = self.pfvec_circ( er0, etheta0, er, etheta, name='Ex^^',
                             component='x', m=m, direction=direction,
                             output=output, show=show, **kw )
-            
+
         else: # Cartesian fields
             f = self.getarray(self.fields.Exp,guards,
                                overlap=True)
@@ -3608,22 +3610,22 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-                    
+
         See the docstring of pfvec_circ and genericpfem3d for further options
-        
+
         """
-        
+
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            er0 = self.gatherarray( self.getarray( self.fields.Exp,guards,overlap=True) )  
+            er0 = self.gatherarray( self.getarray( self.fields.Exp,guards,overlap=True) )
             etheta0 = self.gatherarray( self.getarray( self.fields.Eyp,guards,overlap=True) )
             # Modes > 0
             if self.circ_m > 0 :
                 er = self.gatherarray( self.getarray_circ( \
-                                            self.fields.Exp_circ,guards,overlap=True ) ) 
+                                            self.fields.Exp_circ,guards,overlap=True ) )
                 etheta = self.gatherarray( self.getarray_circ( \
-                                            self.fields.Eyp_circ,guards,overlap=True ) ) 
+                                            self.fields.Eyp_circ,guards,overlap=True ) )
             else :
                 er = None
                 etheta = None
@@ -3631,7 +3633,7 @@ class EM3D(SubcycledPoissonSolver):
             f = self.pfvec_circ( er0, etheta0, er, etheta, name='Ey^^',
                     component='y', m=m, direction=direction,
                     output=output, show=show, **kw )
-            
+
         else: # Cartesian fields
             f = self.getarray(self.fields.Eyp,guards,overlap=True)
             if show :
@@ -3640,7 +3642,7 @@ class EM3D(SubcycledPoissonSolver):
         if output and me==0 :
             return(f[::-1])
 
-            
+
     def pfez( self, l_children=1, guards=0, direction=None, m=None,
                 output=False, show=True, **kw) :
         """
@@ -3678,25 +3680,25 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-                    
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
-        
+
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            ez0 = self.gatherarray( self.getarray( self.fields.Ezp,guards,overlap=True) )  
+            ez0 = self.gatherarray( self.getarray( self.fields.Ezp,guards,overlap=True) )
             # Modes > 0
             if self.circ_m > 0 :
                 ez = self.gatherarray( self.getarray_circ( \
-                                    self.fields.Ezp_circ,guards,overlap=True ) ) 
+                                    self.fields.Ezp_circ,guards,overlap=True ) )
             else :
                 ez = None
             # Sum and plot them
             f = self.pfscalar_circ( ez0, ez, name='Ez^^', m=m,
                     direction=direction, output=output, show=show, **kw )
-            
+
         else: # Cartesian fields
             f = self.getarray(self.fields.Ezp,guards,overlap=True)
             if show :
@@ -3742,9 +3744,9 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-                    
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
@@ -3753,7 +3755,7 @@ class EM3D(SubcycledPoissonSolver):
             # Modes > 0
             if self.circ_m > 0 :
                 er = self.gatherarray( self.getarray_circ( \
-                            self.fields.Exp_circ,guards,overlap=True ) ) 
+                            self.fields.Exp_circ,guards,overlap=True ) )
             else :
                 er = None
             # Sum and plot them
@@ -3800,10 +3802,10 @@ class EM3D(SubcycledPoissonSolver):
 
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
-        or reverse one dimension)        
-                    
+        or reverse one dimension)
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
@@ -3812,7 +3814,7 @@ class EM3D(SubcycledPoissonSolver):
             # Modes > 0
             if self.circ_m > 0 :
                 et = self.gatherarray( self.getarray_circ( \
-                                        self.fields.Eyp_circ,guards,overlap=True ) ) 
+                                        self.fields.Eyp_circ,guards,overlap=True ) )
             else :
                 et = None
             # Sum and plot them
@@ -3822,7 +3824,7 @@ class EM3D(SubcycledPoissonSolver):
             if output and me==0 :
                 return(f[::-1])
 
-        
+
     def pfbx( self, l_children=1, guards=0, direction=None, m=None,
                             output=False, show=True, **kw) :
         """
@@ -3858,22 +3860,22 @@ class EM3D(SubcycledPoissonSolver):
 
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
-        or reverse one dimension)        
-        
+        or reverse one dimension)
+
         See the docstring of pfvec_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
             br0 = self.gatherarray( self.getarray( self.fields.Bxp,guards,overlap=True) )
-            btheta0 = self.gatherarray( self.getarray( self.fields.Byp,guards,overlap=True) )  
+            btheta0 = self.gatherarray( self.getarray( self.fields.Byp,guards,overlap=True) )
             if self.circ_m > 0 :
                 # Modes > 0
                 br = self.gatherarray( self.getarray_circ( \
-                                        self.fields.Bxp_circ,guards,overlap=True ) )  
+                                        self.fields.Bxp_circ,guards,overlap=True ) )
                 btheta = self.gatherarray( self.getarray_circ( \
-                                        self.fields.Byp_circ,guards,overlap=True ) ) 
+                                        self.fields.Byp_circ,guards,overlap=True ) )
             else :
                 br = None
                 btheta = None
@@ -3881,7 +3883,7 @@ class EM3D(SubcycledPoissonSolver):
             f = self.pfvec_circ( br0, btheta0, br, btheta, name='Bx^^',
                             component='x', m=m, direction=direction,
                             output=output, show=show, **kw )
-            
+
         else: # Cartesian fields
             f = self.getarray(self.fields.Bxp,guards,overlap=True)
             if show :
@@ -3927,19 +3929,19 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-                    
+
         See the docstring of pfvec_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gathbr the Fourier coefficients
             # Mode 0
-            br0 = self.gatherarray( self.getarray( self.fields.Bxp,guards,overlap=True) ) 
+            br0 = self.gatherarray( self.getarray( self.fields.Bxp,guards,overlap=True) )
             btheta0 = self.gatherarray( self.getarray( self.fields.Byp,guards,overlap=True) )
             # Modes > 0
             if self.circ_m > 0 :
                 br = self.gatherarray( self.getarray_circ( \
-                                            self.fields.Bxp_circ,guards,overlap=True ) )  
+                                            self.fields.Bxp_circ,guards,overlap=True ) )
                 btheta = self.gatherarray( self.getarray_circ( \
                                             self.fields.Byp_circ,guards,overlap=True ) )
             else :
@@ -3949,7 +3951,7 @@ class EM3D(SubcycledPoissonSolver):
             f = self.pfvec_circ( br0, btheta0, br, btheta, name='By^^',
                              component='y', m=m, direction=direction,
                              output=output, show=show, **kw )
-            
+
         else: # Cartesian fields
             f = self.getarray(self.fields.Byp,guards,overlap=True)
             if show :
@@ -3996,24 +3998,24 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-        
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            bz0 = self.gatherarray( self.getarray( self.fields.Bzp,guards,overlap=True) )  
+            bz0 = self.gatherarray( self.getarray( self.fields.Bzp,guards,overlap=True) )
             # Modes > 0
             if self.circ_m > 0 :
                 bz = self.gatherarray( self.getarray_circ( \
-                                        self.fields.Bzp_circ,guards,overlap=True ) ) 
+                                        self.fields.Bzp_circ,guards,overlap=True ) )
             else :
                 bz = None
             # Sum and plot them
             f = self.pfscalar_circ( bz0, bz, name='Bz^^', m=m,
                 direction=direction, output=output, show=show, **kw )
-            
+
         else: # Cartesian fields
             f = self.getarray(self.fields.Bzp,guards,overlap=True)
             if show :
@@ -4054,13 +4056,13 @@ class EM3D(SubcycledPoissonSolver):
         Returns
         -------
         A 2d array representing the fields, if output is True
-    
+
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-            
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
@@ -4069,7 +4071,7 @@ class EM3D(SubcycledPoissonSolver):
             # Modes > 0
             if self.circ_m > 0 :
                 br = self.gatherarray( self.getarray_circ( \
-                                        self.fields.Bxp_circ,guards,overlap=True ) ) 
+                                        self.fields.Bxp_circ,guards,overlap=True ) )
             else :
                 br = None
             # Sum and plot them
@@ -4114,19 +4116,19 @@ class EM3D(SubcycledPoissonSolver):
 
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
-        or reverse one dimension)        
-                    
+        or reverse one dimension)
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
             btheta0 = self.gatherarray( self.getarray( self.fields.Byp,guards,overlap=True) )
-            # Modes > 0 
+            # Modes > 0
             if self.circ_m > 0 :
                 btheta = self.gatherarray( self.getarray_circ( \
-                                            self.fields.Byp_circ,guards,overlap=True ) ) 
+                                            self.fields.Byp_circ,guards,overlap=True ) )
             else :
                 btheta = None
             # Sum and plot them
@@ -4172,19 +4174,19 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-        
+
         See the docstring of pfvec_circ and genericpfem3d for further options
-        
-        """               
+
+        """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            jr0 = self.gatherarray( self.getarray( self.fields.Jx,guards,overlap=True) ) 
+            jr0 = self.gatherarray( self.getarray( self.fields.Jx,guards,overlap=True) )
             jtheta0 = self.gatherarray(self.getarray(self.fields.Jy,guards,overlap=True) )
             # Modes > 0
             if self.circ_m > 0 :
                 jr = self.gatherarray( self.getarray_circ( \
-                                        self.fields.Jx_circ,guards,overlap=True ) )  
+                                        self.fields.Jx_circ,guards,overlap=True ) )
                 jtheta = self.gatherarray( self.getarray_circ( \
                                         self.fields.Jy_circ,guards,overlap=True ) )
             else :
@@ -4194,7 +4196,7 @@ class EM3D(SubcycledPoissonSolver):
             f = self.pfvec_circ( jr0, jtheta0, jr, jtheta, name='Jx^^',
                             component='x', m=m, direction=direction,
                             output=output, show=show, **kw )
-            
+
         else: # Cartesian fields
             f =  self.getarray(self.fields.Jx,
                                guards,overlap=True)
@@ -4240,20 +4242,20 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-                    
+
         See the docstring of pfvec_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
             jr0 = self.gatherarray( self.getarray( self.fields.Jx,guards,overlap=True) )
-            jtheta0 = self.gatherarray(self.getarray(self.fields.Jy,guards,overlap=True))  
+            jtheta0 = self.gatherarray(self.getarray(self.fields.Jy,guards,overlap=True))
             if self.circ_m > 0 :
                 jr = self.gatherarray( self.getarray_circ( \
-                                        self.fields.Jx_circ,guards,overlap=True ) )  
+                                        self.fields.Jx_circ,guards,overlap=True ) )
                 jtheta = self.gatherarray( self.getarray_circ( \
-                                        self.fields.Jy_circ,guards,overlap=True ) ) 
+                                        self.fields.Jy_circ,guards,overlap=True ) )
             else :
                 jr = None
                 jtheta = None
@@ -4261,7 +4263,7 @@ class EM3D(SubcycledPoissonSolver):
             f = self.pfvec_circ( jr0, jtheta0, jr, jtheta, name='Jy^^', \
                              component='y', m=m, direction=direction,
                              output=output, show=show, **kw )
-            
+
         else: # Cartesian fields
             f = self.getarray(self.fields.Jy,guards,
                               overlap=True)
@@ -4308,9 +4310,9 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-                    
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
@@ -4319,13 +4321,13 @@ class EM3D(SubcycledPoissonSolver):
             # Modes > 0
             if self.circ_m > 0 :
                 jz = self.gatherarray(self.getarray_circ( \
-                                    self.fields.Jz_circ,guards,overlap=True ) )  
+                                    self.fields.Jz_circ,guards,overlap=True ) )
             else :
                 jz = None
             # Sum and plot them
             f = self.pfscalar_circ( jz0, jz, name='Jz^^', m=m,
                 direction=direction, output=output, show=show, **kw )
-            
+
         else: # Cartesian fields
             f = self.getarray(self.fields.Jz,guards,
                               overlap=True)
@@ -4334,7 +4336,7 @@ class EM3D(SubcycledPoissonSolver):
 
         if output and me==0 :
             return(f[::-1])
-            
+
 
     def pfjr( self, l_children=1, guards=0, direction=None, m=None,
                             output=False, show=True, **kw) :
@@ -4372,18 +4374,18 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-                    
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
             jr0 = self.gatherarray( self.getarray( self.fields.Jx,guards,overlap=True) )
-            # Modes > 0  
+            # Modes > 0
             if self.circ_m > 0 :
                 jr = self.gatherarray( self.getarray_circ( \
-                                    self.fields.Jx_circ,guards,overlap=True ) )  
+                                    self.fields.Jx_circ,guards,overlap=True ) )
             else :
                 jr = None
             # Sum and plot them
@@ -4429,18 +4431,18 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-                    
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            jt0 = self.gatherarray( self.getarray( self.fields.Jy,guards,overlap=True) )  
+            jt0 = self.gatherarray( self.getarray( self.fields.Jy,guards,overlap=True) )
             # Modes > 0
             if self.circ_m > 0 :
                 jt = self.gatherarray( self.getarray_circ( \
-                                    self.fields.Jy_circ,guards,overlap=True ) ) 
+                                    self.fields.Jy_circ,guards,overlap=True ) )
             else :
                 jt = None
             # Sum and plot them
@@ -4450,7 +4452,7 @@ class EM3D(SubcycledPoissonSolver):
             if output and me==0 :
                 return(f[::-1])
 
-    
+
     def pfexg(self,l_children=1,guards=0,direction=None,**kw):
         self.genericpfem3d(self.getarray(self.fields.Ex,guards,overlap=True),'Eg_x',
         direction=direction,**kw)
@@ -4512,24 +4514,24 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-        
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
-        
+
         if self.l_2drz == 1 : # Azimuthal decomposition
             # Gather the Fourier coefficients
             # Mode 0
-            f0 = self.gatherarray( self.getarray( self.fields.F,guards,overlap=True) )  
+            f0 = self.gatherarray( self.getarray( self.fields.F,guards,overlap=True) )
             # Modes > 0
             if self.circ_m > 0 :
-                f = self.gatherarray(self.getarray_circ(self.fields.F_circ,guards,overlap=True)) 
+                f = self.gatherarray(self.getarray_circ(self.fields.F_circ,guards,overlap=True))
             else :
                 f = None
             # Sum and plot them
             f = self.pfscalar_circ( f0, f, name='F^^', m=m,
                 direction=direction, output=output, show=show, **kw )
-            
+
         else: # Cartesian fields
             f = self.getarray(self.fields.F,guards,overlap=True)
             self.genericpfem3d( f, 'F', direction=direction,**kw)
@@ -4569,7 +4571,7 @@ class EM3D(SubcycledPoissonSolver):
         and getf2drz_circ_n (for the modes > 0), with the exception that
         it does not do the sum of the r and theta component of a vector
         field to obtain the x or y component (use fvec_circ for this)
-        
+
         Parameters
         ----------
         ff0 : ndarray
@@ -4593,12 +4595,12 @@ class EM3D(SubcycledPoissonSolver):
             direction = 2 : xy plane
             direction = -1 : plane including the z axis and making
             an angle theta_plot with the x axis
-        
+
         theta_plot : float
             Used only if direction = -1
             The angle (in radians) between the plane of the plot and the
             zx plane.
-    
+
         iz : int
             Used only if direction = 2
             The z index of the xy slice that is to be plotted.
@@ -4615,10 +4617,10 @@ class EM3D(SubcycledPoissonSolver):
             If direction is 2, the first and second axis of the returned
             array correspond to x and y respectively.
         """
-        
+
         # If the plane of the plot includes the z axis
         if direction in [-1,0,1] :
-    
+
             # Prepare the theta array
             if direction == 0 : theta_plot = pi/2  # zy plane
             if direction == 1 : theta_plot = 0.    # zx plane
@@ -4627,7 +4629,7 @@ class EM3D(SubcycledPoissonSolver):
             theta[ w3d.nx: , : ] = theta_plot
             # Lower half of the plane
             theta[ :w3d.nx , : ] = theta_plot + pi
-                
+
             # Calculate the fields in the given plane, from its Fourier
             # coefficients
             f = zeros([ 2*w3d.nx+1 , w3d.nz ])
@@ -4637,33 +4639,33 @@ class EM3D(SubcycledPoissonSolver):
                     # Upper half of the plane
                     f[ w3d.nx: , : ] += ff0[ 0:w3d.nx+1 , :w3d.nz ]
                     # Lower half of the plane
-                    f[ w3d.nx-1::-1 , : ] += ff0[ 1:w3d.nx+1 , :w3d.nz ]                      
+                    f[ w3d.nx-1::-1 , : ] += ff0[ 1:w3d.nx+1 , :w3d.nz ]
                 else : # Modes > 0
                     # Upper half of the plane
                     f[ w3d.nx: , : ] += \
                     cos( m_mode*theta_plot ) * ff[ 0:w3d.nx+1, :w3d.nz ,
                         m_mode-1].real + sin( m_mode*theta_plot ) * \
-                         ff[ 0:w3d.nx+1, :w3d.nz , m_mode-1].imag  
+                         ff[ 0:w3d.nx+1, :w3d.nz , m_mode-1].imag
                     # Lower half of the plane
                     f[ w3d.nx-1::-1 , : ] += \
                     cos( m_mode*(theta_plot+pi) ) * ff[ 1:w3d.nx+1, :w3d.nz ,
                         m_mode-1].real + sin( m_mode*(theta_plot+pi) ) * \
                         ff[ 1:w3d.nx+1, :w3d.nz , m_mode-1].imag
-                    
+
             # Transpose the array, so that the first axis corresponds to z
             f = f.T
             theta = theta.T
-                        
+
         # If the plot is in the xy plane
         if direction == 2 :
-    
+
             # Get the coordinates on which to calculate the field,
             # in the xy plane
             xx , yy = getmesh2d( -w3d.xmmax,w3d.dx,w3d.nx*2,-w3d.xmmax,
                                  w3d.dx,w3d.nx*2 )
             r = sqrt(xx*xx+yy*yy).flatten()
             theta=arctan2(yy,xx).flatten()
-            
+
             # Calculate the fields in the given plane,
             # from its Fourier coefficients
             f = zeros( (2*w3d.nx+1)**2 )
@@ -4684,27 +4686,27 @@ class EM3D(SubcycledPoissonSolver):
                     # interface of getgrid1d)
                     f_real = zeros((2*w3d.nx+1)**2)
                     f_imag = zeros((2*w3d.nx+1)**2)
-                    getgrid1d((2*w3d.nx+1)**2,r,f_real,w3d.nx, 
+                    getgrid1d((2*w3d.nx+1)**2,r,f_real,w3d.nx,
                               ff[:,iz,m_mode-1].real,0.,w3d.xmmax)
                     getgrid1d((2*w3d.nx+1)**2,r,f_imag,w3d.nx,
                               ff[:,iz,m_mode-1].imag,0.,w3d.xmmax)
                     # Sum the mode
                     f += f_real*cos(m_mode*theta) + f_imag*sin(m_mode*theta)
-                    
+
             # Unflatten the arrays
             f=f.reshape([2*w3d.nx+1,2*w3d.nx+1])
             theta = theta.reshape([2*w3d.nx+1,2*w3d.nx+1])
-            
+
         # Finally return the arrays
         return(f, theta)
-        
+
     def pfscalar_circ(self, ff0, ff, name='', m=None, direction=1,
                       theta_plot=0, iz=w3d.nz/2, titles=1,
                       output=False, show=True, l_transpose=None, **kw):
         """
         Plot a scalar field from its azimuthal Fourier coefficients
         ff0 (mode 0) and ff (modes > 0).
-    
+
         Parameters
         ----------
         ff0 : ndarray
@@ -4716,7 +4718,7 @@ class EM3D(SubcycledPoissonSolver):
             A 3d array of complex values with shape [ w3d.nx+1, w3d.nz+1 ,
             self.fields.circ_m ], which contains the azimuthal Fourier
             coefficients of the field for the modes m>0.
-            
+
         name : str
             The name of the field considered, which is then printed on the plot.
 
@@ -4737,11 +4739,11 @@ class EM3D(SubcycledPoissonSolver):
             Used only if direction = -1
             The angle (in radians) between the plane of the plot
             and the zx plane.
-            
+
         iz : int
             Used only if direction = 2
             The z index of the xy slice that is to be plotted.
-            
+
         titles : int
             A flag that indicates whether the plots should be
             automatically labeled
@@ -4753,14 +4755,14 @@ class EM3D(SubcycledPoissonSolver):
         Returns
         -------
         A 2d array representing the fields, if output is True
-            
+
         """
-            
+
         if me == 0 :
 
             # Sets default direction to 1
-            if ( direction in [-1,0,1,2] ) == False : direction = 1 
-            
+            if ( direction in [-1,0,1,2] ) == False : direction = 1
+
             # Prepare sum over the modes
             if m != None : # Single mode
                 assert m<=self.fields.circ_m, "m > circ_m: %g > %g" \
@@ -4773,7 +4775,7 @@ class EM3D(SubcycledPoissonSolver):
             # (Dump the returned theta array, since it is not used here)
             f, _ = self.sum_modes_circ( ff0, ff, direction=direction,
                             modes=modes, theta_plot=theta_plot, iz=iz )
-                
+
             # Set the boundaries (here X and Y represent the axes of the plot)
             # - If the plane of the plot includes the z axis
             if direction in [-1,0,1] :
@@ -4787,11 +4789,11 @@ class EM3D(SubcycledPoissonSolver):
                 Xmax = w3d.xmmax
                 Ymin = -w3d.xmmax
                 Ymax = w3d.xmmax
-                
+
             # Plot function : colormap of the matrix f
             if show :
                 ppgeneric( f, xmin=Xmin, xmax=Xmax, ymin=Ymin, ymax=Ymax, **kw)
-    
+
                 # Labeling of the plot
                 if titles == 1 :
                     if m!=None :
@@ -4816,7 +4818,7 @@ class EM3D(SubcycledPoissonSolver):
         Plot the x or y component of a field from the azimuthal Fourier
         coefficients of its radial and azimuthal components ffr0, fft0
         (mode 0) and ffr, fft (modes > 0).
-    
+
         Parameters
         ----------
         ffr0, fftheta0 : ndarray
@@ -4824,18 +4826,18 @@ class EM3D(SubcycledPoissonSolver):
             self.fields.circ_m ], which contain the Fourier coefficients
             of the radial and azimuthal components of the field,
             for the mode 0.
-                        
+
         ffr, fftheta : ndarray
             3d arrays of complex values with shape [ w3d.nx+1, w3d.nz+1 ,
             self.fields.circ_m ], which contain the Fourier coefficients
             of the radial and azimuthal components of the field.
-            
+
         name : str
             The name of the field considered, which is then printed on the plot.
 
         component : str
             The component of the field that is to be plotted : either 'x' or 'y'
-            
+
         m : int
             The single mode whose contribution is to be plotted.
             If m is not provided (m=None), this function plots the sum o
@@ -4853,7 +4855,7 @@ class EM3D(SubcycledPoissonSolver):
             Used only if direction = -1
             The angle (in radians) between the plane of the plot
             and the zx plane.
-    
+
         iz : int
             Used only if direction = 2
             The z index of the xy slice that is to be plotted.
@@ -4861,7 +4863,7 @@ class EM3D(SubcycledPoissonSolver):
         titles : int
             A flag that indicates whether the plots should be
             automatically labeled
-            
+
         output, show : bool, optional
             whether to return the field matrix, and whether to
             plot it.
@@ -4869,14 +4871,14 @@ class EM3D(SubcycledPoissonSolver):
         Returns
         -------
         A 2d array representing the fields, if output is True
-            
+
         """
-        
+
         if me == 0 :
 
             # Sets default direction to 1
-            if ( direction in [-1,0,1,2] ) == False : direction = 1 
-            
+            if ( direction in [-1,0,1,2] ) == False : direction = 1
+
             # Prepare sum over the modes
             if m is not None : # Single mode
                 assert m<=self.fields.circ_m, "m > circ_m: %g > %g" \
@@ -4937,7 +4939,7 @@ class EM3D(SubcycledPoissonSolver):
             if output and me==0 :
                 return( f.T )
 
-                    
+
     def pfrho( self, l_children=1, guards=0, direction=None, m=None,
                output=False, show=True, **kw) :
         """
@@ -4975,7 +4977,7 @@ class EM3D(SubcycledPoissonSolver):
         The shape of the array is such that it can be directly
         plotted with matplotlib's imshow (non need to transpose it,
         or reverse one dimension)
-            
+
         See the docstring of pfscalar_circ and genericpfem3d for further options
         """
         if self.l_getrho :
@@ -4986,13 +4988,13 @@ class EM3D(SubcycledPoissonSolver):
                 # Modes > 0
                 if self.circ_m > 0 :
                     rho = self.gatherarray( \
-                        self.getarray_circ( self.fields.Rho_circ,guards,overlap=True ) ) 
+                        self.getarray_circ( self.fields.Rho_circ,guards,overlap=True ) )
                 else :
                     rho = None
                 # Sum and plot them
                 f = self.pfscalar_circ( rho0, rho, name='Rho^^', m=m,
                     direction=direction, output=output, show=show, **kw )
-                
+
             else: # Cartesian fields
                 f = self.getarray(self.fields.Rho,guards,
                     overlap=True)
@@ -5027,10 +5029,10 @@ class EM3D(SubcycledPoissonSolver):
             The z index of the xy slice that is to be plotted.
 
         See the docstring of pfscalar_circ and genericpfem3d for further options
-        
+
         """
         im = 1.j  # Imaginary number im**2 = -1
-        
+
         if self.l_getrho and self.l_2drz == 1 :
             # Gather the Fourier coefficients for the mode 0
             rho0 = self.gatherarray( self.getarray( self.fields.Rho,guards,overlap=True) )
@@ -5045,9 +5047,9 @@ class EM3D(SubcycledPoissonSolver):
             divE0[0,1:] = 4./w3d.dx*er0[0,1:] + (ez0[0,1:]-ez0[0,:-1])/w3d.dz
             if self.circ_m > 0 :
                 # Gather the Fourier coefficients for the modes > 0
-                rho=self.gatherarray(self.getarray_circ(self.fields.Rho_circ,guards,overlap=True)) 
+                rho=self.gatherarray(self.getarray_circ(self.fields.Rho_circ,guards,overlap=True))
                 er=self.gatherarray(self.getarray_circ(self.fields.Ex_circ,guards,overlap=True))
-                et=self.gatherarray(self.getarray_circ(self.fields.Ey_circ,guards,overlap=True)) 
+                et=self.gatherarray(self.getarray_circ(self.fields.Ey_circ,guards,overlap=True))
                 ez=self.gatherarray(self.getarray_circ(self.fields.Ez_circ,guards,overlap=True))
                 divE = zeros(rho.shape, dtype='complex')
                 # Calculate the divergence for the mode 0
@@ -5089,7 +5091,7 @@ class EM3D(SubcycledPoissonSolver):
     ######################################################
     #                    Getters                         #
     ######################################################
-    
+
 
     def getjx(self,guards=0,overlap=0):
         return self.getarray(self.fields.Jx,guards,overlap)
@@ -6788,7 +6790,7 @@ def pyinit_3dem_block(nx, ny, nz,
     f.xmin = xmin
     f.ymin = ymin
 #    f.zmin = zmin # --- replaced by following line to fix issue with laser injection but following line wrong with MR
-    f.zmin = w3d.zmminlocal 
+    f.zmin = w3d.zmminlocal
     f.dx = dx
     f.dy = dy
     f.dz = dz
@@ -7469,7 +7471,7 @@ def FD_weights_hvincenti(p,l_staggered=False):
             logdenom = math.log(factorial(p/2.+l))+math.log(factorial(p/2.-l))+math.log(l)
         c[i] = (-1.)**(l+1)*exp(lognumer-logdenom)
     return c
-    
+
 
 
 ##############################################################################

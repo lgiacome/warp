@@ -434,7 +434,7 @@ depose_jxjyjz_esirkepov_n_2d(jx:real,jy:real,jz:real,
 		           type_rz_depose:integer)
                            subroutine
 depose_jxjyjz_esirkepov_n_2d_circ(jx:real,jy:real,jz:real,jx_circ:complex,
-                           jy_circ:complex,jz_circ:complexcirc_m:integer,
+                           jy_circ:complex,jz_circ:complex,circ_m:integer,
                            n:integer,x(n):real,y(n):real,z(n):real,
                            ux(n):real,uy(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,

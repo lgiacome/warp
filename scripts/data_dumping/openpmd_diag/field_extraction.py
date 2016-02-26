@@ -99,7 +99,7 @@ def get_circ_dataset( em, quantity, lgather,
     # Extract either a slice or the full array
 
     if quantity in ['Er', 'Et', 'Ez', 'Br', 'Bt', 'Bz', \
-                        'Jx', 'Jy', 'Jz', 'rho' ]:
+                        'Jr', 'Jt', 'Jz', 'rho' ]:
         # Get the field name in Warp
         field_name = circ_dict_quantity[quantity]
         # Extract the data, either of a slice or the full array
