@@ -13,7 +13,7 @@ import time
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
 from parallel import gatherarray
-
+import pdb
 class BoostedParticleDiagnostic(ParticleDiagnostic):
     """
     Class that writes the particles *in the lab frame*, 
@@ -306,7 +306,7 @@ class LabSnapshot:
     def update_current_output_positions( self, t_boost, inv_gamma, inv_beta ):
         """
         Update the current and previous positions of output for this snapshot,
-        so that if corresponds to the time t_boost in the boosted frame
+        so that it corresponds to the time t_boost in the boosted frame
 
         Parameters
         ----------
@@ -319,31 +319,29 @@ class LabSnapshot:
         """
         # Some shorcuts for further calculation's purposes
         t_lab = self.t_lab  
-        t_boost_diff = t_boost + self.dt
+        t_boost_diff = t_boost - self.dt
 
         # This implements the Lorentz transformation formulas,
         # for a snapshot having a fixed t_lab
         self.current_z_boost = (t_lab*inv_gamma - t_boost)*c*inv_beta
         self.prev_z_boost = (t_lab*inv_gamma - t_boost_diff)*c*inv_beta     
         self.current_z_lab = (t_lab - t_boost*inv_gamma)*c*inv_beta
-        self.prev_z_lab = (t_lab - t_boost_diff*inv_gamma)*c*inv_beta 
-
+        self.prev_z_lab = (t_lab - t_boost_diff*inv_gamma)*c*inv_beta
+    
     def register_slice(self, slice_array, species):
         """
-        Store the slice of fields represented by slice_array
-        and also store the z index at which this slice should be
-        written in the final lab frame array
+        Store the slice of particles represented by slice_array
 
         Parameters
         ----------
         slice_array: array of reals
             An array of packed fields that corresponds to one slice,
-            as given by the SliceHandler object
+            as given by the ParticleCatcher object
 
         species: String, key of the species_dict
             Act as the key for the buffered_slices dictionary
         """
-        # Store the values and the index
+        # Store the values 
         self.buffered_slices[species].append(slice_array)
 
     def compact_slices(self, species):
@@ -369,7 +367,7 @@ class LabSnapshot:
 
 class ParticleCatcher:
     """
-    Class that extracts, Lorentz-transforms and writes particles
+    Class that extracts, Lorentz-transforms and gathers particles
     """
     def __init__(self, gamma_boost, beta_boost, top):
         """
@@ -416,7 +414,7 @@ class ParticleCatcher:
         current_ux = self.get_quantity("ux")
         current_uy = self.get_quantity("uy")
         current_uz = self.get_quantity("uz")
-        current_weights = self.get_quantity( "w")
+        current_weights = self.get_quantity("w")
 
         # Quantities at previous time step
         previous_x = self.get_quantity("x", l_prev = 1)
@@ -432,12 +430,14 @@ class ParticleCatcher:
         # For this snapshot:
         # - check if the output position *in the boosted frame*
         #   crosses the zboost in a forward motion
-        # - check if the output position *in the lab frame*
+        # - check if the output position *in the boosted frame*
         #   crosses the zboost_prev in a backward motion
         selected_indices = np.compress((((current_z >= self.zboost) & 
             (previous_z <= self.zboost_prev)) |
             ((current_z <= self.zboost) & 
             (previous_z >= self.zboost_prev))), particle_indices)
+
+        num_part = np.shape(selected_indices)[0]
         
         ## Particle quantities that satisfy the aforementioned condition
         self.x_captured = np.take(current_x, selected_indices)
@@ -459,41 +459,33 @@ class ParticleCatcher:
         self.gamma_prev_captured = np.sqrt(1. + (self.ux_prev_captured**2+\
             self.uy_prev_captured**2 + self.ux_prev_captured**2)/c**2)
 
-        num_part = np.shape(selected_indices)[0]
-
         return num_part
 
     def transform_particles_to_lab_frame(self):
         """
-        Transform the particles quantities from the boosted frame to the
-        lab frame
+        Transform the particle quantities from the boosted frame to the
+        lab frame. These are classical Lorentz transformation equations
         """
-        uzfrm =- self.beta_boost*self.gamma_boost*c
+        uzfrm = -self.beta_boost*self.gamma_boost*c
         len_z = np.shape(self.z_captured)[0]
         
-        self.top.setu_in_uzboosted_frame3d(len_z, 
-                self.ux_captured,
-                self.uy_captured, 
-                self.uz_captured, 
-                1./self.gamma_captured,
-                uzfrm, self.gamma_boost)
+        # Position
+        self.z_captured = self.gamma_boost*(self.z_captured + \
+            self.beta_boost*c*self.top.time)
+        self.z_prev_captured = self.gamma_boost*(self.z_prev_captured \
+            + self.beta_boost*c*(self.top.time-self.top.dt))
 
-        len_prev_z=np.shape(self.z_prev_captured)[0]
+        # Momentum
+        self.uz_captured = self.gamma_boost*self.uz_captured \
+        - self.gamma_captured*uzfrm
+        self.uz_prev_captured = self.gamma_boost*self.uz_prev_captured \
+        - self.gamma_prev_captured*uzfrm
 
-        self.top.setu_in_uzboosted_frame3d(len_prev_z, 
-                self.ux_prev_captured,
-                self.uy_prev_captured, 
-                self.uz_prev_captured, 
-                1./self.gamma_prev_captured,
-                uzfrm, self.gamma_boost)
-    
-        self.z_captured = (self.z_captured - self.zboost) + self.zlab 
-        self.z_prev_captured = (self.z_prev_captured - self.zboost_prev) \
-        + self.zlab_prev
+        # Time
         self.t = self.gamma_boost*self.top.time*np.ones(len_z) \
         - uzfrm*self.z_captured/c**2
         self.t_prev = self.gamma_boost*(self.top.time - self.top.dt)\
-        *np.ones(len_prev_z) - uzfrm*self.z_prev_captured/c**2
+        *np.ones(len_z) - uzfrm*self.z_prev_captured/c**2
 
     def collapse_to_mid_point(self):
         """
@@ -502,8 +494,7 @@ class ParticleCatcher:
         """
         # Putting particles' current and previous time in an array for 
         # convenience in mean calculation
-        time = [self.t, self.t_prev]
-        t_mid = np.mean(time, axis=0)
+        t_mid = .5*(self.t + self.t_prev)
 
         self.x_captured  = self.x_prev_captured*(self.t - t_mid)/\
         (self.t - self.t_prev) + self.x_captured*(t_mid - self.t_prev)/\
