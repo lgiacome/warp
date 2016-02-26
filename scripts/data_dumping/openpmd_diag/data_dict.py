@@ -51,11 +51,11 @@ weighting_power_dict = {
 
 # Correspondance between the names in OpenPMD and the names in Warp
 circ_dict_quantity = { 'rho':'Rho', 'Er':'Ex', 'Et':'Ey', 'Ez':'Ez', 
-                        'Br':'Bx', 'Bt':'By', 'Bz':'Bz' }
+                        'Br':'Bx', 'Bt':'By', 'Bz':'Bz',
+                        'Jr':'Jx', 'Jt':'Jy', 'Jz':'Jz' }
 cart_dict_quantity = { 'rho':'Rho', 'Ex':'Ex', 'Ey':'Ey', 'Ez':'Ez', 
-                        'Bx':'Bx', 'By':'By', 'Bz':'Bz' }
-circ_dict_Jindex = { 'Jr':0, 'Jt':1, 'Jz':2 }
-cart_dict_Jindex = { 'Jx':0, 'Jy':1, 'Jz':2 }
+                        'Bx':'Bx', 'By':'By', 'Bz':'Bz',
+                        'Jx':'Jx', 'Jy':'Jy', 'Jz':'Jz' }
 
 # Correspondance between the boundary conditions in Warp,
 # and the corresponding representative integer
