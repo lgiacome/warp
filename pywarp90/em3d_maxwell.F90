@@ -5966,11 +5966,11 @@ integer(ISZ):: n,i,it,xl,xr
   call shift_3darray_ncells_x(f%By,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   call shift_3darray_ncells_x(f%Bz,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   do it=1,f%ntimes
-    call shift_3darray_ncells_x(f%J1array(:,:,:,it), &
+    call shift_3darray_ncells_x(f%Jxarray(:,:,:,it), &
                                     f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-    call shift_3darray_ncells_x(f%J2array(:,:,:,it), &
+    call shift_3darray_ncells_x(f%Jyarray(:,:,:,it), &
                                     f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-    call shift_3darray_ncells_x(f%J3array(:,:,:,it), &
+    call shift_3darray_ncells_x(f%Jzarray(:,:,:,it), &
                                     f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   end do
   if (f%nxf>0) then
@@ -12213,9 +12213,9 @@ subroutine add_current_slice_3d(f,i)
   TYPE(EM3D_YEEFIELDtype) :: f
   integer(ISZ) :: i
 
-  f%J1array(:,:,:,i) = f%J1array(:,:,:,i) + f%J1array(:,:,:,i+1)
-  f%J2array(:,:,:,i) = f%J2array(:,:,:,i) + f%J2array(:,:,:,i+1)
-  f%J3array(:,:,:,i) = f%J3array(:,:,:,i) + f%J3array(:,:,:,i+1)
+  f%Jxarray(:,:,:,i) = f%Jxarray(:,:,:,i) + f%Jxarray(:,:,:,i+1)
+  f%Jyarray(:,:,:,i) = f%Jyarray(:,:,:,i) + f%Jyarray(:,:,:,i+1)
+  f%Jzarray(:,:,:,i) = f%Jzarray(:,:,:,i) + f%Jzarray(:,:,:,i+1)
 
 end subroutine add_current_slice_3d
 

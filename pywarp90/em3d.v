@@ -738,9 +738,9 @@ DRhoodt(-nxdrhoguard:nxdrho+nxdrhoguard,-nydrhoguard:nydrho+nydrhoguard,-nzdrhog
 Jx(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) _real
 Jy(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) _real
 Jz(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) _real
-J1array(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,ntimes) _real
-J2array(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,ntimes) _real
-J3array(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,ntimes) _real
+Jxarray(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,ntimes) _real
+Jyarray(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,ntimes) _real
+Jzarray(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,ntimes) _real
 incond(-nxguard:nxcond+nxguard,-nyguard:nycond+nyguard,-nzguard:nzcond+nzguard) _logical
 Ex_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
 Ey_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex

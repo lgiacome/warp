@@ -1002,9 +1002,9 @@ class EM3D(SubcycledPoissonSolver):
         if top.ndts[0]<>1:
             print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
             raise
-        f.Jx = self.fields.J1array[:,:,:,0]
-        f.Jy = self.fields.J2array[:,:,:,0]
-        f.Jz = self.fields.J3array[:,:,:,0]
+        f.Jx = self.fields.Jxarray[:,:,:,0]
+        f.Jy = self.fields.Jyarray[:,:,:,0]
+        f.Jz = self.fields.Jzarray[:,:,:,0]
         f.Rho = self.fields.Rhoarray[:,:,:,0]
 
         for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
@@ -1183,9 +1183,9 @@ class EM3D(SubcycledPoissonSolver):
         if top.ndts[0]<>1:
             print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
             raise
-        f.Jx = self.fields.J1array[:,:,:,0]
-        f.Jy = self.fields.J2array[:,:,:,0]
-        f.Jz = self.fields.J3array[:,:,:,0]
+        f.Jx = self.fields.Jxarray[:,:,:,0]
+        f.Jy = self.fields.Jyarray[:,:,:,0]
+        f.Jz = self.fields.Jzarray[:,:,:,0]
         f.Rho = self.fields.Rhoarray[:,:,:,0]
 
         for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
@@ -1546,10 +1546,10 @@ class EM3D(SubcycledPoissonSolver):
                                                       self.fields.nz,
                                                       l_particles_weight)
 #          for j in range(1,shape(self.fields.Jarray)[0]-1):
-                    for j in range(shape(self.fields.J1array)[0]):
-                        self.fields.J1array[j,self.fields.nyguard,:,0]+=jx
-                        self.fields.J2array[j,self.fields.nyguard,:,0]+=jy
-                        self.fields.J3array[j,self.fields.nyguard,:,0]+=jz
+                    for j in range(shape(self.fields.Jxarray)[0]):
+                        self.fields.Jxarray[j,self.fields.nyguard,:,0]+=jx
+                        self.fields.Jyarray[j,self.fields.nyguard,:,0]+=jy
+                        self.fields.Jzarray[j,self.fields.nyguard,:,0]+=jz
                 else:
                     jx = self.fields.Jx[self.fields.nxguard,self.fields.nyguard,:]
                     jy = self.fields.Jy[self.fields.nxguard,self.fields.nyguard,:]
@@ -1730,9 +1730,9 @@ class EM3D(SubcycledPoissonSolver):
         # --- zero proper portion of Jarray
         for indts in range(top.nsndts):
             if top.ldts[indts]:
-                self.fields.J1array[...,indts] = 0.
-                self.fields.J2array[...,indts] = 0.
-                self.fields.J3array[...,indts] = 0.
+                self.fields.Jxarray[...,indts] = 0.
+                self.fields.Jyarray[...,indts] = 0.
+                self.fields.Jzarray[...,indts] = 0.
                 if self.fields.circ_m:
                     self.fields.Jx_circ[...] = 0.
                     self.fields.Jy_circ[...] = 0.
@@ -1751,9 +1751,9 @@ class EM3D(SubcycledPoissonSolver):
     def setsourcepforparticles(self,isourcepndtscopies,indts,iselfb):
         if self.l_verbose:print 'setsourcepforparticles'
         # --- point J array to proper Jarray slice
-        self.fields.Jx = self.fields.J1array[:,:,:,indts]
-        self.fields.Jy = self.fields.J2array[:,:,:,indts]
-        self.fields.Jz = self.fields.J3array[:,:,:,indts]
+        self.fields.Jx = self.fields.Jxarray[:,:,:,indts]
+        self.fields.Jy = self.fields.Jyarray[:,:,:,indts]
+        self.fields.Jz = self.fields.Jzarray[:,:,:,indts]
         if self.l_getrho: self.fields.Rho = self.fields.Rhoarray[:,:,:,indts]
 
     def add_source_ndts_slices(self):
@@ -1802,9 +1802,9 @@ class EM3D(SubcycledPoissonSolver):
 
     def apply_current_bc(self,block):
         # --- point J to first slice of Jarray
-        block.core.yf.Jx = block.core.yf.J1array[:,:,:,0]
-        block.core.yf.Jy = block.core.yf.J2array[:,:,:,0]
-        block.core.yf.Jz = block.core.yf.J3array[:,:,:,0]
+        block.core.yf.Jx = block.core.yf.Jxarray[:,:,:,0]
+        block.core.yf.Jy = block.core.yf.Jyarray[:,:,:,0]
+        block.core.yf.Jz = block.core.yf.Jzarray[:,:,:,0]
         em3d_applybc_j(block.core.yf,
                        block.xlbnd,
                        block.xrbnd,
@@ -1826,22 +1826,22 @@ class EM3D(SubcycledPoissonSolver):
                 self.apply_rho_bc(self.field_coarse.block)
 
         if self.l_sumjx:
-            j1 = self.fields.J1array[0,:,:,0]*0.
-            j2 = self.fields.J2array[0,:,:,0]*0.
-            j3 = self.fields.J3array[0,:,:,0]*0.
-            for i in range(shape(self.fields.J1array)[0]):
-                j1+=self.fields.J1array[i,:,:,0]
-                j2+=self.fields.J2array[i,:,:,0]
-                j3+=self.fields.J3array[i,:,:,0]
-            for i in range(shape(self.fields.J1array)[0]):
-                self.fields.J1array[i,:,:,0]=j1.copy()
-                self.fields.J2array[i,:,:,0]=j2.copy()
-                self.fields.J3array[i,:,:,0]=j3.copy()
+            j1 = self.fields.Jxarray[0,:,:,0]*0.
+            j2 = self.fields.Jyarray[0,:,:,0]*0.
+            j3 = self.fields.Jzarray[0,:,:,0]*0.
+            for i in range(shape(self.fields.Jxarray)[0]):
+                j1+=self.fields.Jxarray[i,:,:,0]
+                j2+=self.fields.Jyarray[i,:,:,0]
+                j3+=self.fields.Jzarray[i,:,:,0]
+            for i in range(shape(self.fields.Jxarray)[0]):
+                self.fields.Jxarray[i,:,:,0]=j1.copy()
+                self.fields.Jyarray[i,:,:,0]=j2.copy()
+                self.fields.Jzarray[i,:,:,0]=j3.copy()
 
         # --- point J to first slice of Jarray
-        self.fields.Jx = self.fields.J1array[:,:,:,0]
-        self.fields.Jy = self.fields.J2array[:,:,:,0]
-        self.fields.Jz = self.fields.J3array[:,:,:,0]
+        self.fields.Jx = self.fields.Jxarray[:,:,:,0]
+        self.fields.Jy = self.fields.Jyarray[:,:,:,0]
+        self.fields.Jz = self.fields.Jzarray[:,:,:,0]
         if self.l_getrho:self.fields.Rho = self.fields.Rhoarray[:,:,:,0]
 
     def smoothdensity(self):
@@ -6849,9 +6849,9 @@ def pyinit_3dem_block(nx, ny, nz,
     f.Bx[...] = 0.
     f.By[...] = 0.
     f.Bz[...] = 0.
-    f.J1array[...] = 0.
-    f.J2array[...] = 0.
-    f.J3array[...] = 0.
+    f.Jxarray[...] = 0.
+    f.Jyarray[...] = 0.
+    f.Jzarray[...] = 0.
     if l_getrho :
         f.Rhoarray[...] = 0.
     if f.circ_m>0:
