@@ -3291,9 +3291,12 @@ class EMMRBlock(MeshRefinement,EM3D):
             cb = child.block
             cbc = child.field_coarse.block
             lp = l-fulllower
-            project_jxjyjz(cb.core.yf.J,
-                           cbc.core.yf.Jarray[...,0],
-                           self.block.core.yf.Jarray[...,0],
+            project_jxjyjz(cb.core.yf.Jx,cb.core.yf.Jy,cb.core.yf.Jz,
+                           cbc.core.yf.Jxarray[...,0],cbc.core.yf.Jyarray[...,0],
+                           cbc.core.yf.Jzarray[...,0],
+                           self.block.core.yf.Jxarray[...,0],
+                           self.block.core.yf.Jyarray[...,0],
+                           self.block.core.yf.Jzarray[...,0],
                            cb.nx,cb.ny,cb.nz,
                            self.block.nx,self.block.ny,self.block.nz,
                            cb.nxguard,cb.nyguard,cb.nzguard,
@@ -3302,8 +3305,12 @@ class EMMRBlock(MeshRefinement,EM3D):
                            child.refinement[2],
                            lp[0],lp[1],lp[2],self.l_2dxz,
                            self.icycle,self.novercycle)
-            cbc.core.yf.J = cbc.core.yf.Jarray[...,0]
-            self.block.core.yf.J = self.block.core.yf.Jarray[...,0]
+            cbc.core.yf.Jx = cbc.core.yf.Jxarray[...,0]
+            cbc.core.yf.Jy = cbc.core.yf.Jyarray[...,0]
+            cbc.core.yf.Jz = cbc.core.yf.Jzarray[...,0]
+            self.block.core.yf.Jx = self.block.core.yf.Jxarray[...,0]
+            self.block.core.yf.Jy = self.block.core.yf.Jyarray[...,0]
+            self.block.core.yf.Jz = self.block.core.yf.Jzarray[...,0]
             if child.l_pushf:
                 project_rho(cb.core.yf.Rho,
                              cbc.core.yf.Rhoarray[...,0],
@@ -3320,10 +3327,16 @@ class EMMRBlock(MeshRefinement,EM3D):
             # --- apply density mask to fine patch and twin charge and current densities
             if 0:
                 ntrans = 4
-                child.Jbf = cb.core.yf.J.copy()
-                child.Jbfc = cbc.core.yf.Jarray[...,0].copy()
+                child.Jxbf = cb.core.yf.Jx.copy()
+                child.Jybf = cb.core.yf.Jy.copy()
+                child.Jzbf = cb.core.yf.Jz.copy()
+                child.Jxbfc = cbc.core.yf.Jxarray[...,0].copy()
+                child.Jybfc = cbc.core.yf.Jyarray[...,0].copy()
+                child.Jzbfc = cbc.core.yf.Jzarray[...,0].copy()
                 apply_dmask(cb.core.yf.Rho,
-                            cb.core.yf.J,
+                            cb.core.yf.Jx,
+                            cb.core.yf.Jy,
+                            cb.core.yf.Jz,
                             cb.core.yf.dmaskx,
                             cb.core.yf.dmasky,
                             cb.core.yf.dmaskz,
@@ -3332,7 +3345,9 @@ class EMMRBlock(MeshRefinement,EM3D):
                             cb.nxguardphi,cb.nyguardphi,cb.nzguardphi,
                             self.l_pushf,self.l_2dxz)
                 apply_dmask(cbc.core.yf.Rhoarray[...,0],
-                            cbc.core.yf.Jarray[...,0],
+                            cbc.core.yf.Jxarray[...,0],
+                            cbc.core.yf.Jyarray[...,0],
+                            cbc.core.yf.Jzarray[...,0],
                             cbc.core.yf.dmaskx,
                             cbc.core.yf.dmasky,
                             cbc.core.yf.dmaskz,
@@ -3340,8 +3355,12 @@ class EMMRBlock(MeshRefinement,EM3D):
                             cbc.nx,cbc.ny,cbc.nz,
                             cbc.nxguardphi,cbc.nyguardphi,cbc.nzguardphi,
                             self.l_pushf,self.l_2dxz)
-                child.Jaf = cb.core.yf.J.copy()
-                child.Jafc = cbc.core.yf.Jarray[...,0].copy()
+                child.Jxaf = cb.core.yf.Jx.copy()
+                child.Jyaf = cb.core.yf.Jy.copy()
+                child.Jzaf = cb.core.yf.Jz.copy()
+                child.Jxafc = cbc.core.yf.Jxarray[...,0].copy()
+                child.Jyafc = cbc.core.yf.Jyarray[...,0].copy()
+                child.Jzafc = cbc.core.yf.Jzarray[...,0].copy()
 
     def add_source_ndts_slices(self):
         for child in self.children:
@@ -3583,12 +3602,12 @@ class EMMRBlock(MeshRefinement,EM3D):
         kw['cmin'] = cmin
         kw['cmax'] = cmax
         kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.J[:,:,:,0],guards,overlap=True),'J_x',**kw)
+        self.genericpfem3d(self.getarray(self.fields.Jx,guards,overlap=True),'J_x',**kw)
         if l_children:
             for i in range(1,len(self.blocklists)):
                 for c in self.blocklists[i]:
                     if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.J[:,:,:,0],guards,overlap=True),'J_x',**kw)
+                        c.genericpfem3d(c.getarray(c.fields.Jx,guards,overlap=True),'J_x',**kw)
                     else:
                         c.genericpfem3d(None,'J_x',**kw)
 
@@ -3597,12 +3616,12 @@ class EMMRBlock(MeshRefinement,EM3D):
         kw['cmin'] = cmin
         kw['cmax'] = cmax
         kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.J[:,:,:,1],guards,overlap=True),'J_y',**kw)
+        self.genericpfem3d(self.getarray(self.fields.Jy,guards,overlap=True),'J_y',**kw)
         if l_children:
             for i in range(1,len(self.blocklists)):
                 for c in self.blocklists[i]:
                     if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.J[:,:,:,1],guards,overlap=True),'J_y',**kw)
+                        c.genericpfem3d(c.getarray(c.fields.Jy,guards,overlap=True),'J_y',**kw)
                     else:
                         c.genericpfem3d(None,'J_y',**kw)
 
@@ -3611,12 +3630,12 @@ class EMMRBlock(MeshRefinement,EM3D):
         kw['cmin'] = cmin
         kw['cmax'] = cmax
         kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.J[:,:,:,2],guards,overlap=True),'J_z',**kw)
+        self.genericpfem3d(self.getarray(self.fields.Jz,guards,overlap=True),'J_z',**kw)
         if l_children:
             for i in range(1,len(self.blocklists)):
                 for c in self.blocklists[i]:
                     if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.J[:,:,:,2],guards,overlap=True),'J_z',**kw)
+                        c.genericpfem3d(c.getarray(c.fields.Jz,guards,overlap=True),'J_z',**kw)
                     else:
                         c.genericpfem3d(None,'J_z',**kw)
 

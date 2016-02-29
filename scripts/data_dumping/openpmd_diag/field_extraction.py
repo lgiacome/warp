@@ -9,8 +9,7 @@ their final layout, in the openPMD file.
 """
 import numpy as np
 from data_dict import circ_dict_quantity, cart_dict_quantity, \
-        circ_dict_Jindex, cart_dict_Jindex, x_offset_dict, y_offset_dict
-
+    x_offset_dict, y_offset_dict
 
 def get_dataset( dim, em, quantity, lgather,
                  iz_slice=None, transverse_centered=False ):
@@ -20,7 +19,7 @@ def get_dataset( dim, em, quantity, lgather,
 
     This format depends on the slicing (iz_slice) and geometry (dim)
     See below for more information of the shape of the output of this function
-    
+
     Parameters
     ----------
     dim: string
@@ -29,7 +28,7 @@ def get_dataset( dim, em, quantity, lgather,
 
     em: an EM3DSolver object
         The object from which to extract the fields
-    
+
     quantity: string
         Describes which field is being written.
         (Either rho, Ex, Ey, Ez, Bx, By, Bz, Jx, Jy or Jz)
@@ -63,7 +62,7 @@ def get_dataset( dim, em, quantity, lgather,
       (real and imaginary part are separated for each mode)
 
     In the above Nx is either em.nxlocal (if lgather is False) or the global
-    em.nx (if lgather is True). The same holds for Ny and Nz 
+    em.nx (if lgather is True). The same holds for Ny and Nz
     """
     if dim=="circ":
         return( get_circ_dataset( em, quantity, lgather=lgather,
@@ -73,7 +72,7 @@ def get_dataset( dim, em, quantity, lgather,
             iz_slice=iz_slice, transverse_centered=transverse_centered ) )
     elif dim=="3d":
         return( get_cart3d_dataset( em, quantity, lgather=lgather,
-            iz_slice=iz_slice, transverse_centered=transverse_centered ) )    
+            iz_slice=iz_slice, transverse_centered=transverse_centered ) )
 
 def get_circ_dataset( em, quantity, lgather,
                       iz_slice=None, transverse_centered=False ):
@@ -99,26 +98,8 @@ def get_circ_dataset( em, quantity, lgather,
     """
     # Extract either a slice or the full array
 
-    # The data layout of J in Warp is special
-    if quantity in ['Jr', 'Jt', 'Jz']:
-        # Get the array index that corresponds to that component
-        i = circ_dict_Jindex[ quantity ]
-        # Extract the data, either of a slice or the full array
-        if iz_slice is None:
-            # Extract mode 0
-            F = em.fields.J[:,0,:,i]
-            # Extract higher modes
-            if em.circ_m > 0:
-                F_circ = em.fields.J_circ[:,:,i,:]
-        else:
-            iz = em.nzguard + iz_slice
-            # Extract mode 0
-            F = em.fields.J[:,0,iz,i]
-            # Extract higher modes
-            if em.circ_m > 0:
-                F_circ = em.fields.J_circ[:,iz,i,:]
-    # Treat the fields E, B, rho in a more systematic way
-    elif quantity in ['Er', 'Et', 'Ez', 'Br', 'Bt', 'Bz', 'rho' ]:
+    if quantity in ['Er', 'Et', 'Ez', 'Br', 'Bt', 'Bz', \
+                        'Jr', 'Jt', 'Jz', 'rho' ]:
         # Get the field name in Warp
         field_name = circ_dict_quantity[quantity]
         # Extract the data, either of a slice or the full array
@@ -157,7 +138,7 @@ def get_circ_dataset( em, quantity, lgather,
         if em.circ_m > 0:
             F_circ = F_circ[:, nzg:-nzg, :]
 
-    # Gather array if lgather = True 
+    # Gather array if lgather = True
     # (Multi-proc operations using gather)
     # Only done in non-parallel case
     if lgather is True:
@@ -168,7 +149,7 @@ def get_circ_dataset( em, quantity, lgather,
     # Reshape the array so that it is stored in openPMD layout,
     # with real and imaginary part of each mode separated
     if F is not None:
-        # Check that the present process participates in writing data      
+        # Check that the present process participates in writing data
         if iz_slice is None:
             Ftot = np.empty( ( 1+2*em.circ_m, F.shape[0], F.shape[1] ) )
         else:
@@ -206,17 +187,9 @@ def get_cart3d_dataset( em, quantity, lgather,
     """
     # Extract either a slice or the full array
 
-    # The data layout of J in Warp is special
-    if quantity in ['Jx', 'Jy', 'Jz']:
-        # Get the array index that corresponds to that component
-        i = cart_dict_Jindex[ quantity ]
-        # Extract the data
-        if iz_slice is None:
-            F = em.fields.J[:,:,:,i]
-        else:
-            F = em.fields.J[:,:,em.nzguard+iz_slice,i]
     # Treat the fields E, B, rho in a more systematic way
-    elif quantity in ['Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz', 'rho' ]:
+    if quantity in ['Ex', 'Ey', 'Ez', \
+            'Bx', 'By', 'Bz', 'Jx', 'Jy', 'Jz', 'rho' ]:
         # Get the field name in Warp
         field_name = cart_dict_quantity[quantity]
         # Extract the data
@@ -246,7 +219,7 @@ def get_cart3d_dataset( em, quantity, lgather,
         nzg = em.nzguard
         F = F[ :, :, nzg: -nzg ]
 
-    # Gather array if lgather = True 
+    # Gather array if lgather = True
     # (Mutli-proc operations using gather)
     # Only done in non-parallel case
     if lgather is True:
@@ -281,17 +254,9 @@ def get_cart2d_dataset( em, quantity, lgather,
     """
     # Extract either a slice or the full array
 
-    # The data layout of J in Warp is special
-    if quantity in ['Jx', 'Jy', 'Jz']:
-        # Get the array index that corresponds to that component
-        i = cart_dict_Jindex[ quantity ]
-        # Extract the data
-        if iz_slice is None:
-            F = em.fields.J[:,0,:,i]
-        else:
-            F = em.fields.J[:,0,em.nzguard+iz_slice,i]
     # Treat the fields E, B, rho in a more systematic way
-    elif quantity in ['Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz', 'rho' ]:
+    if quantity in ['Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz', \
+                        'Jx', 'Jy', 'Jz', 'rho' ]:
         # Get the field name in Warp
         field_name = cart_dict_quantity[quantity]
         # Extract the data
@@ -315,7 +280,7 @@ def get_cart2d_dataset( em, quantity, lgather,
         nzg = em.nzguard
         F = F[ :, nzg: -nzg ]
 
-    # Gather array if lgather = True 
+    # Gather array if lgather = True
     # (Mutli-proc operations using gather)
     # Only done in non-parallel case
     if lgather is True:
