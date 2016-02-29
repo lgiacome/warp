@@ -61,15 +61,19 @@ c get number of slaves and my_pe
       end
 c===========================================================================
       subroutine initializedecomp_work(decomp)
-      use Parallel,Only: comm_world
+      use Parallel,Only: comm_world, lcomm_cartesian
       use Decompositionmodule
       type(Decomposition):: decomp
 
       integer(MPIISZ):: mpierror,comm_world_mpiisz
       include "mpif.h"
       comm_world_mpiisz = comm_world
-
-      call MPI_COMM_DUP(comm_world_mpiisz,decomp%mpi_comm,mpierror)
+      
+!     --- If cartesian communicator not created, use a duplicate of mpi_comm_world instead
+      if (.NOT. lcomm_cartesian) THEN 
+        ! Copy communicator 
+        call MPI_COMM_DUP(comm_world_mpiisz,decomp%mpi_comm,mpierror)
+      endif 
 
 c     --- Create communicator groups for processors along each axis.
       call MPI_COMM_SPLIT(decomp%mpi_comm,
@@ -80,8 +84,8 @@ c     --- Create communicator groups for processors along each axis.
      &                    decomp%my_index,decomp%mpi_comm_y,mpierror)
       call MPI_COMM_SPLIT(decomp%mpi_comm,
      &                    decomp%ixproc+decomp%iyproc*decomp%nxprocs,
-     &                    decomp%my_index,decomp%mpi_comm_z,mpierror)
-
+     &                    decomp%my_index,decomp%mpi_comm_z,mpierror)      
+      
       return
       end
 c===========================================================================
