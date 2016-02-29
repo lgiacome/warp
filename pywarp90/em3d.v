@@ -88,7 +88,7 @@ init_splitfield(sf:EM3D_SPLITYEEFIELDtype,
                 norderx:integer,nordery:integer,norderz:integer,
                 xcoefs(norderx/2):real,ycoefs(nordery/2):real,zcoefs(norderz/2):real,
                 l_nodalgrid:logical,pml_method:integer) subroutine
-depose_jxjyjz_esirkepov_linear_serial(j:real,
+depose_jxjyjz_esirkepov_linear_serial(jx:real,jy:real,jz:real,
                            n:integer,x(n):real,y(n):real,z(n):real,
                            ux(n):real,uy(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,
@@ -98,7 +98,7 @@ depose_jxjyjz_esirkepov_linear_serial(j:real,
                            nxguard:integer,nyguard:integer,nzguard:integer,
                            l_particles_weight:logical)
                            subroutine
-depose_jxjyjz_esirkepov_n(j:real,
+depose_jxjyjz_esirkepov_n(jx:real,jy:real,jz:real,
                            n:integer,x(n):real,y(n):real,z(n):real,
                            vx(n):real,vy(n):real,vz(n):real,gaminv(n):real,
                            w:real,q:real,
@@ -110,7 +110,7 @@ depose_jxjyjz_esirkepov_n(j:real,
                            l_particles_weight:logical,
                            l4symtry:logical)
                            subroutine
-depose_jxjyjz_pxpypz_esirkepov_linear_serial(cj:real,mp:real,
+depose_jxjyjz_pxpypz_esirkepov_linear_serial(jx:real,jy:real,jz:real,mp:real,
                            n:integer,x(n):real,y(n):real,z(n):real,
                            ux(n):real,uy(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,m:real,
@@ -164,7 +164,7 @@ depose_rho_n_2d_circ(rho:real,rho_circ:complex,circ_n:integer,
                            l_particles_weight:logical,
 		           type_rz_depose:integer)
                            subroutine
-depose_j_n_1dz(cj:real,
+depose_j_n_1dz(jx:real,jy:real,jz:real,
                            n:integer,z(n):real,
                            ux(n):real,uy(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,
@@ -175,7 +175,7 @@ depose_j_n_1dz(cj:real,
                            noz:integer,
                            l_particles_weight:logical)
                            subroutine
-depose_j_n_2dxz(cj:real,
+depose_j_n_2dxz(jx:real, jy:real,jz:real,
                            n:integer,x(n):real,z(n):real,
                            ux(n):real,uy(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,
@@ -187,7 +187,7 @@ depose_j_n_2dxz(cj:real,
                            l_particles_weight:logical,
                            l4symtry:logical)
                            subroutine
-depose_j_n_2dxz_spectral(cj:real,
+depose_j_n_2dxz_spectral(jx:real,jy:real,jz:real,
                            n:integer,x(n):real,z(n):real,
                            ux(n):real,uy(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,
@@ -388,7 +388,10 @@ em3d_applybc_j(f:EM3D_YEEFIELDtype,xlbnd:integer,xrbnd:integer,
                                    ylbnd:integer,yrbnd:integer,
                                    zlbnd:integer,zrbnd:integer,
 		                   type_rz_depose:integer) subroutine
-project_jxjyjz(jfine:real,jcoarse:real,jcoarse_mother:real,
+project_jxjyjz(jxfine:real,jyfine:real,jzfine:real,
+               jxcoarse:real,jycoarse:real,jzcoarse:real,
+               jxcoarse_mother:real,jycoarse_mother:real,
+               jzcoarse_mother:real,
                nxf:integer,nyf:integer,nzf:integer,
                nxc:integer,nyc,nzc:integer,
                nxguard:integer,nyguard:integer,nzguard:integer,
@@ -401,7 +404,7 @@ project_rho(rhofine:real,rhocoarse:real,rhocoarse_mother:real,
                nxguard:integer,nyguard:integer,nzguard:integer,
                rapx:integer,rapy:integer,rapz:integer,
                ixc:integer,iyc:integer,izc:integer,l_2dxz:logical) subroutine
-apply_dmask(rho:real,jc:real,dmaskx:real,dmasky:real,dmaskz:real,
+apply_dmask(rho:real,jx:real,jy:real, jz:real,dmaskx:real,dmasky:real,dmaskz:real,
             bounds(6):integer,nguarddepos(3):integer,ntrans(3):integer,
             nx:integer,ny:integer,nz:integer,nxguard:integer,nyguard:integer,nzguard:integer,
             l_pushf:logical,l_2dxz:logical) subroutine
@@ -411,14 +414,14 @@ addsubstractfields_nodal(child:EM3D_BLOCKtype,child_coarse:EM3D_BLOCKtype,
                    parent:EM3D_BLOCKtype,lc(3):integer,ref(3):integer,l_2dxz:logical) subroutine
 shift_em3dblock_ncells_x(b:EM3D_BLOCKtype,n:integer) subroutine
 shift_em3dblock_ncells_z(b:EM3D_BLOCKtype,n:integer) subroutine
-depose_jxjy_esirkepov_linear_serial_2d(j:real,
+depose_jxjy_esirkepov_linear_serial_2d(jx:real,jy:real,jz:real,
                            n:integer,x(n):real,y(n):real,
                            xold(n):real,yold(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,
                            xmin:real,ymin:real,dt:real,dx:real,dy:real,
                            nx:integer,ny:integer,l_particles_weight:logical)
                            subroutine
-depose_jxjyjz_esirkepov_n_2d(j:real,
+depose_jxjyjz_esirkepov_n_2d(jx:real,jy:real,jz:real,
                            n:integer,x(n):real,y(n):real,z(n):real,
                            ux(n):real,uy(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,
@@ -430,7 +433,8 @@ depose_jxjyjz_esirkepov_n_2d(j:real,
                            l4symtry:logical,l_2drz:logical,
 		           type_rz_depose:integer)
                            subroutine
-depose_jxjyjz_esirkepov_n_2d_circ(j:real,j_circ:complex,circ_m:integer,
+depose_jxjyjz_esirkepov_n_2d_circ(jx:real,jy:real,jz:real,jx_circ:complex,
+                           jy_circ:complex,jz_circ:complex,circ_m:integer,
                            n:integer,x(n):real,y(n):real,z(n):real,
                            ux(n):real,uy(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,
@@ -441,7 +445,7 @@ depose_jxjyjz_esirkepov_n_2d_circ(j:real,j_circ:complex,circ_m:integer,
                            l_particles_weight:logical,
 		           type_rz_depose:integer)
                            subroutine
-depose_jxjyjz_villasenor_n_2d(j:real,
+depose_jxjyjz_villasenor_n_2d(jx:real,jy:real,jz:real,
                            n:integer,x(n):real,y(n):real,
                            ux(n):real,uy(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,
@@ -731,8 +735,12 @@ Rho(-nxguard:nxr+nxguard,-nyguard:nyr+nyguard,-nzguard:nzr+nzguard) _real
 Rhoold(-nxguard:nxr+nxguard,-nyguard:nyr+nyguard,-nzguard:nzr+nzguard) _real
 Rhoarray(-nxguard:nxr+nxguard,-nyguard:nyr+nyguard,-nzguard:nzr+nzguard,ntimes) _real
 DRhoodt(-nxdrhoguard:nxdrho+nxdrhoguard,-nydrhoguard:nydrho+nydrhoguard,-nzdrhoguard:nzdrho+nzdrhoguard) _real
-J(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3) _real
-Jarray(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3,ntimes) _real
+Jx(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) _real
+Jy(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) _real
+Jz(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) _real
+Jxarray(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,ntimes) _real
+Jyarray(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,ntimes) _real
+Jzarray(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,ntimes) _real
 incond(-nxguard:nxcond+nxguard,-nyguard:nycond+nyguard,-nzguard:nzcond+nzguard) _logical
 Ex_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
 Ey_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
@@ -749,7 +757,9 @@ Bzp_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
 F_circ(-nxguard:nxf+nxguard,-nzguard:nzf+nzguard,1:circ_m) _complex
 Rho_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
 Rhoarray_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,ntimes,1:circ_m) _complex
-J_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,3,1:circ_m) _complex
+Jx_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
+Jy_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
+Jz_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,1:circ_m) _complex
 Jarray_circ(-nxguard:nx+nxguard,-nzguard:nz+nzguard,3,ntimes,1:circ_m) _complex
 Ax(-nxguard:nxpo+nxguard,-nyguard:nypo+nyguard,-nzguard:nzpo+nzguard) _real
 Ay(-nxguard:nxpo+nxguard,-nyguard:nypo+nyguard,-nzguard:nzpo+nzguard) _real
