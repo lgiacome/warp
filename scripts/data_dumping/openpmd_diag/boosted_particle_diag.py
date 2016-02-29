@@ -609,9 +609,6 @@ class ParticleCatcher:
 
         Parameters
         ----------
-        species : a Species object
-            Contains the species object to get the particle data from
-
         quantity : string
             Describes which quantity is queried
             Either "x", "y", "z", "ux", "uy", "uz" or "w"
