@@ -76,15 +76,15 @@ c===========================================================================
       endif 
 
 c     --- Create communicator groups for processors along each axis.
-        call MPI_COMM_SPLIT(decomp%mpi_comm,
-     &                    decomp%iyproc+decomp%izproc*decomp%nyprocs,
-     &                    decomp%my_index,decomp%mpi_comm_x,mpierror)
-        call MPI_COMM_SPLIT(decomp%mpi_comm,
-     &                    decomp%izproc+decomp%ixproc*decomp%nzprocs,
-     &                    decomp%my_index,decomp%mpi_comm_y,mpierror)
-        call MPI_COMM_SPLIT(decomp%mpi_comm,
-     &                    decomp%ixproc+decomp%iyproc*decomp%nxprocs,
-     &                    decomp%my_index,decomp%mpi_comm_z,mpierror)      
+      call MPI_COMM_SPLIT(decomp%mpi_comm,
+      &                    decomp%iyproc+decomp%izproc*decomp%nyprocs,
+      &                    decomp%my_index,decomp%mpi_comm_x,mpierror)
+      call MPI_COMM_SPLIT(decomp%mpi_comm,
+      &                    decomp%izproc+decomp%ixproc*decomp%nzprocs,
+      &                    decomp%my_index,decomp%mpi_comm_y,mpierror)
+      call MPI_COMM_SPLIT(decomp%mpi_comm,
+      &                    decomp%ixproc+decomp%iyproc*decomp%nxprocs,
+      &                    decomp%my_index,decomp%mpi_comm_z,mpierror)      
       
       return
       end
