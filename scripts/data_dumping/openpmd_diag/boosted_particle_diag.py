@@ -448,7 +448,7 @@ class ParticleCatcher:
         self.uz_captured = np.take(current_uz, selected_indices)
         self.w_captured = np.take(current_weights, selected_indices)
         self.gamma_captured = np.sqrt(1. + (self.ux_captured**2+\
-            self.uy_captured**2 + self.ux_captured**2)/c**2)
+            self.uy_captured**2 + self.uz_captured**2)/c**2)
 
         self.x_prev_captured = np.take(previous_x, selected_indices)
         self.y_prev_captured = np.take(previous_y, selected_indices)
@@ -457,7 +457,7 @@ class ParticleCatcher:
         self.uy_prev_captured = np.take(previous_uy, selected_indices)
         self.uz_prev_captured = np.take(previous_uz, selected_indices)
         self.gamma_prev_captured = np.sqrt(1. + (self.ux_prev_captured**2+\
-            self.uy_prev_captured**2 + self.ux_prev_captured**2)/c**2)
+            self.uy_prev_captured**2 + self.uz_prev_captured**2)/c**2)
 
         return num_part
 
