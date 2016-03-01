@@ -288,7 +288,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             field_path = "/data/%d/fields/" %iteration
             field_grp = f.require_group(field_path)
             self.setup_openpmd_meshes_group(field_grp)
-
+         
             # Loop over the different quantities that should be written
             # and setup the corresponding datasets
             for fieldtype in self.fieldtypes:
