@@ -17,7 +17,6 @@ Remaining questions:
 import os
 import numpy as np
 import time
-import h5py
 from scipy.constants import c
 from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
@@ -207,7 +206,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         """
         # Open the file without parallel I/O in this implementation
         f = self.open_file( snapshot.filename )
-
+        
         field_path = "/data/%d/fields/" %snapshot.iteration
         field_grp = f[field_path]
         
@@ -293,7 +292,7 @@ class LabSnapshot:
            Number of the file where this snapshot is to be written
         """
         # Deduce the name of the filename where this snapshot writes
-        self.filename = os.path.join( write_dir, 'hdf5/data%05d.h5' %i)
+        self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
         self.iteration = i
 
         # Time and boundaries in the lab frame (constants quantities)
