@@ -964,12 +964,15 @@ c===========================================================================
 c This is the routine which divies up the work among the parallel processors.
 
       integer(ISZ):: convertindextoproc
+
+#ifdef MPIPARALLEL
       integer(MPIISZ):: mpierror,comm_world_mpiisz
-      integer(MPIISZ) :: old_comm, new_comm, rank_in_comm, coordinates(3), ndims=3, dims(3)
-      integer(MPIISZ) :: proc_x_min, proc_x_max, proc_y_min, proc_y_max, proc_z_min, proc_z_max
-      logical(MPIISZ) :: reorder=.TRUE.
-      logical(MPIISZ), dimension(3) :: periods=.TRUE.
-      
+      integer(MPIISZ):: old_comm, new_comm, rank_in_comm, coordinates(3), ndims=3, dims(3)
+      integer(MPIISZ):: proc_x_min, proc_x_max, proc_y_min, proc_y_max, proc_z_min, proc_z_max
+      logical(MPIISZ):: reorder=.TRUE.
+      logical(MPIISZ), dimension(3):: periods=.TRUE.
+#endif
+
 c     --- nslaves is obsolete but still set it since it is used in places.
       nslaves = nprocs
 
@@ -987,23 +990,31 @@ c     --- any user specified transverse decomposition.
         lprntpara = .false.
       endif
 
-      ! This creates cartesian communicator topology
-      if (lcomm_cartesian) then 
+#ifdef MPIPARALLEL
+      if (lcomm_cartesian) then
+
+        ! Create a cartesian communicator topology
         comm_world_mpiisz=comm_world
+
         ! Duplicate ccomm_world in old_comm
         call MPI_COMM_DUP(comm_world_mpiisz,old_comm,mpierror)
+
         ! Create new cartesian communicator topology using current CPU split
         dims(1)=INT(nzprocs,4)
         dims(2)=INT(nyprocs,4)
         dims(3)=INT(nxprocs,4)
         call MPI_CART_CREATE(old_comm, ndims, dims,periods, reorder, new_comm, mpierror)
+
         ! Init current Decomposition object communicator
         fsdecomp%mpi_comm=new_comm
+
         ! Free old comm
         CALL MPI_COMM_FREE(old_comm,mpierror)
+
         ! Get new process rank in new cartesian communicator
         call MPI_COMM_RANK(new_comm,rank_in_comm,mpierror)
         my_index=rank_in_comm
+
         ! get coordinates ixproc, iyproc, izproc in new cartesian comm
         call MPI_CART_COORDS(new_comm,rank_in_comm,ndims,coordinates,mpierror)
         ixproc=coordinates(3)
@@ -1015,6 +1026,7 @@ c     --- any user specified transverse decomposition.
         nprocgrid(0) = nxprocs
         nprocgrid(1) = nyprocs
         nprocgrid(2) = nzprocs
+
         ! Get neighbors ranks
         CALL MPI_CART_SHIFT(new_comm, 2_4, 1_4, proc_x_min, proc_x_max, mpierror)
         CALL MPI_CART_SHIFT(new_comm, 1_4, 1_4, proc_y_min, proc_y_max, mpierror)
@@ -1025,35 +1037,42 @@ c     --- any user specified transverse decomposition.
         procneighbors(1,1) = proc_y_max
         procneighbors(0,2) = proc_z_min
         procneighbors(1,2) = proc_z_max
-      ! This creates communicator without any topology
-      else 
-c     --- Divide up the processors using fortran ordering, with
-c     --- x being the most rapidly varying index.
-          izproc = int(my_index/(nxprocs*nyprocs))
-          iyproc = int((my_index - izproc*(nxprocs*nyprocs))/nxprocs)
-          ixproc = my_index - izproc*(nxprocs*nyprocs) - iyproc*nxprocs
-          iprocgrid(0) = ixproc
-          iprocgrid(1) = iyproc
-          iprocgrid(2) = izproc
-          nprocgrid(0) = nxprocs
-          nprocgrid(1) = nyprocs
-          nprocgrid(2) = nzprocs
 
-c     --- Find the six neighboring processors
-           procneighbors(0,0) = convertindextoproc(ixproc-1,iyproc  ,izproc  ,
-     &                                         nxprocs,nyprocs,nzprocs)
-           procneighbors(1,0) = convertindextoproc(ixproc+1,iyproc  ,izproc  ,
-     &                                         nxprocs,nyprocs,nzprocs)
-           procneighbors(0,1) = convertindextoproc(ixproc  ,iyproc-1,izproc  ,
-     &                                         nxprocs,nyprocs,nzprocs)
-           procneighbors(1,1) = convertindextoproc(ixproc  ,iyproc+1,izproc  ,
-     &                                         nxprocs,nyprocs,nzprocs)
-           procneighbors(0,2) = convertindextoproc(ixproc  ,iyproc  ,izproc-1,
-     &                                         nxprocs,nyprocs,nzprocs)
-           procneighbors(1,2) = convertindextoproc(ixproc  ,iyproc  ,izproc+1,
-     &                                         nxprocs,nyprocs,nzprocs)
+      else
+#endif
 
-      endif 
+c       --- This is done in serial or when lcomm_cartesian is false.
+
+c       --- Divide up the processors using fortran ordering, with
+c       --- x being the most rapidly varying index.
+        izproc = int(my_index/(nxprocs*nyprocs))
+        iyproc = int((my_index - izproc*(nxprocs*nyprocs))/nxprocs)
+        ixproc = my_index - izproc*(nxprocs*nyprocs) - iyproc*nxprocs
+        iprocgrid(0) = ixproc
+        iprocgrid(1) = iyproc
+        iprocgrid(2) = izproc
+        nprocgrid(0) = nxprocs
+        nprocgrid(1) = nyprocs
+        nprocgrid(2) = nzprocs
+
+c       --- Find the six neighboring processors
+         procneighbors(0,0) = convertindextoproc(ixproc-1,iyproc  ,izproc  ,
+     &                                           nxprocs,nyprocs,nzprocs)
+         procneighbors(1,0) = convertindextoproc(ixproc+1,iyproc  ,izproc  ,
+     &                                           nxprocs,nyprocs,nzprocs)
+         procneighbors(0,1) = convertindextoproc(ixproc  ,iyproc-1,izproc  ,
+     &                                           nxprocs,nyprocs,nzprocs)
+         procneighbors(1,1) = convertindextoproc(ixproc  ,iyproc+1,izproc  ,
+     &                                           nxprocs,nyprocs,nzprocs)
+         procneighbors(0,2) = convertindextoproc(ixproc  ,iyproc  ,izproc-1,
+     &                                           nxprocs,nyprocs,nzprocs)
+         procneighbors(1,2) = convertindextoproc(ixproc  ,iyproc  ,izproc+1,
+     &                                           nxprocs,nyprocs,nzprocs)
+
+#ifdef MPIPARALLEL
+      endif
+#endif
+
 c---------------------------------------------------------------------------
 c     --- Setup the decomposition data
       fsdecomp%my_index = my_index
@@ -1513,7 +1532,7 @@ c     --- with a stride.
       end subroutine smooth3d_121_stride
 c===========================================================================
       subroutine smoothcirc_121_stride(q,nx,nz,nm,npass,alpha,stride)
-c     --- performs a smoothing sequence of n passes of a three points stencil 
+c     --- performs a smoothing sequence of n passes of a three points stencil
 c     --- on a complex array that represents the circ higher modes (m>0),
 c     --- with coefficients [(1-alpha)/2, alpha, (1-alpha)/2] along x, y and/or z,
 c     --- with a stride.
@@ -1544,7 +1563,7 @@ c     --- with a stride.
               end do
            end do
         end do
-        
+
 !           z smoothing
         a = alpha(3)
         b = (1.-a)/2.
@@ -1564,7 +1583,7 @@ c     --- with a stride.
               end do
            end do
         end do
-           
+
         return
       end subroutine smoothcirc_121_stride
 c===========================================================================
@@ -1673,7 +1692,7 @@ c     --- with a stride.
       end subroutine smooth3d_121_stride_mask
 c===========================================================================
       subroutine smooth_poly(q,nx,ny,nz,sten)
-!     --- performs smoothing in z with nine points stencil 
+!     --- performs smoothing in z with nine points stencil
        implicit none
 
        integer(ISZ) :: nx,ny,nz,i,j,k,l
