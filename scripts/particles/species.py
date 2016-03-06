@@ -681,7 +681,7 @@ class Species(object):
             else:
                 new_lis.append(item)
         return new_lis
-    
+
     def getappliedfields(self):
         dtl = -0.5*top.dt
         dtr = +0.5*top.dt
@@ -1976,8 +1976,13 @@ class Species(object):
         return getw(jslist=self.jslist,**kw)
 
     def getweights(self,**kw):
-        """Returns the weights of the particles, the product of pid[:,wpid]*sw."""
-        return getw(jslist=self.jslist,**kw)*self.sw
+        """Returns the weights of the particles"""
+        if top.wpid != 0:
+            # If space has been allocated for the weights, use them
+            return( getw(jslist=self.jslist,**kw) * self.sw )
+        else:
+            # Otherwise, return an array of uniform weights
+            return( ones_like( self.getx() ) * self.sw )
 
     def getke(self,**kw):
         """Calls :py:func:`~particles.getke` for this species."""
@@ -3072,4 +3077,3 @@ class Species(object):
         setattr(cls, name, property(fget, fset, None, None))
         setattr(cls, 'get'+name, getpidname)
         cls._addedpids.append(name)
-
