@@ -5,10 +5,10 @@ from em3dsolver import *
 class EM3DFFT(EM3D):
 
     __em3dfftinputs__ = []
-    __flaginputs__ = {'spectral':1,
-                      'spectral_current':0,
-                      'current_cor':1,
-                      'boris_cor':0,
+    __flaginputs__ = {'spectral':1, # on/off spectral solver
+                      'spectral_current':0, # flag for deposition that generalizes Esirkepov in k-space for any order 
+                      'current_cor':1,  # flag for correction current to verify Gauss' Law (not needed if spectral_current=1; more local than Boris correction on fields)
+                      'boris_cor':0, # flag for correction of fields verify Gauss' Law (i.e. Boris correction; not needed if spectral_current=1 or spectral_current=1)
                       'l_staggered_a_la_brendan':False,
                       'spectral_mix':0.,'Jmult':False,
                       'l_spectral_staggered':False,
