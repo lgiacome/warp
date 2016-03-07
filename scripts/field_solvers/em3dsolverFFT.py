@@ -470,7 +470,41 @@ class EM3DFFT(EM3D):
         ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
 
         fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
-  
+
+        # --- set periodic BC
+        if self.bounds[0]:
+            ngx = self.nxguard
+        else:
+            ngx = 0
+        if self.bounds[2]:
+            ngy = self.nyguard
+        else:
+            ngy = 0
+        if self.bounds[4]:
+            ngz = self.nzguard
+        else:
+            ngz = 0
+
+        allJs = [f.DRhoodt,f.Jx,f.Jy,f.Jz]
+        if emK.nx>1 and self.bounds[0]:
+            for J in allJs:
+                J[ngx:2*ngx+1,...]+=J[-ngx-1:,...]
+                J[-ngx-1:,...]=0.
+                J[-2*ngx-1:-ngx-1,...]+=J[:ngx,...]
+                J[:ngx,...]=0.
+        if emK.ny>1 and self.bounds[2]:
+            for J in allJs:
+                J[:,ngy:2*ngy+1,:]+=J[:,-ngy-1:,:]
+                J[:,-ngy-1:,:]=0.
+                J[:,-2*ngy-1:-ngy-1,:]+=J[:,:ngy,:]
+                J[:,:ngy,:]=0.
+        if emK.nz>1 and self.bounds[4]:
+            for J in allJs:
+                J[...,ngz:2*ngz+1]+=J[...,-ngz-1:]
+                J[...,-ngz-1:]=0.
+                J[...,-2*ngz-1:-ngz-1]+=J[...,:ngz]
+                J[...,:ngz]=0.
+
         if emK.nx>1:JxF = fft.fftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]))
         if emK.ny>1:JyF = fft.fftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
         if emK.nz>1:JzF = fft.fftn(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))
