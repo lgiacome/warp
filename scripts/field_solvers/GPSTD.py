@@ -607,14 +607,14 @@ class GPSTD(Fourier_Space):
             for k in self.fields.keys():
                 if updated_fields[k]:
                     f = self.fields[k]
-                    f[-ngy-1:,...]=f[ngy:2*ngy+1,...]
-                    f[:ngy,...]=f[-2*ngy-1:-ngy-1,...]
+                    f[:,-ngy-1:,:]=f[:,ngy:2*ngy+1,:]
+                    f[:,:ngy,:]=f[:,-2*ngy-1:-ngy-1,:]
         if self.bc_periodic[2]:
             for k in self.fields.keys():
                 if updated_fields[k]:
                     f = self.fields[k]
-                    f[-ngz-1:,...]=f[ngz:2*ngz+1,...]
-                    f[:ngz,...]=f[-2*ngz-1:-ngz-1,...]
+                    f[...,-ngz-1:]=f[...,ngz:2*ngz+1]
+                    f[...,:ngz]=f[...,-2*ngz-1:-ngz-1]
 
         del updated_fields
         
