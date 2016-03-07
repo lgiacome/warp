@@ -201,7 +201,7 @@ class EM3D(SubcycledPoissonSolver):
             pass
 
         # --- If there are any remaning keyword arguments, raise an error.
-        assert len(kw.keys()) == 0,"Bad keyword arguemnts %s"%kw.keys()
+        assert len(kw.keys()) == 0,"Bad keyword arguments %s"%kw.keys()
 
         # --- Set grid cell sizes for unused dimensions
         if self.l_1dz:
@@ -6608,6 +6608,104 @@ class EM3D(SubcycledPoissonSolver):
         excoef=(1.-w)*allcoefs[i,0,:]+w*allcoefs[i+1,0,:]
         bycoef=(1.-w)*allcoefs[i,1,:]+w*allcoefs[i+1,1,:]
         return excoef,bycoef
+
+    def simpledump(self,filename='fields',dir='./',l_appendtimestep=True):
+        if me==0:
+            fname = dir+filename
+            if l_appendtimestep:fname+='_%g'%top.it
+            fname+='.pck'
+            f=PW.PW(fname)
+        ex=self.gatherex()
+        if me==0:f.ex=ex
+        ey=self.gatherey()
+        if me==0:f.ey=ey
+        ez=self.gatherez()
+        if me==0:f.ez=ez
+        bx=self.gatherbx()
+        if me==0:f.bx=bx
+        by=self.gatherby()
+        if me==0:f.by=by
+        bz=self.gatherbz()
+        if me==0:f.bz=bz
+        if self.l_pushf:
+            ff=self.gatherf()
+            if me==0:f.f=ff
+        if self.l_pushg:
+            g=self.gatherg()
+            if me==0:f.g=g
+        jx=self.gatherjx()
+        if me==0:f.jx=jx
+        jy=self.gatherjy()
+        if me==0:f.jy=jy
+        jz=self.gatherjz()
+        if me==0:f.jz=jz
+        if self.l_getrho:
+            rho=self.gatherrho()
+            if me==0:f.rho=rho
+            rhoold=self.gatherrhoold()
+            if me==0:f.rhoold=rhoold
+        if me==0:f.close()
+        del ex,ey,ez,bx,by,bz,jx,jy,jz
+        if self.l_pushf:del f
+        if self.l_pushg:del g
+        if self.l_getrho:del rho,rhoold
+
+    def simpleread(self,filename='fields',dir='./',l_appendtimestep=True):
+        if me==0:
+            fname = dir+filename
+            if l_appendtimestep:fname+='_%g'%top.it
+            fname+='.pck'
+            f=PR.PR(fname)
+        toreturn = {}
+        toreturn['ex']=f.ex
+        toreturn['ey']=f.ey
+        toreturn['ez']=f.ez
+        toreturn['jx']=f.jx
+        toreturn['jy']=f.jy
+        toreturn['jz']=f.jz
+        toreturn['bx']=f.bx
+        toreturn['by']=f.by
+        toreturn['bz']=f.bz
+        
+        if self.l_pushf:toreturn['f']=f.f
+        if self.l_pushg:toreturn['g']=f.g
+        if self.l_getrho:toreturn['rho']=f.rho
+        if self.l_getrho:toreturn['rhoold']=f.rhoold
+        return toreturn
+
+    def simplecompare(self,filename='fields',dir='./',l_appendtimestep=True,win=0):
+        fields = self.simpleread(filename,dir,l_appendtimestep)
+        myfields = {}
+        myfields['ex']=self.gatherex()
+        myfields['ey']=self.gatherey()
+        myfields['ez']=self.gatherez()
+        myfields['bx']=self.gatherbx()
+        myfields['by']=self.gatherby()
+        myfields['bz']=self.gatherbz()
+        myfields['jx']=self.gatherjx()
+        myfields['jy']=self.gatherjy()
+        myfields['jz']=self.gatherjz()
+        if self.l_pushf: myfields['f']=self.gatherf()
+        if self.l_pushg: myfields['g']=self.gatherg()
+        if self.l_getrho: 
+            myfields['rho']=self.gatherrho()
+            myfields['rhoold']=self.gatherrhoold()
+        flist = ['ex','ey','ez','bx','by','bz','jx','jy','jz']
+        if self.l_pushf:flist+=['f']
+        if self.l_pushg:flist+=['g']
+        if self.l_getrho:
+            flist+=['rho']
+            flist+=['rhoold']
+        if me==0:
+            window(win)
+            for ff in flist:
+                print 'plotting '+ff
+                ppgeneric(fields[ff],view=3)
+                ppgeneric(myfields[ff],view=4)
+                ppgeneric(fields[ff]-myfields[ff],view=5)
+                plsys(1);ptitles(ff)
+                raw_input('press return for next field...')
+                fma(0)
 
 def allocatesf(f,stencil):
     f.syf = EM3D_SPLITYEEFIELDtype()
