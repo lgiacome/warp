@@ -462,16 +462,9 @@ class EM3DFFT(EM3D):
                 divemrho = -(emK.kxm*ExF+emK.kzm*EzF)-j*RhoF/eps0
                 ppg(abs(divemrho),view=5);ppg(abs(j*RhoF),view=6)
 
-    def current_cor_spectral(self):
-        j=1j      # imaginary number
+    def wrap_periodic_BC(self,flist=[]):
         emK = self.FSpace
-        em = self
-        f = self.fields
-        ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
 
-        fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
-
-        # --- set periodic BC
         if self.bounds[0]:
             ngx = self.nxguard
         else:
@@ -485,25 +478,35 @@ class EM3DFFT(EM3D):
         else:
             ngz = 0
 
-        allJs = [f.DRhoodt,f.Jx,f.Jy,f.Jz]
         if emK.nx>1 and self.bounds[0]:
-            for J in allJs:
+            for J in flist:
                 J[ngx:2*ngx+1,...]+=J[-ngx-1:,...]
                 J[-ngx-1:,...]=0.
                 J[-2*ngx-1:-ngx-1,...]+=J[:ngx,...]
                 J[:ngx,...]=0.
         if emK.ny>1 and self.bounds[2]:
-            for J in allJs:
+            for J in flist:
                 J[:,ngy:2*ngy+1,:]+=J[:,-ngy-1:,:]
                 J[:,-ngy-1:,:]=0.
                 J[:,-2*ngy-1:-ngy-1,:]+=J[:,:ngy,:]
                 J[:,:ngy,:]=0.
         if emK.nz>1 and self.bounds[4]:
-            for J in allJs:
+            for J in flist:
                 J[...,ngz:2*ngz+1]+=J[...,-ngz-1:]
                 J[...,-ngz-1:]=0.
                 J[...,-2*ngz-1:-ngz-1]+=J[...,:ngz]
                 J[...,:ngz]=0.
+    
+    def current_cor_spectral(self):
+        j=1j      # imaginary number
+        emK = self.FSpace
+        em = self
+        f = self.fields
+        ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
+
+        fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
+
+        self.wrap_periodic_BC([f.DRhoodt,f.Jx,f.Jy,f.Jz])
 
         if emK.nx>1:JxF = fft.fftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]))
         if emK.ny>1:JyF = fft.fftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
@@ -576,6 +579,8 @@ class EM3DFFT(EM3D):
             ngz = self.nzguard
         else:
             ngz=0
+
+        self.wrap_periodic_BC([f.Jx,f.Jy,f.Jz])
         
         JxF = fft.fft(f.Jx[ngx:-ngx-1,0,ngz:-ngz-1],axis=0)
         JzF = fft.fft(f.Jz[ngx:-ngx-1,0,ngz:-ngz-1],axis=1)
