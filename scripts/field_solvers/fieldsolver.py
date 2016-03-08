@@ -402,12 +402,12 @@ class FieldSolver(object):
                      'solvergeom']
     __topinputs__ = ['pbound0','pboundnz','pboundxy',
                      'nprocs','nxprocs','nyprocs','nzprocs',
-                     'userdecompx','userdecompy','userdecompz','lautodecomp',
                      'lfsautodecomp','zslave','debug']
     __flaginputs__ = {'forcesymmetries':1,
                       'lreducedpickle':1,'lnorestoreonpickle':0,
                       'ldosolve':1,'l_internal_dosolve':1,
                       'gridvz':None,'lchild':False,
+                      'userfsdecompnx':None,'userfsdecompny':None,'userfsdecompnz':None,
                       }
 
     def __init__(self,**kw):
@@ -557,10 +557,7 @@ class FieldSolver(object):
         if not self.lparallel or self.lchild:
             self.setupdecompserial()
         else:
-            userfsdecompnx = kw.pop('userfsdecompnx',None)
-            userfsdecompny = kw.pop('userfsdecompny',None)
-            userfsdecompnz = kw.pop('userfsdecompnz',None)
-            self.setupdecompparallel(userfsdecompnx,userfsdecompny,userfsdecompnz)
+            self.setupdecompparallel()
 
         # --- Check the mesh consistency
         self.checkmeshconsistency(self.xmmin,self.xmmax,self.nx,self.dx,'x')
@@ -655,7 +652,7 @@ class FieldSolver(object):
         self.ppdecomp.zmin = self.zmmin
         self.ppdecomp.zmax = self.zmmax
 
-    def setupdecompparallel(self,userfsdecompnx,userfsdecompny,userfsdecompnz):
+    def setupdecompparallel(self):
         self.my_index = me
         self.nprocs = npes
         self.fsdecomp = Decomposition()
@@ -665,12 +662,12 @@ class FieldSolver(object):
         top.grid_overlap = self.grid_overlap
 
         # --- Check for a user supplied decomposition
-        lfsautodecompx = (userfsdecompnx is None)
-        lfsautodecompy = (userfsdecompny is None)
-        lfsautodecompz = (userfsdecompnz is None)
-        if not lfsautodecompx: fsdecomp.nx[:] = userfsdecompnx
-        if not lfsautodecompy: fsdecomp.ny[:] = userfsdecompny
-        if not lfsautodecompz: fsdecomp.nz[:] = userfsdecompnz
+        lfsautodecompx = (self.userfsdecompnx is None)
+        lfsautodecompy = (self.userfsdecompny is None)
+        lfsautodecompz = (self.userfsdecompnz is None)
+        if not lfsautodecompx: fsdecomp.nx[:] = self.userfsdecompnx
+        if not lfsautodecompy: fsdecomp.ny[:] = self.userfsdecompny
+        if not lfsautodecompz: fsdecomp.nz[:] = self.userfsdecompnz
 
         domaindecomposefields(self.nx,self.nxprocs,lfsautodecompx,
                               fsdecomp.ix,fsdecomp.nx,self.grid_overlap)

@@ -670,7 +670,7 @@ c     ---   for overlap=2        0 1 2 3 4 5 6 7 8
 c     ---                       |___________|
 c     ---                               |_________|
       if (overlap == 0) then
-        if (fstype == 3 .or. fstype == 7 .or. fstype == 8 .or. fstype == 13) then
+        if (fstype == 7 .or. fstype == 8 .or. fstype == 13) then
           overlap = 2
         else
           overlap = 1
@@ -697,10 +697,10 @@ c---------------------------------------------------------------------------
 c     --- Do the domain decomposition for the field solver.
 c     --- The domain decomposition by default is done so that each processor
 c     --- has nearly the same number of z planes. If lautodecomp is false and
-c     --- fstype == 3, then the decomposition is supplied by the user (input
+c     --- fstype allows it, then the decomposition is supplied by the user (input
 c     --- through nzdecomp).
       if (lfsautodecomp .or.
-     &    (fstype /= 3 .and. fstype /= 7 .and. fstype /= 12 .and.
+     &    (fstype /= -1 .and. fstype /= 7 .and. fstype /= 12 .and.
      &     fstype /= 13)) then
 
 c       --- Calculate average number of z planes per processor, including the
