@@ -465,32 +465,32 @@ class EM3DFFT(EM3D):
     def wrap_periodic_BC(self,flist=[]):
         emK = self.FSpace
 
-        if self.bounds[0]:
+        if self.bounds[0]==periodic:
             ngx = self.nxguard
         else:
             ngx = 0
-        if self.bounds[2]:
+        if self.bounds[2]==periodic:
             ngy = self.nyguard
         else:
             ngy = 0
-        if self.bounds[4]:
+        if self.bounds[4]==periodic:
             ngz = self.nzguard
         else:
             ngz = 0
 
-        if emK.nx>1 and self.bounds[0]:
+        if emK.nx>1 and self.bounds[0]==periodic:
             for J in flist:
                 J[ngx:2*ngx+1,...]+=J[-ngx-1:,...]
                 J[-ngx-1:,...]=0.
                 J[-2*ngx-1:-ngx-1,...]+=J[:ngx,...]
                 J[:ngx,...]=0.
-        if emK.ny>1 and self.bounds[2]:
+        if emK.ny>1 and self.bounds[2]==periodic:
             for J in flist:
                 J[:,ngy:2*ngy+1,:]+=J[:,-ngy-1:,:]
                 J[:,-ngy-1:,:]=0.
                 J[:,-2*ngy-1:-ngy-1,:]+=J[:,:ngy,:]
                 J[:,:ngy,:]=0.
-        if emK.nz>1 and self.bounds[4]:
+        if emK.nz>1 and self.bounds[4]==periodic:
             for J in flist:
                 J[...,ngz:2*ngz+1]+=J[...,-ngz-1:]
                 J[...,-ngz-1:]=0.
