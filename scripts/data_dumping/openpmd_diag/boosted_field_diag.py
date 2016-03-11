@@ -220,7 +220,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
             else:
                 f_field_array = field_array
-            #pdb.set_trace()
             # Write this array to disk (if this snapshot has new slices)
            
             if self.rank==0 and f_field_array.size!=0:
