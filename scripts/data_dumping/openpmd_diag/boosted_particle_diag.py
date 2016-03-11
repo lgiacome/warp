@@ -210,9 +210,12 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
                                 #Update the index
                                 n_ind += nquant*n_rank[i]
-   
+                        
+                        # Collapse to the mid point. Note: there is actually no 
+                        # good reason to do the collapsing here, should have done
+                        # it in each processor. This would be next exercise. 
                         f_array = self.particle_catcher.collapse_to_mid_point(
-                            prev_p_array, particle_array)
+                            prev_p_array, p_array)
 
                         # Write this array to disk (if this snapshot 
                         # has new slices)

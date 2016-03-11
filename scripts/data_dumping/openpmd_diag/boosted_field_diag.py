@@ -21,6 +21,8 @@ from scipy.constants import c
 from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
+from parallel import gatherarray
+import pdb
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
@@ -87,24 +89,27 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # Create the list of LabSnapshot objects
         self.snapshots = []
         # Record the time it takes
-        measured_start = time.clock()
-        print('\nInitializing the lab-frame diagnostics: %d files...' %(
-            Ntot_snapshots_lab) )
+        if self.rank == 0:
+            measured_start = time.clock()
+            print('\nInitializing the lab-frame diagnostics: %d files...' %(
+                Ntot_snapshots_lab) )
         # Loop through the lab snapshots and create the corresponding files
         for i in range( Ntot_snapshots_lab ):
             t_lab = i * dt_snapshots_lab
             snapshot = LabSnapshot( t_lab,
                                     zmin_lab + v_lab*t_lab,
                                     zmax_lab + v_lab*t_lab,
-                                    self.write_dir, i )
+                                    self.write_dir, i, self.rank)
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
-            self.create_file_empty_meshes( snapshot.filename, i,
-                snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt )
+            if self.lparallel_output == False and self.rank == 0:
+                self.create_file_empty_meshes( snapshot.filename, i,
+                    snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt )
         # Print a message that records the time for initialization
-        measured_end = time.clock()
-        print('Time taken for initialization of the files: %.5f s' %(
-            measured_end-measured_start) )
+        if self.rank == 0:
+            measured_end = time.clock()
+            print('Time taken for initialization of the files: %.5f s' %(
+                measured_end-measured_start) )
 
         # Create a slice handler, which will do all the extraction, Lorentz
         # transformation, etc for each slice to be registered in a
@@ -172,14 +177,56 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             # Compact the successive slices that have been buffered
             # over time into a single array
             field_array, iz_min, iz_max = snapshot.compact_slices()
+
             # Erase the memory buffers
             snapshot.buffered_slices = []
             snapshot.buffer_z_indices = []
 
+            if self.comm_world is not None:
+                # In MPI mode: gather and an array containing the number 
+                # of particles on each process 
+                if field_array is None:
+                    iz_min = 0
+                    iz_max = 0
+                    size_field_array = 0
+                    flat_field_array = np.zeros(0)
+                else: 
+                    size_field_array = np.shape(field_array)[1]
+                    flat_field_array = field_array.flatten()
+                
+                n_rank = np.array(self.comm_world.allgather(size_field_array))
+                N = max(n_rank) if n_rank.any() else 0
+        
+                g_field_array = gatherarray(flat_field_array, root=0, 
+                    comm=self.comm_world)
+                g_iz_min = np.array(self.comm_world.allgather(iz_min))
+                g_iz_max = np.array(self.comm_world.allgather(iz_max))
+               
+                if self.rank == 0:
+                    n_slice = 0
+                    if N != 0: 
+                        iz_min = min([n for n in g_iz_min if n>0]) if g_iz_min.any() else 0
+                        iz_max = max([n for n in g_iz_max if n>0]) if g_iz_max.any() else 0
+                        n_slice = iz_max - iz_min
+                    f_field_array = np.empty((10, N, n_slice))
+                    n_ind = 0
+                    n_ind_slice = 0
+                    for i in xrange(self.top.nprocs):
+                        if n_rank[i]!=0:
+                            local_n_slice = g_iz_max[i] - g_iz_min[i]
+                            f_field_array[:,:,n_ind_slice:n_ind_slice+local_n_slice]= np.reshape(g_field_array[n_ind:n_ind+10*n_rank[i]*local_n_slice], (10, n_rank[i], local_n_slice))
+                            n_ind += 10*n_rank[i]*local_n_slice
+                            n_ind_slice += local_n_slice
+
+            else:
+                f_field_array = field_array
+            #pdb.set_trace()
             # Write this array to disk (if this snapshot has new slices)
-            if field_array is not None:
-                self.write_slices( field_array, iz_min, iz_max,
+           
+            if self.rank==0 and f_field_array.size!=0:
+                self.write_slices( f_field_array, iz_min, iz_max,
                     snapshot, self.slice_handler.field_to_index )
+
 
     def write_slices( self, field_array, iz_min, iz_max, snapshot, f2i ): 
         """
@@ -272,7 +319,7 @@ class LabSnapshot:
     Class that stores data relative to one given snapshot
     in the lab frame (i.e. one given *time* in the lab frame)
     """
-    def __init__(self, t_lab, zmin_lab, zmax_lab, write_dir, i):
+    def __init__(self, t_lab, zmin_lab, zmax_lab, write_dir, i, rank):
         """
         Initialize a LabSnapshot 
 
@@ -292,7 +339,8 @@ class LabSnapshot:
            Number of the file where this snapshot is to be written
         """
         # Deduce the name of the filename where this snapshot writes
-        self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
+        if rank == 0:
+            self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
         self.iteration = i
 
         # Time and boundaries in the lab frame (constants quantities)
