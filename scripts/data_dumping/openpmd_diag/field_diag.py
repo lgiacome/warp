@@ -82,7 +82,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         else:
             self.coords = ['x', 'y', 'z']
 
-        # Dtermine the global indices of the local domain
+        # Determine the global indices of the local domain
         if (self.dim == "2d") or (self.dim=="circ"):
             global_indices = np.zeros([2,2], dtype = np.int)
         elif self.dim == "3d":
