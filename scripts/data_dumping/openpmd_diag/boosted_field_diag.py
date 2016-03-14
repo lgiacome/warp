@@ -392,8 +392,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 # The first index corresponds to the azimuthal mode
                 dset[ :, :, iz_min:iz_max ] = data
 
-
-
 class LabSnapshot:
     """
     Class that stores data relative to one given snapshot
