@@ -22,7 +22,6 @@ from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
 from parallel import gatherarray
-import pdb
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
@@ -388,7 +387,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             if self.dim == "2d":
                 dset[ :, iz_min:iz_max ] = data
             elif self.dim == "3d":
-                dset[ :, indices[0,1]:indices[1,1], iz_min:iz_max ] = data
+                dset[ :, : , iz_min:iz_max ] = data
             elif self.dim == "circ":
                 # The first index corresponds to the azimuthal mode
                 dset[ :, :, iz_min:iz_max ] = data
