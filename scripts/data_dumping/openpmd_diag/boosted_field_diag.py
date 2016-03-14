@@ -192,34 +192,26 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                     iz_max = 0
                     size_field_array = 0
                     flat_field_array = np.zeros(0)
+                  
                 else: 
                     size_field_array = np.shape(field_array)[1]
                     flat_field_array = field_array.flatten()
-                
+                   
                 # Gather the size of the field array
                 n_rank = np.array(self.comm_world.allgather(size_field_array))
-                if self.top.nxprocs>1:
-                    n_r = np.reshape(n_rank, (self.top.nxprocs,-1))
-                    n_r = np.sum(n_r, axis=1) - (self.top.nxprocs - 1)
-                    temp_N = max(n_r) if n_r.any() else 0
-                    N = 0 if temp_N<0 else temp_N
-                else: 
-                    N = max(n_rank) if n_rank.any() else 0
-                    
-                # Ternary equation: test if n_rank contains not all 0;
-                # if True, give the number of the rank (it will be the same 
-                # among all the processors anyway), else returns 0, signifying 
-                # that nothing is stored in the field array 
                 
-
-                # Gather arrays
+                # Gather arrays, iz_min and iz_max
                 g_ar = gatherarray(flat_field_array, root=0, 
                     comm=self.comm_world)
                 g_iz_min = np.array(self.comm_world.allgather(iz_min))
                 g_iz_max = np.array(self.comm_world.allgather(iz_max))
 
-              
+                
                 if self.rank == 0:
+                    # Ternary equation: test if field array is None. If not none, 
+                    # attribute the global size of Nx, else attribute 0
+                    N =  (self.top.fsdecomp.nxglobal + 1) if g_ar.size!=0 else 0
+                     
                     n_slice = 0
                     if N != 0: 
                         iz_min = min([n for n in g_iz_min if n>0]) \
@@ -232,38 +224,31 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                     # in the disk 
                     f_ar = np.empty((10, N, n_slice))
 
-                    # n_ind as index to determine which chunk of field_array
+                    # ind as index to determine which chunk of field_array
                     # comes from i processor
                     ind = 0
 
-                    # n_ind slice as index to determine the slice it 
-                    # corresponds to in the global field array
-                    ind_s = 0
+                    # sind as index to determine the slice it corresponds 
+                    # to in the global field array
+                    sind = 0
 
                     # Loop through all the processors to do the reshaping
-                    
-                    ind_g = 0
-
                     for i in xrange(self.top.nprocs):
-                        l_s = g_iz_max[i] - g_iz_min[i]
-                        if n_rank[i] !=0 :
-                            print i
-                            print np.shape(f_ar[:,ind_g:ind_g+n_rank[i],ind_s:ind_s+l_s])
-                            print np.shape( np.reshape(
-                                g_ar[ind:ind+10*n_rank[i]*l_s], (10,n_rank[i],l_s)))
-                            print "g", ind_g, ind_g+n_rank[i]
-                            print "s", ind_s, ind_s+l_s
-                          
-                            f_ar[:,ind_g:ind_g+n_rank[i],ind_s:ind_s+l_s] = np.reshape(
-                                g_ar[ind:ind+10*n_rank[i]*l_s], (10,n_rank[i],l_s))
-                            ind += 10*n_rank[i]*l_s
-                            ind_g += n_rank[i]-1
-                            
-                            if (i+1)%self.top.nxprocs==0:
-                                print "i", i
-                                ind_s += l_s
-                                ind_g = 0
+                        s = g_iz_max[i] - g_iz_min[i]
 
+                        if n_rank[i] !=0 :
+                            # gind as index to determine the slice it 
+                            # corresponds to in the x-direction in the global 
+                            # field array
+                            gind = self.top.fsdecomp.ix[i%self.top.nxprocs]
+                          
+                            f_ar[:,gind:gind+n_rank[i],sind:sind+s] = np.reshape(
+                                g_ar[ind:ind+10*n_rank[i]*s], (10,n_rank[i],s))
+                            ind += 10*n_rank[i]*s
+                           
+                            if (i+1)%self.top.nxprocs==0:
+                                sind += s
+                                
             else:
                 f_ar = field_array
 
@@ -349,14 +334,25 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         indices = self.global_indices
 
         # Write the fields depending on the geometry
-        if self.dim == "2d":
-            dset[ :, iz_min:iz_max ] = data
-        elif self.dim == "3d":
-            dset[ indices[0,0]:indices[1,0],
-                  indices[0,1]:indices[1,1], iz_min:iz_max ] = data
-        elif self.dim == "circ":
-            # The first index corresponds to the azimuthal mode
-            dset[:, indices[0,0]:indices[1,0], iz_min:iz_max ] = data
+        if self.lparallel_output:
+            if self.dim == "2d":
+                dset[ indices[0,0]:indices[1,0], iz_min:iz_max ] = data
+            elif self.dim == "3d":
+                dset[ indices[0,0]:indices[1,0],
+                indices[0,1]:indices[1,1], iz_min:iz_max ] = data
+            elif self.dim == "circ":
+                # The first index corresponds to the azimuthal mode
+                dset[ :, indices[0,0]:indices[1,0], iz_min:iz_max ] = data
+           
+        else:
+            if self.dim == "2d":
+                dset[ :, iz_min:iz_max ] = data
+            elif self.dim == "3d":
+                dset[ :, indices[0,1]:indices[1,1], iz_min:iz_max ] = data
+            elif self.dim == "circ":
+                # The first index corresponds to the azimuthal mode
+                dset[ :, :, iz_min:iz_max ] = data
+
 
 
 class LabSnapshot:
