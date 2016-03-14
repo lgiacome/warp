@@ -190,30 +190,49 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 if field_array is None:
                     iz_min = 0
                     iz_max = 0
-                    size_field_array = 0
                     flat_field_array = np.zeros(0)
-                  
-                else: 
-                    size_field_array = np.shape(field_array)[1]
+                    nx_field_array = 0
+                    if self.dim == "3d":
+                        ny_field_array = 0
+
+                else:
                     flat_field_array = field_array.flatten()
-                   
+                    if self.dim in ["2d","3d"]:
+                        nx_field_array = np.shape(field_array)[1]
+                    elif self.dim == "3d":
+                        ny_field_array = np.shape(field_array)[2]
+                    elif self.dim == "circ":
+                        nx_field_array = np.shape(field_array)[2]
+                        
                 # Gather the size of the field array
-                n_rank = np.array(self.comm_world.allgather(size_field_array))
+                nx_rank = np.array(
+                    self.comm_world.allgather(nx_field_array))
+                if self.dim == "3d":
+                    ny_rank = np.array(
+                        self.comm_world.allgather(ny_field_array))
                 
                 # Gather arrays, iz_min and iz_max
                 g_ar = gatherarray(flat_field_array, root=0, 
                     comm=self.comm_world)
                 g_iz_min = np.array(self.comm_world.allgather(iz_min))
                 g_iz_max = np.array(self.comm_world.allgather(iz_max))
-
                 
                 if self.rank == 0:
                     # Ternary equation: test if field array is None. If not none, 
                     # attribute the global size of Nx, else attribute 0
-                    N =  (self.top.fsdecomp.nxglobal + 1) if g_ar.size!=0 else 0
+                    
+                    Nx = (self.top.fsdecomp.nxglobal + 1) if g_ar.size!=0 else 0
+                    if self.dim == "3d":
+                        Ny = (self.top.fsdecomp.nyglobal + 1) \
+                        if g_ar.size!=0 else 0
+                    elif self.dim == "circ":
+                        Ncirc = 2*self.em.circ_m + 1
                      
                     n_slice = 0
-                    if N != 0: 
+                    # Don't have to specify the dimension specifically because
+                    # if one of the dimensions does not contain any non null 
+                    # value, that implies void
+                    if Nx != 0: 
                         iz_min = min([n for n in g_iz_min if n>0]) \
                             if g_iz_min.any() else 0
                         iz_max = max([n for n in g_iz_max if n>0]) \
@@ -222,12 +241,22 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
                     # Create an empty global field array, the one to be written 
                     # in the disk 
-                    f_ar = np.empty((10, N, n_slice))
+                    if self.dim == "2d":
+                        f_ar = np.empty((10, Nx, n_slice))
+                    elif self.dim == "3d":
+                        f_ar = np.empty((10, Nx, Ny, n_slice))
+                    elif self.dim == "circ":
+                        f_ar = np.empty((10, Ncirc, Ny, n_slice))
 
-                    # ind as index to determine which chunk of field_array
-                    # comes from i processor
-                    ind = 0
+                    # indx as index to determine which chunk of field_array
+                    # in x-direction comes from i processor
+                    indx = 0
 
+                    # indy as index to determine which chunk of field_array
+                    # in y-direction comes from i processor
+                    if self.dim == "3d":
+                        indy = 0
+                
                     # sind as index to determine the slice it corresponds 
                     # to in the global field array
                     sind = 0
@@ -236,19 +265,30 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                     for i in xrange(self.top.nprocs):
                         s = g_iz_max[i] - g_iz_min[i]
 
-                        if n_rank[i] !=0 :
-                            # gind as index to determine the slice it 
+                        if nx_rank[i] !=0 :
+                            # gxind as index to determine the slice it 
                             # corresponds to in the x-direction in the global 
-                            # field array
-                            gind = self.top.fsdecomp.ix[i%self.top.nxprocs]
-                          
-                            f_ar[:,gind:gind+n_rank[i],sind:sind+s] = np.reshape(
-                                g_ar[ind:ind+10*n_rank[i]*s], (10,n_rank[i],s))
-                            ind += 10*n_rank[i]*s
-                           
+                            # field array, valid for 2d, 3d and circ
+
+                            gxind = self.top.fsdecomp.ix[i%self.top.nxprocs]
+
+                            if self.dim =="2d":
+                                f_ar[:,gxind:gxind+nx_rank[i],sind:sind+s] = np.reshape(
+                                    g_ar[indx:indx+10*nx_rank[i]*s], (10,nx_rank[i],s))
+                            elif self.dim =="3d":
+                                # gyind: index only valid in 3d 
+                                gyind = self.top.fsdecomp.iy[i%self.top.nyprocs]
+                                f_ar[:,gxind:gxind+nx_rank[i],gyind:gyind+ny_rank[i] ,sind:sind+s] = np.reshape(
+                                    g_ar[indx:indx+10*nx_rank[i]*ny_rank[i]*s], (10,nx_rank[i],ny_rank[i],s))
+                                indy += 10*ny_rank[i]*s
+                            elif self.dim =="circ":
+                                f_ar[:,:,gxind:gxind+nx_rank[i],sind:sind+s] = np.reshape(
+                                    g_ar[indx:indx+10*Ncirc*nx_rank[i]*s], (10,Ncirc,nx_rank[i],s))
+                            indx += 10*nx_rank[i]*s
+                            
                             if (i+1)%self.top.nxprocs==0:
                                 sind += s
-                                
+
             else:
                 f_ar = field_array
 
