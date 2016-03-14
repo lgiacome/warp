@@ -376,7 +376,7 @@ class LabSnapshot:
         self.current_z_lab = (t_lab - t_boost*inv_gamma)*c*inv_beta
         self.prev_z_lab = (t_lab - t_boost_diff*inv_gamma)*c*inv_beta
     
-    def register_slice(self, prev_slice_array, slice_array, species):
+    def register_slice(self, slice_array, species):
         """
         Store the slice of particles represented by slice_array
 
@@ -412,7 +412,7 @@ class LabSnapshot:
         particle_array = np.concatenate(
             self.buffered_slices[species], axis=1)
 
-        return prev_particle_array, particle_array
+        return particle_array
 
 class ParticleCatcher:
     """
@@ -535,7 +535,7 @@ class ParticleCatcher:
         self.t_prev = self.gamma_boost*(self.top.time - self.top.dt)\
         *np.ones(len_z) - uzfrm*self.z_prev_captured/c**2
 
-    def collapse_to_mid_point(self, prev, current):
+    def collapse_to_mid_point(self):
         """
         Collapse the particle quantities to the mid point between 
         t_prev and t_current
@@ -565,8 +565,6 @@ class ParticleCatcher:
         self.gamma_captured  = self.gamma_prev_captured*(self.t - t_mid)/\
         (self.t-self.t_prev) + self.gamma_captured*(t_mid - self.t_prev)/\
         (self.t-self.t_prev)
-
-        return collapsed_array
 
     def gather_array(self, quantity):
         """

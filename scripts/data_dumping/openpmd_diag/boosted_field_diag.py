@@ -259,7 +259,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                     # sind as index to determine the slice it corresponds 
                     # to in the global field array
                     sind = 0
-
+                    print nx_rank
                     # Loop through all the processors to do the reshaping
                     for i in xrange(self.top.nprocs):
                         s = g_iz_max[i] - g_iz_min[i]
