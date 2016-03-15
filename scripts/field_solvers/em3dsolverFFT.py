@@ -5,10 +5,10 @@ from em3dsolver import *
 class EM3DFFT(EM3D):
 
     __em3dfftinputs__ = []
-    __flaginputs__ = {'spectral':1,
-                      'spectral_current':0,
-                      'current_cor':1,
-                      'boris_cor':0,
+    __flaginputs__ = {'spectral':1, # on/off spectral solver
+                      'spectral_current':0, # flag for deposition that generalizes Esirkepov in k-space for any order 
+                      'current_cor':1,  # flag for correction current to verify Gauss' Law (not needed if spectral_current=1; more local than Boris correction on fields)
+                      'boris_cor':0, # flag for correction of fields verify Gauss' Law (i.e. Boris correction; not needed if spectral_current=1 or spectral_current=1)
                       'l_staggered_a_la_brendan':False,
                       'spectral_mix':0.,'Jmult':False,
                       'l_spectral_staggered':False,
@@ -462,6 +462,41 @@ class EM3DFFT(EM3D):
                 divemrho = -(emK.kxm*ExF+emK.kzm*EzF)-j*RhoF/eps0
                 ppg(abs(divemrho),view=5);ppg(abs(j*RhoF),view=6)
 
+    def wrap_periodic_BC(self,flist=[]):
+        emK = self.FSpace
+
+        if self.bounds[0]==periodic:
+            ngx = self.nxguard
+        else:
+            ngx = 0
+        if self.bounds[2]==periodic:
+            ngy = self.nyguard
+        else:
+            ngy = 0
+        if self.bounds[4]==periodic:
+            ngz = self.nzguard
+        else:
+            ngz = 0
+
+        if emK.nx>1 and self.bounds[0]==periodic:
+            for J in flist:
+                J[ngx:2*ngx+1,...]+=J[-ngx-1:,...]
+                J[-ngx-1:,...]=0.
+                J[-2*ngx-1:-ngx-1,...]+=J[:ngx,...]
+                J[:ngx,...]=0.
+        if emK.ny>1 and self.bounds[2]==periodic:
+            for J in flist:
+                J[:,ngy:2*ngy+1,:]+=J[:,-ngy-1:,:]
+                J[:,-ngy-1:,:]=0.
+                J[:,-2*ngy-1:-ngy-1,:]+=J[:,:ngy,:]
+                J[:,:ngy,:]=0.
+        if emK.nz>1 and self.bounds[4]==periodic:
+            for J in flist:
+                J[...,ngz:2*ngz+1]+=J[...,-ngz-1:]
+                J[...,-ngz-1:]=0.
+                J[...,-2*ngz-1:-ngz-1]+=J[...,:ngz]
+                J[...,:ngz]=0.
+    
     def current_cor_spectral(self):
         j=1j      # imaginary number
         emK = self.FSpace
@@ -470,7 +505,9 @@ class EM3DFFT(EM3D):
         ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
 
         fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
-  
+
+        self.wrap_periodic_BC([f.DRhoodt,f.Jx,f.Jy,f.Jz])
+
         if emK.nx>1:JxF = fft.fftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]))
         if emK.ny>1:JyF = fft.fftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
         if emK.nz>1:JzF = fft.fftn(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))
@@ -542,6 +579,8 @@ class EM3DFFT(EM3D):
             ngz = self.nzguard
         else:
             ngz=0
+
+        self.wrap_periodic_BC([f.Jx,f.Jy,f.Jz])
         
         JxF = fft.fft(f.Jx[ngx:-ngx-1,0,ngz:-ngz-1],axis=0)
         JzF = fft.fft(f.Jz[ngx:-ngx-1,0,ngz:-ngz-1],axis=1)

@@ -1096,7 +1096,10 @@ c=============================================================================
         vz = electrongroup%uzp(ie)*electrongroup%gaminv(ie)
         zswept = boost_gamma*dt*(vz + clight)
         arg = sigma*pdens*zswept
-        prob = 1.0 - exp(-arg)
+        ! --- For a single scatter event, the exp form is probably not
+        ! --- correct. This code would be wrong anyway if arg > 1.
+        !prob = 1.0 - exp(-arg)
+        prob = arg
         call random_number(rn)
 
         if (rn < prob) then

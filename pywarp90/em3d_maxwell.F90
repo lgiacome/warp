@@ -725,7 +725,7 @@ subroutine push_em3d_evec_norder(ex,ey,ez,bx,by,bz,Jx,Jy,Jz,mudt,dtsdx,dtsdy,dts
 integer :: nx,ny,nz,nxguard,nyguard,nzguard,nxs,nys,nzs,norderx,nordery,norderz
 real(kind=8), intent(IN OUT), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: ex,ey,ez,bx,by,bz
 real(kind=8), intent(IN), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: Jx,Jy,Jz
-real(kind=8), intent(IN) :: mudt,dtsdx(norderx/2),dtsdy(norderx/2),dtsdz(norderx/2),xmin,zmin,dx,dy,dz,clight
+real(kind=8), intent(IN) :: mudt,dtsdx(norderx/2),dtsdy(nordery/2),dtsdz(norderz/2),xmin,zmin,dx,dy,dz,clight
 integer(ISZ) :: i,j,k,l,ist
 logical(ISZ) :: l_1dz,l_2dxz,l_2drz,l_nodalgrid
 real(kind=8) :: w,zlaser,rd,ru
@@ -1705,10 +1705,22 @@ case( 0, 2 ) ! Standard Yee stencil on B push
 endif
 
 case( 1 ) ! Cole-Karkkainen stencil on B push (Note: Yee stencil on E push)
-  call push_em3d_kyeebvec(f%ex,f%ey,f%ez,f%bx,f%by,f%bz, &
+  if ((f%norderx==2) .and. (f%nordery==2) .and. (f%norderz==2) .and. .not. f%l_nodalgrid) then
+    call push_em3d_kyeebvec(f%ex,f%ey,f%ez,f%bx,f%by,f%bz, &
                       dtsdx,dtsdy,dtsdz, &
                       f%nx,f%ny,f%nz, &
                       f%nxguard,f%nyguard,f%nzguard,f%l_2dxz)
+  else
+    call push_em3d_bvec_norder(f%ex,f%ey,f%ez,f%bx,f%by,f%bz, &
+                        dtsdx*f%xcoefs,dtsdy*f%ycoefs,dtsdz*f%zcoefs, &
+                        f%dx,f%dy,f%dz, &
+                        f%xmin,f%ymin,f%zmin, &
+                        f%nx,f%ny,f%nz, &
+                        f%nxguard,f%nyguard,f%nzguard, &
+                        f%norderx,f%nordery,f%norderz, &
+                        f%nxbs,f%nybs,f%nzbs, &
+                        f%l_1dz,f%l_2dxz,f%l_2drz,f%l_nodalgrid)
+  end if
 
 case( 3 ) ! Lehe stencil on B push (Note: Yee stencil on E push)
    call push_em3d_lehebvec(f%ex,f%ey,f%ez,f%bx,f%by,f%bz, &
@@ -1846,7 +1858,7 @@ subroutine push_em3d_bvec_norder(ex,ey,ez,bx,by,bz,dtsdx,dtsdy,dtsdz,dx,dy,dz, &
                           nxs,nys,nzs,l_1dz,l_2dxz,l_2drz,l_nodalgrid)
 integer :: nx,ny,nz,nxguard,nyguard,nzguard,nxs,nys,nzs,norderx,nordery,norderz
 real(kind=8), intent(IN OUT), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: ex,ey,ez,bx,by,bz
-real(kind=8), intent(IN) :: dtsdx(norderx/2),dtsdy(norderx/2),dtsdz(norderx/2),xmin,ymin,zmin,dx,dy,dz
+real(kind=8), intent(IN) :: dtsdx(norderx/2),dtsdy(nordery/2),dtsdz(norderz/2),xmin,ymin,zmin,dx,dy,dz
 integer(ISZ) :: i,j,k,l,ist
 logical(ISZ) :: l_1dz,l_2dxz,l_2drz,l_nodalgrid
 real(kind=8) :: rd, ru

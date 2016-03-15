@@ -9,7 +9,7 @@ def warphelpdoc():
 
 
 def warphelp():
-    import warpplots
+    from diagnostics import warpplots
 
     print """
 WARP help card

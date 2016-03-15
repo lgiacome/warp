@@ -38,7 +38,6 @@ class MultiGrid3D(SubcycledPoissonSolver):
   | Input parameters from top:
   |    pbound0,pboundnz,pboundxy,
   |    nprocs,nxprocs,nyprocs,nzprocs,
-  |    userdecompx,userdecompy,userdecompz,lautodecomp,
   |    lfsautodecomp,zslave,debug
 
   | Input parameters from f3d:
@@ -64,6 +63,9 @@ class MultiGrid3D(SubcycledPoissonSolver):
   |                 Only used for special purposes.
   |    lchild=False: Internally used flag, true when the instance is a child
   |                  relative to a root grid when doing mesh refinement.
+  |    userfsdecompnx=None: User specified decomposition for the field solver in x
+  |    userfsdecompny=None: User specified decomposition for the field solver in y
+  |    userfsdecompnz=None: User specified decomposition for the field solver in z
 
     """
 
