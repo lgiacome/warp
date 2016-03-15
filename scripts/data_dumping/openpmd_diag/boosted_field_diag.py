@@ -223,7 +223,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                     # Ternary equation: test if field array is None. If not none, 
                     # attribute the global size of Nx, else attribute 0
                     Nx = (self.top.fsdecomp.nxglobal + 1) if g_ar.size!=0 else 0
-                    
+
                     if self.dim == "3d":
                         Ny = (self.top.fsdecomp.nyglobal + 1) \
                         if g_ar.size!=0 else 0
@@ -531,7 +531,7 @@ class LabSnapshot:
         # Pack the different slices together
         # Reverse the order of the slices when stacking the array,
         # since the slices where registered for right to left
-        field_array = np.stack( self.buffered_slices[::-1], axis=-1 )
+        field_array = np.dstack( self.buffered_slices[::-1] )
 
         # Get the first and last index in z
         # (Following Python conventions, iz_min is inclusive,
