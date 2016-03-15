@@ -245,7 +245,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                     elif self.dim == "3d":
                         f_ar = np.empty((10, Nx, Ny, n_slice))
                     elif self.dim == "circ":
-                        f_ar = np.empty((10, Ncirc, Ny, n_slice))
+                        f_ar = np.empty((10, Ncirc, Nx, n_slice))
 
                     # indx as index to determine which chunk of field_array
                     # in x-direction comes from i processor
@@ -259,7 +259,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                     # sind as index to determine the slice it corresponds 
                     # to in the global field array
                     sind = 0
-                    print nx_rank
+
                     # Loop through all the processors to do the reshaping
                     for i in xrange(self.top.nprocs):
                         s = g_iz_max[i] - g_iz_min[i]
