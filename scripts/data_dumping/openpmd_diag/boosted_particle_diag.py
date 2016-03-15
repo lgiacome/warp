@@ -116,6 +116,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         """
         # At each timestep, store a slice of the particles in memory buffers 
         self.store_snapshot_slices()
+        
         # Every self.period, write the buffered slices to disk 
         if self.top.it % self.period == 0:
             self.flush_to_disk()
@@ -149,10 +150,12 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                 snapshot.register_slice(slice_array, species_name)
 
     def flush_to_disk(self):
-        ## done by onlu proc 0
         """
         Writes the buffered slices of particles to the disk. Erase the 
         buffered slices of the LabSnapshot objects
+
+        Notice: In parallel version, data are gathered to proc 0
+        before being saved to disk
         """
         # Loop through the labsnapshots and flush the data
     
@@ -177,13 +180,12 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                         comm=self.comm_world)
                     
                     if self.rank == 0:
-                        # Get the number of quantities, the number is 9, do we 
-                        # need to go all the trouble to look for this number?
+                        # Get the number of quantities
                         nquant = np.shape(
                             self.particle_catcher.particle_to_index.keys())[0]
 
-                        # Prepare some empty arrays for reshaping purposes. The 
-                        # final shape of the array is (9, total_num_particles)
+                        # Prepare an empty array for reshaping purposes. The 
+                        # final shape of the array is (8, total_num_particles)
                         p_array = np.empty((nquant, 0))
 
                         # Index needed in reshaping process 
@@ -199,7 +201,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                                     g_curr[n_ind:n_ind+nquant*n_rank[i]],
                                     (nquant,n_rank[i]))),axis=1)
 
-                                #Update the index
+                                # Update the index
                                 n_ind += nquant*n_rank[i]
 
                 else:

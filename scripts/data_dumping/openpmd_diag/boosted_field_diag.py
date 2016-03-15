@@ -103,7 +103,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             # Initialize a corresponding empty file
             if self.lparallel_output == False and self.rank == 0:
                 self.create_file_empty_meshes( snapshot.filename, i,
-                    snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt )
+                    snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt)
         # Print a message that records the time for initialization
         if self.rank == 0:
             measured_end = time.clock()
@@ -169,6 +169,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         Writes the buffered slices of fields to the disk
 
         Erase the buffered slices of the LabSnapshot objects
+
+        Notice: In parallel version, data are gathered to proc 0
+        before being saved to disk
         """
         # Loop through the labsnapshots and flush the data
         for snapshot in self.snapshots:
@@ -182,8 +185,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             snapshot.buffer_z_indices = []
 
             if self.comm_world is not None:
-                # In MPI mode: gather and an array containing the number 
-                # of particles on each process
+                # In MPI mode: gather the flattened field array to processor 0
                 # Attribute values to iz_min, iz_max and size of the field
                 # array if field array is None 
                 if field_array is None:
@@ -217,10 +219,11 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 g_iz_max = np.array(self.comm_world.allgather(iz_max))
                 
                 if self.rank == 0:
+
                     # Ternary equation: test if field array is None. If not none, 
                     # attribute the global size of Nx, else attribute 0
-                    
                     Nx = (self.top.fsdecomp.nxglobal + 1) if g_ar.size!=0 else 0
+                    
                     if self.dim == "3d":
                         Ny = (self.top.fsdecomp.nyglobal + 1) \
                         if g_ar.size!=0 else 0
@@ -228,7 +231,8 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                         Ncirc = 2*self.em.circ_m + 1
                      
                     n_slice = 0
-                    # Don't have to specify the dimension specifically because
+
+                    # Doesn't need to specify other dimenstions because
                     # if one of the dimensions does not contain any non null 
                     # value, that implies void
                     if Nx != 0: 
@@ -260,7 +264,8 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                     # to in the global field array
                     sind = 0
 
-                    # Loop through all the processors to do the reshaping
+                    # Loop through all the processors to reshape the flattened
+                    # array
                     for i in xrange(self.top.nprocs):
                         s = g_iz_max[i] - g_iz_min[i]
 
@@ -272,17 +277,22 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                             gxind = self.top.fsdecomp.ix[i%self.top.nxprocs]
 
                             if self.dim =="2d":
-                                f_ar[:,gxind:gxind+nx_rank[i],sind:sind+s] = np.reshape(
-                                    g_ar[indx:indx+10*nx_rank[i]*s], (10,nx_rank[i],s))
+                                f_ar[:,gxind:gxind+nx_rank[i],sind:sind+s] \
+                                = np.reshape(g_ar[indx:indx+10*nx_rank[i]*s], 
+                                    (10,nx_rank[i],s))
                             elif self.dim =="3d":
                                 # gyind: index only valid in 3d 
                                 gyind = self.top.fsdecomp.iy[i%self.top.nyprocs]
-                                f_ar[:,gxind:gxind+nx_rank[i],gyind:gyind+ny_rank[i] ,sind:sind+s] = np.reshape(
-                                    g_ar[indx:indx+10*nx_rank[i]*ny_rank[i]*s], (10,nx_rank[i],ny_rank[i],s))
+                                f_ar[:,gxind:gxind+nx_rank[i],gyind:gyind\
+                                +ny_rank[i],sind:sind+s] = np.reshape(
+                                    g_ar[indx:indx+10*nx_rank[i]*ny_rank[i]*s], 
+                                    (10,nx_rank[i],ny_rank[i],s))
                                 indy += 10*ny_rank[i]*s
                             elif self.dim =="circ":
-                                f_ar[:,:,gxind:gxind+nx_rank[i],sind:sind+s] = np.reshape(
-                                    g_ar[indx:indx+10*Ncirc*nx_rank[i]*s], (10,Ncirc,nx_rank[i],s))
+                                f_ar[:,:,gxind:gxind+nx_rank[i],sind:sind+s]\
+                                = np.reshape(
+                                    g_ar[indx:indx+10*Ncirc*nx_rank[i]*s], 
+                                    (10,Ncirc,nx_rank[i],s))
                             indx += 10*nx_rank[i]*s
                             
                             if (i+1)%self.top.nxprocs==0:
@@ -414,7 +424,10 @@ class LabSnapshot:
             this snapshot is to be written
 
         i: int
-           Number of the file where this snapshot is to be written
+            Number of the file where this snapshot is to be written
+
+        rank: int
+            Index number of the processor
         """
         # Deduce the name of the filename where this snapshot writes
         if rank == 0:
@@ -687,7 +700,7 @@ class SliceHandler:
         Parameter
         ---------
         fields: array of floats
-             An array that packs together the slices of the different fields.
+            An array that packs together the slices of the different fields.
             The shape of this arrays is:
             - (10, em.nxlocal+1,) for dim="2d"
             - (10, em.nxlocal+1, em.nylocal+1) for dim="3d"
