@@ -1901,23 +1901,44 @@ class Species(object):
 
     def getvx(self,**kw):
         """Calls :py:func:`~particles.getvx` for this species."""
-        return getvx(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getvx(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getvx(jslist=self.jslist,**kw)
+
 
     def getvy(self,**kw):
         """Calls :py:func:`~particles.getvy` for this species."""
-        return getvy(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getvy(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getvy(jslist=self.jslist,**kw)
 
     def getvz(self,**kw):
         """Calls :py:func:`~particles.getvz` for this species."""
-        return getvz(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getvz(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getvz(jslist=self.jslist,**kw)
 
     def getvr(self,**kw):
         """Calls :py:func:`~particles.getvr` for this species."""
-        return getvr(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getvr(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getvr(jslist=self.jslist,**kw)
 
     def getvtheta(self,**kw):
         """Calls :py:func:`~particles.getvtheta` for this species."""
-        return getvtheta(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getvtheta(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getvtheta(jslist=self.jslist,**kw)
 
     def getux(self,**kw):
         """Calls :py:func:`~particles.getux` for this species."""
@@ -1945,63 +1966,123 @@ class Species(object):
 
     def getex(self,**kw):
         """Calls :py:func:`~particles.getex` for this species."""
-        return getex(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getex(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getex(jslist=self.jslist,**kw)
 
     def getey(self,**kw):
         """Calls :py:func:`~particles.getey` for this species."""
-        return getey(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getey(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getey(jslist=self.jslist,**kw)
 
     def getez(self,**kw):
         """Calls :py:func:`~particles.getez` for this species."""
-        return getez(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getez(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getez(jslist=self.jslist,**kw)
 
     def geter(self,**kw):
         """Calls :py:func:`~particles.geter` for this species."""
-        return geter(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return geter(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return geter(jslist=self.jslist,**kw)
 
     def getetheta(self,**kw):
         """Calls :py:func:`~particles.getetheta` for this species."""
-        return getetheta(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getetheta(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getetheta(jslist=self.jslist,**kw)
 
     def getbx(self,**kw):
         """Calls :py:func:`~particles.getbx` for this species."""
-        return getbx(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getbx(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getbx(jslist=self.jslist,**kw)
 
     def getby(self,**kw):
         """Calls :py:func:`~particles.getby` for this species."""
-        return getby(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getby(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getby(jslist=self.jslist,**kw)
 
     def getbz(self,**kw):
         """Calls :py:func:`~particles.getbz` for this species."""
-        return getbz(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getbz(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getbz(jslist=self.jslist,**kw)
 
     def getbr(self,**kw):
         """Calls :py:func:`~particles.getbr` for this species."""
-        return getbr(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getbr(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getbr(jslist=self.jslist,**kw)
 
     def getbtheta(self,**kw):
         """Calls :py:func:`~particles.getbtheta` for this species."""
-        return getbtheta(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getbtheta(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getbtheta(jslist=self.jslist,**kw)
 
     def getxp(self,**kw):
         """Calls :py:func:`~particles.getxp` for this species."""
-        return getxp(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getxp(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getxp(jslist=self.jslist,**kw)
 
     def getyp(self,**kw):
         """Calls :py:func:`~particles.getyp` for this species."""
-        return getyp(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getyp(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getyp(jslist=self.jslist,**kw)
 
     def getrp(self,**kw):
         """Calls :py:func:`~particles.getrp` for this species."""
-        return getrp(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getrp(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getrp(jslist=self.jslist,**kw)
 
     def gettp(self,**kw):
         """Calls :py:func:`~particles.gettp` for this species."""
-        return gettp(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return gettp(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return gettp(jslist=self.jslist,**kw)
 
     def getgaminv(self,**kw):
         """Calls :py:func:`~particles.getgaminv` for this species."""
-        return getgaminv(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getgaminv(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getgaminv(jslist=self.jslist,**kw)
 
     def getpid(self,**kw):
         """Calls :py:func:`~particles.getpid` for this species."""
@@ -2009,7 +2090,8 @@ class Species(object):
             listofpgroups=self.flatten(self.pgroups)
             return getpid(jslist=self.jslist,pgroups=listofpgroups,**kw)
         else: 
-            return getpid(jslist=self.jslist,**kw)        
+            return getpid(jslist=self.jslist,**kw)      
+              
     def getw(self,**kw):
         """Calls :py:func:`~particles.getw` for this species."""
         if hasattr(self,'pgroups'): 
@@ -2017,6 +2099,7 @@ class Species(object):
             return getw(jslist=self.jslist,pgroups=listofpgroups,**kw)
         else: 
             return getw(jslist=self.jslist,**kw)
+            
     def getweights(self,**kw):
         """Returns the weights of the particles, the product of pid[:,wpid]*sw."""
         if top.wpid != 0:
@@ -2032,12 +2115,16 @@ class Species(object):
 
     def getke(self,**kw):
         """Calls :py:func:`~particles.getke` for this species."""
-        return getke(jslist=self.jslist,**kw)
+        if hasattr(self,'pgroups'): 
+            listofpgroups=self.flatten(self.pgroups)
+            return getke(jslist=self.jslist,pgroups=listofpgroups,**kw)
+        else: 
+            return getke(jslist=self.jslist,**kw)
 
     def _callppfunc(self,ppfunc,pgroups=None,**kw):
         """This is an intermediary for all of the pp particle plot methods. This
-    makes it easier to make changes to all of them at once, without adding alot
-    of code."""
+        makes it easier to make changes to all of them at once, without adding alot
+        of code."""
         if pgroups is None:
             try:
                 pgroups = self.pgroups

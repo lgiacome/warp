@@ -518,344 +518,223 @@ def setgetparticlebcastdefault(defval=1):
    - defval=1: The default value.
     """
     _particlebcastdefault[0] = defval
-#-------------------------------------------------------------------------
-def getn(iw=0,gather=1,bcast=None,pgroups=None,**kw):
-    "Returns number of particles in selection. For particle selection options, see :py:func:`~particles.selectparticles`."
+
+# This function handles list of pgroups 
+# It returns a concatenated list resultlist
+# Which contains a collection of attributes of all pgroups
+# that are obtained using getfunc 
+def _handlepgroups(getfunc, iw, gather, bcast, **kw):
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None): 
+    pgroups = kw.pop('pgroups')
+    resultlist = []
+    for pgroup in pgroups:
+        kw['pgroup'] = pgroup
+        resultlist.append(getfunc(iw, gather=False, bcast=False, **kw))
+    result = concatenate(resultlist)
+    if lparallel and gather: return gatherarray(result, bcast=bcast)
+    else: return result
+
+
+#-------------------------------------------------------------------------
+#-------------------------------------------------------------------------
+def getn(iw=0,gather=1,bcast=None,**kw):
+    "Returns number of particles in selection. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        pgroups = kw.pop('pgroups')
+        l = 0
+        for pgroup in pgroups:
+            kw['pgroup'] = pgroup
+            l += getn(iw, gather=False, bcast=False, **kw)
+    else:
+        if bcast is None: bcast = _particlebcastdefault[0]
         ii = selectparticles(iw=iw,kwdict=kw)
         if isinstance(ii,slice): l = ii.stop - ii.start
         else:                    l = ii.size
-    else: 
-        # Get local number of particles
-        l=0 
-        for pg in pgroups: 
-            l+=pg.nps[0]    
-    if lparallel and gather:
-        return globalsum(l)
-    else:
-        return l
+    if lparallel and gather: return globalsum(l)
+    else:                    return l
+
+#----------------------------------------------------
 #-------------------------------------------------------------------------
-def getx(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getx(iw=0,gather=1,bcast=None,**kw):
     "Returns the X positions. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getx, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None): 
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            x = getattrwithsuffix(pgroup,'xp',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            result = x[ii]
-        elif ii.size > 0:
-            result = x[ii]
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            result=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                result[i1:i1+pg.nps[0]]=pg.xp[0:pg.nps[0]]
-                i1+=pg.nps[0]
-        else: 
-            result=array([],'d') 
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        x = getattrwithsuffix(pgroup,'xp',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        result = x[ii]
+    elif ii.size > 0:
+        result = x[ii]
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def gety(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def gety(iw=0,gather=1,bcast=None,**kw):
     "Returns the Y positions. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(gety, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            y = getattrwithsuffix(pgroup,'yp',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            result = y[ii]
-        elif ii.size > 0:
-            result = y[ii]
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            result=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                result[i1:i1+pg.nps[0]]=pg.yp[0:pg.nps[0]]
-                i1+=pg.nps[0]
-        else: 
-            result=array([],'d') 
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        y = getattrwithsuffix(pgroup,'yp',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        result = y[ii]
+    elif ii.size > 0:
+        result = y[ii]
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def getz(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getz(iw=0,gather=1,bcast=None,**kw):
     "Returns the Z positions. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getz, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            z = getattrwithsuffix(pgroup,'zp',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            result = z[ii]
-        elif ii.size > 0:
-            result = z[ii]
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            result=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                result[i1:i1+pg.nps[0]]=pg.zp[0:pg.nps[0]]
-                i1+=pg.nps[0]
-        else: 
-            result=array([],'d') 
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        z = getattrwithsuffix(pgroup,'zp',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        result = z[ii]
+    elif ii.size > 0:
+        result = z[ii]
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def getr(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getr(iw=0,gather=1,bcast=None,**kw):
     "Returns the R postions. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getr, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            x = getattrwithsuffix(pgroup,'xp',suffix)
-            y = getattrwithsuffix(pgroup,'yp',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            result = sqrt(x[ii]**2 + y[ii]**2)
-        elif ii.size > 0:
-            result = sqrt(x[ii]**2 + y[ii]**2)
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            x=zeros(partot)
-            y=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                x[i1:i1+pg.nps[0]]=pg.xp[0:pg.nps[0]]
-                y[i1:i1+pg.nps[0]]=pg.yp[0:pg.nps[0]]
-                i1+=pg.nps[0]
-            result=sqrt(x**2+y**2)
-        else: 
-            result=array([],'d') 
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        x = getattrwithsuffix(pgroup,'xp',suffix)
+        y = getattrwithsuffix(pgroup,'yp',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        result = sqrt(x[ii]**2 + y[ii]**2)
+    elif ii.size > 0:
+        result = sqrt(x[ii]**2 + y[ii]**2)
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def gettheta(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def gettheta(iw=0,gather=1,bcast=None,**kw):
     "Returns the theta postions. For particle selection options, see :py:func:`~particles.selectparticles`."
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            x = getattrwithsuffix(pgroup,'xp',suffix)
-            y = getattrwithsuffix(pgroup,'yp',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            result = arctan2(y[ii],x[ii])
-        elif ii.size > 0:
-            result = arctan2(y[ii],x[ii])
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            x=zeros(partot)
-            y=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                x[i1:i1+pg.nps[0]]=pg.xp[0:pg.nps[0]]
-                y[i1:i1+pg.nps[0]]=pg.yp[0:pg.nps[0]]
-                i1+=pg.nps[0]
-            result=arctan2(y,x)
-        else: 
-            result=array([],'d') 
+    if 'pgroups' in kw:
+        return _handlepgroups(gettheta, iw, gather, bcast, **kw)
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        x = getattrwithsuffix(pgroup,'xp',suffix)
+        y = getattrwithsuffix(pgroup,'yp',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        result = arctan2(y[ii],x[ii])
+    elif ii.size > 0:
+        result = arctan2(y[ii],x[ii])
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def getvx(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getvx(iw=0,gather=1,bcast=None,**kw):
     "Returns the X velocity. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getvx, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            ux = getattrwithsuffix(pgroup,'uxp',suffix)
-            gaminv = getattrwithsuffix(pgroup,'gaminv',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            if top.lrelativ: result = ux[ii]*gaminv[ii]
-            else:            result = ux[ii]
-        elif ii.size > 0:
-            result = ux[ii]*gaminv[ii]
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            ux=zeros(partot)
-            ginv=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                ux[i1:i1+pg.nps[0]]=pg.uxp[0:pg.nps[0]]
-                ginv[i1:i1+pg.nps[0]]=pg.gaminv[0:pg.nps[0]]
-                i1+=pg.nps[0]
-            result=ux*ginv
-        else: 
-            result=array([],'d') 
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        ux = getattrwithsuffix(pgroup,'uxp',suffix)
+        gaminv = getattrwithsuffix(pgroup,'gaminv',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        if top.lrelativ: result = ux[ii]*gaminv[ii]
+        else:            result = ux[ii]
+    elif ii.size > 0:
+        result = ux[ii]*gaminv[ii]
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def getvy(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getvy(iw=0,gather=1,bcast=None,**kw):
     "Returns the Y velocity. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getvy, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            uy = getattrwithsuffix(pgroup,'uyp',suffix)
-            gaminv = getattrwithsuffix(pgroup,'gaminv',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            if top.lrelativ: result = uy[ii]*gaminv[ii]
-            else:            result = uy[ii]
-        elif ii.size > 0:
-            result = uy[ii]*gaminv[ii]
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            uy=zeros(partot)
-            ginv=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                uy[i1:i1+pg.nps[0]]=pg.uyp[0:pg.nps[0]]
-                ginv[i1:i1+pg.nps[0]]=pg.gaminv[0:pg.nps[0]]
-                i1+=pg.nps[0]
-            result=uy*ginv
-        else: 
-            result=array([],'d') 
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        uy = getattrwithsuffix(pgroup,'uyp',suffix)
+        gaminv = getattrwithsuffix(pgroup,'gaminv',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        if top.lrelativ: result = uy[ii]*gaminv[ii]
+        else:            result = uy[ii]
+    elif ii.size > 0:
+        result = uy[ii]*gaminv[ii]
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def getvz(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getvz(iw=0,gather=1,bcast=None,**kw):
     "Returns the Z velocity. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getvz, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            uz = getattrwithsuffix(pgroup,'uzp',suffix)
-            gaminv = getattrwithsuffix(pgroup,'gaminv',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            if top.lrelativ: result = uz[ii]*gaminv[ii]
-            else:            result = uz[ii]
-        elif ii.size > 0:
-            result = uz[ii]*gaminv[ii]
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            uz=zeros(partot)
-            ginv=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                uz[i1:i1+pg.nps[0]]=pg.uzp[0:pg.nps[0]]
-                ginv[i1:i1+pg.nps[0]]=pg.gaminv[0:pg.nps[0]]
-                i1+=pg.nps[0]
-            result=uz*ginv
-        else: 
-            result=array([],'d')
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        uz = getattrwithsuffix(pgroup,'uzp',suffix)
+        gaminv = getattrwithsuffix(pgroup,'gaminv',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        if top.lrelativ: result = uz[ii]*gaminv[ii]
+        else:            result = uz[ii]
+    elif ii.size > 0:
+        result = uz[ii]*gaminv[ii]
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def getvr(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getvr(iw=0,gather=1,bcast=None,**kw):
     "Returns the radial velocity. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getvr, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            x = getattrwithsuffix(pgroup,'xp',suffix)
-            y = getattrwithsuffix(pgroup,'yp',suffix)
-            ux = getattrwithsuffix(pgroup,'uxp',suffix)
-            uy = getattrwithsuffix(pgroup,'uyp',suffix)
-            gaminv = getattrwithsuffix(pgroup,'gaminv',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            tt = arctan2(y[ii],x[ii])
-            result = (ux[ii]*cos(tt) + uy[ii]*sin(tt))*gaminv[ii]
-        elif ii.size > 0:
-            tt = arctan2(y[ii],x[ii])
-            result = (ux[ii]*cos(tt) + uy[ii]*sin(tt))*gaminv[ii]
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            x=zeros(partot)
-            y=zeros(partot)
-            ux=zeros(partot)
-            uy=zeros(partot)
-            ginv=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                x[i1:i1+pg.nps[0]]=pg.xp[0:pg.nps[0]]
-                y[i1:i1+pg.nps[0]]=pg.yp[0:pg.nps[0]]
-                ux[i1:i1+pg.nps[0]]=pg.uxp[0:pg.nps[0]]
-                uy[i1:i1+pg.nps[0]]=pg.uyp[0:pg.nps[0]]
-                ginv[i1:i1+pg.nps[0]]=pg.ginv[0:pg.nps[0]]
-                i1+=pg.nps[0]
-            tt = arctan2(y,x)
-            result = (ux*cos(tt) + uy*sin(tt))*gaminv
-        else: 
-            result=array([],'d') 
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        x = getattrwithsuffix(pgroup,'xp',suffix)
+        y = getattrwithsuffix(pgroup,'yp',suffix)
+        ux = getattrwithsuffix(pgroup,'uxp',suffix)
+        uy = getattrwithsuffix(pgroup,'uyp',suffix)
+        gaminv = getattrwithsuffix(pgroup,'gaminv',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        tt = arctan2(y[ii],x[ii])
+        result = (ux[ii]*cos(tt) + uy[ii]*sin(tt))*gaminv[ii]
+    elif ii.size > 0:
+        tt = arctan2(y[ii],x[ii])
+        result = (ux[ii]*cos(tt) + uy[ii]*sin(tt))*gaminv[ii]
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
 def getvtheta(iw=0,gather=1,bcast=None,**kw):
     "Returns the azimuthal velocity. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getvtheta, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -876,104 +755,64 @@ def getvtheta(iw=0,gather=1,bcast=None,**kw):
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def getux(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getux(iw=0,gather=1,bcast=None,**kw):
     "Returns the X momentum over mass. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getux, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            ux = getattrwithsuffix(pgroup,'uxp',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            result = ux[ii]
-        elif ii.size > 0:
-            result = ux[ii]
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            ux=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                ux[i1:i1+pg.nps[0]]=pg.uxp[0:pg.nps[0]]
-                i1+=pg.nps[0]
-            result = ux
-        else: 
-            result=array([],'d') 
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        ux = getattrwithsuffix(pgroup,'uxp',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        result = ux[ii]
+    elif ii.size > 0:
+        result = ux[ii]
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def getuy(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getuy(iw=0,gather=1,bcast=None,**kw):
     "Returns the Y momentum over mass. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getuy, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            uy = getattrwithsuffix(pgroup,'uyp',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            result = uy[ii]
-        elif ii.size > 0:
-            result = uy[ii]
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            uy=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                uy[i1:i1+pg.nps[0]]=pg.uyp[0:pg.nps[0]]
-                i1+=pg.nps[0]
-            result = uy
-        else: 
-            result=array([],'d') 
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        uy = getattrwithsuffix(pgroup,'uyp',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        result = uy[ii]
+    elif ii.size > 0:
+        result = uy[ii]
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def getuz(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getuz(iw=0,gather=1,bcast=None,**kw):
     "Returns the Z momentum over mass. For particle selection options, see :py:func:`~particles.selectparticles`. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getuz, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
-    if (pgroups is None):
-        ii = selectparticles(iw=iw,kwdict=kw)
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-            uz = getattrwithsuffix(pgroup,'uzp',suffix)
-        if isinstance(ii,slice) and ii.stop > ii.start:
-            result = uz[ii]
-        elif ii.size > 0:
-            result = uz[ii]
-        else:
-            result = array([],'d')
-    else: 
-        # Get local number of particles
-        partot=0 
-        for pg in pgroups: 
-            partot+=pg.nps[0]
-        if (partot>0): 
-            uz=zeros(partot)
-            # Put positions in a 1D numpy array 
-            i1=0
-            for pg in pgroups: 
-                uz[i1:i1+pg.nps[0]]=pg.uzp[0:pg.nps[0]]
-                i1+=pg.nps[0]
-            result = uz
-        else: 
-            result=array([],'d') 
+    ii = selectparticles(iw=iw,kwdict=kw)
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+        uz = getattrwithsuffix(pgroup,'uzp',suffix)
+    if isinstance(ii,slice) and ii.stop > ii.start:
+        result = uz[ii]
+    elif ii.size > 0:
+        result = uz[ii]
+    else:
+        result = array([],'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
 def getxp(iw=0,gather=1,bcast=None,**kw):
     "Returns the X velocity over the Z velocity (X'). For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getxp, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -991,6 +830,8 @@ def getxp(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getyp(iw=0,gather=1,bcast=None,**kw):
     "Returns the Y velocity over the Z velocity (Y'). For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getyp, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1008,6 +849,8 @@ def getyp(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getrp(iw=0,gather=1,bcast=None,**kw):
     "Returns the radial velocity over the Z velocity (R'). For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getrp, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1030,6 +873,8 @@ def getrp(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def gettp(iw=0,gather=1,bcast=None,**kw):
     "Returns the azimuthal velocity over the Z velocity (R'). For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(gettp, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1053,6 +898,8 @@ def gettp(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getgaminv(iw=0,gather=1,bcast=None,**kw):
     "Returns the gamma inverse. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getgaminv, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1069,6 +916,8 @@ def getgaminv(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getex(iw=0,gather=1,bcast=None,**kw):
     "Returns the Ex field applied to the particles. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getex, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1085,6 +934,8 @@ def getex(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getey(iw=0,gather=1,bcast=None,**kw):
     "Returns the Ey field applied to the particles. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getey, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1101,6 +952,8 @@ def getey(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getez(iw=0,gather=1,bcast=None,**kw):
     "Returns the Ez field applied to the particles. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getez, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1117,6 +970,8 @@ def getez(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def geter(iw=0,gather=1,bcast=None,**kw):
     "Returns the Er field applied to the particles. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(geter, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1138,6 +993,8 @@ def geter(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getetheta(iw=0,gather=1,bcast=None,**kw):
     "Returns the Etheta field applied to the particles. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getetheta, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1159,6 +1016,8 @@ def getetheta(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getbx(iw=0,gather=1,bcast=None,**kw):
     "Returns the Bx field applied to the particles. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getbx, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1175,6 +1034,8 @@ def getbx(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getby(iw=0,gather=1,bcast=None,**kw):
     "Returns the By field applied to the particles. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getby, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1191,6 +1052,8 @@ def getby(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getbz(iw=0,gather=1,bcast=None,**kw):
     "Returns the Bz field applied to the particles. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getbz, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1207,6 +1070,8 @@ def getbz(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getbr(iw=0,gather=1,bcast=None,**kw):
     "Returns the Br field applied to the particles. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getbr, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1228,6 +1093,8 @@ def getbr(iw=0,gather=1,bcast=None,**kw):
 #-------------------------------------------------------------------------
 def getbtheta(iw=0,gather=1,bcast=None,**kw):
     "Returns the Btheta field applied to the particles. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getbtheta, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     ii = selectparticles(iw=iw,kwdict=kw)
     suffix,object,pgroup = _getobjectpgroup(kw)
@@ -1247,7 +1114,7 @@ def getbtheta(iw=0,gather=1,bcast=None,**kw):
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
-def getpid(id=0,iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getpid(id=0,iw=0,gather=1,bcast=None,**kw):
     """Returns particle id information.
     - id=0: which pid value to return
             Note that when top.wpid or other id's from the top package are used,
@@ -1255,62 +1122,40 @@ def getpid(id=0,iw=0,gather=1,bcast=None,pgroups=None,**kw):
             If id=-1, returns all pids.
   For particle selection options, see :py:func:`~particles.selectparticles`.
     """
-    if bcast is None: bcast = _particlebcastdefault[0]
-    if(pgroups is None): 
-        suffix,object,pgroup = _getobjectpgroup(kw)
-        lost = kw.get('lost',0)
-        if lost:
-            npidlost = getattrwithsuffix(object,'npidlost')
-            dopid = (npidlost > 0)
-        else:
-            npid = getattrwithsuffix(pgroup,'npid',suffix)
-            dopid = (npid > 0)
-        if dopid:
-            ii = selectparticles(iw=iw,kwdict=kw)
-            if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
-                pid = getattrwithsuffix(pgroup,'pid',suffix)
-            if isinstance(ii,slice) and ii.stop > ii.start:
-                if id >= 0: result = pid[ii,id]
-                else:       result = pid[ii,:]
-            elif ii.size > 0:
-                if id >= 0: result = take(pid[:,id],ii)
-                else:       result = take(pid[:,:],ii,0)
-            else:
-                if id >= 0: result = zeros(0,'d')
-                else:       result = zeros((0,top.npid),'d')
+    if 'pgroups' in kw:
+        return _handlepgroups(getpid, iw, gather, bcast, **kw)
+    if bcast is None: bcast = _particlebcastdefault[0] 
+    suffix,object,pgroup = _getobjectpgroup(kw)
+    lost = kw.get('lost',0)
+    if lost:
+        npidlost = getattrwithsuffix(object,'npidlost')
+        dopid = (npidlost > 0)
+    else:
+        npid = getattrwithsuffix(pgroup,'npid',suffix)
+        dopid = (npid > 0)
+    if dopid:
+        ii = selectparticles(iw=iw,kwdict=kw)
+        if (isinstance(ii,slice) and ii.stop > ii.start) or ii.size > 0:
+            pid = getattrwithsuffix(pgroup,'pid',suffix)
+        if isinstance(ii,slice) and ii.stop > ii.start:
+            if id >= 0: result = pid[ii,id]
+            else:       result = pid[ii,:]
+        elif ii.size > 0:
+            if id >= 0: result = take(pid[:,id],ii)
+            else:       result = take(pid[:,:],ii,0)
         else:
             if id >= 0: result = zeros(0,'d')
             else:       result = zeros((0,top.npid),'d')
-    else: 
-        # Get local number of particles
-        dopid = (top.npid > 0)
-        if dopid:
-            # Get local number of particles 
-            partot=0 
-            for pg in pgroups: 
-                partot+=pg.nps[0]
-            if (partot>0): 
-                pid=zeros((partot,top.npid))
-                # Put positions in a 1D numpy array 
-                i1=0
-                for pg in pgroups: 
-                    pid[i1:i1+pg.nps[0],:]=pg.pid[0:pg.nps[0],:]
-                    i1+=pg.nps[0]
-                if(id>=0): 
-                    result = pid[:,id]
-                else: 
-                    result = pid
-            else:
-                if id >= 0: result = zeros(0,'d')
-                else:       result = zeros((0,top.npid),'d')
-        else:
-            if id >= 0: result = zeros(0,'d')
-            else:       result = zeros((0,top.npid),'d')
+    else:
+        if id >= 0: result = zeros(0,'d')
+        else:       result = zeros((0,top.npid),'d')
     if lparallel and gather: return gatherarray(result,bcast=bcast)
     else: return result
 #-------------------------------------------------------------------------
 def getvdrifts(iw=0,js=0,jslist=None,gather=1,bcast=None,edrift=1,bdrift=1,**kw):
     "Returns the velocity drifts used in the drift-Lorentz mover. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getvdrifts, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     if jslist is None:
         jslist=[js]
@@ -1375,21 +1220,23 @@ def getvdrifts(iw=0,js=0,jslist=None,gather=1,bcast=None,edrift=1,bdrift=1,**kw)
     else:
         return vx,vy,vz
 #-------------------------------------------------------------------------
-# def getw(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+# def getw(iw=0,gather=1,bcast=None,**kw):
 #     """Returns particle weights.
 #   This is equivalent to getpid(id=top.wpid-1). For particle selection options, see :py:func:`~particles.selectparticles`.
 #     """
 #     return getpid(id=top.wpid-1,gather=gather,bcast=bcast,pgroups=pgroups,**kw)
 #-------------------------------------------------------------------------
 #-------------------------------------------------------------------------
-def getw(iw=0,gather=1,bcast=None,pgroups=None,**kw):
+def getw(iw=0,gather=1,bcast=None,**kw):
     """Returns particle weights.
   This is equivalent to getpid(id=top.wpid-1). For particle selection options, see :py:func:`~particles.selectparticles`.
     """
-    return getpid(id=top.wpid-1,gather=gather,bcast=bcast,pgroups=pgroups,**kw)
+    return getpid(id=top.wpid-1,gather=gather,bcast=bcast,**kw)
     
 def getke(iw=0,js=0,jslist=None,gather=1,bcast=None,**kw):
     "Returns the particles kinetic energy. For particle selection options, see :py:func:`~particles.selectparticles`."
+    if 'pgroups' in kw:
+        return _handlepgroups(getke, iw, gather, bcast, **kw)
     if bcast is None: bcast = _particlebcastdefault[0]
     if jslist is None:
         jslist=[js]
