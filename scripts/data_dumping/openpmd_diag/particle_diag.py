@@ -22,7 +22,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
     def __init__(self, period, top, w3d, comm_world=None,
                  species = {"electrons": None},
-                 particle_data=["position", "momentum", "weighting"],
+                 particle_data=["position", "momentum", "weighting","electric_field",
+                 "magnetic_field"],
                  select=None, write_dir=None, lparallel_output=False) :
         """
         Initialize the field diagnostics.
@@ -290,6 +291,24 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                     self.setup_openpmd_species_record( 
                         species_grp[particle_var], particle_var )
                         
+            elif particle_var == "electric_field" :
+                for coord in ["x", "y", "z"] :
+                    quantity = "e%s" %(coord)
+                    quantity_path = "%s/%s" %(particle_var, coord)
+                    self.write_dataset( species_grp, species, quantity_path,
+                                        quantity, n_rank, N, select_array )
+                if this_rank_writes :
+                    self.setup_openpmd_species_record( 
+                        species_grp[particle_var], particle_var )
+            elif particle_var == "magnetic_field" :
+                for coord in ["x", "y", "z"] :
+                    quantity = "b%s" %(coord)
+                    quantity_path = "%s/%s" %(particle_var, coord)
+                    self.write_dataset( species_grp, species, quantity_path,
+                                        quantity, n_rank, N, select_array )
+                if this_rank_writes :
+                    self.setup_openpmd_species_record( 
+                        species_grp[particle_var], particle_var )                             
             elif particle_var == "weighting" :
                 quantity = "w"
                 quantity_path = "weighting"
@@ -407,8 +426,29 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                                 maxshape=(None,), dtype='f')
                                 
                             self.setup_openpmd_species_component( dset )
-                        self.setup_openpmd_species_record(particle_grp_mom,  particle_var )
-                        
+                        self.setup_openpmd_species_record(particle_grp_mom,  particle_var )    
+                    elif particle_var == "electric_field":
+                        particle_path_mom=species_path+"%s/" %particle_var
+                        particle_grp_mom = f.require_group(particle_path_mom)
+                        for coord in ["x","y","z"]:
+                            quantity= "e%s" %coord
+                            dset = particle_grp_mom.create_dataset(
+                                coord, (0,), 
+                                maxshape=(None,), dtype='f')
+                                
+                            self.setup_openpmd_species_component( dset )
+                        self.setup_openpmd_species_record(particle_grp_mom,  particle_var ) 
+                    elif particle_var == "magnetic_field":
+                        particle_path_mom=species_path+"%s/" %particle_var
+                        particle_grp_mom = f.require_group(particle_path_mom)
+                        for coord in ["x","y","z"]:
+                            quantity= "b%s" %coord
+                            dset = particle_grp_mom.create_dataset(
+                                coord, (0,), 
+                                maxshape=(None,), dtype='f')
+                                
+                            self.setup_openpmd_species_component( dset )
+                        self.setup_openpmd_species_record(particle_grp_mom,  particle_var )                        
                     elif particle_var == "weighting":
                         particle_grp_w = f.require_group(species_path)
                         dset = particle_grp_w.create_dataset(
@@ -444,7 +484,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
         quantity : string
             Describes which quantity is written
-            x, y, z, ux, uy, uz, w
+            x, y, z, ux, uy, uz, w, ex, ey, ez,
+            bx, by or bz
             
         n_rank: an array with dtype = int of size = n_procs
             Contains the local number of particles for each process
@@ -532,7 +573,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
         quantity : string
             Describes which quantity is queried
-            Either "x", "y", "z", "ux", "uy", "uz" or "w"
+            Either "x", "y", "z", "ux", "uy", "uz", "w", "ex", "ey", "ez",
+            "bx", "by" or "bz"
         """
         # Extract the chosen quantities
 
@@ -548,6 +590,18 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             quantity_array = species.getuy(gather=False)
         elif quantity == "uz" :
             quantity_array = species.getuz(gather=False)
+        elif quantity == "ex" :
+            quantity_array = species.getex(gather=False)
+        elif quantity == "ey" :
+            quantity_array = species.getey(gather=False)
+        elif quantity == "ez" :
+            quantity_array = species.getez(gather=False)
+        elif quantity == "bx" :
+            quantity_array = species.getbx(gather=False)
+        elif quantity == "by" :
+            quantity_array = species.getby(gather=False)
+        elif quantity == "bz" :
+            quantity_array = species.getbz(gather=False)
         elif quantity == "w" :
             quantity_array = species.getweights(gather=False)
 
