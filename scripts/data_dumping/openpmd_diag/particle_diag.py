@@ -7,7 +7,8 @@ import numpy as np
 from scipy import constants
 from generic_diag import OpenPMDDiagnostic
 from parallel import gatherarray
-from data_dict import macro_weighted_dict, weighting_power_dict
+from data_dict import macro_weighted_dict, weighting_power_dict, \
+     particle_quantity_dict
 
 class ParticleDiagnostic(OpenPMDDiagnostic) :
     """
@@ -18,7 +19,6 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
     After initialization, the diagnostic is called by using the
     `write` method.
     """
-    
 
     def __init__(self, period, top, w3d, comm_world=None,
                  species = {"electrons": None},
@@ -48,11 +48,10 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             is assigned to the particleName of this species.
             (e.g. "electrons")
 
-        particle_data : a list of strings, optional 
-            The particle properties are given by:
-            ["position", "momentum", "weighting"]
-            for the coordinates x,y,z.
-            Default : electron particle data is written
+        particle_data : a list of strings, optional
+            A list indicating which particle data should be written.
+            The list can contain any of the following strings:
+            "position", "momentum", "weighting", "E", "B"
 
         select : dict, optional
             Either None or a dictionary of rules
@@ -71,14 +70,11 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             If "True" : Parallel output
         """
         # General setup
-        
         OpenPMDDiagnostic.__init__(self, period, top, w3d, comm_world,
                                    lparallel_output, write_dir)
         # Register the arguments
         self.particle_data = particle_data
-
         self.species_dict = species
-
         self.select = select
 
         # Correct the bounds in momenta (since the momenta in Warp
@@ -126,6 +122,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             self.setup_openpmd_species_component( grp[quantity] )
             grp[quantity].attrs["shape"] = np.array([1], dtype=np.uint64)
             # Required. Since it is not really used, the shape is 1 here.
+
         # Set the corresponding values
         grp["charge"].attrs["value"] = species.charge
         grp["mass"].attrs["value"] = species.mass
@@ -154,7 +151,6 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         grp.attrs["macroWeighted"] = macro_weighted_dict[quantity]
         grp.attrs["weightingPower"] = weighting_power_dict[quantity]
 
-
     def setup_openpmd_species_component( self, grp ) :
         """
         Set the attributes that are specific to a species component
@@ -166,7 +162,6 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         quantity : string
             The name of the component
         """
-        
         self.setup_openpmd_component( grp )
         
     def write_hdf5( self, iteration ) :
@@ -269,27 +264,20 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             Determines whether the present rank contributes in writing the data
         """
         for particle_var in self.particle_data :
-                
-            if particle_var == "position" :
+
+            # Vector quantity
+            if particle_var in ["position", "momentum", "E", "B"] :
                 for coord in ["x", "y", "z"] :
-                    quantity = coord
-                    quantity_path = "%s/%s" %(particle_var, coord)
-                    self.write_dataset( species_grp, species, quantity_path,
-                        quantity, n_rank, N, select_array )
-                if this_rank_writes :
-                    self.setup_openpmd_species_record(
-                        species_grp[particle_var], particle_var )
-                        
-            elif particle_var == "momentum" :
-                for coord in ["x", "y", "z"] :
-                    quantity = "u%s" %(coord)
+                    quantity = "%s%s" %( particle_quantity_dict[particle_var],
+                                        coord)
                     quantity_path = "%s/%s" %(particle_var, coord)
                     self.write_dataset( species_grp, species, quantity_path,
                                         quantity, n_rank, N, select_array )
                 if this_rank_writes :
                     self.setup_openpmd_species_record( 
                         species_grp[particle_var], particle_var )
-                        
+
+            # Scalar quantity
             elif particle_var == "weighting" :
                 quantity = "w"
                 quantity_path = "weighting"
@@ -363,11 +351,9 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
         # Setup the different layers of the openPMD file
         # (f is None if this processor does not participate is writing data)
-        
         if f is not None:
 
             # Setup the attributes of the top level of the file
-
             self.setup_openpmd_file( f, iteration, time, dt )
             # Setup the meshes group (contains all the particles)
             particle_path = "/data/%d/particles/" %iteration
@@ -379,45 +365,31 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 species_grp = f.require_group( species_path )
                 self.setup_openpmd_species_group( species_grp, species )
                 
-            # Loop over the different quantities that should be written
-            # and setup the corresponding datasets
-            
+                # Loop over the different quantities that should be written
+                # and setup the corresponding datasets
                 for particle_var in self.particle_data:
 
-                    # Scalar field
-                    if particle_var == "position":
+                    # Vector quantity
+                    if particle_var in ["position", "momentum", "E", "B"]:
                         # Setup the dataset
-                        particle_path_pos=species_path+ "%s/" %particle_var
-                        particle_grp_pos = f.require_group(particle_path_pos)
+                        particle_path = species_path + "%s/" %particle_var
+                        particle_grp = f.require_group(particle_path)
                         for coord in ["x","y","z"]:
-                            dset = particle_grp_pos.create_dataset(
-                                coord, (0,), 
-                                maxshape=(None,), dtype='f')        
+                            dset = particle_grp.create_dataset(
+                                coord, (0,), maxshape=(None,), dtype='f')
                             self.setup_openpmd_species_component( dset )
-                        self.setup_openpmd_species_record( particle_grp_pos, particle_var)
-                        
+                        self.setup_openpmd_species_record( particle_grp,
+                                                           particle_var)
 
-                    elif particle_var == "momentum":
-                        particle_path_mom=species_path+"%s/" %particle_var
-                        particle_grp_mom = f.require_group(particle_path_mom)
-                        for coord in ["x","y","z"]:
-                            quantity= "u%s" %coord
-                            dset = particle_grp_mom.create_dataset(
-                                coord, (0,), 
-                                maxshape=(None,), dtype='f')
-                                
-                            self.setup_openpmd_species_component( dset )
-                        self.setup_openpmd_species_record(particle_grp_mom,  particle_var )
-                        
+                    # Scalar quantity
                     elif particle_var == "weighting":
-                        particle_grp_w = f.require_group(species_path)
-                        dset = particle_grp_w.create_dataset(
-                                particle_var, (0,), 
-                                maxshape=(None,), dtype='f')
+                        particle_grp = f.require_group(species_path)
+                        dset = particle_grp.create_dataset(
+                                particle_var, (0,), maxshape=(None,), dtype='f')
                         self.setup_openpmd_species_component( dset )    
-                        self.setup_openpmd_species_record(particle_grp_w,  particle_var )
+                        self.setup_openpmd_species_record( particle_grp,
+                                                           particle_var )
             
-
                     # Unknown field
                     else:
                         raise ValueError(
@@ -444,7 +416,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
         quantity : string
             Describes which quantity is written
-            x, y, z, ux, uy, uz, w
+            x, y, z, ux, uy, uz, w, ex, ey, ez,
+            bx, by or bz
             
         n_rank: an array with dtype = int of size = n_procs
             Contains the local number of particles for each process
@@ -532,7 +505,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
         quantity : string
             Describes which quantity is queried
-            Either "x", "y", "z", "ux", "uy", "uz" or "w"
+            Either "x", "y", "z", "ux", "uy", "uz", "w", "ex", "ey", "ez",
+            "bx", "by" or "bz"
         """
         # Extract the chosen quantities
 
@@ -548,6 +522,18 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             quantity_array = species.getuy(gather=False)
         elif quantity == "uz" :
             quantity_array = species.getuz(gather=False)
+        elif quantity == "ex" :
+            quantity_array = species.getex(gather=False)
+        elif quantity == "ey" :
+            quantity_array = species.getey(gather=False)
+        elif quantity == "ez" :
+            quantity_array = species.getez(gather=False)
+        elif quantity == "bx" :
+            quantity_array = species.getbx(gather=False)
+        elif quantity == "by" :
+            quantity_array = species.getby(gather=False)
+        elif quantity == "bz" :
+            quantity_array = species.getbz(gather=False)
         elif quantity == "w" :
             quantity_array = species.getweights(gather=False)
 

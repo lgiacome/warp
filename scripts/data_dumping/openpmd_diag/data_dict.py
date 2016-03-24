@@ -17,7 +17,9 @@ unit_dimension_dict = {
     "weighting" : np.array([0., 0., 0., 0., 0., 0., 0.]),
     "position" : np.array([1., 0., 0., 0., 0., 0., 0.]),
     "positionOffset" : np.array([1., 0., 0., 0., 0., 0., 0.]),
-    "momentum" : np.array([1., 1.,-1., 0., 0., 0., 0.]) }
+    "momentum" : np.array([1., 1.,-1., 0., 0., 0., 0.]), 
+    "E" : np.array([ 1., 1.,-3.,-1., 0., 0., 0.]),
+    "B" : np.array([ 0., 1.,-2.,-1., 0., 0., 0.])}
 
 # Spatial offset of the different fields
 x_offset_dict = {
@@ -39,7 +41,9 @@ macro_weighted_dict = {
     "weighting": np.uint32(1),
     "position": np.uint32(0),
     "positionOffset": np.uint32(0),
-    "momentum": np.uint32(0) }
+    "momentum": np.uint32(0), 
+    "E": np.uint32(0),
+    "B": np.uint32(0)}
 
 weighting_power_dict = {
     "charge": 1.,
@@ -47,7 +51,9 @@ weighting_power_dict = {
     "weighting": 1.,
     "position": 0.,
     "positionOffset": 0.,
-    "momentum": 1. }
+    "momentum": 1.,
+    "E": 0.,
+    "B": 0.}
 
 # Correspondance between the names in OpenPMD and the names in Warp
 circ_dict_quantity = { 'rho':'Rho', 'Er':'Ex', 'Et':'Ey', 'Ez':'Ez', 
@@ -56,6 +62,10 @@ circ_dict_quantity = { 'rho':'Rho', 'Er':'Ex', 'Et':'Ey', 'Ez':'Ez',
 cart_dict_quantity = { 'rho':'Rho', 'Ex':'Ex', 'Ey':'Ey', 'Ez':'Ez', 
                         'Bx':'Bx', 'By':'By', 'Bz':'Bz',
                         'Jx':'Jx', 'Jy':'Jy', 'Jz':'Jz' }
+
+# Correspondance between openPMD path and short-hand names
+particle_quantity_dict = { 'E' : 'e', 'B' : 'b', \
+                           'position' : '', 'momentum' : 'u' }
 
 # Correspondance between the boundary conditions in Warp,
 # and the corresponding representative integer
