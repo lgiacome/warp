@@ -9,6 +9,7 @@ from generic_diag import OpenPMDDiagnostic
 from parallel import gatherarray
 from data_dict import macro_weighted_dict, weighting_power_dict, \
      particle_quantity_dict
+import pdb
 
 class ParticleDiagnostic(OpenPMDDiagnostic) :
     """
@@ -345,15 +346,17 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
         dt: float (seconds)
             The timestep of the simulation
-        """ 
+        """
         # Create the file
         f = self.open_file( fullpath )
 
         # Setup the different layers of the openPMD file
         # (f is None if this processor does not participate is writing data)
+
         if f is not None:
 
             # Setup the attributes of the top level of the file
+
             self.setup_openpmd_file( f, iteration, time, dt )
             # Setup the meshes group (contains all the particles)
             particle_path = "/data/%d/particles/" %iteration
@@ -369,27 +372,27 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 # and setup the corresponding datasets
                 for particle_var in self.particle_data:
 
-                    # Vector quantity
+                    # Vector quantities
                     if particle_var in ["position", "momentum", "E", "B"]:
                         # Setup the dataset
-                        particle_path = species_path + "%s/" %particle_var
-                        particle_grp = f.require_group(particle_path)
+                        quantity_path=species_path+ "%s/" %particle_var
+                        quantity_grp = f.require_group(quantity_path)
                         for coord in ["x","y","z"]:
-                            dset = particle_grp.create_dataset(
-                                coord, (0,), maxshape=(None,), dtype='f')
+                            dset = quantity_grp.create_dataset(
+                                coord, (0,), maxshape=(None,), dtype='f')        
                             self.setup_openpmd_species_component( dset )
-                        self.setup_openpmd_species_record( particle_grp,
+                        self.setup_openpmd_species_record( quantity_grp,
                                                            particle_var)
 
                     # Scalar quantity
                     elif particle_var == "weighting":
-                        particle_grp = f.require_group(species_path)
-                        dset = particle_grp.create_dataset(
+                        quantity_grp = f.require_group(species_path)
+                        dset = quantity_grp.create_dataset(
                                 particle_var, (0,), maxshape=(None,), dtype='f')
                         self.setup_openpmd_species_component( dset )    
-                        self.setup_openpmd_species_record( particle_grp,
-                                                           particle_var )
-            
+                        self.setup_openpmd_species_record( quantity_grp,
+                                                          particle_var )
+
                     # Unknown field
                     else:
                         raise ValueError(
