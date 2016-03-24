@@ -51,8 +51,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         particle_data : a list of strings, optional
             A list indicating which particle data should be written.
             The list can contain any of the following strings:
-            "position", "momentum", "weighting",
-            "electric_field", "magnetic_field"
+            "position", "momentum", "weighting", "E", "B"
 
         select : dict, optional
             Either None or a dictionary of rules
@@ -267,8 +266,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         for particle_var in self.particle_data :
 
             # Vector quantity
-            if particle_var in ["position", "momentum", \
-                                "electric_field", "magnetic_field"] :
+            if particle_var in ["position", "momentum", "E", "B"] :
                 for coord in ["x", "y", "z"] :
                     quantity = "%s%s" %( particle_quantity_dict[particle_var],
                                         coord)
@@ -372,8 +370,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 for particle_var in self.particle_data:
 
                     # Vector quantity
-                    if particle_var in ["position", "momentum", \
-                                        "electric_field", "magnetic_field"]:
+                    if particle_var in ["position", "momentum", "E", "B"]:
                         # Setup the dataset
                         particle_path = species_path + "%s/" %particle_var
                         particle_grp = f.require_group(particle_path)
