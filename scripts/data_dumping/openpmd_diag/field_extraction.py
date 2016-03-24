@@ -12,7 +12,7 @@ from data_dict import circ_dict_quantity, cart_dict_quantity, \
     x_offset_dict, y_offset_dict
 
 def get_dataset( dim, em, quantity, lgather,
-                 iz_slice=None, transverse_centered=False ):
+                 sbs=[1,1,1],iz_slice=None, transverse_centered=False ):
     """
     Extract fields from the grid and return them in a format
     which is close to their final layout in the openPMD file.
@@ -66,16 +66,16 @@ def get_dataset( dim, em, quantity, lgather,
     """
     if dim=="circ":
         return( get_circ_dataset( em, quantity, lgather=lgather,
-            iz_slice=iz_slice, transverse_centered=transverse_centered ) )
+            iz_slice=iz_slice,sbs=sbs, transverse_centered=transverse_centered ) )
     elif dim=="2d":
         return( get_cart2d_dataset( em, quantity, lgather=lgather,
-            iz_slice=iz_slice, transverse_centered=transverse_centered ) )
+            iz_slice=iz_slice, sbs=sbs, transverse_centered=transverse_centered ) )
     elif dim=="3d":
         return( get_cart3d_dataset( em, quantity, lgather=lgather,
-            iz_slice=iz_slice, transverse_centered=transverse_centered ) )
+            iz_slice=iz_slice,sbs=sbs, transverse_centered=transverse_centered ) )
 
 def get_circ_dataset( em, quantity, lgather,
-                      iz_slice=None, transverse_centered=False ):
+                      iz_slice=None, sbs=[1,1,1], transverse_centered=False ):
     """
     Get a given quantity in Circ coordinates
 
@@ -128,16 +128,16 @@ def get_circ_dataset( em, quantity, lgather,
         if em.circ_m > 0:
             F_circ = 0.5*( F_circ[ nxg-1:-nxg-1 ] + F_circ[ nxg:-nxg ] )
     else:
-        F = F[ nxg:-nxg ]
+        F = F[ nxg:-nxg:sbs[0] ]
         if em.circ_m > 0:
             F_circ = F_circ[ nxg:-nxg ]
     # In the z direction
     if iz_slice is None:
         nzg = em.nzguard
-        F = F[ :, nzg:-nzg ]
+        F = F[ :, nzg:-nzg:sbs[2] ]
         if em.circ_m > 0:
             F_circ = F_circ[:, nzg:-nzg, :]
-
+                        
     # Gather array if lgather = True
     # (Multi-proc operations using gather)
     # Only done in non-parallel case
@@ -145,6 +145,15 @@ def get_circ_dataset( em, quantity, lgather,
         F = em.gatherarray( F )
         if em.circ_m > 0:
             F_circ = em.gatherarray( F_circ )
+
+    # Subsample field
+    F=F[::sbs[0], :]
+    if em.circ_m>0: 
+        F_circ=F[::sbs[0], :, :]
+    if (iz_slice is None):
+        F=F[:, ::sbs[2]]
+        if em.circ_m>0: 
+            F_circ=F[:, ::sbs[2], :]
 
     # Reshape the array so that it is stored in openPMD layout,
     # with real and imaginary part of each mode separated
@@ -165,7 +174,7 @@ def get_circ_dataset( em, quantity, lgather,
     return( Ftot )
 
 def get_cart3d_dataset( em, quantity, lgather,
-                      iz_slice=None, transverse_centered=False ):
+                      iz_slice=None, sbs=[1,1,1], transverse_centered=False ):
     """
     Get a given quantity in 3D Cartesian coordinates
 
@@ -228,11 +237,17 @@ def get_cart3d_dataset( em, quantity, lgather,
                 'get_cart2d_dataset: lgather=True and iz_slice not None')
         F = em.gatherarray( F )
 
+    # Subsample field
+    if (F is not None): 
+        F=F[::sbs[0],::sbs[1],:]
+        if (iz_slice is None):
+            F=F[:,:,::sbs[2]]
+
     return( F )
 
 
 def get_cart2d_dataset( em, quantity, lgather,
-                      iz_slice=None, transverse_centered=False ):
+                      iz_slice=None, sbs=[1,1,1], transverse_centered=False ):
     """
     Get a given quantity in 2D Cartesian coordinates
 
@@ -288,5 +303,9 @@ def get_cart2d_dataset( em, quantity, lgather,
             raise ValueError('Incompatible parameters in '
                 'get_cart2d_dataset: lgather=True and iz_slice not None')
         F = em.gatherarray( F )
-
+        
+    # Subsample field
+    F=F[::sbs[0],:]
+    if (iz_slice is None):
+        F=F[:,::sbs[2]]
     return( F )
