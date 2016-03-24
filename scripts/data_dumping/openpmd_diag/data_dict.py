@@ -63,6 +63,10 @@ cart_dict_quantity = { 'rho':'Rho', 'Ex':'Ex', 'Ey':'Ey', 'Ez':'Ez',
                         'Bx':'Bx', 'By':'By', 'Bz':'Bz',
                         'Jx':'Jx', 'Jy':'Jy', 'Jz':'Jz' }
 
+# Correspondance between openPMD path and short-hand names
+particle_quantity_dict = { 'electric_field' : 'e', 'magnetic_field' : 'b',
+                           'position' : '', 'momentum' : 'u' }
+
 # Correspondance between the boundary conditions in Warp,
 # and the corresponding representative integer
 field_boundary_dict = {
