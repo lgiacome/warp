@@ -5,7 +5,7 @@ import os
 import numpy as np
 from generic_diag import OpenPMDDiagnostic
 from field_extraction import get_circ_dataset, \
-     get_cart3d_dataset, get_cart2d_dataset
+     get_cart3d_dataset, get_cart2d_dataset, get_global_indices
 
 # Import a number of useful dictionaries
 from data_dict import field_boundary_dict, particle_boundary_dict, \
@@ -88,47 +88,39 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             self.coords = ['x', 'y', 'z']
             
         # Compute global indices of the domain 
-        # With subsampling in x 
-        [ixsub,nxsub] = self.get_global_indices(top.fsdecomp.ix, top.fsdecomp.nx, sbs[0])
-        [iysub,nysub] = self.get_global_indices(top.fsdecomp.iy, top.fsdecomp.ny, sbs[1])
-        [izsub,nzsub] = self.get_global_indices(top.fsdecomp.iz, top.fsdecomp.nz, sbs[2])
+        # With subsampling periods sbs[0,1,2] in x, y, z 
+        [ixsub,nxsub] = get_global_indices(top.fsdecomp.ix, top.fsdecomp.nx, sbs[0])
+        [iysub,nysub] = get_global_indices(top.fsdecomp.iy, top.fsdecomp.ny, sbs[1])
+        [izsub,nzsub] = get_global_indices(top.fsdecomp.iz, top.fsdecomp.nz, sbs[2])
 
         # Determine the global indices of the local domain
         if (self.dim == "2d") or (self.dim=="circ"):
             global_indices = np.zeros([2,2], dtype = np.int)
         elif self.dim == "3d":
             global_indices = np.zeros([2,3], dtype = np.int)
+            
         # In the x direction
         global_indices[0,0] = ixsub[top.iprocgrid[0]]
         global_indices[1,0] = global_indices[0,0] + nxsub[top.iprocgrid[0]] + 1
+        
         # In the y direction
         if self.dim == "3d":
             global_indices[0,1] = iysub[top.iprocgrid[1]]
             global_indices[1,1] = global_indices[0,1] + nysub[top.iprocgrid[1]] + 1
+            
         # In the z direction
         global_indices[0,-1] = izsub[top.iprocgrid[2]]
         global_indices[1,-1] = global_indices[0,-1] + nzsub[top.iprocgrid[2]] + 1
         
+        # Set FieldDiagnostic attributes for dumping 
         self.global_indices = global_indices
-        print("before", em.nx,em.ny,em.nz)
-        self.nx  = np.size(np.arange(0,em.nx,sbs[0]))
-        self.ny  = np.size(np.arange(0,em.ny,sbs[1]))
-        self.nz  = np.size(np.arange(0,em.nz,sbs[2]))
+        self.nx  = np.size(np.arange(0,em.nx+1,sbs[0]))-1
+        self.ny  = np.size(np.arange(0,em.ny+1,sbs[1]))-1
+        self.nz  = np.size(np.arange(0,em.nz+1,sbs[2]))-1
         self.dx  = em.dx*sbs[0]
         self.dy  = em.dy*sbs[1]
         self.dz  = em.dz*sbs[2]
         self.sbs=sbs
-        print("after", self.nx,self.ny,self.nz)
-        
-    def get_global_indices(self, ifull,nfull,sbsp): 
-        isub=np.zeros(np.size(ifull))
-        nsub=np.zeros(np.size(nfull))
-        isub[0] = ifull[0]
-        nsub[0] = nfull[0]
-        for i in xrange(1,len(ifull)): 
-            isub[i]=isub[i-1]+nsub[i-1]
-            nsub[i]=np.size(np.arange(ifull[i],ifull[i]+nfull[i]+1,sbsp))
-        return [isub,nsub]
             
     def write_hdf5( self, iteration ):
         """
@@ -252,7 +244,6 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         if self.lparallel_output == False:
             F = get_cart3d_dataset( self.em, quantity, lgather=True, sbs=self.sbs )
             if self.rank == 0:
-                print(dset.shape,F.shape)
     	        dset[:,:,:] = F
         # Parallel mode
         else:

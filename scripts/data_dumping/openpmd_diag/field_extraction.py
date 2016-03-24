@@ -41,14 +41,17 @@ def get_dataset( dim, em, quantity, lgather,
         If None, the full field array is returned
         If not None, this is the index of the slice to be returned,
         within the local subdomain
-
+        
+    sbs: array of int of size 3 defining subsampling period in each dir
+        by default, sbs=[1,1,1] i.e all grid points are dumped 
+        
     transverse_centered: bool, optional
         Whether to return fields that are always transversally centered
         (implies that staggered fields will be transversally averaged)
 
     Returns
     -------
-    An array of reals whose format is close to the final openPMD layout.
+    An array of reals is returned with a final format close to the final openPMD layout.
 
     When there is no slicing (iz_slice is None), the returned array is of shape
     - (Nx+1, Nz+1) if dim="2d"
@@ -309,3 +312,34 @@ def get_cart2d_dataset( em, quantity, lgather,
     if (iz_slice is None):
         F=F[:,::sbs[2]]
     return( F )
+
+def get_global_indices(ifull,nfull,sbsp): 
+    """
+    Get new grid subdomain start indices and sizes with subsampling 
+
+    Parameters
+    ----------
+    ifull: array of int of size nproc_dir with nproc_dir the 
+        number of procs along oa given direction. This array 
+        contains start indices of each MPI subdomain 
+
+    nfull: array of int of size nproc_dir with nproc_dir the 
+        number of procs along oa given direction. This array 
+        contains the sizes (number of cells) of each MPI subdomain 
+
+    sbsp: int defining subsampling period in a given dir
+
+    Returns
+    -------
+    isub: (array of int) start indices of each MPI subdomain for dumping with subsampling
+
+    nsub: (array of int) sizes of each MPI subdomain for dumping with subsampling
+    """
+    isub=np.zeros(np.size(ifull))
+    nsub=np.zeros(np.size(nfull))
+    isub[0] = ifull[0]
+    nsub[0] = nfull[0]
+    for i in xrange(1,len(ifull)): 
+        isub[i]=isub[i-1]+nsub[i-1]
+        nsub[i]=np.size(np.arange(ifull[i],ifull[i]+nfull[i]+1,sbsp))-1
+    return [isub,nsub]
