@@ -289,9 +289,9 @@ class EM3DFFT(EM3D):
         if top.ndts[0]<>1:
             print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
             raise
-        f.Jx = self.fields.Jxarray[:,:,:,:,0]
-        f.Jy = self.fields.Jyarray[:,:,:,:,0]
-        f.Jz = self.fields.Jzarray[:,:,:,:,0]
+        f.Jx = self.fields.Jxarray[:,:,:,0]
+        f.Jy = self.fields.Jyarray[:,:,:,0]
+        f.Jz = self.fields.Jzarray[:,:,:,0]
         f.Rho = self.fields.Rhoarray[:,:,:,0]
         
         for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
