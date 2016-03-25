@@ -79,24 +79,22 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
         # Record the time it takes
         measured_start = time.clock()
-        print('\nInitializing the lab-frame diagnostics: %d files...' %(
+        print('\nInitializing lab-frame particle diagnostics: %d files...' %(
             Ntot_snapshots_lab) )
 
         # Loop through the lab snapshots and create the corresponding files
         self.particle_catcher = ParticleCatcher(
-            self.gamma_boost, self.beta_boost,top)
+            self.gamma_boost, self.beta_boost, top )
         self.particle_catcher.initialize_previous_instant()
 
         for i in range( Ntot_snapshots_lab ):
             t_lab = i*dt_snapshots_lab
-            snapshot = LabSnapshot( t_lab,
-                                    zmin_lab + v_lab*t_lab,
-                                    top.dt,
-                                    zmax_lab + v_lab*t_lab,
-                                    self.write_dir, i ,self.species)
-            self.snapshots.append(snapshot)
+            snapshot = LabSnapshot( t_lab, zmin_lab + v_lab*t_lab,
+                                    top.dt, zmax_lab + v_lab*t_lab,
+                                    self.write_dir, i, self.species )
+            self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
-            self.create_file_empty_slice(
+            self.create_file_empty_particles(
                 snapshot.filename, i, snapshot.t_lab, self.top.dt)
             
         # Print a message that records the time for initialization
@@ -112,10 +110,11 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         """
         # At each timestep, store a slice of the particles in memory buffers 
         self.store_snapshot_slices()
+
         # Every self.period, write the buffered slices to disk 
         if self.top.it % self.period == 0:
             self.flush_to_disk()
-        
+
     def store_snapshot_slices( self ):
         """
         Store slices of the particles in the memory buffers of the
@@ -160,8 +159,8 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                 # Write this array to disk (if this snapshot has new slices)
                 
                 if particle_array.size:
-                    self.write_slices(particle_array, species_name, 
-                        snapshot, self.particle_catcher.particle_to_index)
+                    self.write_slices( particle_array, species_name, 
+                        snapshot, self.particle_catcher.particle_to_index )
 
             # Erase the memory buffers
             snapshot.buffer_initialization(self.species_dict)
@@ -208,7 +207,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
         # Loop over the different quantities that should be written
         for particle_var in self.particle_data:
-            # Scalar field
+
             if particle_var == "position":
                 for coord in ["x","y","z"]:
                     quantity= coord

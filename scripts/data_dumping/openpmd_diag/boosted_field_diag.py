@@ -88,7 +88,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         self.snapshots = []
         # Record the time it takes
         measured_start = time.clock()
-        print('\nInitializing the lab-frame diagnostics: %d files...' %(
+        print('\nInitializing lab-frame field diagnostics: %d files...' %(
             Ntot_snapshots_lab) )
         # Loop through the lab snapshots and create the corresponding files
         for i in range( Ntot_snapshots_lab ):

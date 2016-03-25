@@ -328,7 +328,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
         return( select_array )
 
-    def create_file_empty_slice( self, fullpath, iteration,
+    def create_file_empty_particles( self, fullpath, iteration,
                                    time, dt ):
         """
         Create an openPMD file with empty meshes and setup all its attributes
@@ -386,11 +386,10 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
                     # Scalar quantity
                     elif particle_var == "weighting":
-                        quantity_grp = f.require_group(species_path)
-                        dset = quantity_grp.create_dataset(
+                        dset = species_grp.create_dataset(
                                 particle_var, (0,), maxshape=(None,), dtype='f')
                         self.setup_openpmd_species_component( dset )    
-                        self.setup_openpmd_species_record( quantity_grp,
+                        self.setup_openpmd_species_record( dset,
                                                           particle_var )
 
                     # Unknown field
