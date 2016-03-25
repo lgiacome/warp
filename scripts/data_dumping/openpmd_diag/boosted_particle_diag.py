@@ -75,7 +75,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         
         # Create the list of LabSnapshot objects
         self.snapshots = []
-        self.species = species
 
         # Record the time it takes
         measured_start = time.clock()
@@ -91,11 +90,11 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             t_lab = i*dt_snapshots_lab
             snapshot = LabSnapshot( t_lab, zmin_lab + v_lab*t_lab,
                                     top.dt, zmax_lab + v_lab*t_lab,
-                                    self.write_dir, i, self.species )
+                                    self.write_dir, i, self.species_dict )
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
             self.create_file_empty_particles(
-                snapshot.filename, i, snapshot.t_lab, self.top.dt)
+                snapshot.filename, i, snapshot.t_lab, self.top.dt )
             
         # Print a message that records the time for initialization
         measured_end = time.clock()
@@ -164,7 +163,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
             # Erase the memory buffers
             snapshot.buffer_initialization(self.species_dict)
-
 
     def write_boosted_dataset(self, species_grp, path, data, quantity):
         """
@@ -389,7 +387,6 @@ class ParticleCatcher:
         self.zlab_min = 0.0
         self.zlab_max = 0.0
         self.top = top
-        self.species = None
         
         # Create a dictionary that contains the correspondance
         # between the particles quantity and array index
