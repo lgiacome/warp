@@ -2,8 +2,8 @@
 # Python file with some parallel operations
 #
 from numpy import *
-# --- Try import mpi (pyMPI) 
-#     - if not found, try to from mpi4py import MPI as mpi (mpi4py) 
+# --- Try import mpi (pyMPI)
+#     - if not found, try to from mpi4py import MPI as mpi (mpi4py)
 #     - if not found then run in serial mode
 # --- Note that:
 # --- mpi.COMM_WORLD is same as MPI_COMM_WORLD
@@ -21,8 +21,8 @@ try:
 except:
     try:
         #Try to import mpi4py
-        from mpi4py import MPI as mpi 
-        comm_world = mpi.COMM_WORLD    
+        from mpi4py import MPI as mpi
+        comm_world = mpi.COMM_WORLD
         me = comm_world.Get_rank()
         npes = comm_world.Get_size()
         lmpi4pyactive = True
@@ -91,7 +91,7 @@ def setdefaultcomm_world(comm):
 # --- and Recv of an array random.rand(100,100,100) from one to another process and
 # --- about 20 percent slower than the fastest solution with predefined arrays
 # --- on both processes. About 2 times faster than pyMPI send and recv.
-# --- -> pyMPI is faster than the "slow" mpi4py routines, 
+# --- -> pyMPI is faster than the "slow" mpi4py routines,
 # --- but slower than the "fast" mpi4py routines. (for numpy arrays)
 # ---------------------------------------------------------------------------
 
@@ -120,7 +120,7 @@ def mpisend(data = None, dest = 0, tag = 0, comm = None):
             comm.send((shape(data), data.dtype), dest = dest, tag = (tag + 99))
             result = comm.Send(data, dest = dest, tag = tag)
         else:
-            comm.send((None, None), dest = dest, tag = (tag + 99)) 
+            comm.send((None, None), dest = dest, tag = (tag + 99))
             result = comm.send(data, dest = dest, tag = tag)
     else:
         result = None
@@ -184,6 +184,16 @@ def mpiallreduce(data = None, op = None, comm = None):
             result = comm.allreduce(data, op = op)
     else:
         result = data
+    return result
+
+def mpiallgather(data = None, comm = None):
+    if comm is None: comm = comm_world
+    if lpyMPIactive:
+        result = comm.allgather([data])
+    elif lmpi4pyactive:
+        result = comm.allgather(data)
+    else:
+        result = [data]
     return result
 
 def mpicommcreate(group = None, comm = None):
@@ -321,7 +331,7 @@ def gather(obj,dest=0,comm=None):
             if i == dest:
                 result.append(obj)
             else:
-                result.append(mpirecv(source = i , comm=comm)) 
+                result.append(mpirecv(source = i , comm=comm))
         return result
     else:
         mpisend(data = obj, dest = dest, comm = comm)
