@@ -2207,12 +2207,12 @@ c     --- itask == 0.
       return
       end
 c=============================================================================
-      subroutine deposgridrzvect(itask,np,x,y,z,vx,vy,vz,w,nx,ny,grid,gridcount,
-     &                           xmin,xmax,ymin,ymax)
-      integer(ISZ):: itask,nx,ny,np
+      subroutine deposgridrzvect(itask,np,x,y,z,vx,vy,vz,w,nr,nz,grid,gridcount,
+     &                           rmin,rmax,zmin,zmax)
+      integer(ISZ):: itask,nr,nz,np
       real(kind=8):: x(np), y(np), z(np), vx(np), vy(np), vz(np), w(np)
-      real(kind=8):: grid(0:nx,0:ny,3), gridcount(0:nx,0:ny)
-      real(kind=8):: xmin,xmax,ymin,ymax,r,vr,vt
+      real(kind=8):: grid(0:nr,0:nz,3), gridcount(0:nr,0:nz)
+      real(kind=8):: rmin,rmax,zmin,zmax,r,vr,vt
 
 c Deposits weighted particle vector data onto an axisymmetric, node centered
 c 2-D mesh using linear interpolation, the average over the vector as a
@@ -2229,17 +2229,17 @@ c   z: array of axial particle positions
 c   vx,vy: arrays of transverse vector data (converted to vr)
 c   vz: array os axial vector data
 c   w: array of particle weights
-c   nx,ny: number of grid cells
+c   nr,nz: number of grid cells
 c   grid: array where the z data is accumulated
 c   gridcount: array where particle number will be accumulated
-c   xmin,xmax,ymin,ymax: extent of the grid, i.e. grid(0,0,:) is at (xmin,ymin),
-c                        grid(nx,ny,:) is at (xmax,ymax)
+c   rmin,rmax,zmin,zmax: extent of the grid, i.e. grid(0,0,:) is at (rmin,zmin),
+c                        grid(nr,nz,:) is at (rmax,zmax)
 
-      integer(ISZ):: ip,ix,iy
-      real(kind=8):: gx,gy,dxi,dyi,wx,wy
+      integer(ISZ):: ip,ir,iz
+      real(kind=8):: gr,gz,dri,dzi,wr,wz
 
-      if (xmax == xmin .or. ymax == ymin) then
-        call kaboom("deposgridrzvect: the grid extent is zero, xmin==xmax or ymin==ymax")
+      if (rmax == rmin .or. zmax == zmin) then
+        call kaboom("deposgridrzvect: the grid extent is zero, rmin==rmax or zmin==zmax")
         return
       endif
 
@@ -2250,47 +2250,47 @@ c     --- Reset grids if requested
       endif
 
 c     --- set grid cell inverse sizes
-      dxi = nx/(xmax - xmin)
-      dyi = ny/(ymax - ymin)
+      dri = nr/(rmax - rmin)
+      dzi = nz/(zmax - zmin)
 
 c     --- loop over particles
       do ip=1,np
 
 c       --- find location on grid
-        r = sqrt(x(ip)*x(ip)+y(ip)*y(ip))
-        if (r*dxi>1.e-10) then
-          vr =  vx(ip)*x(ip)/r+vy(ip)*y(ip)/r
-          vt = -vx(ip)*y(ip)/r+vy(ip)*x(ip)/r
+        r = sqrt(x(ip)*x(ip) + y(ip)*y(ip))
+        if (r*dri>1.e-10) then
+          vr =  vx(ip)*x(ip)/r + vy(ip)*y(ip)/r
+          vt = -vx(ip)*y(ip)/r + vy(ip)*x(ip)/r
         else
-          vr = sqrt(vx(ip)*vx(ip)+vy(ip)*vy(ip))
+          vr = sqrt(vx(ip)*vx(ip) + vy(ip)*vy(ip))
           vt = 0.
         end if
-        gx = (r - xmin)*dxi
-        gy = (z(ip) - ymin)*dyi
+        gr = (r - rmin)*dri
+        gz = (z(ip) - zmin)*dzi
 
 c       --- if within grid, accumulate
-        if (0. <= gx .and. gx < nx .and.
-     &      0. <= gy .and. gy < ny) then
-          ix = int(gx)
-          iy = int(gy)
-          wx = gx - ix
-          wy = gy - iy
-          grid(ix  ,iy  ,1) = grid(ix  ,iy  ,1) + vr*(1. - wx)*(1. - wy) * w(ip)
-          grid(ix+1,iy  ,1) = grid(ix+1,iy  ,1) + vr*      wx *(1. - wy) * w(ip)
-          grid(ix  ,iy+1,1) = grid(ix  ,iy+1,1) + vr*(1. - wx)*      wy  * w(ip)
-          grid(ix+1,iy+1,1) = grid(ix+1,iy+1,1) + vr*      wx *      wy  * w(ip)
-          grid(ix  ,iy  ,2) = grid(ix  ,iy  ,2) + vt*(1. - wx)*(1. - wy) * w(ip)
-          grid(ix+1,iy  ,2) = grid(ix+1,iy  ,2) + vt*      wx *(1. - wy) * w(ip)
-          grid(ix  ,iy+1,2) = grid(ix  ,iy+1,2) + vt*(1. - wx)*      wy  * w(ip)
-          grid(ix+1,iy+1,2) = grid(ix+1,iy+1,2) + vt*      wx *      wy  * w(ip)
-          grid(ix  ,iy  ,3) = grid(ix  ,iy  ,3) + vz(ip)*(1. - wx)*(1. - wy) * w(ip)
-          grid(ix+1,iy  ,3) = grid(ix+1,iy  ,3) + vz(ip)*      wx *(1. - wy) * w(ip)
-          grid(ix  ,iy+1,3) = grid(ix  ,iy+1,3) + vz(ip)*(1. - wx)*      wy  * w(ip)
-          grid(ix+1,iy+1,3) = grid(ix+1,iy+1,3) + vz(ip)*      wx *      wy  * w(ip)
-          gridcount(ix  ,iy  ) = gridcount(ix  ,iy  ) + (1. - wx)*(1. - wy) * w(ip)
-          gridcount(ix+1,iy  ) = gridcount(ix+1,iy  ) +       wx *(1. - wy) * w(ip)
-          gridcount(ix  ,iy+1) = gridcount(ix  ,iy+1) + (1. - wx)*      wy  * w(ip)
-          gridcount(ix+1,iy+1) = gridcount(ix+1,iy+1) +       wx *      wy  * w(ip)
+        if (0. <= gr .and. gr < nr .and.
+     &      0. <= gz .and. gz < nz) then
+          ir = int(gr)
+          iz = int(gz)
+          wr = gr - ir
+          wz = gz - iz
+          grid(ir  ,iz  ,1) = grid(ir  ,iz  ,1) + vr*(1. - wr)*(1. - wz) * w(ip)
+          grid(ir+1,iz  ,1) = grid(ir+1,iz  ,1) + vr*      wr *(1. - wz) * w(ip)
+          grid(ir  ,iz+1,1) = grid(ir  ,iz+1,1) + vr*(1. - wr)*      wz  * w(ip)
+          grid(ir+1,iz+1,1) = grid(ir+1,iz+1,1) + vr*      wr *      wz  * w(ip)
+          grid(ir  ,iz  ,2) = grid(ir  ,iz  ,2) + vt*(1. - wr)*(1. - wz) * w(ip)
+          grid(ir+1,iz  ,2) = grid(ir+1,iz  ,2) + vt*      wr *(1. - wz) * w(ip)
+          grid(ir  ,iz+1,2) = grid(ir  ,iz+1,2) + vt*(1. - wr)*      wz  * w(ip)
+          grid(ir+1,iz+1,2) = grid(ir+1,iz+1,2) + vt*      wr *      wz  * w(ip)
+          grid(ir  ,iz  ,3) = grid(ir  ,iz  ,3) + vz(ip)*(1. - wr)*(1. - wz) * w(ip)
+          grid(ir+1,iz  ,3) = grid(ir+1,iz  ,3) + vz(ip)*      wr *(1. - wz) * w(ip)
+          grid(ir  ,iz+1,3) = grid(ir  ,iz+1,3) + vz(ip)*(1. - wr)*      wz  * w(ip)
+          grid(ir+1,iz+1,3) = grid(ir+1,iz+1,3) + vz(ip)*      wr *      wz  * w(ip)
+          gridcount(ir  ,iz  ) = gridcount(ir  ,iz  ) + (1. - wr)*(1. - wz) * w(ip)
+          gridcount(ir+1,iz  ) = gridcount(ir+1,iz  ) +       wr *(1. - wz) * w(ip)
+          gridcount(ir  ,iz+1) = gridcount(ir  ,iz+1) + (1. - wr)*      wz  * w(ip)
+          gridcount(ir+1,iz+1) = gridcount(ir+1,iz+1) +       wr *      wz  * w(ip)
         endif
 
       enddo
@@ -2298,10 +2298,10 @@ c       --- if within grid, accumulate
 c     --- Divide out the number of particles at each grid point, only if
 c     --- itask == 0.
       if (itask == 0) then
-        do iy=0,ny
-          do ix=0,nx
-            if (gridcount(ix,iy) > 0.) then
-              grid(ix,iy,:) = grid(ix,iy,:)/gridcount(ix,iy)
+        do iz=0,nz
+          do ir=0,nr
+            if (gridcount(ir,iz) > 0.) then
+              grid(ir,iz,:) = grid(ir,iz,:)/gridcount(ir,iz)
             endif
           enddo
         enddo
