@@ -537,17 +537,17 @@ the area of the dual cell.
             xi = where(lbadparticles,xc,xi)
             yi = where(lbadparticles,yc,yi)
             zi = where(lbadparticles,zc,zi)
+            iibad = ii[lbadparticles]
 
             if self.includebadparticles:
                 # --- Reject only particles inside of the conductor
-                iibad = ii[lbadparticles]
                 ddbad = c.distance(xi[lbadparticles],yi[lbadparticles],zi[lbadparticles]).distance
                 good[iibad] = (ddbad >= 0.)
 
             else:
                 # --- Reject all bad particles
                 # --- They are only removed from the list after the loop over conductors.
-                good[lbadparticles] = False
+                good[iibad] = False
 
             # --- Get the virtual locations, one grid cell away from the surface.
             # --- The direction of the surface is along the E field lines.
