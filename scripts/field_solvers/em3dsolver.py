@@ -59,7 +59,7 @@ class EM3D(SubcycledPoissonSolver):
                       'l_esirkepov':true, # flag for deposition using Esirkepov algorithm (real space on staggered grid with Yee EM solver)
                       'l_getrho':false,'theta_damp':0.,
                       'sigmae':0.,'sigmab':0.,
-                      'colecoefs':None,'l_setcowancoefs':False,
+                      'colecoefs':None,'l_setcowancoefs':True,
                       'pml_method':1,
                       'l_correct_num_Cherenkov':False,
                       'circ_m':0, 'l_laser_cart':0, 'type_rz_depose':0}
