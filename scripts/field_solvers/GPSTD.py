@@ -445,25 +445,25 @@ class Fourier_Space():
         if (self.l_fftw): 
             return fftpy.fftn(a,plan=self.planfftn,nthreads=self.nthreads)
         else: 
-            return np.fftn(a)
+            return np.fft.fftn(a)
             
     def ifftn(self, a): 
         if (self.l_fftw): 
             return fftpy.ifftn(a,plan=self.planifftn,nthreads=self.nthreads)
         else: 
-            return np.ifftn(a)
+            return np.fft.ifftn(a)
             
     def fft(self, a, axis=0): 
         if (self.l_fftw): 
             return fftpy.fft(a, axis=axis,nthreads=self.nthreads)
         else: 
-            return np.fft(a, axis=axis)
+            return np.fft.fft(a, axis=axis)
 
     def ifft(self, a, axis=0): 
         if (self.l_fftw): 
             return fftpy.ifft(a, axis=axis,nthreads=self.nthreads)
         else: 
-            return np.ifft(a, axis=axis)
+            return np.fft.ifft(a, axis=axis)
 
     def processdefaultsfromdict(self,dict,kw):
         for name,defvalue in dict.iteritems():
