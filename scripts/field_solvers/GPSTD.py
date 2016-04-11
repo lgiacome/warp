@@ -2,13 +2,20 @@
 import numpy as np
 import math
 import copy
+import os 
 
 try:
-    # use fftw if there, numpy otherwise
-    import pyfftw
-    fft = pyfftw.interfaces.numpy_fft
+    # Try to import fortran wrapper of FFTW
+    import fastfftforpy as fftpy
+    import fastfftpy as fstpy
+    fst=fstpy.fastfft
+    fft=fftpy
+    l_fftw_fort=True
 except:
     fft = np.fft
+    l_fftw_fort=False
+
+print('l_fftw_fort',l_fftw_fort)
 
 def iszero(f):
     """
@@ -162,7 +169,9 @@ class Fourier_Space():
                       'dt':1.,'dx':1.,'dy':1.,'dz':1.,
                       'l_staggered':False,
                       'l_staggered_a_la_brendan':False,
-                      'bc_periodic':[0,0,0]}
+                      'bc_periodic':[0,0,0], 
+                      'l_fftw': l_fftw_fort, 
+                      'nthreads': None}
 
     def __init__(self,**kw):
         try:
@@ -173,6 +182,7 @@ class Fourier_Space():
             pass
 
         self.processdefaultsfromdict(Fourier_Space.__flaginputs__,kw)
+        
         
         j = 1j
         nx = self.nx
@@ -419,7 +429,42 @@ class Fourier_Space():
                     self.kxp = self.kx
                     self.kym = self.ky
                     self.kyp = self.ky
-  
+        # compute FFTW plans if FFTW loaded 
+        if (self.l_fftw): 
+            if self.nthreads is None: 
+                self.nthreads=int(os.getenv('OMP_NUM_THREADS',1))
+            dims_plan=np.asarray(dims,dtype='i8')
+            self.planfftn=fftpy.compute_plan_fftn(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure)
+            self.planifftn=fftpy.compute_plan_ifftn(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure)
+            self.planfftx=fftpy.compute_plan_fft(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure, axis=0)
+            self.planfftz=fftpy.compute_plan_fft(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure, axis=1)
+            self.planifftx=fftpy.compute_plan_ifft(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure, axis=0)
+            self.planifftz=fftpy.compute_plan_ifft(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure, axis=1)
+            
+    def fftn(self, a): 
+        if (self.l_fftw): 
+            return fftpy.fftn(a,plan=self.planfftn,nthreads=self.nthreads)
+        else: 
+            return np.fftn(a)
+            
+    def ifftn(self, a): 
+        if (self.l_fftw): 
+            return fftpy.ifftn(a,plan=self.planifftn,nthreads=self.nthreads)
+        else: 
+            return np.ifftn(a)
+            
+    def fft(self, a, axis=0): 
+        if (self.l_fftw): 
+            return fftpy.fft(a, axis=axis,nthreads=self.nthreads)
+        else: 
+            return np.fft(a, axis=axis)
+
+    def ifft(self, a, axis=0): 
+        if (self.l_fftw): 
+            return fftpy.ifft(a, axis=axis,nthreads=self.nthreads)
+        else: 
+            return np.ifft(a, axis=axis)
+
     def processdefaultsfromdict(self,dict,kw):
         for name,defvalue in dict.iteritems():
             if name not in self.__dict__:
@@ -515,15 +560,14 @@ class GPSTD(Fourier_Space):
         if self.Ffields=={}:
             self.fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
             for k in self.fields.keys():
-                self.Ffields[k]=fft.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))
+                self.Ffields[k]=self.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))
         else:
             for k in self.fields.keys():
-                self.Ffields[k][...]=fft.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))
-        
+                self.Ffields[k][...]=self.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))                    
     def get_fields(self):
         ixl,ixu,iyl,iyu,izl,izu = self.get_ius()
         for k in self.fields.keys():
-            f = fft.ifftn(self.Ffields[k])
+            f = self.ifftn(self.Ffields[k])
             f.resize(self.fields_shape)
             self.fields[k][ixl:ixu,iyl:iyu,izl:izu] = f.real
         
