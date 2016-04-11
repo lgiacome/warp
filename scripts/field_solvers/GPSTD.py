@@ -6,8 +6,6 @@ import os
 
 try:
     # Try to import fortran wrapper of FFTW
-    #import pyfftw
-    #fft = pyfftw.interfaces.numpy_fft
     import fastfftforpy as fftpy
     import fastfftpy as fstpy
     fst=fstpy.fastfft
@@ -443,6 +441,30 @@ class Fourier_Space():
             self.planifftx=fftpy.compute_plan_ifft(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure, axis=0)
             self.planifftz=fftpy.compute_plan_ifft(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure, axis=1)
             
+    def fftn(self, a): 
+        if (self.l_fftw): 
+            return fftpy.fftn(a,plan=self.planfftn,nthreads=self.nthreads)
+        else: 
+            return np.fftn(a)
+            
+    def ifftn(self, a): 
+        if (self.l_fftw): 
+            return fftpy.ifftn(a,plan=self.planifftn,nthreads=self.nthreads)
+        else: 
+            return np.ifftn(a)
+            
+    def fft(self, a, axis=0): 
+        if (self.l_fftw): 
+            return fftpy.fft(a, axis=axis,nthreads=self.nthreads)
+        else: 
+            return np.fft(a, axis=axis)
+
+    def ifft(self, a, axis=0): 
+        if (self.l_fftw): 
+            return fftpy.ifft(a, axis=axis,nthreads=self.nthreads)
+        else: 
+            return np.ifft(a, axis=axis)
+
     def processdefaultsfromdict(self,dict,kw):
         for name,defvalue in dict.iteritems():
             if name not in self.__dict__:
@@ -538,23 +560,14 @@ class GPSTD(Fourier_Space):
         if self.Ffields=={}:
             self.fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
             for k in self.fields.keys():
-                if self.l_fftw: 
-                    self.Ffields[k]=fft.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]),plan=self.planfftn)
-                else: 
-                    self.Ffields[k]=np.fft.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))
+                self.Ffields[k]=self.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))
         else:
             for k in self.fields.keys():
-                if self.l_fftw: 
-                    self.Ffields[k][...]=fft.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]),plan=self.planfftn)
-                else: 
-                    self.Ffields[k][...]=np.fft.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))                    
+                self.Ffields[k][...]=self.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))                    
     def get_fields(self):
         ixl,ixu,iyl,iyu,izl,izu = self.get_ius()
         for k in self.fields.keys():
-            if self.l_fftw: 
-                f = fft.ifftn(self.Ffields[k], plan=self.planifftn)
-            else: 
-                f = np.fft.ifftn(self.Ffields[k])
+            f = self.ifftn(self.Ffields[k])
             f.resize(self.fields_shape)
             self.fields[k][ixl:ixu,iyl:iyu,izl:izu] = f.real
         
