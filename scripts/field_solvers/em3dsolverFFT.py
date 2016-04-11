@@ -507,12 +507,16 @@ class EM3DFFT(EM3D):
         fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
 
         self.wrap_periodic_BC([f.DRhoodt,f.Jx,f.Jy,f.Jz])
-
-        if emK.nx>1:JxF = fft.fftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]))
-        if emK.ny>1:JyF = fft.fftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
-        if emK.nz>1:JzF = fft.fftn(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))
-
-        em.dRhoodtF = fft.fftn(squeeze(f.DRhoodt[ixl:ixu,iyl:iyu,izl:izu]))
+        if (emK.l_fftw): 
+            if emK.nx>1:JxF = fft.fftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]), plan=emK.planfftn)
+            if emK.ny>1:JyF = fft.fftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]), plan=emK.planfftn)
+            if emK.nz>1:JzF = fft.fftn(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]), plan=emK.planfftn)
+            em.dRhoodtF = fft.fftn(squeeze(f.DRhoodt[ixl:ixu,iyl:iyu,izl:izu]),plan=emK.planfftn)
+        else: 
+            if emK.nx>1:JxF = fft.fftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]))
+            if emK.ny>1:JyF = fft.fftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
+            if emK.nz>1:JzF = fft.fftn(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))
+            em.dRhoodtF = fft.fftn(squeeze(f.DRhoodt[ixl:ixu,iyl:iyu,izl:izu]))
 
         # --- get longitudinal J
         divJ = 0.
@@ -550,15 +554,24 @@ class EM3DFFT(EM3D):
             JzF = Jzt+Jzl
 
         if emK.nx>1:
-            Jx = fft.ifftn(JxF)
+            if (emK.l_fftw): 
+                Jx = fft.ifftn(JxF,plan=emK.planifftn)
+            else: 
+                Jx = fft.ifftn(JxF)
             Jx.resize(fields_shape)
             f.Jx[ixl:ixu,iyl:iyu,izl:izu] = Jx.real
         if emK.ny>1:
-            Jy = fft.ifftn(JyF)
+            if (emK.l_fftw): 
+                Jy = fft.ifftn(JyF,plan=emK.planifftn)
+            else: 
+                Jy = fft.ifftn(JyF)
             Jy.resize(fields_shape)
             f.Jy[ixl:ixu,iyl:iyu,izl:izu] = Jy.real
         if emK.nz>1:
-            Jz = fft.ifftn(JzF)
+            if (emK.l_fftw): 
+                Jz = fft.ifftn(JzF,plan=emK.planifftn)
+            else: 
+                Jz = fft.ifftn(JzF)
             Jz.resize(fields_shape)
             f.Jz[ixl:ixu,iyl:iyu,izl:izu] = Jz.real
 
@@ -582,9 +595,13 @@ class EM3DFFT(EM3D):
 
         self.wrap_periodic_BC([f.Jx,f.Jy,f.Jz])
         
-        JxF = fft.fft(f.Jx[ngx:-ngx-1,0,ngz:-ngz-1],axis=0)
-        JzF = fft.fft(f.Jz[ngx:-ngx-1,0,ngz:-ngz-1],axis=1)
-
+        if (emK.l_fftw): 
+            JxF = fft.fft(np.squeeze(f.Jx[ngx:-ngx-1,0,ngz:-ngz-1]),axis=0, plan=emK.planfftx)
+            JzF = fft.fft(np.squeeze(f.Jz[ngx:-ngx-1,0,ngz:-ngz-1]),axis=1, plan=emK.planfftz)
+        else: 
+            JxF = fft.fft(np.squeeze(f.Jx[ngx:-ngx-1,0,ngz:-ngz-1]),axis=0)
+            JzF = fft.fft(np.squeeze(f.Jz[ngx:-ngx-1,0,ngz:-ngz-1]),axis=1)
+            
         if self.l_spectral_staggered:
             JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx*exp(-j*emK.kx_unmod*self.dx/2))
             JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz*exp(-j*emK.kz_unmod*self.dz/2))
@@ -611,13 +628,19 @@ class EM3DFFT(EM3D):
         # --- adjust average current values
         if emK.nx>1:
             Jxcs=ave(cumsum(f.Jx[ngx:-ngx-1,0,ngz:-ngz-1],0),0)
-            Jx=fft.ifft(JxF,axis=0).real
+            if (emK.l_fftw): 
+                Jx=fft.ifft(JxF,axis=0, plan=emK.planifftx).real            
+            else: 
+                Jx=fft.ifft(JxF,axis=0).real
             for i in range(shape(Jx)[1]):
                 Jx[:,i]-=Jxcs[i]*self.dx
 
         if emK.nz>1:
             Jzcs=ave(cumsum(f.Jz[ngx:-ngx-1,0,ngz:-ngz-1],1),1)
-            Jz=fft.ifft(JzF,axis=1).real
+            if (emK.l_fftw):
+                Jz=fft.ifft(JzF,axis=1, plan=emK.planifftz).real
+            else: 
+                Jz=fft.ifft(JzF,axis=1).real
             for i in range(shape(Jz)[0]):
                 Jz[i,:]-=Jzcs[i]*self.dz
 
