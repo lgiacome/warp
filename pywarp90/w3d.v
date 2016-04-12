@@ -828,7 +828,7 @@ compton_scatter_electrons(photon_energy:real,
                           photon_pz(0:nx,0:ny,0:nz):real,
                           nx:integer, ny:integer, nz:integer, dx:real, dy:real, dz:real,
                           xmmin:real, ymmin:real, zmmin:real, dt:real,
-                          boost_gamma:real, time:real,
+                          boost_gamma:real, time:real, weightingmethod:integer,
                           electrongroup:ParticleGroup, electrons:integer,
                           photongroup:ParticleGroup, photons:integer,
                           tbirthpid:integer) subroutine

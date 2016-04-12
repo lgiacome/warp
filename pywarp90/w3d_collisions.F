@@ -924,7 +924,7 @@ cc      write(*,*) "sddx2d=",sddx2d
 c=============================================================================
       subroutine compton_scatter_electrons(photon_energy, photon_density, photon_px, photon_py, photon_pz,
      &                                     nx, ny, nz, dx, dy, dz, xmmin, ymmin, zmmin, dt,
-     &                                     boost_gamma, time,
+     &                                     boost_gamma, time, weightingmethod,
      &                                     electrongroup, electrons, photongroup, photons, tbirthpid)
       use Constant
       use ParticleGroupModule
@@ -937,17 +937,20 @@ c=============================================================================
       real(kind=8):: dx, dy, dz, dt
       real(kind=8):: xmmin, ymmin, zmmin
       real(kind=8):: boost_gamma, time
+      integer(ISZ):: weightingmethod
       type(ParticleGroup):: electrongroup
       type(ParticleGroup):: photongroup
       integer(ISZ):: photons
       integer(ISZ):: electrons
       integer(ISZ):: tbirthpid
 
-      integer(ISZ):: ie, ig
+      integer(ISZ):: ie0, ie, ig
       integer(ISZ):: ix, iy, iz
+      integer(ISZ):: nnewspace
+      integer(ISZ):: nnewphotons, inew
 
       real(kind=8):: x
-      real(kind=8):: rn, c0, b, a
+      real(kind=8):: rn1, rn2, c0, b, a
       real(kind=8):: k, kprime
       real(kind=8):: ratio, arg
       real(kind=8):: theta, phi
@@ -979,13 +982,19 @@ c=============================================================================
       e_radius = echarge**2/(4.0*pi*eps0*emass*clight**2)
       e_area = pi*e_radius**2
 
-      ! --- Do this here since an unknown number of scattering will happen.
-      ! --- This cannot be done during the loop since it might rearrange
-      ! --- the electrons.
-      call chckpart(photongroup,photons,0,electrongroup%nps(electrons))
+      ! --- Make a overestimate of how many photons will be added, ~10% of electrons
+      nnewspace = 0.1*electrongroup%nps(electrons) + 1
+
+      ! --- Make some space to start with.
+      call chckpart(photongroup,photons,0,nnewspace)
 
       ! --- Loop over electrons
-      do ie=electrongroup%ins(electrons), electrongroup%ins(electrons)+electrongroup%nps(electrons)-1
+      do ie0=0, electrongroup%nps(electrons)-1
+
+        ! --- Note that with handling the index this way, the correct
+        ! --- electron index will be used even if the data is shifted
+        ! --- around as new photons are added.
+        ie = ie0 + electrongroup%ins(electrons)
 
         ! --- Boost particle to lab frame
         xlab = electrongroup%xp(ie)
@@ -1100,55 +1109,75 @@ c=============================================================================
         ! --- correct. This code would be wrong anyway if arg > 1.
         !prob = 1.0 - exp(-arg)
         prob = arg
-        call random_number(rn)
+        call random_number(rn1)
+        call random_number(rn2)
 
-        if (rn < prob) then
+        if (weightingmethod == 1) then
+            ! --- Every electron will produce a small number of photons
+            nnewphotons = prob*electrongroup%sw(electrons)/photongroup%sw(photons) + rn2
+            ! --- Adjust the probability so that the appropriate
+            ! --- fraction of electrons is scattered.
+            prob = photongroup%sw(photons)/electrongroup%sw(electrons)
+        else
+            ! --- Only a subset of electrons will produce all of the photons
+            if (rn1 < prob) then
+              nnewphotons = electrongroup%sw(electrons)/photongroup%sw(photons) + rn2
+            else
+              nnewphotons = 0
+            endif
+        endif
 
-          ! --- rotate photon to align with z axis
-          p_perp = sqrt(px**2 + py**2)
+        if (nnewphotons == 0) cycle
 
-          p_tot = sqrt(px**2 + py**2 + pz**2) ! total momentum
+        call chckpart(photongroup,photons,0,nnewphotons)
 
-          theta = acos(pz/p_tot)
+        ! --- rotate photon to align with z axis
+        p_perp = sqrt(px**2 + py**2)
 
-          if (p_perp == 0.0) then
-            phi = 0.0
-          elseif (py >= 0.0) then
-            phi = acos(px/p_perp)
-          else
-            phi = 2.*pi - acos(px/p_perp)
-          endif
+        p_tot = sqrt(px**2 + py**2 + pz**2) ! total momentum
 
-          cphi   = cos(phi) ! save rotation angles
-          sphi   = sin(phi)
-          ctheta = cos(theta)
-          stheta = sin(theta)
+        theta = acos(pz/p_tot)
 
-          ! --- Save old values that are needed later
-          ! --- Old means quantities in the electron rest frame before scattering
-          px_old = px
-          py_old = py
-          pz_old = pz
-          p_old  = p_tot
-          e_old  = pe
+        if (p_perp == 0.0) then
+          phi = 0.0
+        elseif (py >= 0.0) then
+          phi = acos(px/p_perp)
+        else
+          phi = 2.*pi - acos(px/p_perp)
+        endif
 
-          ! --- Get scattering angle from Klein-Nishina cross section
-          ! --- The method used is described here:
-          ! --- Ozmutl, E. N. "Sampling of Angular Distribution in Compton Scattering"
-          ! --- Appl. Radiat. Isot. 43, 6, pp. 713-715 (1992)
-          ! --- Int. J. Radiat. Appl. Instrum. Part A
+        cphi   = cos(phi) ! save rotation angles
+        sphi   = sin(phi)
+        ctheta = cos(theta)
+        stheta = sin(theta)
 
-          c0 = 2.0*(2.0*k*k + 2.0*k + 1.0)/(2.0*k + 1.0)**3
-          b = (2.0 + c0)/(2.0 - c0)
-          a = 2.0*b - 1.0
+        ! --- Save old values that are needed later
+        ! --- Old means quantities in the electron rest frame before scattering
+        px_old = px
+        py_old = py
+        pz_old = pz
+        p_old  = p_tot
+        e_old  = pe
+
+        ! --- Get scattering angle from Klein-Nishina cross section
+        ! --- The method used is described here:
+        ! --- Ozmutl, E. N. "Sampling of Angular Distribution in Compton Scattering"
+        ! --- Appl. Radiat. Isot. 43, 6, pp. 713-715 (1992)
+        ! --- Int. J. Radiat. Appl. Instrum. Part A
+
+        c0 = 2.0*(2.0*k*k + 2.0*k + 1.0)/(2.0*k + 1.0)**3
+        b = (2.0 + c0)/(2.0 - c0)
+        a = 2.0*b - 1.0
+
+        do inew=0, nnewphotons-1
 
           kprime = 0.0
 
           do while (kprime == 0.0)
 
-            call random_number(rn)
+            call random_number(rn2)
 
-            x = b - (b + 1.0)*(0.5*c0)**rn ! cos(theta)
+            x = b - (b + 1.0)*(0.5*c0)**rn2 ! cos(theta)
 
             factor = 1.0 + k*(1.0 - x)
             denom  = factor*factor
@@ -1158,9 +1187,9 @@ c=============================================================================
 
             ratio = f/h
 
-            call random_number(rn)
+            call random_number(rn2)
 
-            if (ratio >= rn) then
+            if (ratio >= rn2) then
               kprime = 1.0/(1.0 - x + 1.0/k)
             endif
 
@@ -1171,9 +1200,9 @@ c=============================================================================
 
           theta = acos(x) ! polar scattering angle
 
-          call random_number(rn)
+          call random_number(rn2)
 
-          phi = 2.*pi*rn ! azimuthal scattering angle
+          phi = 2.*pi*rn2 ! azimuthal scattering angle
 
           ! --- Rotation due to scattering
           psx = p_new*sin(theta)*cos(phi)
@@ -1215,6 +1244,19 @@ c=============================================================================
             photongroup%pid(ig,tbirthpid) = time
           endif
 
+        enddo
+
+        if (rn1 < prob) then
+
+          ! --- For weighting method 1, only a subset of electrons at
+          ! --- this point are scattered.
+          ! --- For weighting method 2, all electrons at
+          ! --- this point are scattered (the if check is always true).
+
+          ! --- Use the parameters from the last photon since it is convenient.
+          ! --- Note that if photons%sw != electrons%sw, this algorithm does
+          ! --- not exactly conserve energy and momentum.
+
           ! --- Modify electron, giving it the remainder of the momentum and energy
           delta_px = px_old - px
           delta_py = py_old - py
@@ -1250,6 +1292,7 @@ c=============================================================================
           electrongroup%gaminv(ie) = 1./sqrt(1. + (ux**2 + uy**2 + uz**2)/clight**2)
 
         endif
+
       enddo
 
       end subroutine compton_scatter_electrons
