@@ -185,6 +185,21 @@ depose_j_n_2dxz(jx:real, jy:real,jz:real,
                            nxguard:integer,nzguard:integer,
                            nox:integer,noz:integer,
                            l_particles_weight:logical,
+                           l4symtry:logical,
+                           l_deposit_nodal:logical,
+                           nsubsteps:integer,
+                           l_coefs_uniform:logical)
+                           subroutine
+depose_j_n_2dxz_direct(cj:real,
+                           n:integer,x(n):real,z(n):real,
+                           ux(n):real,uy(n):real,uz(n):real,
+                           gaminv(n):real,w:real,q:real,
+                           xmin:real,zmin:real,
+                           dt:real,dx:real,dz:real,
+                           nx:integer,nz:integer,
+                           nxguard:integer,nzguard:integer,
+                           nox:integer,noz:integer,
+                           l_particles_weight:logical,
                            l4symtry:logical)
                            subroutine
 depose_j_n_2dxz_spectral(jx:real,jy:real,jz:real,
@@ -199,7 +214,7 @@ depose_j_n_2dxz_spectral(jx:real,jy:real,jz:real,
                            l_particles_weight:logical,
                            l4symtry:logical)
                            subroutine
-depose_drhoodt_n_2dxz(drhoodt:real,
+depose_rhoold_n_2dxz(rhoold:real,
                            n:integer,x(n):real,z(n):real,
                            ux(n):real,uy(n):real,uz(n):real,
                            gaminv(n):real,w:real,q:real,
@@ -408,8 +423,6 @@ apply_dmask(rho:real,jx:real,jy:real, jz:real,dmaskx:real,dmasky:real,dmaskz:rea
             bounds(6):integer,nguarddepos(3):integer,ntrans(3):integer,
             nx:integer,ny:integer,nz:integer,nxguard:integer,nyguard:integer,nzguard:integer,
             l_pushf:logical,l_2dxz:logical) subroutine
-addsubstractfields(child:EM3D_BLOCKtype,child_coarse:EM3D_BLOCKtype,
-                   parent:EM3D_BLOCKtype,lc(3):integer,ref(3):integer,l_2dxz:logical) subroutine
 addsubstractfields_nodal(child:EM3D_BLOCKtype,child_coarse:EM3D_BLOCKtype,
                    parent:EM3D_BLOCKtype,lc(3):integer,ref(3):integer,l_2dxz:logical) subroutine
 shift_em3dblock_ncells_x(b:EM3D_BLOCKtype,n:integer) subroutine
@@ -734,7 +747,7 @@ G(-nxguard:nxg+nxguard,-nyguard:nyg+nyguard,-nzguard:nzg+nzguard) _real
 Rho(-nxguard:nxr+nxguard,-nyguard:nyr+nyguard,-nzguard:nzr+nzguard) _real
 Rhoold(-nxguard:nxr+nxguard,-nyguard:nyr+nyguard,-nzguard:nzr+nzguard) _real
 Rhoarray(-nxguard:nxr+nxguard,-nyguard:nyr+nyguard,-nzguard:nzr+nzguard,ntimes) _real
-DRhoodt(-nxdrhoguard:nxdrho+nxdrhoguard,-nydrhoguard:nydrho+nydrhoguard,-nzdrhoguard:nzdrho+nzdrhoguard) _real
+Rhoold_local(-nxdrhoguard:nxdrho+nxdrhoguard,-nydrhoguard:nydrho+nydrhoguard,-nzdrhoguard:nzdrho+nzdrhoguard) _real
 Jx(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) _real
 Jy(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) _real
 Jz(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) _real

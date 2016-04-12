@@ -57,11 +57,13 @@ class EM3D(SubcycledPoissonSolver):
                       'l_coarse_patch':false,
                       'stencil':false, # 0=Yee; 1=Cole-Karkkainen, 3=Lehe; if spectral=1, is used only for computing time step according to Courant condition of selected solver
                       'l_esirkepov':true, # flag for deposition using Esirkepov algorithm (real space on staggered grid with Yee EM solver)
+                      'l_deposit_nodal':None,
                       'l_getrho':false,'theta_damp':0.,
                       'sigmae':0.,'sigmab':0.,
                       'colecoefs':None,'l_setcowancoefs':True,
                       'pml_method':1,
                       'l_correct_num_Cherenkov':False,
+                      'l_fieldcenterK':False, # if using staggered grid with node-centered gather (efetch=1); centers field by shifts in k-space rather than averaging in real space
                       'circ_m':0, 'l_laser_cart':0, 'type_rz_depose':0}
 
     def __init__(self,**kw):
@@ -125,6 +127,15 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_pushf:
             self.l_getrho = True
 
+        # --- Set l_deposit_nodal if not set by user
+        if self.l_esirkepov:
+            self.l_deposit_nodal = False
+        else:
+            if self.l_nodalgrid:
+                self.l_deposit_nodal=True
+            else:
+                l_deposit_nodal=False
+                
         # --- Impose type_rz_depose = 0 if not in circ mode
         if self.l_2drz == False :
             self.type_rz_depose = 0
@@ -1632,7 +1643,9 @@ class EM3D(SubcycledPoissonSolver):
                                         f.nxguard,f.nzguard,
                                         nox,
                                         noz,
-                                        l_particles_weight,w3d.l4symtry)
+                                        l_particles_weight,
+                                        w3d.l4symtry,
+                                        self.l_deposit_nodal,1,True)
             else:
                 if 0:#nox==1 and noy==1 and noz==1 and not w3d.l4symtry:
                     depose_jxjyjz_esirkepov_linear_serial(self.fields.Jx,self.fields.Jy,self.fields.Jz,n,
@@ -1782,7 +1795,10 @@ class EM3D(SubcycledPoissonSolver):
 #        # -- add laser if laser_mode==2
 #        if self.laser_mode==2:self.add_laser(self.block.core.yf)
         if self.l_nodalgrid:self.Jyee2node3d()
+        # --- apply boundary conditions 
         self.applysourceboundaryconditions()
+        # --- exchange guard cells data across domains
+        self.exchange_bc(self.block)
         if self.l_verbose:print 'finalizesourcep done'
 
     def Jyee2node3d(self):
@@ -1801,7 +1817,6 @@ class EM3D(SubcycledPoissonSolver):
                          block.zlbnd,
                          block.zrbnd,
                          self.type_rz_depose)
-        em3d_exchange_rho(block)
 
     def apply_current_bc(self,block):
         # --- point J to first slice of Jarray
@@ -1816,8 +1831,14 @@ class EM3D(SubcycledPoissonSolver):
                        block.zlbnd,
                        block.zrbnd,
                        self.type_rz_depose)
-        em3d_exchange_j(block)
 
+    def exchange_bc(self,block):
+        em3d_exchange_j(block)
+        if self.l_getrho:
+            em3d_exchange_rho(block)
+        if self.refinement is not None:
+            self.exchange_bc(self.field_coarse.block)
+    
     def applysourceboundaryconditions(self):
         # --- apply boundary condition on current
         self.apply_current_bc(self.block)
@@ -2397,7 +2418,9 @@ class EM3D(SubcycledPoissonSolver):
     def solve2ndhalf(self):
         self.allocatedataarrays()
         if self.solveroff:return
-        if self.fields.spectral:return
+        if self.fields.spectral:
+            self.move_window_fields()
+            return
         if self.mode==2:
             self.solve2ndhalfmode2()
             return
@@ -2425,7 +2448,7 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_verbose:print 'solve 1st half'
         if top.dt != self.dtinit:raise Exception('Time step has been changed since initialization of EM3D.')
         if self.fields.spectral:
-            self.move_window_fields()
+#            self.move_window_fields()
             self.push_spectral_psaotd()
         else:
             self.push_e()
@@ -2444,7 +2467,11 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_pushf:self.exchange_f()
         self.exchange_b()
         self.setebp()
-        if not self.l_nodalgrid and top.efetch[0] != 4:self.yee2node3d()
+        if not self.l_nodalgrid and top.efetch[0] != 4:
+            if self.l_fieldcenterK:
+                self.fieldcenterK()
+            else:
+                self.yee2node3d()
         if self.l_nodalgrid and top.efetch[0] == 4:
             self.fields.l_nodecentered=True
             self.node2yee3d()

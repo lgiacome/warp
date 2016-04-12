@@ -97,6 +97,12 @@ class EM3DFFT(EM3D):
                                                   bc_periodic=bc_periodic,
                                                   **kwGPSTD)
             else:
+                if self.l_pushf and not self.l_getrho:
+                    self.l_getrho = True
+                    f.nxr = f.nx
+                    f.nyr = f.ny
+                    f.nzr = f.nz
+                    f.gchange()
                 self.GPSTDMaxwell = GPSTD_Maxwell(yf=self.fields,
                                                   eps0=eps0,
                                                   bc_periodic=bc_periodic,
@@ -245,37 +251,42 @@ class EM3DFFT(EM3D):
         if self.spectral:
             kwPML = kwGPSTD
 
+            if s.ntsub==inf:
+                GPSTD_PML = PSATD_Maxwell_PML
+            else:
+                GPSTD_PML = GPSTD_Maxwell_PML
+                
             # --- sides
-            if b.xlbnd==openbc: s.xlPML = GPSTD_Maxwell_PML(syf=b.sidexl.syf,**kwPML)
-            if b.xrbnd==openbc: s.xrPML = GPSTD_Maxwell_PML(syf=b.sidexr.syf,**kwPML)
-            if b.ylbnd==openbc: s.ylPML = GPSTD_Maxwell_PML(syf=b.sideyl.syf,**kwPML)
-            if b.yrbnd==openbc: s.yrPML = GPSTD_Maxwell_PML(syf=b.sideyr.syf,**kwPML)
-            if b.zlbnd==openbc: s.zlPML = GPSTD_Maxwell_PML(syf=b.sidezl.syf,**kwPML)
-            if b.zrbnd==openbc: s.zrPML = GPSTD_Maxwell_PML(syf=b.sidezr.syf,**kwPML)
+            if b.xlbnd==openbc: s.xlPML = GPSTD_PML(syf=b.sidexl.syf,**kwPML)
+            if b.xrbnd==openbc: s.xrPML = GPSTD_PML(syf=b.sidexr.syf,**kwPML)
+            if b.ylbnd==openbc: s.ylPML = GPSTD_PML(syf=b.sideyl.syf,**kwPML)
+            if b.yrbnd==openbc: s.yrPML = GPSTD_PML(syf=b.sideyr.syf,**kwPML)
+            if b.zlbnd==openbc: s.zlPML = GPSTD_PML(syf=b.sidezl.syf,**kwPML)
+            if b.zrbnd==openbc: s.zrPML = GPSTD_PML(syf=b.sidezr.syf,**kwPML)
 
             # --- edges
-            if(b.xlbnd==openbc and b.ylbnd==openbc): s.xlylPML = GPSTD_Maxwell_PML(syf=b.edgexlyl.syf,**kwPML)
-            if(b.xrbnd==openbc and b.ylbnd==openbc): s.xrylPML = GPSTD_Maxwell_PML(syf=b.edgexryl.syf,**kwPML)
-            if(b.xlbnd==openbc and b.yrbnd==openbc): s.xlyrPML = GPSTD_Maxwell_PML(syf=b.edgexlyr.syf,**kwPML)
-            if(b.xrbnd==openbc and b.yrbnd==openbc): s.xryrPML = GPSTD_Maxwell_PML(syf=b.edgexryr.syf,**kwPML)
-            if(b.xlbnd==openbc and b.zlbnd==openbc): s.xlzlPML = GPSTD_Maxwell_PML(syf=b.edgexlzl.syf,**kwPML)
-            if(b.xrbnd==openbc and b.zlbnd==openbc): s.xrzlPML = GPSTD_Maxwell_PML(syf=b.edgexrzl.syf,**kwPML)
-            if(b.xlbnd==openbc and b.zrbnd==openbc): s.xlzrPML = GPSTD_Maxwell_PML(syf=b.edgexlzr.syf,**kwPML)
-            if(b.xrbnd==openbc and b.zrbnd==openbc): s.xrzrPML = GPSTD_Maxwell_PML(syf=b.edgexrzr.syf,**kwPML)
-            if(b.ylbnd==openbc and b.zlbnd==openbc): s.ylzlPML = GPSTD_Maxwell_PML(syf=b.edgeylzl.syf,**kwPML)
-            if(b.yrbnd==openbc and b.zlbnd==openbc): s.yrzlPML = GPSTD_Maxwell_PML(syf=b.edgeyrzl.syf,**kwPML)
-            if(b.ylbnd==openbc and b.zrbnd==openbc): s.ylzrPML = GPSTD_Maxwell_PML(syf=b.edgeylzr.syf,**kwPML)
-            if(b.yrbnd==openbc and b.zrbnd==openbc): s.yrzrPML = GPSTD_Maxwell_PML(syf=b.edgeyrzr.syf,**kwPML)
+            if(b.xlbnd==openbc and b.ylbnd==openbc): s.xlylPML = GPSTD_PML(syf=b.edgexlyl.syf,**kwPML)
+            if(b.xrbnd==openbc and b.ylbnd==openbc): s.xrylPML = GPSTD_PML(syf=b.edgexryl.syf,**kwPML)
+            if(b.xlbnd==openbc and b.yrbnd==openbc): s.xlyrPML = GPSTD_PML(syf=b.edgexlyr.syf,**kwPML)
+            if(b.xrbnd==openbc and b.yrbnd==openbc): s.xryrPML = GPSTD_PML(syf=b.edgexryr.syf,**kwPML)
+            if(b.xlbnd==openbc and b.zlbnd==openbc): s.xlzlPML = GPSTD_PML(syf=b.edgexlzl.syf,**kwPML)
+            if(b.xrbnd==openbc and b.zlbnd==openbc): s.xrzlPML = GPSTD_PML(syf=b.edgexrzl.syf,**kwPML)
+            if(b.xlbnd==openbc and b.zrbnd==openbc): s.xlzrPML = GPSTD_PML(syf=b.edgexlzr.syf,**kwPML)
+            if(b.xrbnd==openbc and b.zrbnd==openbc): s.xrzrPML = GPSTD_PML(syf=b.edgexrzr.syf,**kwPML)
+            if(b.ylbnd==openbc and b.zlbnd==openbc): s.ylzlPML = GPSTD_PML(syf=b.edgeylzl.syf,**kwPML)
+            if(b.yrbnd==openbc and b.zlbnd==openbc): s.yrzlPML = GPSTD_PML(syf=b.edgeyrzl.syf,**kwPML)
+            if(b.ylbnd==openbc and b.zrbnd==openbc): s.ylzrPML = GPSTD_PML(syf=b.edgeylzr.syf,**kwPML)
+            if(b.yrbnd==openbc and b.zrbnd==openbc): s.yrzrPML = GPSTD_PML(syf=b.edgeyrzr.syf,**kwPML)
 
             # --- corners
-            if(b.xlbnd==openbc and b.ylbnd==openbc and b.zlbnd==openbc): s.xlylzlPML = GPSTD_Maxwell_PML(syf=b.cornerxlylzl.syf,**kwPML)
-            if(b.xrbnd==openbc and b.ylbnd==openbc and b.zlbnd==openbc): s.xrylzlPML = GPSTD_Maxwell_PML(syf=b.cornerxrylzl.syf,**kwPML)
-            if(b.xlbnd==openbc and b.yrbnd==openbc and b.zlbnd==openbc): s.xlyrzlPML = GPSTD_Maxwell_PML(syf=b.cornerxlyrzl.syf,**kwPML)
-            if(b.xrbnd==openbc and b.yrbnd==openbc and b.zlbnd==openbc): s.xryrzlPML = GPSTD_Maxwell_PML(syf=b.cornerxryrzl.syf,**kwPML)
-            if(b.xlbnd==openbc and b.ylbnd==openbc and b.zrbnd==openbc): s.xlylzrPML = GPSTD_Maxwell_PML(syf=b.cornerxlylzr.syf,**kwPML)
-            if(b.xrbnd==openbc and b.ylbnd==openbc and b.zrbnd==openbc): s.xrylzrPML = GPSTD_Maxwell_PML(syf=b.cornerxrylzr.syf,**kwPML)
-            if(b.xlbnd==openbc and b.yrbnd==openbc and b.zrbnd==openbc): s.xlyrzrPML = GPSTD_Maxwell_PML(syf=b.cornerxlyrzr.syf,**kwPML)
-            if(b.xrbnd==openbc and b.yrbnd==openbc and b.zrbnd==openbc): s.xryrzrPML = GPSTD_Maxwell_PML(syf=b.cornerxryrzr.syf,**kwPML)
+            if(b.xlbnd==openbc and b.ylbnd==openbc and b.zlbnd==openbc): s.xlylzlPML = GPSTD_PML(syf=b.cornerxlylzl.syf,**kwPML)
+            if(b.xrbnd==openbc and b.ylbnd==openbc and b.zlbnd==openbc): s.xrylzlPML = GPSTD_PML(syf=b.cornerxrylzl.syf,**kwPML)
+            if(b.xlbnd==openbc and b.yrbnd==openbc and b.zlbnd==openbc): s.xlyrzlPML = GPSTD_PML(syf=b.cornerxlyrzl.syf,**kwPML)
+            if(b.xrbnd==openbc and b.yrbnd==openbc and b.zlbnd==openbc): s.xryrzlPML = GPSTD_PML(syf=b.cornerxryrzl.syf,**kwPML)
+            if(b.xlbnd==openbc and b.ylbnd==openbc and b.zrbnd==openbc): s.xlylzrPML = GPSTD_PML(syf=b.cornerxlylzr.syf,**kwPML)
+            if(b.xrbnd==openbc and b.ylbnd==openbc and b.zrbnd==openbc): s.xrylzrPML = GPSTD_PML(syf=b.cornerxrylzr.syf,**kwPML)
+            if(b.xlbnd==openbc and b.yrbnd==openbc and b.zrbnd==openbc): s.xlyrzrPML = GPSTD_PML(syf=b.cornerxlyrzr.syf,**kwPML)
+            if(b.xrbnd==openbc and b.yrbnd==openbc and b.zrbnd==openbc): s.xryrzrPML = GPSTD_PML(syf=b.cornerxryrzr.syf,**kwPML)
 
 
 ################################################################################
@@ -283,60 +294,39 @@ class EM3DFFT(EM3D):
 ################################################################################
 
     def depose_j_laser(self,f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight):
-        if not self.spectral_current:
-            EM3D.depose_j_laser(self,f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight)
-            return
-            
-        if top.ndts[0]<>1:
-            print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
-            raise
-        f.Jx = self.fields.Jxarray[:,:,:,0]
-        f.Jy = self.fields.Jyarray[:,:,:,0]
-        f.Jz = self.fields.Jzarray[:,:,:,0]
-        f.Rho = self.fields.Rhoarray[:,:,:,0]
+        EM3D.depose_j_laser(self,f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight)
         
         for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
             # The antenna is made of two types of fictious particles : positive and negative
-            
-            self.depose_current_density_spectral(
-                                             self.laser_nn,
-                                             f,
+        
+            if self.current_cor:
+                # --- deposit dRho/dt for correction of current to verify 
+                # --- the discrete continuity equation dRho/dt+div J=0.
+                if top.wpid==0:
+                    wfact = ones((1,),'d')
+                    l_particles_weight = false
+                else:
+                    l_particles_weight = true
+                if self.l_2dxz:
+                    depose_rhoold_n_2dxz(self.fields.Rhoold_local,self.laser_nn,
                                              self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
                                              self.laser_source_z*ones(self.laser_nn),
                                              q*laser_ux,
                                              q*laser_uy,
                                              self.laser_source_v*ones(self.laser_nn),
                                              self.laser_gi,
-                                             top.dt,
                                              weights,
-                                             self.zgrid,
                                              q,
-                                             1.,
+                                                        f.xmin,f.zmin+self.zgrid,
+                                                        top.dt,
+                                                        f.dx,f.dz,
+                                                        f.nx,f.nz,
+                                                        f.nxguard,f.nzguard,
                                              self.laser_depos_order_x,
-                                             self.laser_depos_order_y,
                                              self.laser_depos_order_z,
-                                             l_particles_weight)
-
-            if self.l_getrho :
-               self.depose_charge_density(   self.laser_nn,
-                                             f,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             q*laser_ux,
-                                             q*laser_uy,
-                                             self.laser_source_v*ones(self.laser_nn),
-                                             self.laser_gi,
-                                             top.dt,
-                                             weights,
-                                             self.zgrid,
-                                             q,
-                                             1.,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_y,
-                                             self.laser_depos_order_z,
-                                             l_particles_weight)
+                                                        l_particles_weight,w3d.l4symtry)
+                else:
+                    raise Exception('Need to add depose_rhoold_n_3d')
 
 ################################################################################
 # CHARGE/CURRENT DEPOSITION
@@ -379,7 +369,7 @@ class EM3DFFT(EM3D):
             else:
                 l_particles_weight = true
             if self.l_2dxz:
-                depose_drhoodt_n_2dxz(self.fields.DRhoodt,n,
+                depose_rhoold_n_2dxz(self.fields.Rhoold_local,n,
                                                     x,z,ux,uy,uz,
                                                     gaminv,wfact,q*w,
                                                     f.xmin,f.zmin+self.zgrid,
@@ -391,8 +381,14 @@ class EM3DFFT(EM3D):
                                                     top.depos_order[2,js],
                                                     l_particles_weight,w3d.l4symtry)
             else:
-                raise Exception('Need to add depose_drhodt_n_3d')
+                raise Exception('Need to add depose_rhoold_n_3d')
 
+    def depose_current_density(self,n,f,x,y,z,ux,uy,uz,gaminv,dt,wfact,zgrid,q,w,nox,noy,noz,l_particles_weight):
+        if not self.spectral_current:
+            EM3D.depose_current_density(self,n,f,x,y,z,ux,uy,uz,gaminv,dt,wfact,zgrid,q,w,nox,noy,noz,l_particles_weight) 
+        else:
+            self.depose_current_density_spectral(n,f,x,y,z,ux,uy,uz,gaminv,dt,wfact,zgrid,q,w,nox,noy,noz,l_particles_weight) 
+        
     def depose_current_density_spectral(self,n,f,x,y,z,ux,uy,uz,gaminv,dt,wfact,zgrid,q,w,nox,noy,noz,l_particles_weight):
         if self.l_1dz:
             raise Exception('Need to add spectral current deposition in 1-D')
@@ -421,7 +417,7 @@ class EM3DFFT(EM3D):
         for indts in range(top.nsndts):
             if top.ldts[indts]:
                 if self.current_cor:
-                    self.fields.DRhoodt[...] = 0.
+                    self.fields.Rhoold_local[...] = 0.
 
     def finalizesourcep(self):
         if self.sourcepfinalized: return
@@ -435,16 +431,71 @@ class EM3DFFT(EM3D):
         if self.laser_mode==2:self.add_laser(self.block.core.yf)
         # -- add laser if laser_mode==2
 #        if self.laser_mode==2:self.add_laser(self.block.core.yf)
-        if not self.spectral_current and self.l_nodalgrid:self.Jyee2node3d()
+        if not self.spectral_current:self.Jyee2node3d()
         if self.spectral_current:self.getcurrent_spectral()
         # --- smooth current density
         if any(self.npass_smooth>0):self.smoothdensity()
-        # --- smooth current density
-        if self.current_cor:self.current_cor_spectral()
+        # --- apply current correction (before exchange between domains for locality)
+        if self.current_cor:
+            self.current_cor_spectral()
+        # --- apply boundary conditions 
         self.applysourceboundaryconditions()
+        # --- exchange guard cells data across domains
+        self.exchange_bc(self.block)
         if self.l_verbose:print 'finalizesourcep done'
 
     def boris_correction(self):
+# --- apply Boris correction
+        l_plotdive=1
+        emK = self.FSpace
+        em = self
+        f = self.fields
+        ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
+        fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
+
+        j = 1j
+        
+        if emK.nx>1:ExF = fft.fftn(squeeze(f.Ex[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.ny>1:EyF = fft.fftn(squeeze(f.Ey[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.nz>1:EzF = fft.fftn(squeeze(f.Ez[ixl:ixu,iyl:iyu,izl:izu]))
+
+        RhoF = fft.fftn(squeeze(f.Rho[ixl:ixu,iyl:iyu,izl:izu]))
+
+        divemrho = -j*RhoF/eps0
+        if emK.nx>1: divemrho -= emK.kxm*ExF
+        if emK.ny>1: divemrho -= emK.kym*EyF
+        if emK.nz>1: divemrho -= emK.kzm*EzF
+
+        if l_plotdive:
+                window(4);fma();ppg(abs(divemrho)*clight*top.dt,view=3);
+                ppg(abs(fft.ifftn(divemrho)),view=4)
+#                ppg(abs(j*RhoF*clight*top.dt/eps0),view=4)
+                refresh()
+
+        if emK.nx>1: ExF+=divemrho*emK.kxpn/emK.kmag
+        if emK.ny>1: EyF+=divemrho*emK.kypn/emK.kmag
+        if emK.nz>1: EzF+=divemrho*emK.kzpn/emK.kmag
+
+        if l_plotdive:
+                divemrho = -(emK.kxm*ExF+emK.kzm*EzF)-j*RhoF/eps0
+                divemrho *= clight*top.dt
+                ppg(abs(divemrho),view=5);ppg(abs(j*RhoF*clight*top.dt/eps0),view=6)
+
+        if emK.nx>1:
+            Ex = fft.ifftn(ExF)
+            Ex.resize(fields_shape)
+            f.Ex[ixl:ixu,iyl:iyu,izl:izu] = Ex.real
+        if emK.ny>1:
+            Ey = fft.ifftn(EyF)
+            Ey.resize(fields_shape)
+            f.Ey[ixl:ixu,iyl:iyu,izl:izu] = Ey.real
+        if emK.nx>1:
+            Ez = fft.ifftn(EzF)
+            Ez.resize(fields_shape)
+            f.Ez[ixl:ixu,iyl:iyu,izl:izu] = Ez.real
+
+
+    def boris_correctionold(self):
 # --- apply Boris correction
         l_plotdive=1
         em = self = getregisteredsolver()
@@ -507,11 +558,13 @@ class EM3DFFT(EM3D):
 
         fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
 
-        self.wrap_periodic_BC([f.DRhoodt,f.Jx,f.Jy,f.Jz])
+        self.wrap_periodic_BC([f.Rho,f.Rhoold_local,f.Jx,f.Jy,f.Jz])
+
         if emK.nx>1:JxF = emK.fftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]))
         if emK.ny>1:JyF = emK.fftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
         if emK.nz>1:JzF = emK.fftn(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))
-        em.dRhoodtF = emK.fftn(squeeze(f.DRhoodt[ixl:ixu,iyl:iyu,izl:izu]))
+
+        em.dRhoodtF = emK.fftn(squeeze((f.Rho-f.Rhoold_local)[ixl:ixu,iyl:iyu,izl:izu]/top.dt))
 
         # --- get longitudinal J
         divJ = 0.
@@ -661,10 +714,10 @@ class EM3DFFT(EM3D):
                 self.fields.DRhoodt += DRhoodtcopy*(1.-self.mask_smooth)
 
     def Jyee2node3d(self):
-        Jyee2node3d(self.block.core.yf)
-        if self.refinement is not None:
-            self.__class__.__bases__[1].Jyee2node3d(self.field_coarse)
-
+        if self.l_nodalgrid and not self.l_deposit_nodal:
+            Jyee2node3d(self.block.core.yf)
+            if self.refinement is not None:
+                self.__class__.__bases__[1].Jyee2node3d(self.field_coarse)
 
     def apply_KFilter(self,F,KFilter):
         emK = self.FSpace
@@ -686,6 +739,138 @@ class EM3DFFT(EM3D):
                 self.apply_KFilter(self.fields.Bxp,self.Bymultiplier)
                 self.apply_KFilter(self.fields.Byp,self.Bymultiplier)
         
+    def apply_KShift(self,F,KShift):
+        KF = fft.fftn(F)
+        F[...] = fft.ifftn(KF*KShift).real
+        del KF
+        return
+
+    def fieldcenterK(self):
+        emK = self.FSpace
+
+        nx,ny,nz = shape(self.fields.Exp)
+        kx_unmod = np.ones(shape(self.fields.Exp))
+        kz_unmod = np.ones(shape(self.fields.Exp))
+        kxunit = 2.*np.pi*(fft.fftfreq(nx))/self.dx
+        kzunit = 2.*np.pi*(fft.fftfreq(nz))/self.dz
+        for i in range(nz):
+            kx_unmod[:,0,i] *= kxunit
+        for i in range(nx):
+            kz_unmod[i,0,:] *= kzunit
+            
+        self.kx_unmod = kx_unmod
+        self.kz_unmod = kz_unmod
+
+        self.apply_KShift(self.fields.Exp,exp(-1j*kx_unmod*self.dx/2))
+        self.apply_KShift(self.fields.Ezp,exp(-1j*kz_unmod*self.dz/2))
+        self.apply_KShift(self.fields.Bxp,exp(-1j*(kz_unmod*self.dz/2)))
+        self.apply_KShift(self.fields.Byp,exp(-1j*(kx_unmod*self.dx/2+kz_unmod*self.dz/2)))
+        self.apply_KShift(self.fields.Bzp,exp(-1j*(kx_unmod*self.dx/2)))
+
+        self.fields.l_nodecentered=True
+        return
+        self.apply_KFilter(self.fields.Exp,exp(-1j*kx_unmod*self.dx/2))
+        self.apply_KFilter(self.fields.Eyp,exp(-1j*ky_unmod*self.dy/2))
+        self.apply_KFilter(self.fields.Ezp,exp(-1j*kz_unmod*self.dz/2))
+        self.apply_KFilter(self.fields.Bxp,exp(-1j*(ky_unmod*self.dy/2+kz_unmod*self.dz/2)))
+        self.apply_KFilter(self.fields.Byp,exp(-1j*(kx_unmod*self.dx/2+kz_unmod*self.dz/2)))
+        self.apply_KFilter(self.fields.Bzp,exp(-1j*(kx_unmod*self.dx/2+ky_unmod*self.dy/2)))
+    
+    def fieldcenterK(self):
+        # --- centers fields at nodes by shifting in K-space
+        emK = self.FSpace
+
+        Cx = exp(-1j*emK.kx_unmod*self.dx/2)
+        Cy = exp(-1j*emK.ky_unmod*self.dy/2)
+        Cz = exp(-1j*emK.kz_unmod*self.dz/2)
+
+        self.apply_KFilter(self.fields.Exp,Cx)
+        self.apply_KFilter(self.fields.Eyp,Cy)
+        self.apply_KFilter(self.fields.Ezp,Cz)
+        self.apply_KFilter(self.fields.Bxp,Cy*Cz)
+        self.apply_KFilter(self.fields.Byp,Cx*Cz)
+        self.apply_KFilter(self.fields.Bzp,Cx*Cy)
+
+        self.fields.l_nodecentered=True
+        return
+    
+    def Jnode2yeeK(self):
+        emK = self.FSpace
+
+        nx,ny,nz = shape(self.fields.Exp)
+        kx_unmod = np.ones(shape(self.fields.Exp))
+        kz_unmod = np.ones(shape(self.fields.Exp))
+        kxunit = 2.*np.pi*(fft.fftfreq(nx))/self.dx
+        kzunit = 2.*np.pi*(fft.fftfreq(nz))/self.dz
+        for i in range(nz):
+            kx_unmod[:,0,i] *= kxunit
+        for i in range(nx):
+            kz_unmod[i,0,:] *= kzunit
+            
+#        self.kx_unmod = kx_unmod
+#        self.kz_unmod = kz_unmod
+
+#        self.apply_KShift(self.fields.J[...,0],exp(1j*kx_unmod*self.dx/2))
+#        self.apply_KShift(self.fields.J[...,1],exp(1j*ky_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.J[...,2],exp(1j*kz_unmod*self.dz/2))
+
+        self.apply_KShift(self.fields.J[...,0],cos(kx_unmod*self.dx/2))
+#        self.apply_KShift(self.fields.J[...,1],exp(1j*ky_unmod*self.dz/2))
+        self.apply_KShift(self.fields.J[...,2],cos(kz_unmod*self.dz/2))
+
+#        self.apply_KShift(self.fields.J[...,0],0.5*(1.+cos(kx_unmod*self.dx)))
+#        self.apply_KShift(self.fields.J[...,1],exp(1j*ky_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.J[...,2],0.5*(1.+cos(kz_unmod*self.dz)))
+
+
+#        self.apply_KShift(self.fields.J[...,0],0.5*(1.+cos(kx_unmod*self.dx))*0.5*(1.+cos(kz_unmod*self.dz)))
+#        self.apply_KShift(self.fields.J[...,1],0.5*(1.+cos(kx_unmod*self.dx))*0.5*(1.+cos(kz_unmod*self.dz)))
+#        self.apply_KShift(self.fields.J[...,2],0.5*(1.+cos(kx_unmod*self.dx))*0.5*(1.+cos(kz_unmod*self.dz)))
+#        self.apply_KShift(self.fields.Rho,0.5*(1.+cos(kx_unmod*self.dx))*0.5*(1.+cos(kz_unmod*self.dz)))
+#        self.apply_KShift(self.fields.DRhoodt,0.5*(1.+cos(kx_unmod*self.dx))*0.5*(1.+cos(kz_unmod*self.dz)))
+
+#        self.apply_KShift(self.fields.J[...,0],cos(kx_unmod*self.dx/2)*cos(kz_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.J[...,1],cos(kx_unmod*self.dx/2)*cos(kz_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.J[...,2],cos(kx_unmod*self.dx/2)*cos(kz_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.Rho,cos(kx_unmod*self.dx/2)*cos(kz_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.DRhoodt,cos(kx_unmod*self.dx/2)*cos(kz_unmod*self.dz/2))
+
+        return
+
+    
+    def Jnode2yeeK(self):
+        emK = self.FSpace
+
+#        self.kx_unmod = kx_unmod
+#        self.kz_unmod = kz_unmod
+
+#        self.apply_KShift(self.fields.J[...,0],exp(1j*kx_unmod*self.dx/2))
+#        self.apply_KShift(self.fields.J[...,1],exp(1j*ky_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.J[...,2],exp(1j*kz_unmod*self.dz/2))
+
+        self.apply_KFilter(self.fields.J[...,0],cos(emK.kx_unmod*self.dx/2))
+#        self.apply_KShift(self.fields.J[...,1],exp(1j*ky_unmod*self.dz/2))
+        self.apply_KFilter(self.fields.J[...,2],cos(emK.kz_unmod*self.dz/2))
+
+#        self.apply_KShift(self.fields.J[...,0],0.5*(1.+cos(kx_unmod*self.dx)))
+#        self.apply_KShift(self.fields.J[...,1],exp(1j*ky_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.J[...,2],0.5*(1.+cos(kz_unmod*self.dz)))
+
+
+#        self.apply_KShift(self.fields.J[...,0],0.5*(1.+cos(kx_unmod*self.dx))*0.5*(1.+cos(kz_unmod*self.dz)))
+#        self.apply_KShift(self.fields.J[...,1],0.5*(1.+cos(kx_unmod*self.dx))*0.5*(1.+cos(kz_unmod*self.dz)))
+#        self.apply_KShift(self.fields.J[...,2],0.5*(1.+cos(kx_unmod*self.dx))*0.5*(1.+cos(kz_unmod*self.dz)))
+#        self.apply_KShift(self.fields.Rho,0.5*(1.+cos(kx_unmod*self.dx))*0.5*(1.+cos(kz_unmod*self.dz)))
+#        self.apply_KShift(self.fields.DRhoodt,0.5*(1.+cos(kx_unmod*self.dx))*0.5*(1.+cos(kz_unmod*self.dz)))
+
+#        self.apply_KShift(self.fields.J[...,0],cos(kx_unmod*self.dx/2)*cos(kz_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.J[...,1],cos(kx_unmod*self.dx/2)*cos(kz_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.J[...,2],cos(kx_unmod*self.dx/2)*cos(kz_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.Rho,cos(kx_unmod*self.dx/2)*cos(kz_unmod*self.dz/2))
+#        self.apply_KShift(self.fields.DRhoodt,cos(kx_unmod*self.dx/2)*cos(kz_unmod*self.dz/2))
+
+        return
+
     def push_spectral_psaotd(self):
     ###################################
     #              PSAOTD             #
@@ -696,21 +881,20 @@ class EM3DFFT(EM3D):
 
         if self.ntsub==inf:
             self.GPSTDMaxwell.fields['rhoold']=self.fields.Rhoold
-            self.GPSTDMaxwell.fields['rho']=self.fields.Rho
+            self.fields.Rho=self.fields.Rhoarray[...,0]
+            self.GPSTDMaxwell.fields['rhonew']=self.fields.Rho
         else:
-#            self.GPSTDMaxwell.fields['rhoold']=self.fields.Rhoold
-#            self.GPSTDMaxwell.fields['rho']=self.fields.Rho
-            self.GPSTDMaxwell.fields['drho']=self.fields.Rho-self.fields.Rhoold
-            if self.l_getrho:self.GPSTDMaxwell.fields['rho']=self.fields.Rhoold
+            if self.l_pushf:
+#                self.fields.Rho=self.fields.Rhoarray[...,0]
+                self.GPSTDMaxwell.fields['rhoold']=self.fields.Rhoold.copy()
+                self.GPSTDMaxwell.fields['rhonew']=self.fields.Rho.copy()
+                self.GPSTDMaxwell.fields['drho']=self.fields.Rho-self.fields.Rhoold
+
         self.GPSTDMaxwell.fields['jx']=self.fields.Jx
         self.GPSTDMaxwell.fields['jy']=self.fields.Jy
         self.GPSTDMaxwell.fields['jz']=self.fields.Jz
         
-#        J = self.fields.J.copy()
-        
         self.GPSTDMaxwell.push_fields()
-
-#        self.fields.J=J
         
         b=self.block
 
