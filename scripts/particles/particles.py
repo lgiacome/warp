@@ -1398,7 +1398,7 @@ def getxxpslope(iw=0,iz=-1,kwdict={},checkargs=0):
             xsqbar   = xsqbarz[iz,js]*(1.-wz)   + xsqbarz[izp1,js]*wz
             vzbar  = vzbarz[iz,js]*(1.-wz)  + vzbarz[izp1,js]*wz
         elif iw <= 0:
-            n = getattrwithsuffix(object,'pnum',suffix)
+            n = getattrwithsuffix(object,'pnum',suffix)[0,js]
             xxpbar = getattrwithsuffix(object,'xxpbar',suffix)[0,js]
             xbar   = getattrwithsuffix(object,'xbar',suffix)[0,js]
             xpbar  = getattrwithsuffix(object,'xpbar',suffix)[0,js]
@@ -1496,7 +1496,7 @@ def getyypslope(iw=0,iz=-1,kwdict={},checkargs=0):
             ysqbar   = ysqbarz[iz,js]*(1.-wz)   + ysqbarz[izp1,js]*wz
             vzbar  = vzbarz[iz,js]*(1.-wz)  + vzbarz[izp1,js]*wz
         elif iw <= 0:
-            n = getattrwithsuffix(object,'pnum',suffix)
+            n = getattrwithsuffix(object,'pnum',suffix)[0,js]
             yypbar = getattrwithsuffix(object,'yypbar',suffix)[0,js]
             ybar   = getattrwithsuffix(object,'ybar',suffix)[0,js]
             ypbar  = getattrwithsuffix(object,'ypbar',suffix)[0,js]
