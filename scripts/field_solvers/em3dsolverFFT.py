@@ -2,7 +2,6 @@
 from GPSTD import *
 from em3dsolver import *
 
-
 class EM3DFFT(EM3D):
 
     __em3dfftinputs__ = []
@@ -342,7 +341,7 @@ class EM3DFFT(EM3D):
         noy = top.depos_order[1,js]
         noz = top.depos_order[2,js]
         dt = top.dt*top.pgroup.ndts[js]
-        
+
         if top.wpid==0:
             wfact = ones((1,),'d')
             l_particles_weight = false
@@ -455,11 +454,11 @@ class EM3DFFT(EM3D):
 
         j = 1j
         
-        if emK.nx>1:ExF = fft.fftn(squeeze(f.Ex[ixl:ixu,iyl:iyu,izl:izu]))
-        if emK.ny>1:EyF = fft.fftn(squeeze(f.Ey[ixl:ixu,iyl:iyu,izl:izu]))
-        if emK.nz>1:EzF = fft.fftn(squeeze(f.Ez[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.nx>1:ExF = emK.fftn(squeeze(f.Ex[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.ny>1:EyF = emK.fftn(squeeze(f.Ey[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.nz>1:EzF = emK.fftn(squeeze(f.Ez[ixl:ixu,iyl:iyu,izl:izu]))
 
-        RhoF = fft.fftn(squeeze(f.Rho[ixl:ixu,iyl:iyu,izl:izu]))
+        RhoF = emK.fftn(squeeze(f.Rho[ixl:ixu,iyl:iyu,izl:izu]))
 
         divemrho = -j*RhoF/eps0
         if emK.nx>1: divemrho -= emK.kxm*ExF
@@ -468,7 +467,7 @@ class EM3DFFT(EM3D):
 
         if l_plotdive:
                 window(4);fma();ppg(abs(divemrho)*clight*top.dt,view=3);
-                ppg(abs(fft.ifftn(divemrho)),view=4)
+                ppg(abs(emK.ifftn(divemrho)),view=4)
 #                ppg(abs(j*RhoF*clight*top.dt/eps0),view=4)
                 refresh()
 
@@ -482,15 +481,15 @@ class EM3DFFT(EM3D):
                 ppg(abs(divemrho),view=5);ppg(abs(j*RhoF*clight*top.dt/eps0),view=6)
 
         if emK.nx>1:
-            Ex = fft.ifftn(ExF)
+            Ex = emK.ifftn(ExF)
             Ex.resize(fields_shape)
             f.Ex[ixl:ixu,iyl:iyu,izl:izu] = Ex.real
         if emK.ny>1:
-            Ey = fft.ifftn(EyF)
+            Ey = emK.ifftn(EyF)
             Ey.resize(fields_shape)
             f.Ey[ixl:ixu,iyl:iyu,izl:izu] = Ey.real
         if emK.nx>1:
-            Ez = fft.ifftn(EzF)
+            Ez = emK.ifftn(EzF)
             Ez.resize(fields_shape)
             f.Ez[ixl:ixu,iyl:iyu,izl:izu] = Ez.real
 
@@ -619,6 +618,78 @@ class EM3DFFT(EM3D):
         j=1j      # imaginary number
         emK = self.FSpace
         f = self.fields
+        ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
+        fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
+
+        self.wrap_periodic_BC([f.Jx,f.Jy,f.Jz])
+        
+        if emK.nx>1:JxF = emK.fft(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]),axis=0)
+#        if emK.ny>1:JyF = emK.fft(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.nz>1:JzF = emK.fft(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]),axis=1)
+
+        if self.l_spectral_staggered:
+            JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx*exp(-j*emK.kx_unmod*self.dx/2))
+            JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz*exp(-j*emK.kz_unmod*self.dz/2))
+        else:
+            JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx)
+            JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz)
+
+        if any(self.V_pseudogalilean<>0.):
+            JxF*=emK.CDcoef
+#            JyF*=emK.CDcoef
+            JzF*=emK.CDcoef
+        
+        # --- sets currents to zero at the Nyquist wavelength
+        if emK.nx>1:
+            dkx = 2*pi/(self.nxlocal+2*self.nxguard)
+            index_Nyquist = compress(abs(emK.kxunit*self.dx)>=pi-0.1*dkx,arange(self.nxlocal+2*self.nxguard))
+            JxF[index_Nyquist,...]=0.
+            
+        if emK.ny>1:
+            dky = 2*pi/(self.nylocal+2*self.nyguard)
+            index_Nyquist = compress(abs(emK.kyunit*self.dy)>=pi-0.1*dky,arange(self.nylocal+2*self.nyguard))
+            JyF[:,index_Nyquist,:]=0.
+            
+        if emK.nz>1:
+            dkz = 2*pi/(self.nzlocal+2*self.nzguard)
+            index_Nyquist = compress(abs(emK.kzunit*self.dz)>=pi-0.1*dkz,arange(self.nzlocal+2*self.nzguard))
+            JzF[...,index_Nyquist]=0.
+
+        # --- adjust average current values
+        if emK.nx>1:
+            Jxcs=ave(cumsum(f.Jx[ixl:ixu,iyl:iyu,izl:izu],0),0)
+            Jx = emK.ifft(JxF,axis=0)
+            Jx.resize(fields_shape)
+            Jx=Jx.real
+            for i in range(shape(Jx)[1]):
+                Jx[:,i]-=Jxcs[i]*self.dx
+
+        if emK.nz>1:
+            Jzcs=ave(cumsum(f.Jz[ixl:ixu,iyl:iyu,izl:izu],1),1)
+            Jz = emK.ifft(JzF,axis=1)
+            Jz.resize(fields_shape)
+            Jz=Jz.real
+            for i in range(shape(Jz)[0]):
+                Jz[i,:]-=Jzcs[i]*self.dz
+
+        if emK.nx>1:
+            f.Jx[ixl:ixu,iyl:iyu,izl:izu]=Jx
+        if emK.nz>1:
+            f.Jz[ixl:ixu,iyl:iyu,izl:izu]=Jz
+
+#        self.JxF=JxF
+#        self.JzF=JzF
+        
+        del Jx, Jz, Jxcs, Jzcs, JxF, JzF
+
+    def getcurrent_spectralold(self):
+        if not self.spectral_current:return
+        j=1j      # imaginary number
+        emK = self.FSpace
+        f = self.fields
+        ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
+        fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
+
         if self.bounds[0]==periodic:
             ngx = self.nxguard
         else:
@@ -694,24 +765,24 @@ class EM3DFFT(EM3D):
  
         if l_mask_method==2:
             if self.current_cor:
-                DRhoodtcopy = self.fields.DRhoodt.copy()
+                DRhooldcopy = self.fields.Rhoold_local.copy()
         for js in range(nsm):
             if self.mask_smooth[js] is None or l_mask_method==2:
                 if self.current_cor:
-                    smooth3d_121_stride(self.fields.DRhoodt[...],nx-1,ny-1,nz-1,
+                    smooth3d_121_stride(self.fields.Rhoold_local[...],nx-1,ny-1,nz-1,
                                         self.npass_smooth[:,js].copy(),
                                         self.alpha_smooth[:,js].copy(),
                                         self.stride_smooth[:,js].copy())
             else:
                 if self.current_cor:
-                    smooth3d_121_stride_mask(self.fields.DRhoodt[...],self.mask_smooth[js],nx-1,ny-1,nz-1,
+                    smooth3d_121_stride_mask(self.fields.Rhoold_local[...],self.mask_smooth[js],nx-1,ny-1,nz-1,
                                            self.npass_smooth[:,js].copy(),
                                            self.alpha_smooth[:,js].copy(),
                                            self.stride_smooth[:,js].copy())
         if l_mask_method==2:
             if self.current_cor:
-                self.fields.DRhoodt *= self.mask_smooth
-                self.fields.DRhoodt += DRhoodtcopy*(1.-self.mask_smooth)
+                self.fields.Rhoold_local *= self.mask_smooth
+                self.fields.Rhoold_local += DRhooldcopy*(1.-self.mask_smooth)
 
     def Jyee2node3d(self):
         if self.l_nodalgrid and not self.l_deposit_nodal:
@@ -740,8 +811,9 @@ class EM3DFFT(EM3D):
                 self.apply_KFilter(self.fields.Byp,self.Bymultiplier)
         
     def apply_KShift(self,F,KShift):
-        KF = fft.fftn(F)
-        F[...] = fft.ifftn(KF*KShift).real
+        emK = self.FSpace
+        KF = emK.fftn(F)
+        F[...] = emK.ifftn(KF*KShift).real
         del KF
         return
 
@@ -751,8 +823,8 @@ class EM3DFFT(EM3D):
         nx,ny,nz = shape(self.fields.Exp)
         kx_unmod = np.ones(shape(self.fields.Exp))
         kz_unmod = np.ones(shape(self.fields.Exp))
-        kxunit = 2.*np.pi*(fft.fftfreq(nx))/self.dx
-        kzunit = 2.*np.pi*(fft.fftfreq(nz))/self.dz
+        kxunit = 2.*np.pi*(emK.fftfreq(nx))/self.dx
+        kzunit = 2.*np.pi*(emK.fftfreq(nz))/self.dz
         for i in range(nz):
             kx_unmod[:,0,i] *= kxunit
         for i in range(nx):
@@ -800,8 +872,8 @@ class EM3DFFT(EM3D):
         nx,ny,nz = shape(self.fields.Exp)
         kx_unmod = np.ones(shape(self.fields.Exp))
         kz_unmod = np.ones(shape(self.fields.Exp))
-        kxunit = 2.*np.pi*(fft.fftfreq(nx))/self.dx
-        kzunit = 2.*np.pi*(fft.fftfreq(nz))/self.dz
+        kxunit = 2.*np.pi*(emK.fftfreq(nx))/self.dx
+        kzunit = 2.*np.pi*(emK.fftfreq(nz))/self.dz
         for i in range(nz):
             kx_unmod[:,0,i] *= kxunit
         for i in range(nx):
