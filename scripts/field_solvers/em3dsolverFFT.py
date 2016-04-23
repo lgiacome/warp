@@ -454,11 +454,11 @@ class EM3DFFT(EM3D):
 
         j = 1j
         
-        if emK.nx>1:ExF = emK.fftn(squeeze(f.Ex[ixl:ixu,iyl:iyu,izl:izu]))
-        if emK.ny>1:EyF = emK.fftn(squeeze(f.Ey[ixl:ixu,iyl:iyu,izl:izu]))
-        if emK.nz>1:EzF = emK.fftn(squeeze(f.Ez[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.nx>1:ExF = emK.rfftn(squeeze(f.Ex[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.ny>1:EyF = emK.rfftn(squeeze(f.Ey[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.nz>1:EzF = emK.rfftn(squeeze(f.Ez[ixl:ixu,iyl:iyu,izl:izu]))
 
-        RhoF = emK.fftn(squeeze(f.Rho[ixl:ixu,iyl:iyu,izl:izu]))
+        RhoF = emK.rfftn(squeeze(f.Rho[ixl:ixu,iyl:iyu,izl:izu]))
 
         divemrho = -j*RhoF/eps0
         if emK.nx>1: divemrho -= emK.kxm*ExF
@@ -467,7 +467,7 @@ class EM3DFFT(EM3D):
 
         if l_plotdive:
                 window(4);fma();ppg(abs(divemrho)*clight*top.dt,view=3);
-                ppg(abs(emK.ifftn(divemrho)),view=4)
+                ppg(abs(emK.irfftn(divemrho)),view=4)
 #                ppg(abs(j*RhoF*clight*top.dt/eps0),view=4)
                 refresh()
 
@@ -481,15 +481,15 @@ class EM3DFFT(EM3D):
                 ppg(abs(divemrho),view=5);ppg(abs(j*RhoF*clight*top.dt/eps0),view=6)
 
         if emK.nx>1:
-            Ex = emK.ifftn(ExF)
+            Ex = emK.irfftn(ExF)
             Ex.resize(fields_shape)
             f.Ex[ixl:ixu,iyl:iyu,izl:izu] = Ex.real
         if emK.ny>1:
-            Ey = emK.ifftn(EyF)
+            Ey = emK.irfftn(EyF)
             Ey.resize(fields_shape)
             f.Ey[ixl:ixu,iyl:iyu,izl:izu] = Ey.real
         if emK.nx>1:
-            Ez = emK.ifftn(EzF)
+            Ez = emK.irfftn(EzF)
             Ez.resize(fields_shape)
             f.Ez[ixl:ixu,iyl:iyu,izl:izu] = Ez.real
 
@@ -556,14 +556,20 @@ class EM3DFFT(EM3D):
         ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
 
         fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
-
+    
+        if emK.planj_rfftn is None: 
+            emK.planj_rfftn= emK.create_plan_rfftn(np.asarray(fields_shape))
+        if emK.planj_irfftn is None: 
+            emK.planj_irfftn= emK.create_plan_irfftn(np.asarray(fields_shape))
+        
         self.wrap_periodic_BC([f.Rho,f.Rhoold_local,f.Jx,f.Jy,f.Jz])
+    
 
-        if emK.nx>1:JxF = emK.fftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]))
-        if emK.ny>1:JyF = emK.fftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
-        if emK.nz>1:JzF = emK.fftn(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.nx>1:JxF = emK.rfftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]),plan=emK.planj_rfftn)
+        if emK.ny>1:JyF = emK.rfftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]),plan=emK.planj_rfftn)
+        if emK.nz>1:JzF = emK.rfftn(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]),plan=emK.planj_rfftn)
 
-        em.dRhoodtF = emK.fftn(squeeze((f.Rho-f.Rhoold_local)[ixl:ixu,iyl:iyu,izl:izu]/top.dt))
+        em.dRhoodtF = emK.rfftn(squeeze((f.Rho-f.Rhoold_local)[ixl:ixu,iyl:iyu,izl:izu]/top.dt),plan=emK.planj_rfftn)
 
         # --- get longitudinal J
         divJ = 0.
@@ -600,88 +606,20 @@ class EM3DFFT(EM3D):
         if emK.nz>1:
             JzF = Jzt+Jzl
 
+
         if emK.nx>1:
-            Jx = emK.ifftn(JxF)
+            Jx = emK.irfftn(JxF, np.asarray(np.shape(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]))), plan=emK.planj_irfftn, field_out=squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]))
             Jx.resize(fields_shape)
             f.Jx[ixl:ixu,iyl:iyu,izl:izu] = Jx.real
         if emK.ny>1:
-            Jy = emK.ifftn(JyF)
+            Jy = emK.irfftn(JyF, np.asarray(np.shape(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))), plan=emK.planj_irfftn, field_out=squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
             Jy.resize(fields_shape)
             f.Jy[ixl:ixu,iyl:iyu,izl:izu] = Jy.real
         if emK.nz>1:
-            Jz = emK.ifftn(JzF)
+            Jz = emK.irfftn(JzF, np.asarray(np.shape(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))), plan=emK.planj_irfftn, field_out=squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))
             Jz.resize(fields_shape)
             f.Jz[ixl:ixu,iyl:iyu,izl:izu] = Jz.real
-
-    def getcurrent_spectral(self):
-        if not self.spectral_current:return
-        j=1j      # imaginary number
-        emK = self.FSpace
-        f = self.fields
-        ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
-        fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
-
-        self.wrap_periodic_BC([f.Jx,f.Jy,f.Jz])
         
-        if emK.nx>1:JxF = emK.fft(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]),axis=0)
-#        if emK.ny>1:JyF = emK.fft(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
-        if emK.nz>1:JzF = emK.fft(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]),axis=1)
-
-        if self.l_spectral_staggered:
-            JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx*exp(-j*emK.kx_unmod*self.dx/2))
-            JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz*exp(-j*emK.kz_unmod*self.dz/2))
-        else:
-            JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx)
-            JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz)
-
-        if any(self.V_pseudogalilean<>0.):
-            JxF*=emK.CDcoef
-#            JyF*=emK.CDcoef
-            JzF*=emK.CDcoef
-        
-        # --- sets currents to zero at the Nyquist wavelength
-        if emK.nx>1:
-            dkx = 2*pi/(self.nxlocal+2*self.nxguard)
-            index_Nyquist = compress(abs(emK.kxunit*self.dx)>=pi-0.1*dkx,arange(self.nxlocal+2*self.nxguard))
-            JxF[index_Nyquist,...]=0.
-            
-        if emK.ny>1:
-            dky = 2*pi/(self.nylocal+2*self.nyguard)
-            index_Nyquist = compress(abs(emK.kyunit*self.dy)>=pi-0.1*dky,arange(self.nylocal+2*self.nyguard))
-            JyF[:,index_Nyquist,:]=0.
-            
-        if emK.nz>1:
-            dkz = 2*pi/(self.nzlocal+2*self.nzguard)
-            index_Nyquist = compress(abs(emK.kzunit*self.dz)>=pi-0.1*dkz,arange(self.nzlocal+2*self.nzguard))
-            JzF[...,index_Nyquist]=0.
-
-        # --- adjust average current values
-        if emK.nx>1:
-            Jxcs=ave(cumsum(f.Jx[ixl:ixu,iyl:iyu,izl:izu],0),0)
-            Jx = emK.ifft(JxF,axis=0)
-            Jx.resize(fields_shape)
-            Jx=Jx.real
-            for i in range(shape(Jx)[1]):
-                Jx[:,i]-=Jxcs[i]*self.dx
-
-        if emK.nz>1:
-            Jzcs=ave(cumsum(f.Jz[ixl:ixu,iyl:iyu,izl:izu],1),1)
-            Jz = emK.ifft(JzF,axis=1)
-            Jz.resize(fields_shape)
-            Jz=Jz.real
-            for i in range(shape(Jz)[0]):
-                Jz[i,:]-=Jzcs[i]*self.dz
-
-        if emK.nx>1:
-            f.Jx[ixl:ixu,iyl:iyu,izl:izu]=Jx
-        if emK.nz>1:
-            f.Jz[ixl:ixu,iyl:iyu,izl:izu]=Jz
-
-#        self.JxF=JxF
-#        self.JzF=JzF
-        
-        del Jx, Jz, Jxcs, Jzcs, JxF, JzF
-
     def getcurrent_spectralold(self):
         if not self.spectral_current:return
         j=1j      # imaginary number
@@ -793,8 +731,8 @@ class EM3DFFT(EM3D):
     def apply_KFilter(self,F,KFilter):
         emK = self.FSpace
         ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
-        KF = emK.fftn(np.squeeze(F[ixl:ixu,iyl:iyu,izl:izu]))
-        f = emK.ifftn(KF*KFilter)
+        KF = emK.rfftn(np.squeeze(F[ixl:ixu,iyl:iyu,izl:izu]))
+        f = emK.irfftn(KF*KFilter,np.asarray(np.shape(np.squeeze(F[ixl:ixu,iyl:iyu,izl:izu]))))
         f.resize([ixu-ixl,iyu-iyl,izu-izl])
         F[ixl:ixu,iyl:iyu,izl:izu] = f.real
         del KF
@@ -812,8 +750,8 @@ class EM3DFFT(EM3D):
         
     def apply_KShift(self,F,KShift):
         emK = self.FSpace
-        KF = emK.fftn(F)
-        F[...] = emK.ifftn(KF*KShift).real
+        KF = emK.rfftn(F)
+        F[...] = emK.irfftn(KF*KShift, np.asarray(np.shape(F))).real
         del KF
         return
 
@@ -823,7 +761,7 @@ class EM3DFFT(EM3D):
         nx,ny,nz = shape(self.fields.Exp)
         kx_unmod = np.ones(shape(self.fields.Exp))
         kz_unmod = np.ones(shape(self.fields.Exp))
-        kxunit = 2.*np.pi*(emK.fftfreq(nx))/self.dx
+        kxunit = 2.*np.pi*(emK.rfftfreq(nx))/self.dx
         kzunit = 2.*np.pi*(emK.fftfreq(nz))/self.dz
         for i in range(nz):
             kx_unmod[:,0,i] *= kxunit
@@ -872,7 +810,7 @@ class EM3DFFT(EM3D):
         nx,ny,nz = shape(self.fields.Exp)
         kx_unmod = np.ones(shape(self.fields.Exp))
         kz_unmod = np.ones(shape(self.fields.Exp))
-        kxunit = 2.*np.pi*(emK.fftfreq(nx))/self.dx
+        kxunit = 2.*np.pi*(emK.rfftfreq(nx))/self.dx
         kzunit = 2.*np.pi*(emK.fftfreq(nz))/self.dz
         for i in range(nz):
             kx_unmod[:,0,i] *= kxunit
