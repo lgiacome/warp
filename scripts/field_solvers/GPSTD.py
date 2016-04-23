@@ -185,22 +185,51 @@ class Fourier_Space():
         
         
         j = 1j
+        # Dimensions of real space arrays 
         nx = self.nx
         ny = self.ny
         nz = self.nz
-        if not self.bc_periodic[0]:nx+=2*self.nxguard
-        if not self.bc_periodic[1]:ny+=2*self.nyguard
-        if not self.bc_periodic[2]:nz+=2*self.nzguard
+        if not self.bc_periodic[0]:
+            nx+=2*self.nxguard
+        if not self.bc_periodic[1]:
+            ny+=2*self.nyguard
+        if not self.bc_periodic[2]:
+            nz+=2*self.nzguard
+        self.dim_r2c=dims_r2c=[]
+        if nx>1:
+            dims_r2c+=[nx]
+        if ny>1:
+            dims_r2c+=[ny]
+        if nz>1:
+            dims_r2c+=[nz]
+            
+        # Dimensions of Fourier space arrays      
+        if (len(dims_r2c)==3): 
+            nxf = nx//2+1
+            nyf = ny
+            nzf = nz
+        elif (len(dims_r2c) ==2): 
+            if (nx>1): 
+                nxf=nx//2+1
+                nyf=ny
+                nzf=nz
+            else: 
+                nxf=nx
+                nyf=ny//2
+                nzf=nz
         self.dims=dims=[]
-        if nx>1:dims+=[nx]
-        if ny>1:dims+=[ny]
-        if nz>1:dims+=[nz]
-
+        if nxf>1:
+            dims+=[nxf]
+        if nyf>1:
+            dims+=[nyf]
+        if nzf>1:
+            dims+=[nzf]        
+        
         # --- sets kx, ky, kz, k
         if nx>1:
             self.kxn = np.ones(dims)
             self.kx_unmod = np.ones(dims)
-            kxunit = 2.*np.pi*(fft.fftfreq(nx))/self.dx
+            kxunit = 2.*np.pi*(self.rfftfreq(nx))/self.dx
             kxunit_mod = kxunit.copy()
             self.kxunit = kxunit
             if self.norderx is not np.inf:
@@ -222,7 +251,10 @@ class Fourier_Space():
         if ny>1:
             self.kyn = np.ones(dims)
             self.ky_unmod = np.ones(dims)
-            kyunit = 2.*np.pi*(fft.fftfreq(ny))/self.dy
+            if (nx == 1): # Case 2D YZ
+                kyunit = 2.*np.pi*(self.rfftfreq(ny))/self.dy
+            else:         # CASE 3D XYZ or 2D XY
+                kyunit = 2.*np.pi*(self.fftfreq(ny))/self.dy
             kyunit_mod = kyunit.copy()
             self.kyunit = kyunit
             if self.nordery is not np.inf:
@@ -244,7 +276,7 @@ class Fourier_Space():
         if nz>1:
             self.kzn = np.ones(dims)
             self.kz_unmod = np.ones(dims)
-            kzunit = 2.*np.pi*(fft.fftfreq(nz))/self.dz
+            kzunit = 2.*np.pi*(self.fftfreq(nz))/self.dz
             kzunit_mod = kzunit.copy()
             self.kzunit = kzunit
             if self.norderz is not np.inf:
@@ -264,18 +296,18 @@ class Fourier_Space():
                 kzunit_mod*=zcoefs/np.where(kzunit==0.,1.,kzunit*self.dz)
 
         if len(dims)==3:
-            for k in range(nz):
-                for j in range(ny):
+            for k in range(nzf):
+                for j in range(nyf):
                     self.kxn[:,j,k] *= kxunit_mod
                     self.kx_unmod[:,j,k] *= kxunit
 
-            for i in range(nx):
-                for k in range(nz):
+            for i in range(nxf):
+                for k in range(nzf):
                     self.kyn[i,:,k] *= kyunit_mod
                     self.ky_unmod[i,:,k] *= kyunit
 
-            for i in range(nx):
-                for j in range(ny):
+            for i in range(nxf):
+                for j in range(nyf):
                     self.kzn[i,j,:] *= kzunit_mod
                     self.kz_unmod[i,j,:] *= kzunit
             
@@ -318,10 +350,10 @@ class Fourier_Space():
         if len(dims)==2:
             # --- 2D YZ
             if nx==1:
-                for i in range(nz):
+                for i in range(nzf):
                     self.kyn[:,i] *= kyunit_mod
                     self.ky_unmod[:,i] *= kyunit
-                for i in range(ny):
+                for i in range(nyf):
                     self.kzn[i,:] *= kzunit_mod
                     self.kz_unmod[i,:] *= kzunit
                 self.kx_unmod = 0.
@@ -356,10 +388,10 @@ class Fourier_Space():
 
             if ny==1:
             # --- 2D XZ
-                for i in range(nz):
+                for i in range(nzf):
                     self.kxn[:,i] *= kxunit_mod
                     self.kx_unmod[:,i] *= kxunit
-                for i in range(nx):
+                for i in range(nxf):
                     self.kzn[i,:] *= kzunit_mod
                     self.kz_unmod[i,:] *= kzunit
                 self.ky_unmod = 0.
@@ -394,10 +426,10 @@ class Fourier_Space():
 
             if nz==1:
             # --- 2D XY
-                for i in range(ny):
+                for i in range(nyf):
                     self.kxn[:,i] *= kxunit_mod
                     self.kx_unmod[:,i] *= kxunit
-                for i in range(nx):
+                for i in range(nxf):
                     self.kyn[i,:] *= kyunit_mod
                     self.ky_unmod[i,:] *= kyunit
                 self.kz_unmod = 0.
@@ -432,32 +464,75 @@ class Fourier_Space():
         # compute FFTW plans if FFTW loaded 
         if (self.l_fftw): 
             if self.nthreads is None: 
-                self.nthreads=int(os.getenv('OMP_NUM_THREADS',1))
-            dims_plan=np.asarray(dims,dtype='i8')
-            self.planfftn=fftpy.compute_plan_fftn(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure)
-            self.planifftn=fftpy.compute_plan_ifftn(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure)
-            self.planfftx=fftpy.compute_plan_fft(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure, axis=0)
-            self.planfftz=fftpy.compute_plan_fft(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure, axis=1)
-            self.planifftx=fftpy.compute_plan_ifft(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure, axis=0)
-            self.planifftz=fftpy.compute_plan_ifft(dims_plan,nthreads=self.nthreads, plan_opt=fst.fftw_measure, axis=1)
+                self.nthreads=int(os.getenv('OMP_NUM_THREADS',1))    
+        # Init plans 
+        self.plan_rfftn={}
+        self.plan_irfftn={} 
+        self.planj_rfftn=None
+        self.planj_irfftn=None
             
-    def fftn(self, a): 
+    def create_plan_rfftn(self, dims): 
+        if self.l_fftw: 
+            return fftpy.compute_plan_rfftn(dims,nthreads=self.nthreads, plan_opt=fst.fftw_measure)
+        else: 
+            return None
+            
+    def create_plan_irfftn(self, dims): 
+        if self.l_fftw: 
+            return fftpy.compute_plan_irfftn(dims,nthreads=self.nthreads, plan_opt=fst.fftw_measure)  
+        else: 
+            return None            
+            
+    def fftn(self, a, field_out=None, plan=None): 
         if (self.l_fftw): 
-            return fftpy.fftn(a,plan=self.planfftn,nthreads=self.nthreads)
+            return fftpy.fftn(a,plan=plan,nthreads=self.nthreads, field_out=field_out)
         else: 
             return np.fft.fftn(a)
-            
-    def ifftn(self, a): 
+
+    def rfftn(self, a, field_out=None, plan =None): 
         if (self.l_fftw): 
-            return fftpy.ifftn(a,plan=self.planifftn,nthreads=self.nthreads)
+            return fftpy.rfftn(a,plan=plan,nthreads=self.nthreads, field_out=field_out)
+        else: 
+            axes = np.arange(0,a.ndim)
+            last_axe = axes[-1]
+            axes[-1] = axes[0]
+            axes[0]  = last_axe
+            return np.fft.rfftn(a, axes=axes)
+            
+    def ifftn(self, a, field_out=None, plan=None): 
+        if (self.l_fftw): 
+            return fftpy.ifftn(a,plan=plan,nthreads=self.nthreads, field_out=field_out)
         else: 
             return np.fft.ifftn(a)
-            
+    def irfftn(self, a, dims, field_out=None, plan=None): 
+        if (self.l_fftw): 
+            return fftpy.irfftn(a,dims, plan=plan,nthreads=self.nthreads, field_out=field_out)
+        else: 
+            axes = np.arange(0,a.ndim)
+            last_axe = axes[-1]
+            axes[-1] = axes[0]
+            axes[0]  = last_axe
+            rdims = dims.copy()
+            rdims[0] = dims[-1]
+            rdims[-1]=dims[0]
+            return np.fft.irfftn(a, axes=axes, s=rdims)
     def fft(self, a, axis=0): 
         if (self.l_fftw): 
             return fftpy.fft(a, axis=axis,nthreads=self.nthreads)
         else: 
             return np.fft.fft(a, axis=axis)
+
+    def fftfreq(self, a): 
+        if (self.l_fftw): 
+            return fftpy.fftfreq(a)
+        else: 
+            return np.fft.fftfreq(a)
+
+    def rfftfreq(self, a): 
+        if (self.l_fftw): 
+            return fftpy.rfftfreq(a)
+        else: 
+            return np.fft.rfftfreq(a)
 
     def ifft(self, a, axis=0): 
         if (self.l_fftw): 
@@ -575,15 +650,20 @@ class GPSTD(Fourier_Space):
         if self.Ffields=={}:
             self.fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
             for k in self.fields.keys():
-                self.Ffields[k]=self.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))
+                self.plan_rfftn[k] = self.create_plan_rfftn(np.asarray(self.fields_shape))
+                self.Ffields[k]    =self.rfftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]),plan=self.plan_rfftn[k])
         else:
             for k in self.fields.keys():
-                self.Ffields[k][...]=self.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))                    
+                self.Ffields[k]=self.rfftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]),field_out=self.Ffields[k],plan=self.plan_rfftn[k])                    
     def get_fields(self):
         ixl,ixu,iyl,iyu,izl,izu = self.get_ius()
+        if (self.plan_irfftn=={}): 
+            for k in self.fields.keys():
+                    self.plan_irfftn[k] = self.create_plan_irfftn(np.asarray(self.fields_shape))  
         for k in self.fields.keys():
-            if not self.LSource[k]:
-                f = self.ifftn(self.Ffields[k])
+            if not self.LSource[k]:       
+                shapek = np.asarray(np.shape(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu])))        
+                f = self.irfftn(self.Ffields[k], shapek, field_out=np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]), plan=self.plan_irfftn[k])
                 f.resize(self.fields_shape)
                 self.fields[k][ixl:ixu,iyl:iyu,izl:izu] = f.real
         
@@ -607,7 +687,7 @@ class GPSTD(Fourier_Space):
         updated_fields = {}
         for k in self.Ffields.keys():
             updated_fields[k] = False
-
+        
         # --- fields update
         # --- multiply vector 'fields' by matrix 'mymat', returning result in 'fields'
         for i in range(n):
