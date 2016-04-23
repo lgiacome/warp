@@ -493,7 +493,11 @@ class Fourier_Space():
         if (self.l_fftw): 
             return fftpy.rfftn(a,plan=plan,nthreads=self.nthreads, field_out=field_out)
         else: 
-            return np.fft.rfftn(a)
+            axes = np.arange(0,a.ndim)
+            last_axe = axes[-1]
+            axes[-1] = axes[0]
+            axes[0]  = last_axe
+            return np.fft.rfftn(a, axes=axes)
             
     def ifftn(self, a, field_out=None, plan=None): 
         if (self.l_fftw): 
@@ -504,7 +508,14 @@ class Fourier_Space():
         if (self.l_fftw): 
             return fftpy.irfftn(a,dims, plan=plan,nthreads=self.nthreads, field_out=field_out)
         else: 
-            return np.fft.irfftn(a, s=dims)
+            axes = np.arange(0,a.ndim)
+            last_axe = axes[-1]
+            axes[-1] = axes[0]
+            axes[0]  = last_axe
+            rdims = dims.copy()
+            rdims[0] = dims[-1]
+            rdims[-1]=dims[0]
+            return np.fft.irfftn(a, axes=axes, s=rdims)
     def fft(self, a, axis=0): 
         if (self.l_fftw): 
             return fftpy.fft(a, axis=axis,nthreads=self.nthreads)
