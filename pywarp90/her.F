@@ -1,6 +1,5 @@
 #include "top.h"
 c=============================================================================
-c@(#) File HER.M, version $Revision: 3.13 $, $Date: 2008/02/13 02:22:30 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  It is the source file for the package HER of the PIC code WARP,
@@ -13,7 +12,6 @@ c Macareus, a companion of Odysseus, to Aeneas, in
 c Metamorphoses 14.245 by P. Ovidius Naso.
 c=============================================================================
       subroutine herinit
-      use HERversion
 
 c  Called at first reference to package (not nec. a "run" etc.).
 
@@ -23,10 +21,9 @@ c  Called at first reference to package (not nec. a "run" etc.).
       end
 c=============================================================================
       subroutine hervers (iout)
-      use HERversion
       integer(ISZ):: iout
 c  Echoes code version,etc. to output files when they're created
-      call printpkgversion(iout,"HERMES",versher)
+      call printpkgversion(iout,"HERMES")
       return
       end
 c=============================================================================

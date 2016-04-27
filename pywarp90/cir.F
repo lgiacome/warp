@@ -1,6 +1,5 @@
 #include "top.h"
 c=============================================================================
-c@(#) File CIR.M, version $Revision: 3.12 $, $Date: 2007/05/16 23:35:09 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  It is the source file for the package CIR of the PIC code WARP,
@@ -9,7 +8,6 @@ c  model which originated in CIRCE.
 c
 c=============================================================================
       subroutine cirinit
-      use CIRversion
 
 c  Called at first reference to package (not nec. a "run" etc.).
 
@@ -19,10 +17,9 @@ c  Called at first reference to package (not nec. a "run" etc.).
       end
 c=============================================================================
       subroutine cirvers (iout)
-      use CIRversion
       integer(ISZ):: iout
 c  Echoes code version,etc. to output files when they're created
-      call printpkgversion(iout,"CIRCE",verscir)
+      call printpkgversion(iout,"CIRCE")
       return
       end
 c=============================================================================

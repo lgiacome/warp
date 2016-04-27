@@ -1,5 +1,4 @@
 env
-#@(#) File ENV.V, version $Revision: 3.35 $, $Date: 2008/07/02 19:50:41 $
 # Copyright (c) 1990-1998, The Regents of the University of California.
 # All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 # This is the parameter and variable database for package ENV of the WARP code.
@@ -10,10 +9,6 @@ env
 # Steve Lund,    LLNL, (510) 423-4463  lund@hif.llnl.gov 
 {
 }
-
-*********** ENVversion:
-# Version control for env package
-versenv character*19 /"$Revision: 3.35 $"/  # Current code version, set by CVS
 
 *********** ENVvars dump:
 # Variables needed by the package ENV

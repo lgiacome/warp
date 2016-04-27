@@ -1,15 +1,10 @@
 wxy
-#@(#) File WXY.V, version $Revision: 3.50 $, $Date: 2011/09/27 16:53:59 $
 # Copyright (c) 1990-1998, The Regents of the University of California.
 # All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 # This is the parameter and variable database for package WXY of code WARP
 # XY - PIC package of xy particle code
 # Alex Friedman, LLNL, (510)422-0827
 # David P. Grote, LLNL, (510)423-7194
-
-*********** WXYversion:
-# Quantities associated with version control 
-verswxy character*19 /"$Revision: 3.50 $"/ # Current code version, set by CVS
 
 *********** Particlesxy dump parallel:
 dtpid      integer # ID in the pid array where the time step size for each

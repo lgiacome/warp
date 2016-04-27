@@ -1,6 +1,5 @@
 #include "top.h"
 c=============================================================================
-c@(#) File w3d_collision.F, version $Revision: 1.9 $, $Date: 2008/09/09 21:36:48 $
 c# Copyright (c) 2007-2007, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  This has routines handling particle collisions
