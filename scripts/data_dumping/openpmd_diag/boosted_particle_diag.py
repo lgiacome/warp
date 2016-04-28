@@ -687,7 +687,7 @@ class ParticleCatcher:
         # Extract the chosen quantities
 
         # At current timestep
-        if l_prev is False:
+        if not(l_prev):
             if quantity == "x":
                 quantity_array = species.getx( gather=False )
             elif quantity == "y":
@@ -704,7 +704,7 @@ class ParticleCatcher:
                 quantity_array = species.getweights( gather=False )
         
         # Or at previous timestep
-        elif l_prev is True:
+        else:
             if quantity == "x":
                 quantity_array = species.getpid( id=self.top.xoldpid-1, 
                     gather=0, bcast=0)
