@@ -1,6 +1,5 @@
 #include "top.h"
 c=============================================================================
-c@(#) File FXY_MGRID.M, version $Revision: 1.13 $, $Date: 2009/02/04 00:42:10 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  This is the 2D multigrid field sovler which is part of the FXY

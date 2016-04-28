@@ -1,6 +1,5 @@
 #include "top.h"
 c============================================================================
-c@(#) File DTOP.F, version $Revision: 3.192 $, $Date: 2011/10/21 18:00:39 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  This is part of the main package TOP of code WARP
@@ -672,25 +671,16 @@ c=============================================================================
 c=============================================================================
 c  OTHER-THAN-PHYSICS-OR-GRAPHICS ROUTINES
 c=============================================================================
-      subroutine printpkgversion(iout,package,version)
+      subroutine printpkgversion(iout,package)
       integer(ISZ):: iout
       character(*):: package
       character(19):: version
-c Prints out the package name and version number. This routine is only
-c used for the printing of the version number at the start up of the code.
+c Prints out the package name. This routine is only
+c used at the start up of the code.
       integer(ISZ):: i,lenv
 
-c     --- Get length of version string. This is very specific to the cvs
-c     --- versioning system. It assumes that the version string passed
-c     --- in is of the format "$Revision: 3.192 $" where 'r' and 'v' are
-c     --- the revision number of current version number.
-      lenv = 12
-      do i=12,19
-        if (version(i:i) == "$") lenv = i
-      enddo
-
 c     --- Make the printout
-      write (iout,'(" ******  ",a," version ",a)') package,version(12:lenv-2)
+      write (iout,'(" ******  ",a)') package
 
       return
       end
