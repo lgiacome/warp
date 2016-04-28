@@ -1,6 +1,5 @@
 #include "top.h"
 c=============================================================================
-c@(#) File WXY.M, version $Revision: 3.116 $, $Date: 2011/11/07 23:05:50 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  This is main file of package WXY of code WARP
@@ -40,12 +39,11 @@ c  Called at first reference to package (not nec. a "run" etc.).
 c=============================================================================
       subroutine wxyvers (iout)
       use Subtimerswxy
-      use WXYversion
       integer(ISZ):: iout
       real(kind=8):: substarttime,wtime
       if (lwxytimesubs) substarttime = wtime()
 c  Echoes code version, etc. to output files as they're created
-      call printpkgversion(iout,"Particle package WXY",verswxy)
+      call printpkgversion(iout,"Particle package WXY")
       if (lwxytimesubs) timewxyvers = timewxyvers + wtime() - substarttime
       return
       end

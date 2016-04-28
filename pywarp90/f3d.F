@@ -1,6 +1,5 @@
 #include "top.h"
 c=======================================================================
-c@(#) File F3D.M, version $Revision: 3.144 $, $Date: 2011/08/27 00:35:50 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  written by Alex Friedman and David P. Grote
@@ -27,7 +26,6 @@ c        placement of boudaries
 c
 c=======================================================================
       subroutine f3dinit
-      use F3Dversion
 
 c  Called at first reference to package (not nec. a "run" etc.).
 
@@ -38,10 +36,9 @@ c  Called at first reference to package (not nec. a "run" etc.).
       end
 c=============================================================================
       subroutine f3dvers (iout)
-      use F3Dversion
       integer(ISZ):: iout
 c  Echoes code version,etc. to output files when they're created
-      call printpkgversion(iout,"Fieldsolver F3D",versf3d)
+      call printpkgversion(iout,"Fieldsolver F3D")
       return
       end
 c=============================================================================

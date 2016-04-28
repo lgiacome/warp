@@ -1,6 +1,5 @@
 #include "top.h"
 c************************************************************************** 
-c@(#) File UTIL.M, version $Revision: 1.8 $ $Date: 2008/10/07 00:24:03 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c Contains various utility routines that are part of the TOP package.

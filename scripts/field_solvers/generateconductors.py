@@ -541,6 +541,7 @@ class Assembly(VisualizableClass):
         # setup time min/max and arrays
         if tmin is None:tmin=min(tminl,tmine,tmini)
         if tmax is None:tmax=max(tmaxl,tmaxe,tmaxi)
+        if tmax == tmin: tmax += top.dt
         qt = zeros(nt+1,'d')
         qtmp = zeros(nt+1,'d')
         dt = (tmax-tmin)/nt

@@ -1345,6 +1345,8 @@ def getxxpslope(iw=0,iz=-1,kwdict={},checkargs=0):
     - zc=None: When specified, center of range of selection region
     - slopejs=-1: Species whose moments are used to calculate the slope
                   -1 means use data combined from all species.
+    - js, jslist: can also specify a species or list of species.
+                  slopejs takes precedence, then jslist, then js.
     """
     if checkargs:
         # --- This is only needed since no other routines take the slopejs
@@ -1356,7 +1358,10 @@ def getxxpslope(iw=0,iz=-1,kwdict={},checkargs=0):
     zu = kwdict.get('zu')
     zc = kwdict.get('zc')
     js = kwdict.get('js',-1)
-    slopejs = kwdict.get('slopejs',js)
+    jslist = kwdict.get('jslist', [js])
+    slopejs = kwdict.get('slopejs',None)
+    if slopejs is not None:
+        jslist = [slopejs]
     suffix = kwdict.get('suffix','')
     object = kwdict.get('object',top)
     zwindows = getattrwithsuffix(object,'zwindows',suffix)
@@ -1370,34 +1375,55 @@ def getxxpslope(iw=0,iz=-1,kwdict={},checkargs=0):
     else:
         wz = 0.
     nzmmnt = getattrwithsuffix(object,'nzmmnt',suffix)
-    if iz is not None and 0 <= iz <= nzmmnt:
-        izp1 = iz + 1
-        if iz == nzmmnt: izp1 = iz
-        xxpbarz = getattrwithsuffix(object,'xxpbarz',suffix)
-        xbarz   = getattrwithsuffix(object,'xbarz',suffix)
-        xpbarz  = getattrwithsuffix(object,'xpbarz',suffix)
-        xrmsz   = getattrwithsuffix(object,'xrmsz',suffix)
-        vzbarz  = getattrwithsuffix(object,'vzbarz',suffix)
-        xxpbar = xxpbarz[iz,slopejs]*(1.-wz) + xxpbarz[izp1,slopejs]*wz
-        xbar   = xbarz[iz,slopejs]*(1.-wz)   + xbarz[izp1,slopejs]*wz
-        xpbar  = xpbarz[iz,slopejs]*(1.-wz)  + xpbarz[izp1,slopejs]*wz
-        xrms   = xrmsz[iz,slopejs]*(1.-wz)   + xrmsz[izp1,slopejs]*wz
-        vzbar  = vzbarz[iz,slopejs]*(1.-wz)  + vzbarz[izp1,slopejs]*wz
+    nsum = 0.
+    xxpbarsum = 0.
+    xbarsum = 0.
+    xpbarsum = 0.
+    xsqbarsum = 0.
+    vzbarsum = 0.
+    for js in jslist:
+        if iz is not None and 0 <= iz <= nzmmnt:
+            izp1 = iz + 1
+            if iz == nzmmnt: izp1 = iz
+            nz = getattrwithsuffix(object,'pnumz',suffix)
+            xxpbarz = getattrwithsuffix(object,'xxpbarz',suffix)
+            xbarz   = getattrwithsuffix(object,'xbarz',suffix)
+            xpbarz  = getattrwithsuffix(object,'xpbarz',suffix)
+            xsqbarz   = getattrwithsuffix(object,'xsqbarz',suffix)
+            vzbarz  = getattrwithsuffix(object,'vzbarz',suffix)
+            n = nz[iz,js]*(1.-wz) + nz[izp1,js]*wz
+            xxpbar = xxpbarz[iz,js]*(1.-wz) + xxpbarz[izp1,js]*wz
+            xbar   = xbarz[iz,js]*(1.-wz)   + xbarz[izp1,js]*wz
+            xpbar  = xpbarz[iz,js]*(1.-wz)  + xpbarz[izp1,js]*wz
+            xsqbar   = xsqbarz[iz,js]*(1.-wz)   + xsqbarz[izp1,js]*wz
+            vzbar  = vzbarz[iz,js]*(1.-wz)  + vzbarz[izp1,js]*wz
+        elif iw <= 0:
+            n = getattrwithsuffix(object,'pnum',suffix)[0,js]
+            xxpbar = getattrwithsuffix(object,'xxpbar',suffix)[0,js]
+            xbar   = getattrwithsuffix(object,'xbar',suffix)[0,js]
+            xpbar  = getattrwithsuffix(object,'xpbar',suffix)[0,js]
+            xsqbar   = getattrwithsuffix(object,'xsqbar',suffix)[0,js]
+            vzbar  = getattrwithsuffix(object,'vzbar',suffix)[0,js]
+        else:
+            n = 0.
+        nsum += n
+        xxpbarsum += xxpbar*n
+        xbarsum += xbar*n
+        xpbarsum += xpbar*n
+        xsqbarsum += xsqbar*n
+        vzbarsum += vzbar*n
+
+    if nsum > 0.:
+        xxpbar = xxpbarsum/nsum
+        xbar = xbarsum/nsum
+        xpbar = xpbarsum/nsum
+        xsqbar = xsqbarsum/nsum
+        vzbar = vzbarsum/nsum
+        xrms = sqrt(xsqbar - xbar**2)
         slope = (xxpbar-xbar*xpbar)/dvnz(xrms)**2
         xoffset = xbar
         xpoffset = xpbar
         vz = vzbar
-    elif iw <= 0:
-        xxpbar = getattrwithsuffix(object,'xxpbar',suffix)
-        xbar   = getattrwithsuffix(object,'xbar',suffix)
-        xpbar  = getattrwithsuffix(object,'xpbar',suffix)
-        xrms   = getattrwithsuffix(object,'xrms',suffix)
-        vzbar  = getattrwithsuffix(object,'vzbar',suffix)
-        slope = ((xxpbar[0,slopejs]-xbar[0,slopejs]*xpbar[0,slopejs])/
-                 dvnz(xrms[0,slopejs])**2)
-        xoffset = xbar[0,slopejs]
-        xpoffset = xpbar[0,slopejs]
-        vz = vzbar[0,slopejs]
     else:
         slope = 0.
         xoffset = 0.
@@ -1417,6 +1443,8 @@ def getyypslope(iw=0,iz=-1,kwdict={},checkargs=0):
     - zc=None: When specified, center of range of selection region
     - slopejs=-1: Species whose moments are used to calculate the slope
                   -1 means use data combined from all species.
+    - js, jslist: can also specify a species or list of species.
+                  slopejs takes precedence, then jslist, then js.
     """
     if checkargs:
         # --- This is only needed since no other routines take the slopejs
@@ -1428,7 +1456,10 @@ def getyypslope(iw=0,iz=-1,kwdict={},checkargs=0):
     zu = kwdict.get('zu')
     zc = kwdict.get('zc')
     js = kwdict.get('js',-1)
-    slopejs = kwdict.get('slopejs',js)
+    jslist = kwdict.get('jslist', [js])
+    slopejs = kwdict.get('slopejs',None)
+    if slopejs is not None:
+        jslist = [slopejs]
     suffix = kwdict.get('suffix','')
     object = kwdict.get('object',top)
     zwindows = getattrwithsuffix(object,'zwindows',suffix)
@@ -1442,34 +1473,55 @@ def getyypslope(iw=0,iz=-1,kwdict={},checkargs=0):
     else:
         wz = 0.
     nzmmnt = getattrwithsuffix(object,'nzmmnt',suffix)
-    if iz is not None and 0 <= iz <= nzmmnt:
-        izp1 = iz + 1
-        if iz == nzmmnt: izp1 = iz
-        yypbarz = getattrwithsuffix(object,'yypbarz',suffix)
-        ybarz   = getattrwithsuffix(object,'ybarz',suffix)
-        ypbarz  = getattrwithsuffix(object,'ypbarz',suffix)
-        yrmsz   = getattrwithsuffix(object,'yrmsz',suffix)
-        vzbarz  = getattrwithsuffix(object,'vzbarz',suffix)
-        yypbar = yypbarz[iz,slopejs]*(1.-wz) + yypbarz[izp1,slopejs]*wz
-        ybar   = ybarz[iz,slopejs]*(1.-wz)   + ybarz[izp1,slopejs]*wz
-        ypbar  = ypbarz[iz,slopejs]*(1.-wz)  + ypbarz[izp1,slopejs]*wz
-        yrms   = yrmsz[iz,slopejs]*(1.-wz)   + yrmsz[izp1,slopejs]*wz
-        vzbar  = vzbarz[iz,slopejs]*(1.-wz)  + vzbarz[izp1,slopejs]*wz
+    nsum = 0.
+    yypbarsum = 0.
+    ybarsum = 0.
+    ypbarsum = 0.
+    ysqbarsum = 0.
+    vzbarsum = 0.
+    for js in jslist:
+        if iz is not None and 0 <= iz <= nzmmnt:
+            izp1 = iz + 1
+            if iz == nzmmnt: izp1 = iz
+            nz = getattrwithsuffix(object,'pnumz',suffix)
+            yypbarz = getattrwithsuffix(object,'yypbarz',suffix)
+            ybarz   = getattrwithsuffix(object,'ybarz',suffix)
+            ypbarz  = getattrwithsuffix(object,'ypbarz',suffix)
+            ysqbarz   = getattrwithsuffix(object,'ysqbarz',suffix)
+            vzbarz  = getattrwithsuffix(object,'vzbarz',suffix)
+            n = nz[iz,js]*(1.-wz) + nz[izp1,js]*wz
+            yypbar = yypbarz[iz,js]*(1.-wz) + yypbarz[izp1,js]*wz
+            ybar   = ybarz[iz,js]*(1.-wz)   + ybarz[izp1,js]*wz
+            ypbar  = ypbarz[iz,js]*(1.-wz)  + ypbarz[izp1,js]*wz
+            ysqbar   = ysqbarz[iz,js]*(1.-wz)   + ysqbarz[izp1,js]*wz
+            vzbar  = vzbarz[iz,js]*(1.-wz)  + vzbarz[izp1,js]*wz
+        elif iw <= 0:
+            n = getattrwithsuffix(object,'pnum',suffix)[0,js]
+            yypbar = getattrwithsuffix(object,'yypbar',suffix)[0,js]
+            ybar   = getattrwithsuffix(object,'ybar',suffix)[0,js]
+            ypbar  = getattrwithsuffix(object,'ypbar',suffix)[0,js]
+            ysqbar   = getattrwithsuffix(object,'ysqbar',suffix)[0,js]
+            vzbar  = getattrwithsuffix(object,'vzbar',suffix)[0,js]
+        else:
+            n = 0.
+        nsum += n
+        yypbarsum += yypbar*n
+        ybarsum += ybar*n
+        ypbarsum += ypbar*n
+        ysqbarsum += ysqbar*n
+        vzbarsum += vzbar*n
+
+    if nsum > 0.:
+        yypbar = yypbarsum/nsum
+        ybar = ybarsum/nsum
+        ypbar = ypbarsum/nsum
+        ysqbar = ysqbarsum/nsum
+        vzbar = vzbarsum/nsum
+        yrms = sqrt(ysqbar - ybar**2)
         slope = (yypbar-ybar*ypbar)/dvnz(yrms)**2
         yoffset = ybar
         ypoffset = ypbar
         vz = vzbar
-    elif iw <= 0:
-        yypbar = getattrwithsuffix(object,'yypbar',suffix)
-        ybar   = getattrwithsuffix(object,'ybar',suffix)
-        ypbar  = getattrwithsuffix(object,'ypbar',suffix)
-        yrms   = getattrwithsuffix(object,'yrms',suffix)
-        vzbar  = getattrwithsuffix(object,'vzbar',suffix)
-        slope = ((yypbar[0,slopejs]-ybar[0,slopejs]*ypbar[0,slopejs])/
-                 dvnz(yrms[0,slopejs])**2)
-        yoffset = ybar[0,slopejs]
-        ypoffset = ypbar[0,slopejs]
-        vz = vzbar[0,slopejs]
     else:
         slope = 0.
         yoffset = 0.

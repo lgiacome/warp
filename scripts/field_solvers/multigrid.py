@@ -525,6 +525,7 @@ class MultiGrid3D(SubcycledPoissonSolver):
         # --- Only sets the E field from the potential
         n = len(x)
         if n == 0: return
+        if top.efetch[js] == 0: return
         if top.efetch[js] == 3 and isinstance(self.fieldp,float): return
         if top.efetch[js] != 3 and isinstance(self.potentialp,float): return
         if not f3d.lcorrectede:

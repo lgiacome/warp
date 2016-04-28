@@ -1,6 +1,5 @@
 #include "top.h"
 c=============================================================================
-c@(#) File CHO.F, version $Revision: 1.19 $, $Date: 2009/02/04 00:42:10 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  This is the interface to the Chombo/AMR fieldsolver.

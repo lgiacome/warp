@@ -1,6 +1,5 @@
 #include "top.h"
 c=======================================================================
-c@(#) File FRZ.M, version $Revision: 3.15 $, $Date: 2011/11/23 02:22:53 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  Written by Debbie Callahan
@@ -22,7 +21,6 @@ c  VPOISRZ - VCPFT,VRPFT2,TRIDI,VRPFTI2
 c
 c=======================================================================
       subroutine frzinit
-      use FRZversion
 
 c  Called at first reference to package (not nec. a "run" etc.).
 
@@ -33,10 +31,9 @@ c  Called at first reference to package (not nec. a "run" etc.).
       end
 c=============================================================================
       subroutine frzvers (iout)
-      use FRZversion
       integer(ISZ):: iout
 c  Echoes code version,etc. to output files when they're created
-      call printpkgversion(iout,"Fieldsolver FRZ",versfrz)
+      call printpkgversion(iout,"Fieldsolver FRZ")
       return
       end
 c=============================================================================

@@ -1,6 +1,5 @@
 #include "top.h"
 c=============================================================================
-c@(#) File TOP.F, version $Revision: 3.268 $, $Date: 2012/01/20 21:32:41 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  Main source file for the package TOP of the PIC code WARP.
@@ -34,10 +33,9 @@ c       call frzvers (warpout)
       end
 c=============================================================================
       subroutine topvers (iout)
-      use TOPversion
 c  Echoes code version,etc. to output files when they're created
       integer(ISZ):: iout
-      call printpkgversion(iout,"Main package TOP",verstop)
+      call printpkgversion(iout,"Main package TOP")
       return
       end
 c=============================================================================
