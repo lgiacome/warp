@@ -517,6 +517,8 @@ class EM3D(SubcycledPoissonSolver):
         # --- Handle laser inputs
         self.setuplaser()
 
+        w3d.lfinalizerhofsapi=True
+
         self.finalized = True
 
     def allocatefieldarrays(self):
