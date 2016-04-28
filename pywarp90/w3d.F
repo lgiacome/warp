@@ -1,6 +1,5 @@
 #include "top.h"
 c=============================================================================
-c@(#) File W3D.F, version $Revision: 3.470 $, $Date: 2011/11/07 23:04:05 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  This is main file of package W3D of code WARP
@@ -70,12 +69,11 @@ c  Called at first reference to package (not nec. a "run" etc.).
 c=============================================================================
       subroutine w3dvers (iout)
       use Subtimersw3d
-      use W3Dversion
       integer(ISZ):: iout
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
 c  Echoes code version, etc. to output files as they're created
-      call printpkgversion(iout,"Particle package W3D",versw3d)
+      call printpkgversion(iout,"Particle package W3D")
 !$OMP MASTER
       if (lw3dtimesubs) timew3dvers = timew3dvers + wtime() - substarttime
 !$OMP END MASTER

@@ -2,13 +2,20 @@
 import numpy as np
 import math
 import copy
+import os 
 
 try:
-    # use fftw if there, numpy otherwise
-    import pyfftw
-    fft = pyfftw.interfaces.numpy_fft
+    # Try to import fortran wrapper of FFTW
+    import fastfftforpy as fftpy
+    import fastfftpy as fstpy
+    fst=fstpy.fastfft
+    fft=fftpy
+    l_fftw_fort=True
 except:
     fft = np.fft
+    l_fftw_fort=False
+
+print('l_fftw_fort',l_fftw_fort)
 
 def iszero(f):
     """
@@ -162,7 +169,9 @@ class Fourier_Space():
                       'dt':1.,'dx':1.,'dy':1.,'dz':1.,
                       'l_staggered':False,
                       'l_staggered_a_la_brendan':False,
-                      'bc_periodic':[0,0,0]}
+                      'bc_periodic':[0,0,0], 
+                      'l_fftw': l_fftw_fort, 
+                      'nthreads': None}
 
     def __init__(self,**kw):
         try:
@@ -174,23 +183,53 @@ class Fourier_Space():
 
         self.processdefaultsfromdict(Fourier_Space.__flaginputs__,kw)
         
+        
         j = 1j
+        # Dimensions of real space arrays 
         nx = self.nx
         ny = self.ny
         nz = self.nz
-        if not self.bc_periodic[0]:nx+=2*self.nxguard
-        if not self.bc_periodic[1]:ny+=2*self.nyguard
-        if not self.bc_periodic[2]:nz+=2*self.nzguard
+        if not self.bc_periodic[0]:
+            nx+=2*self.nxguard
+        if not self.bc_periodic[1]:
+            ny+=2*self.nyguard
+        if not self.bc_periodic[2]:
+            nz+=2*self.nzguard
+        self.dim_r2c=dims_r2c=[]
+        if nx>1:
+            dims_r2c+=[nx]
+        if ny>1:
+            dims_r2c+=[ny]
+        if nz>1:
+            dims_r2c+=[nz]
+            
+        # Dimensions of Fourier space arrays      
+        if (len(dims_r2c)==3): 
+            nxf = nx//2+1
+            nyf = ny
+            nzf = nz
+        elif (len(dims_r2c) ==2): 
+            if (nx>1): 
+                nxf=nx//2+1
+                nyf=ny
+                nzf=nz
+            else: 
+                nxf=nx
+                nyf=ny//2
+                nzf=nz
         self.dims=dims=[]
-        if nx>1:dims+=[nx]
-        if ny>1:dims+=[ny]
-        if nz>1:dims+=[nz]
-
+        if nxf>1:
+            dims+=[nxf]
+        if nyf>1:
+            dims+=[nyf]
+        if nzf>1:
+            dims+=[nzf]        
+        
         # --- sets kx, ky, kz, k
         if nx>1:
             self.kxn = np.ones(dims)
             self.kx_unmod = np.ones(dims)
-            kxunit = 2.*np.pi*(fft.fftfreq(nx))/self.dx
+            kxunit = 2.*np.pi*(self.rfftfreq(nx))/self.dx
             kxunit_mod = kxunit.copy()
             self.kxunit = kxunit
             if self.norderx is not np.inf:
@@ -212,7 +251,10 @@ class Fourier_Space():
         if ny>1:
             self.kyn = np.ones(dims)
             self.ky_unmod = np.ones(dims)
-            kyunit = 2.*np.pi*(fft.fftfreq(ny))/self.dy
+            if (nx == 1): # Case 2D YZ
+                kyunit = 2.*np.pi*(self.rfftfreq(ny))/self.dy
+            else:         # CASE 3D XYZ or 2D XY
+                kyunit = 2.*np.pi*(self.fftfreq(ny))/self.dy
             kyunit_mod = kyunit.copy()
             self.kyunit = kyunit
             if self.nordery is not np.inf:
@@ -234,7 +276,7 @@ class Fourier_Space():
         if nz>1:
             self.kzn = np.ones(dims)
             self.kz_unmod = np.ones(dims)
-            kzunit = 2.*np.pi*(fft.fftfreq(nz))/self.dz
+            kzunit = 2.*np.pi*(self.fftfreq(nz))/self.dz
             kzunit_mod = kzunit.copy()
             self.kzunit = kzunit
             if self.norderz is not np.inf:
@@ -254,18 +296,18 @@ class Fourier_Space():
                 kzunit_mod*=zcoefs/np.where(kzunit==0.,1.,kzunit*self.dz)
 
         if len(dims)==3:
-            for k in range(nz):
-                for j in range(ny):
+            for k in range(nzf):
+                for j in range(nyf):
                     self.kxn[:,j,k] *= kxunit_mod
                     self.kx_unmod[:,j,k] *= kxunit
 
-            for i in range(nx):
-                for k in range(nz):
+            for i in range(nxf):
+                for k in range(nzf):
                     self.kyn[i,:,k] *= kyunit_mod
                     self.ky_unmod[i,:,k] *= kyunit
 
-            for i in range(nx):
-                for j in range(ny):
+            for i in range(nxf):
+                for j in range(nyf):
                     self.kzn[i,j,:] *= kzunit_mod
                     self.kz_unmod[i,j,:] *= kzunit
             
@@ -308,10 +350,10 @@ class Fourier_Space():
         if len(dims)==2:
             # --- 2D YZ
             if nx==1:
-                for i in range(nz):
+                for i in range(nzf):
                     self.kyn[:,i] *= kyunit_mod
                     self.ky_unmod[:,i] *= kyunit
-                for i in range(ny):
+                for i in range(nyf):
                     self.kzn[i,:] *= kzunit_mod
                     self.kz_unmod[i,:] *= kzunit
                 self.kx_unmod = 0.
@@ -346,10 +388,10 @@ class Fourier_Space():
 
             if ny==1:
             # --- 2D XZ
-                for i in range(nz):
+                for i in range(nzf):
                     self.kxn[:,i] *= kxunit_mod
                     self.kx_unmod[:,i] *= kxunit
-                for i in range(nx):
+                for i in range(nxf):
                     self.kzn[i,:] *= kzunit_mod
                     self.kz_unmod[i,:] *= kzunit
                 self.ky_unmod = 0.
@@ -384,10 +426,10 @@ class Fourier_Space():
 
             if nz==1:
             # --- 2D XY
-                for i in range(ny):
+                for i in range(nyf):
                     self.kxn[:,i] *= kxunit_mod
                     self.kx_unmod[:,i] *= kxunit
-                for i in range(nx):
+                for i in range(nxf):
                     self.kyn[i,:] *= kyunit_mod
                     self.ky_unmod[i,:] *= kyunit
                 self.kz_unmod = 0.
@@ -419,7 +461,85 @@ class Fourier_Space():
                     self.kxp = self.kx
                     self.kym = self.ky
                     self.kyp = self.ky
-  
+        # compute FFTW plans if FFTW loaded 
+        if (self.l_fftw): 
+            if self.nthreads is None: 
+                self.nthreads=int(os.getenv('OMP_NUM_THREADS',1))    
+        # Init plans 
+        self.plan_rfftn={}
+        self.plan_irfftn={} 
+        self.planj_rfftn=None
+        self.planj_irfftn=None
+            
+    def create_plan_rfftn(self, dims): 
+        if self.l_fftw: 
+            return fftpy.compute_plan_rfftn(dims,nthreads=self.nthreads, plan_opt=fst.fftw_measure)
+        else: 
+            return None
+            
+    def create_plan_irfftn(self, dims): 
+        if self.l_fftw: 
+            return fftpy.compute_plan_irfftn(dims,nthreads=self.nthreads, plan_opt=fst.fftw_measure)  
+        else: 
+            return None            
+            
+    def fftn(self, a, field_out=None, plan=None): 
+        if (self.l_fftw): 
+            return fftpy.fftn(a,plan=plan,nthreads=self.nthreads, field_out=field_out)
+        else: 
+            return np.fft.fftn(a)
+
+    def rfftn(self, a, field_out=None, plan =None): 
+        if (self.l_fftw): 
+            return fftpy.rfftn(a,plan=plan,nthreads=self.nthreads, field_out=field_out)
+        else: 
+            axes = np.arange(0,a.ndim)
+            last_axe = axes[-1]
+            axes[-1] = axes[0]
+            axes[0]  = last_axe
+            return np.fft.rfftn(a, axes=axes)
+            
+    def ifftn(self, a, field_out=None, plan=None): 
+        if (self.l_fftw): 
+            return fftpy.ifftn(a,plan=plan,nthreads=self.nthreads, field_out=field_out)
+        else: 
+            return np.fft.ifftn(a)
+    def irfftn(self, a, dims, field_out=None, plan=None): 
+        if (self.l_fftw): 
+            return fftpy.irfftn(a,dims, plan=plan,nthreads=self.nthreads, field_out=field_out)
+        else: 
+            axes = np.arange(0,a.ndim)
+            last_axe = axes[-1]
+            axes[-1] = axes[0]
+            axes[0]  = last_axe
+            rdims = dims.copy()
+            rdims[0] = dims[-1]
+            rdims[-1]=dims[0]
+            return np.fft.irfftn(a, axes=axes, s=rdims)
+    def fft(self, a, axis=0): 
+        if (self.l_fftw): 
+            return fftpy.fft(a, axis=axis,nthreads=self.nthreads)
+        else: 
+            return np.fft.fft(a, axis=axis)
+
+    def fftfreq(self, a): 
+        if (self.l_fftw): 
+            return fftpy.fftfreq(a)
+        else: 
+            return np.fft.fftfreq(a)
+
+    def rfftfreq(self, a): 
+        if (self.l_fftw): 
+            return fftpy.rfftfreq(a)
+        else: 
+            return np.fft.rfftfreq(a)
+
+    def ifft(self, a, axis=0): 
+        if (self.l_fftw): 
+            return fftpy.ifft(a, axis=axis,nthreads=self.nthreads)
+        else: 
+            return np.fft.ifft(a, axis=axis)
+
     def processdefaultsfromdict(self,dict,kw):
         for name,defvalue in dict.iteritems():
             if name not in self.__dict__:
@@ -446,6 +566,21 @@ class Fourier_Space():
             izl = 0
             izu = max(1,self.nz+2*self.nzguard)
         return ixl,ixu,iyl,iyu,izl,izu
+
+    def divsetorig(self,num,denom,orig):
+        """
+        Divide num by denom when denom is 0 at origin. Value at origin is provided by orig.
+        """
+        denommag = denom.copy()
+        if len(self.dims)==1:denommag[0]=1.
+        if len(self.dims)==2:denommag[0,0]=1.
+        if len(self.dims)==3:denommag[0,0,0]=1.
+        r = num/denommag
+        if len(self.dims)==1:r[0]=orig
+        if len(self.dims)==2:r[0,0]=orig
+        if len(self.dims)==3:r[0,0,0]=orig
+        del denommag
+        return r
 
 class GPSTD_Matrix():
 
@@ -515,17 +650,22 @@ class GPSTD(Fourier_Space):
         if self.Ffields=={}:
             self.fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
             for k in self.fields.keys():
-                self.Ffields[k]=fft.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))
+                self.plan_rfftn[k] = self.create_plan_rfftn(np.asarray(self.fields_shape))
+                self.Ffields[k]    =self.rfftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]),plan=self.plan_rfftn[k])
         else:
             for k in self.fields.keys():
-                self.Ffields[k][...]=fft.fftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]))
-        
+                self.Ffields[k]=self.rfftn(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]),field_out=self.Ffields[k],plan=self.plan_rfftn[k])                    
     def get_fields(self):
         ixl,ixu,iyl,iyu,izl,izu = self.get_ius()
+        if (self.plan_irfftn=={}): 
+            for k in self.fields.keys():
+                    self.plan_irfftn[k] = self.create_plan_irfftn(np.asarray(self.fields_shape))  
         for k in self.fields.keys():
-            f = fft.ifftn(self.Ffields[k])
-            f.resize(self.fields_shape)
-            self.fields[k][ixl:ixu,iyl:iyu,izl:izu] = f.real
+            if not self.LSource[k]:       
+                shapek = np.asarray(np.shape(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu])))        
+                f = self.irfftn(self.Ffields[k], shapek, field_out=np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]), plan=self.plan_irfftn[k])
+                f.resize(self.fields_shape)
+                self.fields[k][ixl:ixu,iyl:iyu,izl:izu] = f.real
         
     def push_fields(self):
                 
@@ -547,7 +687,7 @@ class GPSTD(Fourier_Space):
         updated_fields = {}
         for k in self.Ffields.keys():
             updated_fields[k] = False
-
+        
         # --- fields update
         # --- multiply vector 'fields' by matrix 'mymat', returning result in 'fields'
         for i in range(n):
@@ -618,6 +758,11 @@ class GPSTD(Fourier_Space):
 
         del updated_fields
         
+    def getm(self,a='ex',b='ex'):
+        o=self.fields_order
+        m=self.mymat
+        return m[o[a]][o[b]]
+
 class GPSTD_Maxwell_PML(GPSTD):
 
     __flaginputs__ = {'syf':None,'l_pushf':False,'l_pushg':False,'clight':299792458.0}
@@ -850,13 +995,204 @@ class GPSTD_Maxwell_PML(GPSTD):
 
         return
 
+class PSATD_Maxwell_PML(GPSTD):
+
+    __flaginputs__ = {'syf':None,'l_pushf':False,'l_pushg':False,'clight':299792458.0}
+
+    def __init__(self,**kw):
+        try:
+            kw['kwdict'].update(kw)
+            kw = kw['kwdict']
+            del kw['kwdict']
+        except KeyError:
+            pass
+
+        self.processdefaultsfromdict(GPSTD_Maxwell_PML.__flaginputs__,kw)
+
+        syf=self.syf
+        nx = np.max([1,syf.nx])
+        ny = np.max([1,syf.ny])
+        nz = np.max([1,syf.nz])
+        kw['nx']=nx
+        kw['ny']=ny
+        kw['nz']=nz
+
+        GPSTD.__init__(self,kwdict=kw)
+
+        dt=self.dt
+        cdt=dt*self.clight
+        self.wdt = self.k*cdt
+        self.coswdt=np.cos(self.wdt)
+        self.sinwdt=np.sin(self.wdt)
+
+        j = 1j
+
+        if self.l_pushf:
+            self.add_fields({"exx":syf.exx, \
+                             "exy":syf.exy, \
+                             "exz":syf.exz, \
+                             "eyx":syf.eyx, \
+                             "eyy":syf.eyy, \
+                             "eyz":syf.eyz, \
+                             "ezx":syf.ezx, \
+                             "ezy":syf.ezy, \
+                             "ezz":syf.ezz})
+        else:
+            self.add_fields({"exy":syf.exy, \
+                             "exz":syf.exz, \
+                             "eyx":syf.eyx, \
+                             "eyz":syf.eyz, \
+                             "ezx":syf.ezx, \
+                             "ezy":syf.ezy})
+        if self.l_pushg:
+            self.add_fields({"bxx":syf.bxx, \
+                             "bxy":syf.bxy, \
+                             "bxz":syf.bxz, \
+                             "byx":syf.byx, \
+                             "byy":syf.byy, \
+                             "byz":syf.byz, \
+                             "bzx":syf.bzx, \
+                             "bzy":syf.bzy, \
+                             "bzz":syf.bzz})
+        else:
+            self.add_fields({"bxy":syf.bxy, \
+                             "bxz":syf.bxz, \
+                             "byx":syf.byx, \
+                             "byz":syf.byz, \
+                             "bzx":syf.bzx, \
+                             "bzy":syf.bzy})
+        if self.l_pushf:
+            self.add_fields({"fx":syf.fx, \
+                             "fy":syf.fy, \
+                             "fz":syf.fz})
+            
+        if self.l_pushg:
+            self.add_fields({"gx":syf.gx, \
+                             "gy":syf.gy, \
+                             "gz":syf.gz})
+        
+        self.get_Ffields()
+
+        m0 = 0.
+        m1 = 1.
+        dt=self.dt
+        cdt=dt*self.clight
+        C=self.coswdt
+        S=self.sinwdt
+            
+        if self.nx>1:
+            axm = j*S*self.kxmn
+            axp = j*S*self.kxpn
+        else:
+            axm = axp = 0.
+
+        if self.ny>1:
+            aym = j*S*self.kymn
+            ayp = j*S*self.kypn
+        else:
+            aym = ayp = 0.
+
+        if self.nz>1:
+            azm = j*S*self.kzmn
+            azp = j*S*self.kzpn
+        else:
+            azm = azp = 0.
+
+        self.mymat = self.getmaxwellmat_pml(C,S,axp,ayp,azp,axm,aym,azm)
+
+    def getmaxwellmat_pml(self,C,S,axp,ayp,azp,axm,aym,azm):
+        mymat = GPSTD_Matrix(self.fields)
+        if self.l_pushf:
+            # --- bx
+            if self.l_pushg:mymat.add_op('bxx',{'bxx':C,'gx':axm,'gy':axm,'gz':axm})
+            mymat.add_op('bxy',{'bxy':C,'ezx':-ayp,'ezy':-ayp,'ezz':-ayp})
+            mymat.add_op('bxz',{'bxz':C,'eyx': azp,'eyy': azp,'eyz': azp})
+            # --- by
+            mymat.add_op('byx',{'byx':C,'ezx': axp,'ezy': axp,'ezz': axp})
+            if self.l_pushg:mymat.add_op('byy',{'byy':C,'gx':aym,'gy':aym,'gz':aym})
+            mymat.add_op('byz',{'byz':C,'exx':-azp,'exy':-azp,'exz':-azp})
+            # --- bz
+            mymat.add_op('bzx',{'bzx':C,'eyx':-axp,'eyy':-axp,'eyz':-axp})
+            mymat.add_op('bzy',{'bzy':C,'exx': ayp,'exy': ayp,'exz': ayp})
+            if self.l_pushg:mymat.add_op('bzz',{'bzz':C,'gx':azm,'gy':azm,'gz':azm})
+        else:
+            # --- bx
+            if self.l_pushg:mymat.add_op('bxx',{'bxx':C,'gx':axm,'gy':axm,'gz':axm})
+            mymat.add_op('bxy',{'bxy':C,'ezx':-ayp,'ezy':-ayp})
+            mymat.add_op('bxz',{'bxz':C,'eyx': azp,'eyz': azp})
+            # --- by
+            mymat.add_op('byx',{'byx':C,'ezx': axp,'ezy': axp})
+            if self.l_pushg:mymat.add_op('byy',{'byy':C,'gx':aym,'gy':aym,'gz':aym})
+            mymat.add_op('byz',{'byz':C,'exy':-azp,'exz':-azp})
+            # --- bz
+            mymat.add_op('bzx',{'bzx':C,'eyx':-axp,'eyz':-axp})
+            mymat.add_op('bzy',{'bzy':C,'exy': ayp,'exz': ayp})
+            if self.l_pushg:mymat.add_op('bzz',{'bzz':C,'gx':azm,'gy':azm,'gz':azm})
+
+        if self.l_pushg:
+            # --- ex
+            if self.l_pushf:mymat.add_op('exx',{'exx':C,'fx':axp,'fy':axp,'fz':axp})
+            mymat.add_op('exy',{'exy':C,'bzx': aym,'bzy': aym,'bzz': aym})
+            mymat.add_op('exz',{'exz':C,'byx':-azm,'byy':-azm,'byz':-azm})
+            # --- ey
+            mymat.add_op('eyx',{'eyx':C,'bzx':-axm,'bzy':-axm,'bzz':-axm})
+            if self.l_pushf:mymat.add_op('eyy',{'eyy':C,'fx':ayp,'fy':ayp,'fz':ayp})
+            mymat.add_op('eyz',{'eyz':C,'bxx': azm,'bxy': azm,'bxz': azm})
+            # --- ez
+            mymat.add_op('ezx',{'ezx':C,'byx': axm,'byy': axm,'byz': axm})
+            mymat.add_op('ezy',{'ezy':C,'bxx':-aym,'bxy':-aym,'bxz':-aym})
+            if self.l_pushf:mymat.add_op('ezz',{'ezz':C,'fx':azp,'fy':azp,'fz':azp})
+        else:
+            # --- ex
+            if self.l_pushf:mymat.add_op('exx',{'exx':C,'fx':axp,'fy':axp,'fz':axp})
+            mymat.add_op('exy',{'exy':C,'bzx': aym,'bzy': aym})
+            mymat.add_op('exz',{'exz':C,'byx':-azm,'byz':-azm})
+            # --- ey
+            mymat.add_op('eyx',{'eyx':C,'bzx':-axm,'bzy':-axm})
+            if self.l_pushf:mymat.add_op('eyy',{'eyy':C,'fx':ayp,'fy':ayp,'fz':ayp})
+            mymat.add_op('eyz',{'eyz':C,'bxy': azm,'bxz': azm})
+            # --- ez
+            mymat.add_op('ezx',{'ezx':C,'byx': axm,'byz': axm})
+            mymat.add_op('ezy',{'ezy':C,'bxy':-aym,'bxz':-aym})
+            if self.l_pushf:mymat.add_op('ezz',{'ezz':C,'fx':azp,'fy':azp,'fz':azp})
+
+        if self.l_pushf:
+            mymat.add_op('fx',{'fx':C,'exx':axm,'exy':axm,'exz':axm})
+            mymat.add_op('fy',{'fy':C,'eyx':aym,'eyy':aym,'eyz':aym})
+            mymat.add_op('fz',{'fz':C,'ezx':azm,'ezy':azm,'ezz':azm})
+
+        if self.l_pushg:
+            mymat.add_op('gx',{'gx':C,'bxx':axp,'bxy':axp,'bxz':axp})
+            mymat.add_op('gy',{'gy':C,'byx':ayp,'byy':ayp,'byz':ayp})
+            mymat.add_op('gz',{'gz':C,'bzx':azp,'bzy':azp,'bzz':azp})
+
+        return mymat.mat
+
+    def push(self):
+        syf = self.syf
+
+        self.push_fields()
+
+        for f in self.fields.values():
+            if self.nx>1:
+                f[:self.nxguard,...]=0.
+                f[-self.nxguard/2:,...]=0.
+            if self.ny>1:
+                f[...,:self.nyguard,...]=0.
+                f[...,-self.nyguard/2:,...]=0.
+            if self.nz>1:
+                f[...,:self.nzguard/2]=0.
+                f[...,-self.nzguard/2:]=0.
+
+#      scale_em3d_split_fields(syf,top.dt,self.l_pushf)
+
+        return
 
 class GPSTD_Maxwell(GPSTD):
 
     __flaginputs__ = {'yf':None,
                       'l_pushf':False,
                       'l_pushg':False,
-                      'l_getrho':False,
                       'clight':299792458.0,
                       'eps0':8.854187817620389e-12}
 
@@ -884,8 +1220,13 @@ class GPSTD_Maxwell(GPSTD):
         
         self.add_fields({"bx":yf.Bx,"by":yf.By,"bz":yf.Bz, \
                          "ex":yf.Ex,"ey":yf.Ey,"ez":yf.Ez})
+        self.add_fields({"rho":yf.Rho},True)
+
         if self.l_pushf:
             self.add_fields({"f":yf.F})
+            self.add_fields({"rhoold":yf.Rhoold},True)
+            self.add_fields({"rhonew":yf.Rho},True)
+            self.add_fields({"drho":yf.Rho},True)
         if self.l_pushg:
             self.add_fields({"g":yf.G})
 #        if self.l_pushf or self.l_getrho:
@@ -948,8 +1289,6 @@ class GPSTD_Maxwell(GPSTD):
         self.mymat = self.getmaxwellmat(axp,ayp,azp,axm,aym,azm,dt,cdt,m0,m1,\
                      self.kx_unmod,self.ky_unmod,self.kz_unmod,l_matref=0,matcompress=matcompress)
 
-        self.mymat = exp_by_squaring_matrixlist(self.mymat, self.ntsub, matcompress=matcompress)
-
     def getmaxwellmat(self,axp,ayp,azp,axm,aym,azm,dt,cdt,m0,m1,
                       kx_unmod,ky_unmod,kz_unmod,l_matref=0,
                       matcompress=None):
@@ -989,6 +1328,11 @@ class GPSTD_Maxwell(GPSTD):
             matpushg.add_op('g',{'g':1.,'bx':axp*c,'by':ayp*c,'bz':azp*c})
 
         if self.l_pushf:
+            mymat_init = GPSTD_Matrix(self.fields)
+            mymat_init.add_op('rho',{'rho':0.,'rhoold':1.})
+            mymat_init.add_op('drho',{'drho':0.,'rhonew':1.,'rhoold':-1.})
+
+        if self.l_pushf:
             mymat = multmat(matpushf.mat,matpushb.mat,matcompress=matcompress)
             if self.l_pushg:mymat = multmat(mymat,matpushg.mat,matcompress=matcompress)
             mymat = multmat(mymat,matpushe.mat,matcompress=matcompress)
@@ -1000,6 +1344,10 @@ class GPSTD_Maxwell(GPSTD):
             if self.l_pushg:mymat = multmat(mymat,matpushg.mat,matcompress=matcompress)
             mymat = multmat(mymat,matpushb.mat,matcompress=matcompress)
 
+        self.mymat = exp_by_squaring_matrixlist(mymat, self.ntsub, matcompress=matcompress)
+        if self.l_pushf:
+            self.mymat = multmat(mymat_init.mat,self.mymat)
+
         if l_matref:
             self.matpushb=matpushb
             self.matpushe=matpushe
@@ -1007,7 +1355,7 @@ class GPSTD_Maxwell(GPSTD):
             if self.l_pushg:self.matpushg=matpushg
             if self.l_pushf:self.matpushrho=matpushrho
 
-        return mymat
+        return self.mymat
 
     def push(self):
 
@@ -1020,7 +1368,6 @@ class PSATD_Maxwell(GPSTD):
     __flaginputs__ = {'yf':None,
                       'l_pushf':False,
                       'l_pushg':False,
-                      'l_getrho':False,
                       'clight':299792458.0,
                       'eps0':8.854187817620389e-12}
 
@@ -1032,7 +1379,7 @@ class PSATD_Maxwell(GPSTD):
         except KeyError:
             pass
 
-        self.processdefaultsfromdict(GPSTD_Maxwell.__flaginputs__,kw)
+        self.processdefaultsfromdict(PSATD_Maxwell.__flaginputs__,kw)
 
         yf=self.yf
 
@@ -1053,8 +1400,8 @@ class PSATD_Maxwell(GPSTD):
             self.add_fields({"f":yf.F})
         if self.l_pushg:
             self.add_fields({"g":yf.G})
-        self.add_fields({"rho":yf.Rho},True)
         self.add_fields({"rhoold":yf.Rhoold},True)
+        self.add_fields({"rhonew":yf.Rho},True)
         self.add_fields({"jx":yf.Jx,"jy":yf.Jy,"jz":yf.Jz},True)
         
         self.get_Ffields()
@@ -1070,39 +1417,27 @@ class PSATD_Maxwell(GPSTD):
         S=self.sinwdt
             
         self.mymat = self.getmaxwellmat(self.kxpn,self.kypn,self.kzpn,\
-                     self.kxmn,self.kymn,self.kzmn,dt,cdt,m0,m1)
+                     self.kxmn,self.kymn,self.kzmn,dt,cdt)
 
-    def getmaxwellmat(self,kxpn,kypn,kzpn,kxmn,kymn,kzmn,dt,cdt,m0,m1):
+    def getmaxwellmat(self,kxpn,kypn,kzpn,kxmn,kymn,kzmn,dt,cdt):
 
         j = 1j
         c=self.clight
         C=self.coswdt
         S=self.sinwdt
 
-        Soverk = S/self.kmag
+        Soverk = self.divsetorig(S,self.kmag,self.dt*self.clight)
         Jmult = 1./(self.kmag*self.clight*self.eps0)
 
-        EJmult = -S*Jmult
+        EJmult = -self.divsetorig(S,self.kmag*self.clight*self.eps0,self.dt/self.eps0)
+        
         ERhomult = j*(-EJmult/dt-1./self.eps0)/self.kmag
         ERhooldmult = j*(C/self.eps0+EJmult/dt) /self.kmag
 
         BJmult = j*(C-1.)*Jmult/self.clight
 
         FJmult = j*(C-1.)*Jmult
-        FRhomult = (C-1.)/(dt*self.kmag**2*self.clight*self.eps0)
-
-        if len(self.dims)==1:
-            EJmult[0] = -self.dt/self.eps0
-            Soverk[0] = self.dt*self.clight
-            FRhomult[0] = -0.5*self.dt*self.clight/self.eps0
-        if len(self.dims)==2:
-            EJmult[0,0] = -self.dt/self.eps0
-            Soverk[0,0] = self.dt*self.clight
-            FRhomult[0,0] = -0.5*self.dt*self.clight/self.eps0
-        if len(self.dims)==3:
-            EJmult[0,0,0] = -self.dt/self.eps0
-            Soverk[0,0,0] = self.dt*self.clight
-            FRhomult[0,0,0] = -0.5*self.dt*self.clight/self.eps0
+        FRhomult = self.divsetorig(C-1.,dt*self.kmag**2*self.clight*self.eps0,-0.5*self.dt*self.clight/self.eps0)
         
         if self.nx>1:
             axm = j*S*self.kxmn
@@ -1134,6 +1469,13 @@ class PSATD_Maxwell(GPSTD):
             bzm = bzp = 0.
             kzpn = kzmn = 0.
 
+        self.BJmult = BJmult
+        self.EJmult = EJmult
+        self.ERhomult = ERhomult
+        self.ERhooldmult = ERhooldmult
+        self.Jmult = Jmult
+        self.Soverk = Soverk
+
         mymat = GPSTD_Matrix(self.fields)
         if self.l_pushg:
             mymat.add_op('bx',{'bx':C,'ey': azp/c,'ez':-ayp/c,'g':axm/c,'jy': kzpn*BJmult,'jz':-kypn*BJmult})
@@ -1145,25 +1487,25 @@ class PSATD_Maxwell(GPSTD):
             mymat.add_op('bz',{'bz':C,'ex': ayp/c,'ey':-axp/c,'jx': kypn*BJmult,'jy':-kxpn*BJmult})
 
         if self.l_pushf:
-            mymat.add_op('ex',{'ex':C,'by':-azm*c,'bz': aym*c,'jx':EJmult,'f':axp,'rho':kxpn*ERhomult,'rhoold':kxpn*ERhooldmult})
-            mymat.add_op('ey',{'ey':C,'bx': azm*c,'bz':-axm*c,'jy':EJmult,'f':ayp,'rho':kypn*ERhomult,'rhoold':kypn*ERhooldmult})
-            mymat.add_op('ez',{'ez':C,'bx':-aym*c,'by': axm*c,'jz':EJmult,'f':azp,'rho':kzpn*ERhomult,'rhoold':kzpn*ERhooldmult})
+            mymat.add_op('ex',{'ex':C,'by':-azm*c,'bz': aym*c,'jx':EJmult,'f':axp,'rhonew':kxpn*ERhomult,'rhoold':kxpn*ERhooldmult})
+            mymat.add_op('ey',{'ey':C,'bx': azm*c,'bz':-axm*c,'jy':EJmult,'f':ayp,'rhonew':kypn*ERhomult,'rhoold':kypn*ERhooldmult})
+            mymat.add_op('ez',{'ez':C,'bx':-aym*c,'by': axm*c,'jz':EJmult,'f':azp,'rhonew':kzpn*ERhomult,'rhoold':kzpn*ERhooldmult})
         else:
-            mymat.add_op('ex',{'ex':C,'by':-azm*c,'bz': aym*c,'jx':EJmult,'rho':kxpn*ERhomult,'rhoold':kxpn*ERhooldmult})
-            mymat.add_op('ey',{'ey':C,'bx': azm*c,'bz':-axm*c,'jy':EJmult,'rho':kypn*ERhomult,'rhoold':kypn*ERhooldmult})
-            mymat.add_op('ez',{'ez':C,'bx':-aym*c,'by': axm*c,'jz':EJmult,'rho':kzpn*ERhomult,'rhoold':kzpn*ERhooldmult})
+            mymat.add_op('ex',{'ex':C,'by':-azm*c,'bz': aym*c,'jx':EJmult,'rhonew':kxpn*ERhomult,'rhoold':kxpn*ERhooldmult})
+            mymat.add_op('ey',{'ey':C,'bx': azm*c,'bz':-axm*c,'jy':EJmult,'rhonew':kypn*ERhomult,'rhoold':kypn*ERhooldmult})
+            mymat.add_op('ez',{'ez':C,'bx':-aym*c,'by': axm*c,'jz':EJmult,'rhonew':kzpn*ERhomult,'rhoold':kzpn*ERhooldmult})
 
         if self.l_pushf:
             mymat.add_op('f',{'f':C,'ex':axm,'ey':aym,'ez':azm, \
                                     'jx': kxmn*FJmult,'jy': kymn*FJmult,'jz': kzmn*FJmult, \
-                                    'rho':FRhomult,\
+                                    'rhonew':FRhomult,\
                                     'rhoold':-FRhomult - Soverk/self.eps0})
             
         if self.l_pushg:
             mymat.add_op('g',{'g':C,'bx':axp*c,'by':ayp*c,'bz':azp*c})
 
         return mymat.mat
-
+ 
     def push(self):
 
         self.push_fields()

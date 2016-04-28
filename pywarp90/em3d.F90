@@ -3351,22 +3351,23 @@ subroutine depose_rho_n(rho,np,xp,yp,zp,w,q,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz,nxg
   return
 end subroutine depose_rho_n
 
-subroutine depose_j_n_2dxz(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
-                        l_particles_weight,l4symtry)
+subroutine depose_j_n_2dxz(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dto,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
+                        l_particles_weight,l4symtry,l_deposit_nodal,nsubsteps,l_coefs_uniform)
    implicit none
-   integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
+   integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard,nsubsteps
    real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
    real(kind=8), dimension(np) :: xp,zp,w,ux,uy,uz,gaminv
-   real(kind=8) :: q,dt,dx,dz,xmin,zmin
-   logical(ISZ) :: l_particles_weight,l4symtry
+   real(kind=8), intent(in) :: q,dto,dx,dz,xmin,zmin
+   logical(ISZ) :: l_particles_weight,l4symtry,l_deposit_nodal,l_coefs_uniform
 
    real(kind=8) :: dxi,dzi,xint,zint, &
                    oxint,ozint,xintsq,zintsq,oxintsq,ozintsq
-   real(kind=8) :: x,z,wq,invvol,vx,vy,vz
+   real(kind=8) :: x,z,wq,invvol,vx,vy,vz,dt,dxp,dzp
    real(kind=8) :: sx(-int(nox/2):int((nox+1)/2)), &
-                   sz(-int(noz/2):int((noz+1)/2))
+                   sz(-int(noz/2):int((noz+1)/2)), &
+                   wcoefs(nsubsteps)
    real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
-   integer(ISZ) :: j,l,ip,jj,ll,ixmin, ixmax, izmin, izmax
+   integer(ISZ) :: j,l,ip,jj,ll,ixmin, ixmax, izmin, izmax, it
    
       dxi = 1./dx
       dzi = 1./dz
@@ -3376,6 +3377,22 @@ subroutine depose_j_n_2dxz(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx
       ixmax = int((nox+1)/2)
       izmin = -int(noz/2)
       izmax = int((noz+1)/2)
+      
+      if (l_coefs_uniform) then
+          wcoefs = 1./nsubsteps
+      
+      else
+          wcoefs = 0.
+          wcoefs(1)=1.
+      
+          do ip=1,nsubsteps-1
+              wcoefs(2:nsubsteps) =  0.5*(wcoefs(2:nsubsteps) + wcoefs(1:nsubsteps-1))
+              wcoefs(1) = wcoefs(1)*0.5
+          end do
+      
+      end if
+      
+      dt = dto/nsubsteps
 
       do ip=1,np
       
@@ -3383,8 +3400,16 @@ subroutine depose_j_n_2dxz(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx
         vy = uy(ip)*gaminv(ip)
         vz = uz(ip)*gaminv(ip)
         
-        x = (xp(ip)-0.5*vx*dt-xmin)*dxi
-        z = (zp(ip)-0.5*vz*dt-zmin)*dzi
+        x = (xp(ip)-vx*dto-0.5*vx*dt-xmin)*dxi
+        z = (zp(ip)-vz*dto-0.5*vz*dt-zmin)*dzi
+        
+        dxp = vx*dt*dxi
+        dzp = vz*dt*dzi
+        
+        do it=1, nsubsteps
+        
+        x = x+dxp
+        z = z+dzp
         
         if (l4symtry) then
           x=abs(x)
@@ -3407,9 +3432,9 @@ subroutine depose_j_n_2dxz(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx
         zint = z-l
 
         if (l_particles_weight) then
-          wq=q*w(ip)*invvol
+          wq=q*w(ip)*invvol*wcoefs(it)
         else
-          wq=q*invvol
+          wq=q*invvol*wcoefs(it)
         end if
       
         select case(nox)
@@ -3454,16 +3479,29 @@ subroutine depose_j_n_2dxz(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx
           sz( 2) = onesixth*zintsq*zint
         end select        
 
-         do ll = izmin, izmax
-            do jj = ixmin, ixmax
-              jx(j+jj  ,0,l+ll  ) = jx(j+jj  ,0,l+ll  ) + sx(jj)*sz(ll)*wq*vx*0.5
-              jx(j+jj-1,0,l+ll  ) = jx(j+jj-1,0,l+ll  ) + sx(jj)*sz(ll)*wq*vx*0.5
-              jy(j+jj  ,0,l+ll  ) = jy(j+jj  ,0,l+ll  ) + sx(jj)*sz(ll)*wq*vy
-              jz(j+jj  ,0,l+ll  ) = jz(j+jj  ,0,l+ll  ) + sx(jj)*sz(ll)*wq*vz*0.5
-              jz(j+jj  ,0,l+ll-1) = jz(j+jj  ,0,l+ll-1) + sx(jj)*sz(ll)*wq*vz*0.5
+        if (l_deposit_nodal) then
+            ! deposit on nodal grid
+            do ll = izmin, izmax
+                do jj = ixmin, ixmax
+                  jx(j+jj  ,0,l+ll ) = jx(j+jj  ,0,l+ll ) + sx(jj)*sz(ll)*wq*vx
+                  jy(j+jj  ,0,l+ll ) = jy(j+jj  ,0,l+ll ) + sx(jj)*sz(ll)*wq*vy
+                  jz(j+jj  ,0,l+ll ) = jz(j+jj  ,0,l+ll ) + sx(jj)*sz(ll)*wq*vz
+                end do
             end do
-        end do
+        else
+            ! deposit on staggered grid
+            do ll = izmin, izmax
+                do jj = ixmin, ixmax
+                  jx(j+jj  ,0,l+ll ) = jx(j+jj  ,0,l+ll ) + sx(jj)*sz(ll)*wq*vx*0.5
+                  jx(j+jj-1,0,l+ll ) = jx(j+jj-1,0,l+ll ) + sx(jj)*sz(ll)*wq*vx*0.5
+                  jy(j+jj  ,0,l+ll ) = jy(j+jj  ,0,l+ll ) + sx(jj)*sz(ll)*wq*vy
+                  jz(j+jj  ,0,l+ll ) = jz(j+jj  ,0,l+ll ) + sx(jj)*sz(ll)*wq*vz*0.5
+                  jz(j+jj  ,0,l+ll-1) = jz(j+jj  ,0,l+ll-1) + sx(jj)*sz(ll)*wq*vz*0.5
+                end do
+            end do
+        end if
 
+      end do
     end do
 
   return
@@ -7212,11 +7250,11 @@ subroutine depose_j_n_2dxz_direct(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmi
   return
 end subroutine depose_j_n_2dxz_direct
 
-subroutine depose_drhoodt_n_2dxz(drhoodt,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
+subroutine depose_rhoold_n_2dxz(rhoold,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
                         l_particles_weight,l4symtry)
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
-   real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: drhoodt
+   real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: rhoold
    real(kind=8), dimension(np) :: xp,zp,w,ux,uy,uz,gaminv
    real(kind=8) :: q,dt,dx,dz,xmin,zmin
    logical(ISZ) :: l_particles_weight,l4symtry
@@ -7225,7 +7263,7 @@ subroutine depose_drhoodt_n_2dxz(drhoodt,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,
                    oxint,ozint,xintsq,zintsq,oxintsq,ozintsq
    real(kind=8) :: xintold,zintold, &
                    oxintold,ozintold
-   real(kind=8) :: x,z,xold,zold,wq,invvolodt,vx,vy,vz
+   real(kind=8) :: x,z,xold,zold,wq,invvol,vx,vy,vz
    real(kind=8) :: sx(-int(nox/2):int((nox+1)/2)), &
                    sz(-int(noz/2):int((noz+1)/2))
    real(kind=8) :: sxold(-int(nox/2):int((nox+1)/2)), &
@@ -7236,7 +7274,7 @@ subroutine depose_drhoodt_n_2dxz(drhoodt,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,
       
       dxi = 1./dx
       dzi = 1./dz
-      invvolodt = dxi*dzi/dt
+      invvol = dxi*dzi
 
       ixmin = -int(nox/2)
       ixmax = int((nox+1)/2)
@@ -7305,9 +7343,9 @@ subroutine depose_drhoodt_n_2dxz(drhoodt,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,
         zintold = zold-lold
 
         if (l_particles_weight) then
-          wq=q*w(ip)*invvolodt
+          wq=q*w(ip)*invvol
         else
-          wq=q*w(1)*invvolodt
+          wq=q*w(1)*invvol
         end if
       
         select case(nox)
@@ -7397,8 +7435,7 @@ subroutine depose_drhoodt_n_2dxz(drhoodt,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,
          do ll = izmin, izmax
             do jj = ixmin, ixmax
 
-              drhoodt(j+jj   ,0,l+ll   ) = drhoodt(j+jj   ,0,l+ll   ) + sx   (jj)*sz   (ll)*wq
-              drhoodt(jold+jj,0,lold+ll) = drhoodt(jold+jj,0,lold+ll) - sxold(jj)*szold(ll)*wq
+              rhoold(jold+jj,0,lold+ll) = rhoold(jold+jj,0,lold+ll) + sxold(jj)*szold(ll)*wq
 
             end do
         end do
@@ -7406,5 +7443,5 @@ subroutine depose_drhoodt_n_2dxz(drhoodt,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,
     end do
 
   return
-end subroutine depose_drhoodt_n_2dxz
+end subroutine depose_rhoold_n_2dxz
 
