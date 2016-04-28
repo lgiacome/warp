@@ -95,8 +95,8 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                                     self.lparallel_output, self.rank )
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
-            if self.lparallel_output == False or self.rank == 0:
-                self.create_file_empty_slice(
+            if self.lparallel_output == False and self.rank == 0:
+                self.create_file_empty_particles(
                     snapshot.filename, i, snapshot.t_lab, self.top.dt)
 
         # Print a message that records the time for initialization
@@ -398,9 +398,12 @@ class LabSnapshot:
 
         Returns None if the slices are empty
         """
-        particle_array = np.concatenate(
-            self.buffered_slices[species], axis=1)
-
+        if self.buffered_slices[species] != []:
+            particle_array = np.concatenate(
+                self.buffered_slices[species], axis=1)
+        else:
+            particle_array = np.empty((9,0))
+            
         return particle_array
 
 class ParticleCatcher:
@@ -641,7 +644,7 @@ class ParticleCatcher:
         # Collapse the particle quantities using interpolation to
         # the the midpoint of t and t_prev
         self.collapse_to_mid_point()
-        slice_array = np.empty((8, num_part,))
+        slice_array = np.empty((np.shape(p2i.keys())[0], num_part,))
 
         for quantity in self.particle_to_index.keys():
             # Here typical values for 'quantity' are e.g. 'z', 'ux', 'gamma'
