@@ -1142,12 +1142,12 @@ by0                       real [T]   /0./
    # Uniform B field in y
 bz0                       real [T]   /0./
    # Uniform axial "guide" B field
-ex0                       real /0./
+ex0                       real [V/m] /0./
    # Uniform E field in x
-ey0                       real /0./
+ey0                       real [V/m] /0./
    # Uniform E field in y
-ez0                       real /0./
-   # Linear Ez field for bunching force
+ez0                       real [V/m] /0./
+   # Uniform E field in z
 vbeamfrm                  real [M/S]
    # Velocity of the beam frame.  Normally the same as vbeam.
 boost_gamma               real /1./
