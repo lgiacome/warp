@@ -990,7 +990,7 @@ def restoreolddump(ff):
 # --- Dump command
 def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars=1,
          ff=None,varsuffix=None,histz=2,resizeHist=1,verbose=false,
-         hdf=0,format='',datawriter=PW.PW):
+         hdf=0,format='',datawriter=PW.PW,skip=[]):
     """
   Creates a dump file
     - filename=(prefix+runid+'%06d'%top.it+suffix+'.dump')
@@ -1004,6 +1004,7 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
                  filename. It is not recommended to use this option - writing
                  to one file most likely will not work.
     - pyvars=1: When 1, saves user defined python variables to the file.
+    - skip=[]: List of names of Python variables to skip
     - ff=None: Optional file object. When passed in, write to that file instead
                of creating a new one. Note that the inputted file object must be
                closed by the user. The object most be an instance of a class
@@ -1041,6 +1042,7 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
         # --- Add to the list all variables which are not in the initial list
         for l,v in __main__.__dict__.iteritems():
             if isinstance(v,types.ModuleType): continue
+            if l in skip: continue
             if l not in initial_global_dict_keys:
                 interpreter_variables.append(l)
     # --- Resize history arrays if requested.
