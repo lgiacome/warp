@@ -2259,6 +2259,7 @@ def nicelevels(z,n=8) :
     zmax = z.max()
     if zmin == zmax: return array([zmin,zmax])
     finest = abs(zmax - zmin)/float (n)
+    if finest <= 0.: return array([zmin,zmax])
     # blows up on zmin=zmax
     unit = 10.**floor (log10 (finest))
     finest = finest/unit
