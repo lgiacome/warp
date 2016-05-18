@@ -434,8 +434,9 @@ class MultiGridImplicit2D(MultiGrid3D):
   Initially, conductors are not implemented.
     """
 
-    def __init__(self,lreducedpickle=1,**kw):
+    def __init__(self,lreducedpickle=1,withbadvance=true,**kw):
         kw['lreducedpickle'] = lreducedpickle
+        self.withbadvance = withbadvance
         self.grid_overlap = 2
 
         # --- Force ny (which is not used here)
@@ -656,7 +657,7 @@ class MultiGridImplicit2D(MultiGrid3D):
         if not self.l_internal_dosolve: return
         # --- Do the solve, including chi
         #self.dosolvesuperlu(iwhich,*args)
-        self.dosolvemg(iwhich,isourcepndtscopies,indts,iselfb)
+        self.dosolvemg(iwhich,zfact,isourcepndtscopies,indts,iselfb)
 
     def dosolvemg(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
         # --- set for longitudinal relativistic contraction
@@ -702,8 +703,10 @@ class MultiGridImplicit2D(MultiGrid3D):
         mgverbose = self.getmgverbose()
         mgsolveimplicites2d(iwhich,self.nx,self.nz,self.nxlocal,self.nzlocal,
                             self.dx,self.dz*zfact,
+                            self.nxguardphi,self.nzguardphi,
+                            self.nxguardrho,self.nzguardrho,
                             self.potential,self.source,
-                            top.nsimplicit,qomdt,self.chi0,
+                            top.nsimplicit,qomdt,self.chi0,self.withbadvance,
                             self.bounds,self.xmminlocal,self.zmminlocal*zfact,
                             self.getzgrid()*zfact,
                             self.mgparam,mgiters,self.mgmaxiters,
