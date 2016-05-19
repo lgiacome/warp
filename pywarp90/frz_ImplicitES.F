@@ -768,7 +768,7 @@ c     --- Make sure guard planes have sensible values before beginning.
 #ifdef MPIPARALLEL
       call applyparallelboundaryconditions3d(chi0temp,nxlocal,0,nzlocal,
      &                                       nxguardres,0,nzguardres,ns,3,localbounds,fsdecomp)
-      if (withbadvance)
+      if (withbadvance) then
         call applyparallelboundaryconditions3d(bongrid,nxlocal,0,nzlocal,
      &                                         nxguardres,0,nzguardres,3,3,localbounds,fsdecomp)
       endif
