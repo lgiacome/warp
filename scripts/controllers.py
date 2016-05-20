@@ -151,8 +151,10 @@ class ControllerFunction:
                     result = f
                 else:
                     continue
-            else:
+            elif isinstance(self.func,FunctionType):
                 result = f.__name__
+            else:
+                result = f
             yield result
 
     def controllerfunclist(self):
@@ -326,8 +328,10 @@ class PicklableFunction:
             else:
                 # --- The function couldn't be found
                 result = None
-        else:
+        elif isinstance(self.func,FunctionType):
             result = self.func.__name__
+        else:
+            result = self.func
         return result
 
     def callablefunc(self):
@@ -367,14 +371,6 @@ class PicklableFunction:
             fname = f.__name__
             self.func = [finstance,fname]
         elif callable(f):
-            # --- If a function had already been installed by name, then skip the install.
-            # --- This is problematic, since no warning message is given, but it is unlikely
-            # --- to arise under normal circumstances.
-            # --- The purpose of this check is to avoid redundant installation of functions
-            # --- during a restore from a dump file. Without the check, functions that had been
-            # --- installed via a decorator would be installed an extra time since the source
-            # --- of the function contains the decoration (which is activated when the source
-            # --- is exec'd).
             self.func = f
         else:
             self.func = f
