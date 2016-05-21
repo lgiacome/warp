@@ -151,7 +151,7 @@ class ControllerFunction:
                     result = f
                 else:
                     continue
-            elif isinstance(self.func,FunctionType):
+            elif isinstance(f,FunctionType):
                 result = f.__name__
             else:
                 result = f
