@@ -223,7 +223,7 @@ _selectparticles_kwdefaults = {"js":0,"jslist":None,"win":None,
                 "xl":None,"xu":None,"yl":None,"yu":None,"zl":None,"zu":None,
                 "zc":None,"xc":None,"yc":None,
                 "ssn":None,"ssnid":None,"ii":None,
-                "lost":false,"suffix":'',"object":top,"pgroup":top.pgroup,
+                "lost":false,"suffix":'',"object":top,
                 "w3dobject":None,
                 'checkargs':0,'allowbadargs':0}
 def selectparticles(iw=0,kwdict={},**kw):
@@ -319,7 +319,6 @@ def selectparticles(iw=0,kwdict={},**kw):
     lost = kwvalues['lost']
     suffix = kwvalues['suffix']
     object = kwvalues['object']
-    pgroup = kwvalues['pgroup']
     w3dobject = kwvalues['w3dobject']
     checkargs = kwvalues['checkargs']
     allowbadargs = kwvalues['allowbadargs']
@@ -1626,12 +1625,14 @@ def addparticles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
     - pgroup=top.pgroup: Particle group to add particles too
     """
 
+    if pgroup is None: pgroup = top.pgroup
+
     # --- Check if this is a new species
     if js+1 > top.ns: setnspecies(js+1,pgroup)
 
     # --- Set the sid if it hasn't already be done
     if sid is None: sid = js
-    if top.pgroup.sid[js] == -1: top.pgroup.sid[js] = sid
+    if pgroup.sid[js] == -1: pgroup.sid[js] = sid
 
     # --- Use momentum quantities if specified. These take
     # --- precedence over vx, vy, and vz.
@@ -1761,8 +1762,6 @@ def addparticles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
         print "different from each other."
         print "=================================================================="
 
-    if pgroup is None: pgroup = top.pgroup
-
     # --- Get the number of particles before adding the new ones.
     if lreturndata: nbefore = pgroup.nps[js]
 
@@ -1776,7 +1775,7 @@ def addparticles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
     if lreturndata: nafter = pgroup.nps[js]
 
     # --- If the slice code is active, then call initdtp
-    if package()[0] == 'wxy': initdtp(top.pgroup)
+    if package()[0] == 'wxy': initdtp(pgroup)
 
     # --- Do followup work if requested
     if resetrho:

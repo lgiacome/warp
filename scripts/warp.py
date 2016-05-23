@@ -284,9 +284,9 @@ gauss = 1.e-4  # gauss to T
 deg = pi/180.0 # degrees to radians
 
 # --- Set pgroup
-top.pgroup = top.pgroupstatic
-#top.pgroup = ParticleGroup()
-#top.pgroup.gchange()
+#top.pgroup = top.pgroupstatic
+top.pgroup = ParticleGroup()
+top.pgroup.gchange()
 
 # --- Get start time
 top.starttime = time.time()
@@ -968,6 +968,13 @@ def fixrestorewithoutzmminlocalnzlocal(ff):
         f3d.bfieldp.zmmin = ff.read('zmminglobal@bfieldp@f3d')
         f3d.bfieldp.zmmax = ff.read('zmmaxglobal@bfieldp@f3d')
 
+def fixrestorewithpgroupstatic(ff):
+    """This fixes top.pgroup for dumps that were made when pgroup was linked to pgroupstatic"""
+    if 'xp@pgroupstatic@top' in ff.inquire_names():
+        if top.pgroup is not top.pgroupstatic:
+            # --- Copy all of the pgroupstatic attributes to top.pgroup
+            for attr in top.pgroup.varlist():
+                setattr(top.pgroup, attr, getattr(top.pgroupstatic, attr))
 
 def restoreolddump(ff):
     #fixrestoresfrombeforeelementoverlaps(ff)
@@ -1068,7 +1075,12 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
 def restore(filename, **kw):
     kw.setdefault('datareader', PR.PR)
     kw.setdefault('main', warp)
-    pyrestore(filename, **kw)
+    lreturnff = kw.get('lreturnff', False)
+    kw.setdefault('lreturnff', True)
+    ff = pyrestore(filename, **kw)
+    fixrestorewithpgroupstatic(ff)
+    if lreturnff:
+        return ff
 
 # --- Restart command
 def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
@@ -1112,8 +1124,8 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
         else:
             if main is None:
                 main = warp
-            ff = pyrestore(filename,verbose=verbose,skip=skip,lreturnff=1,
-                           datareader=datareader,main=main)
+            ff = restore(filename,verbose=verbose,skip=skip,lreturnff=1,
+                         datareader=datareader,main=main)
 
         # --- Fix old dump files.
         # --- This is the only place where the open dump file is needed.
