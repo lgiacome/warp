@@ -179,10 +179,13 @@ class ControllerFunction:
                 result = f
             if not callable(result):
                 print "\n\nWarning: a controller was found that is not callable."
+                if self.name is not None:
+                    print "For %s"%self.name
                 print "Only callable objects can be installed."
                 print "It is possible that the callable's name has been overwritten"
                 print "by something not callable. This can happen during restart"
                 print "if a function name had later been used as a variable name."
+                print self.name
                 if isinstance(f,basestring):
                     print "The name of the controller is ",f
                 print "\n\n"
