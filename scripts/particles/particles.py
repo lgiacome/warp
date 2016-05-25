@@ -188,6 +188,8 @@ def _getobjectpgroup(kw):
     if suffix == '':
         try:
             pgroup = kw.get('pgroup',object.pgroup)
+            if pgroup is None:
+                pgroup = object.pgroup
         except (AttributeError,KeyError):
             pgroup = object
     else:
@@ -223,7 +225,7 @@ _selectparticles_kwdefaults = {"js":0,"jslist":None,"win":None,
                 "xl":None,"xu":None,"yl":None,"yu":None,"zl":None,"zu":None,
                 "zc":None,"xc":None,"yc":None,
                 "ssn":None,"ssnid":None,"ii":None,
-                "lost":false,"suffix":'',"object":top,
+                "lost":false,"suffix":'',"object":top,"pgroup":None,
                 "w3dobject":None,
                 'checkargs':0,'allowbadargs':0}
 def selectparticles(iw=0,kwdict={},**kw):
