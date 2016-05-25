@@ -904,7 +904,10 @@ Chebyshev fitting.
     def constructheadertext(self,species):
         if isinstance(species,Species):
             stype = species.type
-            charge_state = species.charge_state
+            try:
+                charge_state = species.charge_state
+            except AttributeError:
+                raise AladdinCrossSectionNotSupported('incident species must be an ion')
         elif isinstance(species,Particle):
             stype = species
             charge_state = 0
