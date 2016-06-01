@@ -224,7 +224,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             if self.comm_world is not None :
                 # In MPI mode: gather and broadcast an array containing
                 # the number of particles on each process
-                n_rank = mpiallgather( n, comm=self.comm_world )
+                n_rank = mpiallgather( n )
                 N = sum(n_rank)
             else:
                 # Single-proc output
@@ -493,7 +493,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         if gather==False :
             return( quantity_array )
         else :
-            return(gatherarray( quantity_array, root=0, comm=self.comm_world ))
+            return(gatherarray( quantity_array, root=0 ))
 
     def get_quantity( self, species, quantity ) :
         """
