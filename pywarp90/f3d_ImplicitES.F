@@ -81,7 +81,7 @@ c     --- Apply the boundary conditions, setting the values in the guard cells.
       end function getbfieldsongrid3d
 c=============================================================================
       subroutine getcoefficientsimplicites3d(nxlocal,nylocal,nzlocal,dx,dy,dz,
-     &                                       ns,qomdt,chi0,bongrid,
+     &                                       ns,qomdt,chi0,bongrid,withbadvance,
      &                                       mglevel,lcndbndy,icndbndy,
      &                                       conductors,localbounds,
      &                                       coeffs0,coeffs,rhs,resscale,
@@ -100,6 +100,7 @@ c=============================================================================
       real(kind=8):: bongrid(-delx:nxlocal+delx,
      &                       -dely:nylocal+dely,
      &                       -delz:nzlocal+delz,0:2)
+      logical(ISZ):: withbadvance
       integer(ISZ):: mglevel
       integer(ISZ):: icndbndy
       type(ConductorType):: conductors
@@ -132,43 +133,68 @@ c                 coeffs(2,0,0,...) is for phi(i+0,j,k-1)
       chi = 0.
 
 c     --- First, generate the chi tensor from chi0 and the B field.
-      do js=0,ns-1
-        do iz=-1,nzlocal+1
-          do iy=-1,nylocal+1
-            do ix=-1,nxlocal+1
+      if (withbadvance) then
 
-              ox = 0.5*qomdt(js)*bongrid(ix,iy,iz,0)
-              oy = 0.5*qomdt(js)*bongrid(ix,iy,iz,1)
-              oz = 0.5*qomdt(js)*bongrid(ix,iy,iz,2)
-              oo = chi0(ix,iy,iz,js)/(1. + ox**2 + oy**2 + oz**2)
+        do js=0,ns-1
+          do iz=-1,nzlocal+1
+            do iy=-1,nylocal+1
+              do ix=-1,nxlocal+1
 
-              chi(0,0,ix,iy,iz) = chi(0,0,ix,iy,iz) + oo*(1. + ox**2)
-              chi(1,0,ix,iy,iz) = chi(1,0,ix,iy,iz) + oo*(ox*oy - oz)
-              chi(2,0,ix,iy,iz) = chi(2,0,ix,iy,iz) + oo*(ox*oz + oy)
+                ox = 0.5*qomdt(js)*bongrid(ix,iy,iz,0)
+                oy = 0.5*qomdt(js)*bongrid(ix,iy,iz,1)
+                oz = 0.5*qomdt(js)*bongrid(ix,iy,iz,2)
+                oo = chi0(ix,iy,iz,js)/(1. + ox**2 + oy**2 + oz**2)
 
-              chi(0,1,ix,iy,iz) = chi(0,1,ix,iy,iz) + oo*(ox*oy + oz)
-              chi(1,1,ix,iy,iz) = chi(1,1,ix,iy,iz) + oo*(1. + oy**2)
-              chi(2,1,ix,iy,iz) = chi(2,1,ix,iy,iz) + oo*(oy*oz - ox)
+                chi(0,0,ix,iy,iz) = chi(0,0,ix,iy,iz) + oo*(1. + ox**2)
+                chi(1,0,ix,iy,iz) = chi(1,0,ix,iy,iz) + oo*(ox*oy - oz)
+                chi(2,0,ix,iy,iz) = chi(2,0,ix,iy,iz) + oo*(ox*oz + oy)
 
-              chi(0,2,ix,iy,iz) = chi(0,2,ix,iy,iz) + oo*(ox*oz - oy)
-              chi(1,2,ix,iy,iz) = chi(1,2,ix,iy,iz) + oo*(oy*oz + ox)
-              chi(2,2,ix,iy,iz) = chi(2,2,ix,iy,iz) + oo*(1. + oz**2)
+                chi(0,1,ix,iy,iz) = chi(0,1,ix,iy,iz) + oo*(ox*oy + oz)
+                chi(1,1,ix,iy,iz) = chi(1,1,ix,iy,iz) + oo*(1. + oy**2)
+                chi(2,1,ix,iy,iz) = chi(2,1,ix,iy,iz) + oo*(oy*oz - ox)
 
+                chi(0,2,ix,iy,iz) = chi(0,2,ix,iy,iz) + oo*(ox*oz - oy)
+                chi(1,2,ix,iy,iz) = chi(1,2,ix,iy,iz) + oo*(oy*oz + ox)
+                chi(2,2,ix,iy,iz) = chi(2,2,ix,iy,iz) + oo*(1. + oz**2)
+
+              enddo
             enddo
           enddo
+
         enddo
 
-c       --- Force chi to zero inside of any conductors. This is because
-c       --- the charge density is always zero there.
-c       --- This is probably not needed.
-        do ic = conductors%interior%istart(mglevel),
-     &          conductors%interior%istart(mglevel+1)-1
-          ix = conductors%interior%indx(0,ic)
-          iy = conductors%interior%indx(1,ic)
-          iz = conductors%interior%indx(2,ic)
-          chi(:,:,ix,iy,iz) = 0.
+      else
+
+        do js=0,ns-1
+          do iz=-1,nzlocal+1
+            do iy=-1,nylocal+1
+              do ix=-1,nxlocal+1
+
+                oo = chi0(ix,iy,iz,js)
+
+                chi(0,0,ix,iy,iz) = chi(0,0,ix,iy,iz) + oo
+
+                chi(1,1,ix,iy,iz) = chi(1,1,ix,iy,iz) + oo
+
+                chi(2,2,ix,iy,iz) = chi(2,2,ix,iy,iz) + oo
+
+              enddo
+            enddo
+          enddo
+
         enddo
 
+      endif
+
+c     --- Force chi to zero inside of any conductors. This is because
+c     --- the charge density is always zero there.
+c     --- This is probably not needed.
+      do ic = conductors%interior%istart(mglevel),
+     &        conductors%interior%istart(mglevel+1)-1
+        ix = conductors%interior%indx(0,ic)
+        iy = conductors%interior%indx(1,ic)
+        iz = conductors%interior%indx(2,ic)
+        chi(:,:,ix,iy,iz) = 0.
       enddo
 
       do iz=0,nzlocal
@@ -635,7 +661,7 @@ c=============================================================================
       subroutine mgsolveimplicites3d(iwhich,nx,ny,nz,nxlocal,nylocal,nzlocal,
      &                               dx,dy,dz,phi,rho,
      &                               ns,qomdt,chi0,
-     &                               rstar,linbend,bounds,
+     &                               rstar,linbend,withbadvance,bounds,
      &                               xmminlocal,ymminlocal,zmminlocal,zgrid,
      &                               mgparam,mgiters,mgmaxiters,
      &                               mgmaxlevels,mgerror,mgtol,mgverbose,
@@ -655,7 +681,7 @@ c=============================================================================
       real(kind=8):: chi0(0:nxlocal,0:nylocal,0:nzlocal,0:ns-1)
       real(kind=8):: dx,dy,dz
       real(kind=8):: rstar(-1:nzlocal+1)
-      logical(ISZ):: linbend
+      logical(ISZ):: linbend, withbadvance
       integer(ISZ):: bounds(0:5)
       real(kind=8):: xmminlocal,ymminlocal,zmminlocal,zgrid
       real(kind=8):: mgparam
@@ -706,10 +732,12 @@ c     --- Setup the boundary conditions for the local domain.
       if (fsdecomp%iz(fsdecomp%izproc)+nzlocal < nz) localbounds(5) = -1
 #endif
 
-      bongrid => getbfieldsongrid3d(nxlocal,nylocal,nzlocal,delx,dely,delz,
-     &                              dx,dy,dz,
-     &                              xmminlocal,ymminlocal,zmminlocal,zgrid,
-     &                              localbounds)
+      if (withbadvance) then
+        bongrid => getbfieldsongrid3d(nxlocal,nylocal,nzlocal,delx,dely,delz,
+     &                                dx,dy,dz,
+     &                                xmminlocal,ymminlocal,zmminlocal,zgrid,
+     &                                localbounds)
+      endif
 c     --- Parallel B.C.s are set below.
 
 c     --- Create copy of chi0 with extra guard cells, and fill it in.
@@ -783,9 +811,11 @@ c     --- Make sure guard planes have sensible values before beginning.
       call applyparallelboundaryconditions3d(chi0temp,
      &               nxlocal,nylocal,nzlocal,
      &               delx,dely,delz,ns,3,localbounds,fsdecomp)
-      call applyparallelboundaryconditions3d(bongrid,
-     &               nxlocal,nylocal,nzlocal,
-     &               delx,dely,delz,3,3,localbounds,fsdecomp)
+      if (withbadvance) then
+        call applyparallelboundaryconditions3d(bongrid,
+     &                 nxlocal,nylocal,nzlocal,
+     &                 delx,dely,delz,3,3,localbounds,fsdecomp)
+      endif
 #endif
 
       allocate(phisave(-1:nxlocal+1,-1:nylocal+1,-1:nzlocal+1),stat=allocerror)
@@ -809,7 +839,7 @@ c       --- Save current value of phi
 c       --- Do one vcycle.
         call vcycleimplicites3d(0,1.,nx,ny,nz,nxlocal,nylocal,nzlocal,
      &                          dx,dy,dz,phi,rho,
-     &                          ns,qomdt,chi0temp,bongrid,
+     &                          ns,qomdt,chi0temp,bongrid,withbadvance,
      &                          rstar,linbend,bendx,bounds,mgparam,mgmaxlevels,
      &                          downpasses,uppasses,
      &                          lcndbndy,icndbndy,conductors,
@@ -851,10 +881,12 @@ c     --- Make a print out.
   20    format("ImplicitMultigrid3d: Error converged to ",1pe11.3," in ",i5," v-cycles")
         call remark(errline)
       endif
-      
+
       deallocate(phisave)
       deallocate(chi0temp)
-      deallocate(bongrid)
+      if (withbadvance) then
+        deallocate(bongrid)
+      endif
 
 c     --- Restore rho
       if (linbend) then
@@ -881,7 +913,7 @@ c=============================================================================
       RECURSIVE subroutine vcycleimplicites3d(mglevel,mgscale,nx,ny,nz,
      &                                   nxlocal,nylocal,nzlocal,
      &                                   dx,dy,dz,
-     &                                   phi,rho,ns,qomdt,chi0,bongrid,
+     &                                   phi,rho,ns,qomdt,chi0,bongrid,withbadvance,
      &                                   rstar,linbend,bendx,globalbounds,
      &                                   mgparam,
      &                                   mgmaxlevels,downpasses,uppasses,
@@ -907,6 +939,7 @@ c=============================================================================
       real(kind=8):: bongrid(-delx:nxlocal+delx,
      &                       -dely:nylocal+dely,
      &                       -delz:nzlocal+delz,0:2)
+      logical(ISZ):: withbadvance
       real(kind=8):: qomdt(0:ns-1)
       real(kind=8):: rstar(-1:nzlocal+1)
       real(kind=8):: bendx(-1:nxlocal+1)
@@ -981,7 +1014,7 @@ c     --- the current level of refinement.
       allocate(rhs(0:nxlocal,0:nylocal,0:nzlocal))
       allocate(resscale(0:nxlocal,0:nylocal,0:nzlocal))
       call getcoefficientsimplicites3d(nxlocal,nylocal,nzlocal,dx,dy,dz,ns,
-     &                                 qomdt,chi0,bongrid,
+     &                                 qomdt,chi0,bongrid,withbadvance,
      &                                 mglevel,lcndbndy,icndbndy,conductors,
      &                                 localbounds,coeffs0,coeffs,rhs,resscale,
      &                                 delx,dely,delz)
@@ -1013,12 +1046,14 @@ c     --- the current level of refinement.
             enddo
           enddo
         enddo
-        sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,0),fsdecomp,0)
-        if (lpe0) print*,"V1 bongrid 0",mglevel,sss
-        sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,1),fsdecomp,0)
-        if (lpe0) print*,"V1 bongrid 1",mglevel,sss
-        sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,2),fsdecomp,0)
-        if (lpe0) print*,"V1 bongrid 2",mglevel,sss
+        if (withbadvance) then
+          sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,0),fsdecomp,0)
+          if (lpe0) print*,"V1 bongrid 0",mglevel,sss
+          sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,1),fsdecomp,0)
+          if (lpe0) print*,"V1 bongrid 1",mglevel,sss
+          sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,2),fsdecomp,0)
+          if (lpe0) print*,"V1 bongrid 2",mglevel,sss
+        endif
       endif
 
       do i=1,downpasses
@@ -1170,21 +1205,23 @@ c       --- Alloate new work space
           call kaboom("vcycleimplicites3d: allocation error")
           return
         endif
-        allocate(bongridcoarse(-delx:nxlocalcoarse+delx,
-     &                         -dely:nylocalcoarse+dely,
-     &                         -delz:nzlocalcoarse+delz,0:2),stat=allocerror)
-        if (allocerror /= 0) then
-          print*,"vcycleimplicites3d: allocation error ",allocerror,
-     &           ": could not allocate bongridcoarse to shape ",
-     &           nxlocalcoarse,nylocalcoarse,nzlocalcoarse,delz
-          call kaboom("vcycleimplicites3d: allocation error")
-          return
+        if (withbadvance) then
+          allocate(bongridcoarse(-delx:nxlocalcoarse+delx,
+     &                           -dely:nylocalcoarse+dely,
+     &                           -delz:nzlocalcoarse+delz,0:2),stat=allocerror)
+          if (allocerror /= 0) then
+            print*,"vcycleimplicites3d: allocation error ",allocerror,
+     &             ": could not allocate bongridcoarse to shape ",
+     &             nxlocalcoarse,nylocalcoarse,nzlocalcoarse,delz
+            call kaboom("vcycleimplicites3d: allocation error")
+            return
+          endif
+          bongridcoarse = 0.
         endif
 
         rhocoarse = 0. ! not needed since all elements set in restrict3d
         phicoarse = 0.
         chi0coarse = 0.
-        bongridcoarse = 0.
 
 c       --- Restriction
         call restrict3d(nx,ny,nz,nxlocal,nylocal,nzlocal,res,delx,dely,delz,
@@ -1207,28 +1244,32 @@ c       --- Restriction
      &                    1.,localbounds,localboundsc,
      &                    lxoffset,lyoffset,lzoffset)
         enddo
-        do ic=0,2
-          call restrict3d(nx,ny,nz,nxlocal,nylocal,nzlocal,bongrid(:,:,:,ic),
-     &                    delx,dely,delz,
-     &                    nxcoarse,nycoarse,nzcoarse,
-     &                    nxlocalcoarse,nylocalcoarse,nzlocalcoarse,
-     &                    bongridcoarse(:,:,:,ic),delx,1,delz,
-     &                    1.,localbounds,localboundsc,
-     &                    lxoffset,lyoffset,lzoffset)
-        enddo
         call applyboundaryconditions3d(nxlocalcoarse,nylocalcoarse,nzlocalcoarse,
      &                                 delx,dely,delz,chi0coarse,ns,
      &                                 localboundsc,.false.,.true.)
-        call applyboundaryconditions3d(nxlocalcoarse,nylocalcoarse,nzlocalcoarse,
-     &                                 delx,dely,delz,bongridcoarse,3,
-     &                                 localboundsc,.false.,.true.)
+        if (withbadvance) then
+          do ic=0,2
+            call restrict3d(nx,ny,nz,nxlocal,nylocal,nzlocal,bongrid(:,:,:,ic),
+     &                      delx,dely,delz,
+     &                      nxcoarse,nycoarse,nzcoarse,
+     &                      nxlocalcoarse,nylocalcoarse,nzlocalcoarse,
+     &                      bongridcoarse(:,:,:,ic),delx,1,delz,
+     &                      1.,localbounds,localboundsc,
+     &                      lxoffset,lyoffset,lzoffset)
+          enddo
+          call applyboundaryconditions3d(nxlocalcoarse,nylocalcoarse,nzlocalcoarse,
+     &                                   delx,dely,delz,bongridcoarse,3,
+     &                                   localboundsc,.false.,.true.)
+        endif
 #ifdef MPIPARALLEL
         call applyparallelboundaryconditions3d(chi0coarse,
      &               nxlocalcoarse,nylocalcoarse,nzlocalcoarse,
      &               delx,dely,delz,ns,3,localboundsc,coarsedecomp)
-        call applyparallelboundaryconditions3d(bongridcoarse,
-     &               nxlocalcoarse,nylocalcoarse,nzlocalcoarse,
-     &               delx,dely,delz,3,3,localboundsc,coarsedecomp)
+        if (withbadvance) then
+          call applyparallelboundaryconditions3d(bongridcoarse,
+     &                 nxlocalcoarse,nylocalcoarse,nzlocalcoarse,
+     &                 delx,dely,delz,3,3,localboundsc,coarsedecomp)
+        endif
 #endif
 
 c       --- Continue at the next coarsest level.
@@ -1236,7 +1277,7 @@ c       --- Continue at the next coarsest level.
      &              nxcoarse,nycoarse,nzcoarse,
      &              nxlocalcoarse,nylocalcoarse,nzlocalcoarse,
      &              dxcoarse,dycoarse,dzcoarse,phicoarse,rhocoarse,
-     &              ns,qomdt,chi0coarse,bongridcoarse,
+     &              ns,qomdt,chi0coarse,bongridcoarse,withbadvance,
      &              rstar,linbend,bendx,globalbounds,mgparam,
      &              mgmaxlevels,downpasses,uppasses,
      &              lcndbndy,icndbndy,conductors,
@@ -1264,7 +1305,10 @@ c       --- Add in resulting error.
 
         deallocate(res)
         deallocate(phicoarse,rhocoarse)
-        deallocate(chi0coarse,bongridcoarse)
+        deallocate(chi0coarse)
+        if (withbadvance) then
+          deallocate(bongridcoarse)
+        endif
 
 #ifdef MPIPARALLEL
         deallocate(coarsedecomp%ix)
@@ -1340,9 +1384,7 @@ c read those saved values for the update of phi.
 
       call cond_potmg(conductors%interior,
      &                nxlocal,nylocal,nzlocal,1,1,1,phi,mglevel,1,.false.)
-      call condbndymgint(conductors%evensubgrid,nxlocal,nylocal,nzlocal,
-     &                   1,1,1,phi,localbounds,mglevel,2)
-      call condbndymgint(conductors%oddsubgrid,nxlocal,nylocal,nzlocal,
+      call condbndymgint(conductors,nxlocal,nylocal,nzlocal,
      &                   1,1,1,phi,localbounds,mglevel,2)
 
 c     --- Set starting and ending parity.

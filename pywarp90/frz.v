@@ -488,8 +488,11 @@ coeffs1(:,:,:,:) _real
 chi01(:,:,:) _real
 mgsolveimplicites2d(iwhich:integer,nx:integer,nz:integer,
                     nxlocal:integer,nzlocal:integer,
-                    dx:real,dz:real,phi:real,rho:real,ns:integer,
-                    qomdt:real,chi0:real,bounds:integer,
+                    dx:real,dz:real,
+                    nxguardphi:integer,nzguardphi:integer,
+                    nxguardrho:integer,nzguardrho:integer,
+                    phi:real,rho:real,ns:integer,
+                    qomdt:real,chi0:real,withbadvance:logical,bounds:integer,
                     xmminlocal:real,zmminlocal:real,zgrid:real,
                     mgparam:real,mgiters:integer,mgmaxiters:integer,
                     mgmaxlevels:integer,mgerror:real,mgtol:real,

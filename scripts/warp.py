@@ -284,9 +284,9 @@ gauss = 1.e-4  # gauss to T
 deg = pi/180.0 # degrees to radians
 
 # --- Set pgroup
-top.pgroup = top.pgroupstatic
-#top.pgroup = ParticleGroup()
-#top.pgroup.gchange()
+#top.pgroup = top.pgroupstatic
+top.pgroup = ParticleGroup()
+top.pgroup.gchange()
 
 # --- Get start time
 top.starttime = time.time()
@@ -968,6 +968,13 @@ def fixrestorewithoutzmminlocalnzlocal(ff):
         f3d.bfieldp.zmmin = ff.read('zmminglobal@bfieldp@f3d')
         f3d.bfieldp.zmmax = ff.read('zmmaxglobal@bfieldp@f3d')
 
+def fixrestorewithpgroupstatic(ff):
+    """This fixes top.pgroup for dumps that were made when pgroup was linked to pgroupstatic"""
+    if 'xp@pgroupstatic@top' in ff.inquire_names():
+        if top.pgroup is not top.pgroupstatic:
+            # --- Copy all of the pgroupstatic attributes to top.pgroup
+            for attr in top.pgroup.varlist():
+                setattr(top.pgroup, attr, getattr(top.pgroupstatic, attr))
 
 def restoreolddump(ff):
     #fixrestoresfrombeforeelementoverlaps(ff)
@@ -990,7 +997,7 @@ def restoreolddump(ff):
 # --- Dump command
 def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars=1,
          ff=None,varsuffix=None,histz=2,resizeHist=1,verbose=false,
-         hdf=0,format='',datawriter=PW.PW):
+         hdf=0,format='',datawriter=PW.PW,skip=[]):
     """
   Creates a dump file
     - filename=(prefix+runid+'%06d'%top.it+suffix+'.dump')
@@ -1004,6 +1011,7 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
                  filename. It is not recommended to use this option - writing
                  to one file most likely will not work.
     - pyvars=1: When 1, saves user defined python variables to the file.
+    - skip=[]: List of names of Python variables to skip
     - ff=None: Optional file object. When passed in, write to that file instead
                of creating a new one. Note that the inputted file object must be
                closed by the user. The object most be an instance of a class
@@ -1041,6 +1049,7 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
         # --- Add to the list all variables which are not in the initial list
         for l,v in __main__.__dict__.iteritems():
             if isinstance(v,types.ModuleType): continue
+            if l in skip: continue
             if l not in initial_global_dict_keys:
                 interpreter_variables.append(l)
     # --- Resize history arrays if requested.
@@ -1066,7 +1075,12 @@ def dump(filename=None,prefix='',suffix='',attr='dump',serial=0,onefile=0,pyvars
 def restore(filename, **kw):
     kw.setdefault('datareader', PR.PR)
     kw.setdefault('main', warp)
-    pyrestore(filename, **kw)
+    lreturnff = kw.get('lreturnff', False)
+    kw.setdefault('lreturnff', True)
+    ff = pyrestore(filename, **kw)
+    fixrestorewithpgroupstatic(ff)
+    if lreturnff:
+        return ff
 
 # --- Restart command
 def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
@@ -1110,8 +1124,8 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
         else:
             if main is None:
                 main = warp
-            ff = pyrestore(filename,verbose=verbose,skip=skip,lreturnff=1,
-                           datareader=datareader,main=main)
+            ff = restore(filename,verbose=verbose,skip=skip,lreturnff=1,
+                         datareader=datareader,main=main)
 
         # --- Fix old dump files.
         # --- This is the only place where the open dump file is needed.

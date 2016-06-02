@@ -172,6 +172,7 @@ Antimuon = Particle(charge=+echarge,mass=1.883531475e-28,Symbol='mu+',
                     name='Antimuon')
 
 Proton = Particle(mass=1.6726231e-27, charge=echarge, Symbol='P',name='Proton')
+AntiProton = Particle(mass=1.6726231e-27, charge=-echarge, Symbol='P',name='Antiproton')
 Neutron = Particle(mass=1.6749286e-27, charge=0, Symbol='N',name='Neutron')
 
 Dihydrogen = Molecule(composition=[Hydrogen,Hydrogen], Symbol='H2',name='Dihydrogen')

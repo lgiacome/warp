@@ -517,6 +517,8 @@ class EM3D(SubcycledPoissonSolver):
         # --- Handle laser inputs
         self.setuplaser()
 
+        w3d.lfinalizerhofsapi=True
+
         self.finalized = True
 
     def allocatefieldarrays(self):
@@ -600,7 +602,12 @@ class EM3D(SubcycledPoissonSolver):
         # --- Check if laser_func is a dictionary
         self.laser_func_dict = None
         if isinstance(self.laser_func,dict):
-            self.laser_func_dict = self.laser_func
+            self.laser_func_dict = {}
+            for k,v in self.laser_func.iteritems():
+                self.laser_func_dict[k] = PicklableFunction(self.laser_func)
+            self.laser_func = None
+        elif self.laser_func is not None:
+            self.laser_func = PicklableFunction(self.laser_func)
 
         # --- Check if laser_amplitude is a function, table, or constant
         self.laser_amplitude_func = None
@@ -613,9 +620,13 @@ class EM3D(SubcycledPoissonSolver):
             self.laser_amplitude_table = self.laser_amplitude
             self.laser_amplitude_table_i = -1
         elif callable(self.laser_amplitude):
-            self.laser_amplitude_func = self.laser_amplitude
+            self.laser_amplitude_func = PicklableFunction(self.laser_amplitude)
+            self.laser_amplitude = None
         elif isinstance(self.laser_amplitude,dict):
-            self.laser_amplitude_dict = self.laser_amplitude
+            self.laser_amplitude_dict = {}
+            for k,v in self.laser_amplitude.iteritems():
+                self.laser_amplitude_dict[k] = PicklableFunction(v)
+            self.laser_amplitude = None
 
         # --- Check if laser_phase is a function, table, or constant
         self.laser_phase_func = None
@@ -627,7 +638,8 @@ class EM3D(SubcycledPoissonSolver):
             self.laser_phase_table = self.laser_phase
             self.laser_phase_table_i = -1
         elif callable(self.laser_phase):
-            self.laser_phase_func = self.laser_phase
+            self.laser_phase_func = PicklableFunction(self.laser_phase)
+            self.laser_phase = None
 
         if self.laser_mode==1:
             # --- sets positions of E fields on Yee mesh == laser_mode 1
@@ -747,7 +759,8 @@ class EM3D(SubcycledPoissonSolver):
                 self.laser_profile = self.laser_profile_init.flatten()
 
         elif callable(self.laser_profile):
-            self.laser_profile_func = self.laser_profile
+            self.laser_profile_func = PicklableFunction(self.laser_profile)
+            self.laser_profile = None
 
 #===============================================================================
     def add_laser(self,field):
