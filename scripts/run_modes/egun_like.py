@@ -111,7 +111,8 @@ def gun(iter=1, ipsave=None, save_same_part=None, maxtime=None,
         ipstep=None, egundata_window=-1, plottraces_window=-1,
         egundata_nz=None, egundata_zmin=None, egundata_zmax=None,
         resetlostpart=0, current=None, currentiz=None, ntblocks=1,
-        lvariabletimestep=0, fvariabletimestep=0.5, dtscalechangemax=2.):
+        lvariabletimestep=0, fvariabletimestep=0.5, dtscalechangemax=2.,
+        l_savepart_always=False):
     """
   Performs steady-state iterations
     - iter=1: number of iterations to perform
@@ -401,9 +402,9 @@ def gun(iter=1, ipsave=None, save_same_part=None, maxtime=None,
             raise Exception('No particles injected')
 #   if (npssum == 0): break
 
-        # --- only save particles on last iteration
+        # --- only save particles on last iteration unless l_savepart_always=True
         allpgroups = []
-        if i == iter-1 and _ipstep > 0:
+        if (i == iter-1 and _ipstep > 0) or l_savepart_always:
 
             # --- Shrink down the live particles just injected.
             shrinkpart(top.pgroup)
@@ -485,8 +486,8 @@ def gun(iter=1, ipsave=None, save_same_part=None, maxtime=None,
             if lstatusline:
                 statusline()
             tmp_gun_steps = tmp_gun_steps + 1
-            # --- only save particles on last iteration
-            if i == iter-1 and _ipstep > 0:
+            # --- only save particles on last iteration or if l_savepart_always=True
+            if (i == iter-1 and _ipstep > 0) or l_savepart_always:
                 pgroups = []
                 allpgroups.append(pgroups)
                 for js in range(top.pgroup.ns):
@@ -752,10 +753,12 @@ def recovergun():
 ########################################################################
 def gunmg(iter=1, itersub=None, ipsave=None, save_same_part=None, maxtime=None,
           laccumulate_zmoments=None, rhoparam=None, averagerho=None,
-          lstatusline=true, insertbeforeiter=None, insertafteriter=None,
+          lstatusline=true, insertbeforeiter=None, insertafteriter=None, ipstep=None, 
           nmg=0, conductors=None, egundata_window=-1, plottraces_window=-1,
           egundata_nz=None, egundata_zmin=None, egundata_zmax=None,
-          resetlostpart=0, current=None, currentiz=None, ntblocks=1):
+          resetlostpart=0, current=None, currentiz=None, ntblocks=1,
+          lvariabletimestep=0, fvariabletimestep=0.5, dtscalechangemax=2.,
+          l_savepart_always=False):
     """
   Performs steady-state iterations in a cascade using different resolutions.
     - iter=1 number of iterations to perform
@@ -793,9 +796,11 @@ def gunmg(iter=1, itersub=None, ipsave=None, save_same_part=None, maxtime=None,
         return gun(iter, ipsave, save_same_part, maxtime,
                    laccumulate_zmoments, rhoparam, averagerho,
                    lstatusline, insertbeforeiter, insertafteriter,
-                   None, egundata_window, plottraces_window,
+                   ipstep, egundata_window, plottraces_window,
                    egundata_nz, egundata_zmin, egundata_zmax, resetlostpart,
-                   current, currentiz, ntblocks)
+                   current, currentiz, ntblocks,
+                   lvariabletimestep, fvariabletimestep, dtscalechangemax,
+                   l_savepart_always)
     # initialize itersub
     if itersub is None:
         itersub = iter
@@ -870,7 +875,7 @@ def gunmg(iter=1, itersub=None, ipsave=None, save_same_part=None, maxtime=None,
             # reset particle arrays
             top.np_s = 0
             top.pgroup.npmax = 1
-            alotpart()
+            alotpart(top.pgroup)
             # performs all iterations but the last one
             if iter > 1:
                 # first iteration is performed with top.inj_param=1
@@ -878,20 +883,24 @@ def gunmg(iter=1, itersub=None, ipsave=None, save_same_part=None, maxtime=None,
                 gun(1, 0, save_same_part, maxtime,
                     laccumulate_zmoments, rhoparam, averagerho,
                     lstatusline, insertbeforeiter, insertafteriter,
-                    None, egundata_window, plottraces_window,
-                    egundata_nz, egundata_zmin, egundata_zmax,
-                    resetlostpart, ntblocks)
+                    ipstep, egundata_window, plottraces_window,
+                    egundata_nz, egundata_zmin, egundata_zmax, resetlostpart,
+                    current, currentiz, ntblocks,
+                    lvariabletimestep, fvariabletimestep, dtscalechangemax,
+                    l_savepart_always)
+
                 # remaining iterations but last one performed with
                 # inj_param=0.5
                 top.inj_param = 0.5
                 if iter > 2:
                     gun(iter-2, 0, save_same_part, maxtime,
                         laccumulate_zmoments, rhoparam, averagerho,
-                        lstatusline, insertbeforeiter,
-                        insertafteriter, None, egundata_window,
-                        plottraces_window, egundata_nz, egundata_zmin,
-                        egundata_zmax, resetlostpart, current,
-                        currentiz, ntblocks)
+                        lstatusline, insertbeforeiter, insertafteriter,
+                        ipstep, egundata_window, plottraces_window,
+                        egundata_nz, egundata_zmin, egundata_zmax, resetlostpart,
+                        current, currentiz, ntblocks,
+                        lvariabletimestep, fvariabletimestep, dtscalechangemax,
+                        l_savepart_always)
             # For all sublevels, rhonext is created and setrhonext is
             # installed so that rhonext is eveluated during last
             # iteration at current level.
@@ -904,11 +913,13 @@ def gunmg(iter=1, itersub=None, ipsave=None, save_same_part=None, maxtime=None,
                 installafterstep(setrhonext)
             # perform last iteration
             gun(1, ipsave, save_same_part, maxtime,
-                laccumulate_zmoments, rhoparam, averagerho,
-                lstatusline, insertbeforeiter, insertafteriter, None,
-                egundata_window, plottraces_window, egundata_nz,
-                egundata_zmin, egundata_zmax, resetlostpart, current,
-                currentiz, ntblocks)
+                   laccumulate_zmoments, rhoparam, averagerho,
+                   lstatusline, insertbeforeiter, insertafteriter,
+                   ipstep, egundata_window, plottraces_window,
+                   egundata_nz, egundata_zmin, egundata_zmax, resetlostpart,
+                   current, currentiz, ntblocks,
+                   lvariabletimestep, fvariabletimestep, dtscalechangemax,
+                   l_savepart_always)
             # Uninstall setrhonext if necessary.
             if i < nmg:
                 uninstallafterstep(setrhonext)
