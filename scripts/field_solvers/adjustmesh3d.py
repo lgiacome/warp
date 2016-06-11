@@ -96,8 +96,11 @@ def resizemesh(nx=None,ny=None,nz=None,lloadrho=True,lfieldsol=True,
         gallot("Fields3d")
     setupFields3dParticles()
     if w3d.solvergeom is w3d.RZgeom:
-        frz.del_base()
-        frz.init_base(w3d.nx,w3d.nz,w3d.dx,w3d.dz,w3d.xmmin,w3d.zmminlocal)
+        try:
+            frz.del_base()
+            frz.init_base(w3d.nx,w3d.nz,w3d.dx,w3d.dz,w3d.xmmin,w3d.zmminlocal)
+        except:
+            pass
 
     # --- Calculate the mesh points
     w3d.xmesh[:] = w3d.xmmin + arange(w3d.nx+1)*w3d.dx
@@ -120,7 +123,7 @@ def resizemesh(nx=None,ny=None,nz=None,lloadrho=True,lfieldsol=True,
         w3d.inj_dx = w3d.inj_dx/rx
         w3d.inj_dy = w3d.inj_dy/ry
         w3d.inj_dz = w3d.inj_dz/rz
-        injctint()
+        injctint(top.pgroup)
 
     # --- resize various things if requested
     if lzmom: resizeZ_Momments(zmmntmin=w3d.zmmin,zmmntmax=w3d.zmmax,nzmmnt=w3d.nz)
@@ -204,8 +207,11 @@ def resizemeshxy(nx=None,ny=None,xmmin=None,xmmax=None,ymmin=None,ymmax=None,
     gallot("Fields3d")
     setupFields3dParticles()
     if w3d.solvergeom is w3d.RZgeom:
-        frz.del_base()
-        frz.init_base(w3d.nx,w3d.nz,w3d.dx,w3d.dz,w3d.xmmin,w3d.zmminlocal)
+        try:
+            frz.del_base()
+            frz.init_base(w3d.nx,w3d.nz,w3d.dx,w3d.dz,w3d.xmmin,w3d.zmminlocal)
+        except:
+            pass
 
     # --- Calculate the mesh points
     w3d.xmesh[:] = w3d.xmmin + arange(w3d.nx+1)*w3d.dx

@@ -32,8 +32,11 @@ class AMRTree(VisualizableClass):
             self.blocks=MRBlock()
         else:
             self.solvergeom = w3d.solvergeom
-            self.blocks={}
-            self.blocks[frz.basegrid.gid[0]]={'grid':frz.basegrid,'installed_conductors':[]}
+            try:
+                self.blocks={}
+                self.blocks[frz.basegrid.gid[0]]={'grid':frz.basegrid,'installed_conductors':[]}
+            except:
+                self.blocks=MRBlock()
         self.colors       = ['red','blue','yellow','green','cyan','magenta','white']
         self.conductors   = []
         self.conductorsdfill   = []
@@ -45,8 +48,11 @@ class AMRTree(VisualizableClass):
         if self.solvergeom == w3d.XYZgeom:
             registersolver(self)
         else:
-            installbeforefs(self.generate)
-
+            try:
+                bg=frz.basegrid
+                installbeforefs(self.generate)
+            except:
+                registersolver(self)
     def __getstate__(self):
         if type(self.blocks) != DictType:
             # --- In this case, there is no trouble with pickle
@@ -100,67 +106,115 @@ class AMRTree(VisualizableClass):
             ifcond = top.it%w3d.AMRgenerate_periodicity != 0
         if (ifcond or not lzero): lrootonly = 0
         else:                     lrootonly = 1
-        if self.solvergeom == w3d.XYZgeom:
+        if 1:#self.solvergeom == w3d.XYZgeom:
             self.blocks.loadrho(lzero=lzero,lfinalize_rho=lfinalize_rho,lrootonly=lrootonly)
-        else:
-            raise Exception("Only 3d supported as registered solver.")
+#        else:
+#            raise Exception("Only 3d supported as registered solver.")
+
+    def loadj(self,lzero=true,lfinalize_rho=true):
+        # --- If the mesh refinement is going to be recalculated this step,
+        # --- then rho is only needed on the root block. Skip loading rho
+        # --- on the mesh refined blocks to save time.
+        ifcond = w3d.AMRgenerate_periodicity==0
+        if not ifcond:
+            ifcond = top.it%w3d.AMRgenerate_periodicity != 0
+        if (ifcond or not lzero): lrootonly = 0
+        else:                     lrootonly = 1
+        if 1:#self.solvergeom == w3d.XYZgeom:
+            self.blocks.loadj(lzero=lzero,lfinalize_rho=lfinalize_rho,lrootonly=lrootonly)
+
+    # --- Diagnostic routines
+    def rhodia(self):
+        pass
+    def gtlchg(self):
+        pass
+    def srhoax(self):
+        pass
+    def getese(self):
+        pass
+    def sphiax(self):
+        pass
+    def sezax(self):
+        pass
 
     def solve(self):
-        if self.solvergeom == w3d.XYZgeom:
+#        if self.solvergeom == w3d.XYZgeom:
             self.generate()
             self.blocks.solve()
-        else:
-            raise Exception("Only 3d supported as registered solver.")
+#        else:
+#            raise Exception("Only 3d supported as registered solver.")
 
     def fetche(self):
-        if self.solvergeom == w3d.XYZgeom:
+#        if self.solvergeom == w3d.XYZgeom:
             self.blocks.fetche()
-        else:
-            raise Exception("Only 3d supported as registered solver.")
+#        else:
+#            raise Exception("Only 3d supported as registered solver.")
+
+    def fetchb(self):
+#        if self.solvergeom == w3d.XYZgeom:
+            self.blocks.fetchb()
+#        else:
+#            raise Exception("Only 3d supported as registered solver.")
 
     def fetchphi(self):
-        if self.solvergeom == w3d.XYZgeom:
+#        if self.solvergeom == w3d.XYZgeom:
             self.blocks.fetchphi()
-        else:
-            raise Exception("Only 3d supported as registered solver.")
+#        else:
+#            raise Exception("Only 3d supported as registered solver.")
 
     def installconductor(self,conductor,dfill=2):
         self.addconductor(conductor,dfill)
         if self.solvergeom==w3d.XYZgeom:
             self.blocks.installconductor(conductor,dfill=self.dfill)
         else:
-            self.restorefrzgrid()
-            for block in self.blocks.itervalues():
-                g = block['grid']
-                if conductor not in block['installed_conductors']:
-                    try:
-                        cond = conductor.cond
-                    except AttributeError:
-                        cond = conductor
-                    installconductors(cond,nx=g.nr,ny=0,nzlocal=g.nz,nz=g.nz,
-                                        xmmin=g.xmin,xmmax=g.xmax,
-                                        zmmin=g.zmin,zmmax=g.zmax,dfill=dfill,
-                                        gridrz=g)
-                    block['installed_conductors'].append(cond)
-            get_cond_rz(1)
-
+            try:
+                bg=frz.basegrid
+                self.restorefrzgrid()
+                for block in self.blocks.itervalues():
+                    g = block['grid']
+                    if conductor not in block['installed_conductors']:
+                        try:
+                            cond = conductor.cond
+                        except AttributeError:
+                            cond = conductor
+                        installconductors(cond,nx=g.nr,ny=0,nzlocal=g.nz,nz=g.nz,
+                                            xmmin=g.xmin,xmmax=g.xmax,
+                                            zmmin=g.zmin,zmmax=g.zmax,dfill=dfill,
+                                            gridrz=g)
+                        block['installed_conductors'].append(cond)
+                get_cond_rz(1)
+            except:
+                self.blocks.installconductor(conductor,dfill=self.dfill)
+            
     def hasconductors(self):
         if self.solvergeom == w3d.XYZgeom:
             return self.blocks.hasconductors()
         else:
-            return f3d.conductors.interior.n > 0
-
+            try:
+                bg=frz.basegrid
+                return f3d.conductors.interior.n > 0
+            except:
+                return self.blocks.hasconductors()
+            
     def getconductors(self):
         if self.solvergeom == w3d.XYZgeom:
             return self.blocks.getconductors(alllevels=1)
         else:
-            return f3d.conductors
+            try:
+                bg=frz.basegrid
+                return f3d.conductors
+            except:
+                return self.blocks.getconductors(alllevels=1)
 
     def setconductorvoltage(self,voltage,condid=0,discrete=false,setvinject=false):
         if self.solvergeom == w3d.XYZgeom:
             self.blocks.setconductorvoltage(voltage,condid,discrete,setvinject)
         else:
-            setconductorvoltage(voltage,condid,discrete,setvinject)
+            try:
+                bg=frz.basegrid
+                setconductorvoltage(voltage,condid,discrete,setvinject)
+            except:
+                self.blocks.setconductorvoltage(voltage,condid,discrete,setvinject)
 
     def installbeforefs(self,f):
         self.beforefs.installfuncinlist(f)
@@ -733,9 +787,13 @@ class AMRTree(VisualizableClass):
             self.blocks.resetroot()
             mothergrid = self.blocks
         else:
-            self.restorefrzgrid()
-            mothergrid = frz.basegrid
-            self.del_blocks2d()
+            try:
+                self.restorefrzgrid()
+                mothergrid = frz.basegrid
+                self.del_blocks2d()
+            except:
+                self.blocks.resetroot()
+                mothergrid = self.blocks
         # --- Enforce garbage collection since the MR structures
         # --- have complex linkages and may not be immediately removed.
         gc.collect()
@@ -753,7 +811,11 @@ class AMRTree(VisualizableClass):
                 if self.solvergeom == w3d.XYZgeom:
                     mothergrid = mothergrid.children[0]
                 else:
-                    mothergrid = mothergrid.down
+                    try:
+                        bg=frz.basegrid
+                        mothergrid = mothergrid.down
+                    except:
+                        mothergrid = mothergrid.children[0]
             r=self.MRfact**i
             for patch in blocks:
                 if (self.lremoveblockswithoutparticles and
@@ -764,33 +826,42 @@ class AMRTree(VisualizableClass):
                     upper = lower + nint(array(patch[3:])*r)
                     mothergrid.addchild(lower,upper,refinement=self.MRfact)
                 else:
-                    nx = nint(patch[2]*r)
-                    ny = nint(patch[3]*r)
-                    dxnew = dx/r
-                    dynew = dy/r
-                    dxmother = dxnew*self.MRfact
-                    dymother = dynew*self.MRfact
-                    xmin = xmin0 + patch[0]*dx
-                    xmax = xmin  + nx*dxnew
-                    ymin = ymin0 + patch[1]*dy
-                    ymax = ymin  + ny*dynew
-                    nx, xmin, xmax, t_xmin, t_xmax = self.add_transit(nx, xmin, xmax, dxmother, xmin0, xmax0)
-                    ny, ymin, ymax, t_ymin, t_ymax = self.add_transit(ny, ymin, ymax, dymother, ymin0, ymax0)
-                    add_subgrid(mothergrid.gid[0],nx,ny,dxnew,dynew,xmin,ymin,
-                                t_xmin*self.MRfact,t_xmax*self.MRfact,
-                                t_ymin*self.MRfact,t_ymax*self.MRfact)
+                    try:
+                        bg=frz.basegrid
+                        nx = nint(patch[2]*r)
+                        ny = nint(patch[3]*r)
+                        dxnew = dx/r
+                        dynew = dy/r
+                        dxmother = dxnew*self.MRfact
+                        dymother = dynew*self.MRfact
+                        xmin = xmin0 + patch[0]*dx
+                        xmax = xmin  + nx*dxnew
+                        ymin = ymin0 + patch[1]*dy
+                        ymax = ymin  + ny*dynew
+                        nx, xmin, xmax, t_xmin, t_xmax = self.add_transit(nx, xmin, xmax, dxmother, xmin0, xmax0)
+                        ny, ymin, ymax, t_ymin, t_ymax = self.add_transit(ny, ymin, ymax, dymother, ymin0, ymax0)
+                        add_subgrid(mothergrid.gid[0],nx,ny,dxnew,dynew,xmin,ymin,
+                                    t_xmin*self.MRfact,t_xmax*self.MRfact,
+                                    t_ymin*self.MRfact,t_ymax*self.MRfact)
+                    except:
+                        lower = nint(array(patch[:3])*r)
+                        upper = lower + nint(array(patch[3:])*r)
+                        mothergrid.addchild(lower,upper,refinement=self.MRfact)
 
         if self.solvergeom == w3d.XYZgeom:
             self.blocks.finalize()
         else:
-            g = frz.basegrid
-            for i in range(1,frz.ngrids):
-                try:
-                    g = g.next
-                except:
-                    g=g.down
-                self.blocks[g.gid[0]] = {'grid':g,'installed_conductors':[]}
-
+            try:
+                g = frz.basegrid
+                for i in range(1,frz.ngrids):
+                    try:
+                        g = g.next
+                    except:
+                        g=g.down
+                    self.blocks[g.gid[0]] = {'grid':g,'installed_conductors':[]}
+            except:
+                self.blocks.finalize()
+            
     def add_transit(self, nx, xmin, xmax, dxmother, xmin0, xmax0):
         nt = self.ntransit
         n = self.MRfact
@@ -832,7 +903,10 @@ class AMRTree(VisualizableClass):
         else:
             i1,j1 = patch[:2]
             i2,j2 = array([i1,j1]) + patch[2:]
-            rho = frz.basegrid.rho[i1:i2+1,j1:j2+1]
+            try:
+                rho = frz.basegrid.rho[i1:i2+1,j1:j2+1]
+            except:
+                rho = self.blocks.rho[i1:i2+1,k1:k2+1]
         if maxnd(abs(rho)) == 0.: return 0
         else:                     return 1
 
@@ -871,8 +945,11 @@ class AMRTree(VisualizableClass):
                 if self.solvergeom==w3d.XYZgeom:
                     self.f = self.blocks.rho
                 else:
-                    self.f = frz.basegrid.rho
-
+                    try:
+                        self.f = frz.basegrid.rho
+                    except:
+                        self.f = self.blocks.rho
+                    
             # set cell dimensions of mother grid according to geometry
             dx = w3d.dx
             dz = w3d.dz
@@ -906,7 +983,10 @@ class AMRTree(VisualizableClass):
         if self.nbcells is not None:
             # generate list of blocks from array nbcells
             if l_timing: starttime = time.clock()
-            self.setlist(self.nbcells[:-1,:-1],w3d.AMRcoalescing,self.MRfact,true)
+            if self.solvergeom==w3d.XYZgeom:
+                self.setlist(self.nbcells[:-1,:-1,:-1],w3d.AMRcoalescing,self.MRfact,true)
+            else:
+                self.setlist(self.nbcells[:-1,:-1],w3d.AMRcoalescing,self.MRfact,true)
             if l_timing:
                 endtime = time.clock()
                 print 'generated list in ',endtime-starttime,' seconds.'
@@ -926,8 +1006,11 @@ class AMRTree(VisualizableClass):
                 if self.solvergeom==w3d.XYZgeom:
                     self.blocks.clearinactiveregions(self.nbcells)
                 else:
-                    g = frz.basegrid
-                    adjust_lpfd(self.nbcells,g.nr,g.nz,g.rmin,g.rmax,g.zmin,g.zmax)
+                    try:
+                        g = frz.basegrid
+                        adjust_lpfd(self.nbcells,g.nr,g.nz,g.rmin,g.rmax,g.zmin,g.zmax)
+                    except:
+                        self.blocks.clearinactiveregions(self.nbcells)
                 if l_timing:
                     endtime = time.clock()
                     print 'Cleared inactive regions in ',endtime-starttime,' seconds.'
@@ -938,30 +1021,35 @@ class AMRTree(VisualizableClass):
             for cond,dfill in zip(self.conductors,self.conductorsdfill):
                 self.blocks.installconductor(cond,dfill=dfill)
         else:
-            # this loop is needed so that the grids are correctly registered when installing conductors
-            if self.nblocks>0:
-                g = frz.basegrid
-                for idummy in range(frz.ngrids-1):
-                    rdummy=g.nr
-                    try:
-                        g=g.next
-                    except:
+            try:
+                bg = frz.basegrid
+                # this loop is needed so that the grids are correctly registered when installing conductors
+                if self.nblocks>0:
+                    g = frz.basegrid
+                    for idummy in range(frz.ngrids-1):
+                        rdummy=g.nr
                         try:
-                            g=g.down
+                            g=g.next
                         except:
-                            pass
-            # install conductors
-            for cond,dfill in zip(self.conductors,self.conductorsdfill):
-                for block in self.blocks.itervalues():
-                    g=block['grid']
-                    if g is not frz.basegrid:
-                        if cond not in block['installed_conductors']:
-                            installconductors(cond,nx=g.nr,ny=0,nzlocal=g.nz,nz=g.nz,
-                                              xmmin=g.xmin,xmmax=g.xmax,
-                                              zmmin=g.zmin,zmmax=g.zmax,dfill=dfill,
-                                              gridrz=g)
-                            block['installed_conductors'].append(cond)
-            get_cond_rz(1)
+                            try:
+                                g=g.down
+                            except:
+                                pass
+                # install conductors
+                for cond,dfill in zip(self.conductors,self.conductorsdfill):
+                    for block in self.blocks.itervalues():
+                        g=block['grid']
+                        if g is not frz.basegrid:
+                            if cond not in block['installed_conductors']:
+                                installconductors(cond,nx=g.nr,ny=0,nzlocal=g.nz,nz=g.nz,
+                                                  xmmin=g.xmin,xmmax=g.xmax,
+                                                  zmmin=g.zmin,zmmax=g.zmax,dfill=dfill,
+                                                  gridrz=g)
+                                block['installed_conductors'].append(cond)
+                get_cond_rz(1)
+            except:
+                for cond,dfill in zip(self.conductors,self.conductorsdfill):
+                    self.blocks.installconductor(cond,dfill=dfill)
         if l_timing:
             endtime = time.clock()
             print 'generated conductors in ',endtime-starttime,' seconds.'
@@ -973,7 +1061,11 @@ class AMRTree(VisualizableClass):
             # --- is already the registered solver.
             self.blocks.loadrho(lzero=true,lfinalize_rho=true,lrootonly=0)
         else:
-            loadrho()
+            try:
+                bg=frz.basegrid
+                loadrho()
+            except:
+                self.blocks.loadrho(lzero=true,lfinalize_rho=true,lrootonly=0)
         if l_timing:
             endtime = time.clock()
             print 'loaded rho in ',endtime-starttime,' seconds.'
