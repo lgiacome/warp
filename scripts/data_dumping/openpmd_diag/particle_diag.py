@@ -9,7 +9,6 @@ from generic_diag import OpenPMDDiagnostic
 from parallel import gatherarray, mpiallgather
 from data_dict import macro_weighted_dict, weighting_power_dict, \
      particle_quantity_dict
-import pdb
 
 class ParticleDiagnostic(OpenPMDDiagnostic) :
     """
@@ -87,7 +86,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 if self.select[momentum][1] is not None:
                     self.select[momentum][1] *= constants.c
 
-    def setup_openpmd_species_group( self, grp, species ) :
+    def setup_openpmd_species_group( self, grp, species, N=1 ) :
         """
         Set the attributes that are specific to the particle group
 
@@ -97,6 +96,10 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             Contains all the species
 
         species : a Warp species.Species object
+
+        N: int, optional
+            The global number of particles (if known)
+            (used in order to store constant records)
         """
         # Generic attributes
         grp.attrs["particleShape"] = float( self.top.depos_order[0][0] )
@@ -121,8 +124,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                             "positionOffset/y", "positionOffset/z"] :
             grp.require_group(quantity)
             self.setup_openpmd_species_component( grp[quantity] )
-            grp[quantity].attrs["shape"] = np.array([1], dtype=np.uint64)
-            # Required. Since it is not really used, the shape is 1 here.
+            grp[quantity].attrs["shape"] = np.array([N], dtype=np.uint64)
 
         # Set the corresponding values
         grp["charge"].attrs["value"] = species.charge
@@ -207,16 +209,6 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 # If not, immediately go to the next species_name
                 continue
 
-            # Setup the species group
-            if this_rank_writes :
-                species_path = "/data/%d/particles/%s" %(iteration,
-                                                         species_name)
-                # Create and setup the h5py.Group species_grp
-                species_grp = f.require_group( species_path )
-                self.setup_openpmd_species_group( species_grp, species )
-            else:
-                species_grp = None
-
             # Select the particles that will be written
             select_array = self.apply_selection( species )
             # Get their total number
@@ -230,6 +222,16 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 # Single-proc output
                 n_rank = None
                 N = n
+
+            # Setup the species group
+            if this_rank_writes :
+                species_path = "/data/%d/particles/%s" %(iteration,
+                                                         species_name)
+                # Create and setup the h5py.Group species_grp
+                species_grp = f.require_group( species_path )
+                self.setup_openpmd_species_group( species_grp, species, N )
+            else:
+                species_grp = None
 
             # Write the datasets for each particle datatype
             self.write_particles( species_grp, species,
