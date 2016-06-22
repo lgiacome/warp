@@ -1151,8 +1151,8 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
     if top.inject > 0: fill_inj()
 
     # --- Do some setup for the RZ solver
-    if (getcurrpkg() == 'w3d' and top.fstype == 10 and
-        w3d.solvergeom in [w3d.RZgeom,w3d.XZgeom]):
+    if (getcurrpkg() in ['w3d', 'wxy'] and top.fstype == 10 and
+        w3d.solvergeom in [w3d.RZgeom,w3d.XZgeom,w3d.XYgeom]):
         mk_grids_ptr()
 
     # --- Setup the mpi communicators needed for the field solve
