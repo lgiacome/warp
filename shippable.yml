@@ -10,4 +10,4 @@ build:
 
   ci:
     - cd /home/warp_user/warp/warp_test/
-    - python runalltest.py
+    - python runalltests.py

@@ -14,7 +14,7 @@ RUN apt-get update \
 # into the Docker container 
 RUN useradd --create-home warp_user
 RUN mkdir /home/warp_user/warp/
-COPY ./* /home/warp_user/warp/
+COPY ./ /home/warp_user/warp/
 RUN chown -R warp_user /home/warp_user/warp/
 # Grant sudo access without password
 RUN echo 'warp_user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
@@ -44,9 +44,8 @@ RUN conda update conda \
 RUN pip install --upgrade pip \
     && pip install Forthon
 
-# Install warp 
-RUN git clone https://bitbucket.org/berkeleylab/warp.git \
-    && cd warp/pywarp90 \
+# Compile warp 
+RUN cd warp/pywarp90 \
     && echo 'FCOMP= -F gfortran --fcompex mpif90' >> Makefile.local.pympi \
     && echo "if parallel:" >> setup.local.py \
     && echo "   library_dirs += ['~/miniconda2/lib']" >> setup.local.py \
