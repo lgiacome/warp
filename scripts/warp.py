@@ -1084,7 +1084,8 @@ def restore(filename, **kw):
 
 # --- Restart command
 def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
-            dofieldsol=true,format='',datareader=PR.PR,main=None):
+            dofieldsol=true,format='',datareader=PR.PR,main=None,
+            clearcontrollers=True):
     """
   Reads in data from file, redeposits charge density and does field solve
     - filename: restart file name - when restoring parallel run from multiple
@@ -1101,7 +1102,12 @@ def restart(filename,suffix='',onefile=0,verbose=false,skip=[],
                         conforms to the API of PW from the PyPDB package.
     - main=warp: main object that Forthon objects are restored into
                  Used when the Forthon package is not "import *" into main.
+    - clearcontrollers=True: The default behavior is to clear out any controllers
+                 that have been setup, assuming that only controllers restored from the
+                 dump file should be installed.
     """
+    # --- Set the flag for clearing controllers
+    ControllerFunctionContainer.clearfunctionlists = clearcontrollers
     # --- If each processor is restoring from a seperate file, append
     # --- appropriate suffix, assuming only prefix was passed in
     if lparallel and not onefile:

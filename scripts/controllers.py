@@ -103,6 +103,9 @@ class ControllerFunction:
         self.time = self.time + tt
         if self.lcallonce: self.funcs = []
 
+    def clearlist(self):
+        self.funcs = []
+
     def __getstate__(self):
         """
         The instance is picklable. Only the names of functions are saved. A full
@@ -428,14 +431,17 @@ userappliedfields = ControllerFunction('userappliedfields')
 class ControllerFunctionContainer:
     """
   This is a somewhat kludgy fix to how to get any saved functions restored.
-  A single instance of this class is created and this instance is what is save
+  A single instance of this class is created and this instance is what is saved
   in a dump. This instance will have a list of the controllers, so the
   controllers will be saved, but not as top level python variables.
   Upon restoration, this container will go through each of the saved controllers
   and reinstall the functions saved therein. This installs the functions in the
   original set of controllers created when this module was first imported.
-  Anything that may have already been installed will therefore be unaffected.
+  Anything that may have already been installed will by default be deleted.
     """
+    # --- This needs to be a class attribute, so that it can be set before
+    # --- and instance is being restored and __setstate__ called.
+    clearfunctionlists = True
     def __init__(self,clist):
         self.clist = clist
     def __setstate__(self,dict):
@@ -443,6 +449,15 @@ class ControllerFunctionContainer:
         import __main__
         self.__dict__.update(dict)
         for c in self.clist:
+            origcontroller = controllers.__dict__[c.name]
+            # --- NOTE: If clearfunctionlists was always True, the rest of the clist loop could
+            # --- be simplified to one of these single statements:
+            # --- origcontroller.funcs = c.funcs
+            # --- OR
+            # --- controllers.__dict__[c.name] = c
+            # --- With this second version, the resetting of self.clist below would not be needed.
+            if ControllerFunctionContainer.clearfunctionlists:
+                origcontroller.clearlist()
             for f in c.funcs:
                 if isinstance(f,basestring):
                     # --- Check if f is already in the original list of functions,
@@ -451,21 +466,21 @@ class ControllerFunctionContainer:
                     # --- This will be the case if, for example, the user execs the
                     # --- original input file, which sets up some functions, before
                     # --- doing the restart.
-                    origfuncs = controllers.__dict__[c.name].funcs
+                    origfuncs = origcontroller.funcs
                     try:
                         ffunc = __main__.__dict__[f]
                     except KeyError:
                         ffunc = None
                     if (f not in origfuncs and ffunc not in origfuncs):
-                        controllers.__dict__[c.name].installfuncinlist(f)
+                        origcontroller.installfuncinlist(f)
                 else:
                     # --- Otherwise, f is a method, so it can be directly installed.
                     # --- A check is still made to ensure it isn't installed twice.
                     # --- The check is only needed temporarily until the classes
                     # --- are fixed to not resinstall in the getstate.
                     ffunc = getattr(f[0],f[1])
-                    if not controllers.__dict__[c.name].isinstalledfuncinlist(ffunc):
-                        controllers.__dict__[c.name].installfuncinlist(ffunc)
+                    if not origcontroller.isinstalledfuncinlist(ffunc):
+                        origcontroller.installfuncinlist(ffunc)
         # --- The clist is obtained from the original instance in the controllers
         # --- module so that the list contains references to the original
         # --- controller instances. This is needed, since in the next dump,
