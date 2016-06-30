@@ -6184,7 +6184,7 @@ class EM3D(SubcycledPoissonSolver):
         self.allocatedataarrays()
 
         # If needed, extract relat_pgroup and relat_jslist from the species
-        if relat_pgroup is not None:
+        if relat_species is not None:
             if (relat_pgroup is not None) or (relat_jslist is not None):
                 raise ValueError('Both `species` and `relat_pgroup`'
                 '/`relat_jslist` were passed. Please use one or the other.')
