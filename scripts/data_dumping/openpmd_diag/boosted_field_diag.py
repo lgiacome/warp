@@ -184,7 +184,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             snapshot.buffered_slices = []
             snapshot.buffer_z_indices = []
 
-            if self.comm_world is not None:
+            if (self.comm_world is not None) and (self.comm_world.size > 1):
                 # In MPI mode: gather the flattened field array to processor 0
                 # Attribute values to iz_min, iz_max and size of the field
                 # array if field array is None 
@@ -198,10 +198,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
                 else:
                     flat_field_array = field_array.flatten()
+                    if self.dim == "3d":
+                        ny_field_array = np.shape(field_array)[2]
                     if self.dim in ["2d","3d"]:
                         nx_field_array = np.shape(field_array)[1]
-                    elif self.dim == "3d":
-                        ny_field_array = np.shape(field_array)[2]
                     elif self.dim == "circ":
                         nx_field_array = np.shape(field_array)[2]
                         
@@ -397,7 +397,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             if self.dim == "2d":
                 dset[ :, iz_min:iz_max ] = data
             elif self.dim == "3d":
-                dset[ :, : , iz_min:iz_max ] = data
+                dset[ :, :, iz_min:iz_max ] = data
             elif self.dim == "circ":
                 # The first index corresponds to the azimuthal mode
                 dset[ :, :, iz_min:iz_max ] = data
@@ -531,7 +531,7 @@ class LabSnapshot:
         # Pack the different slices together
         # Reverse the order of the slices when stacking the array,
         # since the slices where registered for right to left
-        field_array = np.dstack( self.buffered_slices[::-1] )
+        field_array = np.stack( self.buffered_slices[::-1], axis=-1 )
 
         # Get the first and last index in z
         # (Following Python conventions, iz_min is inclusive,
