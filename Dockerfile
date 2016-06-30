@@ -46,6 +46,7 @@ RUN pip install --upgrade pip \
 
 # Compile warp 
 RUN cd warp/pywarp90 \
+    && echo 'FCOMP= -F gfortran' >> Makefile.local \
     && echo 'FCOMP= -F gfortran --fcompex mpif90' >> Makefile.local.pympi \
     && echo "if parallel:" >> setup.local.py \
     && echo "   library_dirs += ['~/miniconda2/lib']" >> setup.local.py \
@@ -57,7 +58,6 @@ RUN cd warp/pywarp90 \
 RUN git clone https://bitbucket.org/dpgrote/pygist.git \
     && cd pygist \
     && python setup.py config \
-    && python setup.py build \
     && python setup.py install
 
 # Prepare the run directory
