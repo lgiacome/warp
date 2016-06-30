@@ -6147,18 +6147,32 @@ class EM3D(SubcycledPoissonSolver):
            yl+ylguard:yu-yrguard,
            zl+zlguard:zu-zrguard]=self.blocknumber
 
-    def initstaticfields(self, relat_species=None):
+    def initstaticfields(self, relat_species=None,
+                         relat_pgroup=None, relat_jslist=None ):
         """
-        Initialize the space charge fields of the object, using
-        a (possibly relativistic) Poisson solver.
+        Initialize the space charge fields, using a Poisson solver.
 
+        - If no arguments are passed, this uses an electrostatic and
+        magnetostatic solver, using *all* particles as the source
+        
+        - If *either* relat_species *or* relat_pgroup and relat_jslist
+        are passed, this uses a relativistic Poisson solver, using *only*
+        the designated relativistic particles as the source
+        
         Parameter
         ---------
         relat_species: a Species object
-            A relativistic species.
-            If a species is given, it is assumed that all the fields
-            propagate at the same speed as this species, and a corresponding
-            electromagnetic, relativistic Poisson solver is used.
+            A relativistic species, whose charge density will serve
+            as the source for the relativistic Poisson solver
+
+        relat_pgroup: a ParticleGroup object
+            An object containing several species, among which
+            some species (which are designated by js_list, below)
+            will serve as the source for the relativistic Poission solver
+
+        jslist: a list of integers
+            Indicates which of species of the relat_pgroup will serve
+            as the source.
         """
         # --- This is needed because of the order in which things
         # --- are imported in warp.py.
@@ -6169,6 +6183,14 @@ class EM3D(SubcycledPoissonSolver):
         # --- This should be done to make sure that the EM arrays are set up
         self.allocatedataarrays()
 
+        # If needed, extract relat_pgroup and relat_jslist from the species
+        if relat_species is not None:
+            if (relat_pgroup is not None) or (relat_jslist is not None):
+                raise ValueError('Both `species` and `relat_pgroup`'
+                '/`relat_jslist` were passed. Please use one or the other.')
+            relat_pgroup = relat_species.pgroup
+            relat_jslist = relat_species.jslist
+        
         # --- Calculate the static fields.
         top.grid_overlap = 2
         if self.solvergeom == w3d.XYZgeom:
@@ -6186,11 +6208,11 @@ class EM3D(SubcycledPoissonSolver):
 
         esolver.conductordatalist = self.conductordatalist
         # check if used for calculation of relativistic beam
-        if relat_species is not None:
+        if relat_pgroup is not None:
           # pass particle group to density deposition
-          esolver.loadrho(pgroups=[relat_species.pgroup])
+          esolver.loadrho( pgroups=[relat_pgroup], jslist=relat_jslist )
           # Calculate the relativistic contraction factor along z
-          gaminv = relat_species.getgaminv()
+          gaminv = getgaminv( pgroup=relat_pgroup, jslist=relat_jslist )
           zfact = numpy.mean(1./gaminv)
           # Call the relativisitic Poisson solver
           esolver.solve(iwhich=0,zfact=zfact)
@@ -6235,7 +6257,7 @@ class EM3D(SubcycledPoissonSolver):
         # --- Calculate the fields on the Yee mesh by direct finite differences
         # --- of the potential (which is on a node centered grid)
 
-        if relat_species is None:
+        if relat_pgroup is None:
           zfact = 1.
           Ax = bsolver.potential[0,...]
           Ay = bsolver.potential[1,...]
@@ -6245,7 +6267,7 @@ class EM3D(SubcycledPoissonSolver):
         # get Lorentz factor of used particle group then use A calculated
         # from phi according to J.-L. Vay, Phys. Plasmas 15, 056701 (2008)
         else:
-          gaminv = relat_species.getgaminv()
+          gaminv = getgaminv( pgroup=relat_pgroup, jslist=relat_jslist )
           zfact = numpy.mean(1./gaminv)
           beta = sqrt(1.-1./zfact/zfact)
           Ax = zeros_like(esolver.phi)
