@@ -1,0 +1,13 @@
+build:
+
+  pre_ci:
+    docker build -no-cache -t warp:tip .
+
+  pre_ci_boot:
+    image_name: warp
+    image_tag: tip
+    pull: false
+
+  ci:
+    - cd /home/warp_user/warp/warp_test/
+    - python runalltests.py
