@@ -90,6 +90,8 @@ with_gist = not with_matplotlib
 
 if with_matplotlib:
     import pylab
+    from matplotlib.backends.backend_pdf import PdfPages
+
     # --- Set up some defaults to match the basic gist window.
     pylab.rcParams['figure.figsize'] = (8.5,11.)
     pylab.rcParams['figure.subplot.left'] = 0.1757
@@ -183,6 +185,13 @@ if with_matplotlib:
             im.set_cmap(getattr(cm,cmap))
         draw_if_interactive()
 
+    def closematplotwindows():
+        """This will be used to close the matplotlib windows when python exits"""
+        for w in _matplotwindows.values():
+            w.close()
+    import atexit
+    atexit.register(closematplotwindows)
+
 numframeslist = {_base_winnum:1}
 _hcp_frame_number = {_base_winnum:1}
 _plotdatafilenames = {_base_winnum:None}
@@ -222,7 +231,9 @@ def setup(makepsfile=0,prefix=None,cgmlog=1,runcomments='',
         if writetodatafile:
             suffix = 'pkl'
         else:
-            if makepsfile or with_matplotlib:
+            if with_matplotlib:
+                suffix = 'pdf'
+            elif makepsfile or with_matplotlib:
                 suffix = 'ps'
             else:
                 suffix = 'cgm'
@@ -262,7 +273,7 @@ def setup(makepsfile=0,prefix=None,cgmlog=1,runcomments='',
         gist.hcpon()
     else:
         # --- Open the file where the plots will be saved.
-        _matplotwindows[_base_winnum] = open(setup.pname,'w')
+        _matplotwindows[_base_winnum] = PdfPages(setup.pname)
 
     if writetodatafile:
         # --- Setup the data file name where plot data is written
@@ -299,9 +310,12 @@ def window(n=None,**kw):
         display = kw.get('display','')
         if n not in _matplotwindows:
             if hcp is None:
-                _matplotwindows[n] = _matplotwindows[_matplotactivewindow[0]]
+                try:
+                    _matplotwindows[n] = _matplotwindows[_matplotactivewindow[0]]
+                except KeyError:
+                    pass
             else:
-                _matplotwindows[n] = open(hcp,'w')
+                _matplotwindows[n] = PdfPages(hcp)
         _matplotactivewindow[0] = n
         if display != '':
             # --- Turn on interactive mode for matplotlib
@@ -719,8 +733,8 @@ def fma(legend=1):
         oldlimits = limits()
     if with_matplotlib:
         try:
-            pylab.savefig(_matplotwindows[_matplotactivewindow[0]],format='ps')
-        except IndexError:
+            pylab.savefig(_matplotwindows[_matplotactivewindow[0]],format='pdf')
+        except (IndexError, KeyError):
             pass
         pylab.clf()
     # --- Increment frame number
@@ -739,7 +753,7 @@ def hcp(legend=1):
     if with_gist:
         callplotfunction("hcp")
     if with_matplotlib:
-        pylab.savefig(_matplotwindows[_matplotactivewindow[0]],format='ps')
+        pylab.savefig(_matplotwindows[_matplotactivewindow[0]],format='pdf')
     # --- Save the current frame number so that it can be removed from the
     # --- next frame which will have the incremented frame number.
     _hcp_frame_number[active_window()] = numframeslist[active_window()]
@@ -779,8 +793,31 @@ def _converttolabfrm(kw,x,z):
 # This routine allows plotting of multi-dimensioned arrays.
 # It replaces the plg from gist, which can only plot 1-d arrays.
 def pla(y,x=None,linetype="solid",local=1,**kw):
-    """This comment is replaced with gist.plg.__doc__. The linetype argument is
-    only needed for backward compatibility."""
+    """
+pla( y [, x] )
+     Plot a graph of Y versus X.  Y must be a 1 or 2-D array and X must the same
+     shape if Y is 2-D or have the same length as the first dimension of Y.
+     If X is omitted, it defaults to arange(Y.shape[0]).
+     The following keywords are legal (each has a separate help entry):
+
+   KEYWORDS: legend, hide
+             type, width, color, closed, smooth
+             marks, marker, mspace, mphase
+             rays, arrowl, arroww, rspace, rphase
+
+   Example:    pla ( y, x, type=0, marker=character )
+
+   If character is '\1', '\2', '\3', '\4', or '\5', you get point, plus,
+   asterisk, circle, and cross, respectively.  If you make the marker size
+   small enough (the default is small enough), then '\1' will plot points
+   on the X display, which is the most usual request.  For 2-5 or for large
+   marker size, you get the characters on the X display, but in the
+   hardcopy files (postscript or cgm) those special markers will be rendered
+   nicely.
+
+   SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj, plfp
+             limits, logxy, ylimits, fma, hcp
+    """
     kw.setdefault('type',linetype)
     if len(shape(y)) == 0: y = [y]
     if x is not None and len(shape(x)) == 0: x = [x]
@@ -863,11 +900,66 @@ def pla(y,x=None,linetype="solid",local=1,**kw):
                 if with_matplotlib:
                     callplotfunction("plot",[xx[:,i],yy[:,i%n]],kw)
 
-pla.__doc__ = gist.plg.__doc__
 plg = pla
 
 # --- This replaces functions from gist, filtering through callplotfunction
 def limits(xmin=None,xmax=None,ymin=None,ymax=None,**kw):
+    """Set plot limits
+
+old_limits = limits()
+or old_limits = limits( xmin [, xmax, ymin, ymax,]
+     [ square=0/1, nice=0/1, restrict=0/1 ] )
+or limits( old_limits )
+
+     In the first form, restore all four plot limits to extreme values,
+     and save the previous limits in the tuple old_limits.
+
+     In the second form, set the plot limits in the current coordinate
+     system to XMIN, XMAX, YMIN, YMAX, which may each be a number to fix
+     the corresponding limit to a specified value, or the string `e'
+     to make the corresponding limit take on the extreme value of the
+     currently displayed data. Arguments may be omitted from the right
+     end only. (But see ``ylimits'' to set limits on the y-axis.)
+
+     If present, the square keyword determines whether limits marked as
+     extreme values will be adjusted to force the x and y scales to be
+     equal (square=1) or not (square=0, the default). If present, the
+     nice keyword determines whether limits will be adjusted to nice
+     values (nice=1) or not (nice=0, the default). There is a subtlety
+     in the meaning of `extreme value' when one or both of the limits
+     on the OPPOSITE axis have fixed values -- does the `extreme value'
+     of the data include points which will not be plotted because their
+     other coordinate lies outside the fixed limit on the opposite axis
+     (restrict=0, the default), or not (restrict=1)?
+
+     Limits() always returns a tuple of 4 doubles and an integer;
+     OLD_LIMITS[0:3] are the previous xmin, xmax, ymin, and ymax, and
+     OLD_LIMITS[4] is a set of flags indicating extreme values and the
+     square, nice, restrict, and log flags. This tuple can be saved and
+     passed back to limits() in a future call to restore the limits to a
+     previous state.
+
+     In an X window, the limits may also be adjusted interactively with
+     the mouse. Drag left to zoom in and pan (click left to zoom in on a
+     point without moving it), drag middle to pan, and click (and drag)
+     right to zoom out (and pan). If you click just above or below the
+     plot, these operations will be restricted to the x-axis; if you
+     click just to the left or right, the operations are restricted to
+     the y-axis. A shift-left click, drag, and release will expand the
+     box you dragged over to fill the plot (other popular software zooms
+     with this paradigm). If the rubber band box is not visible with
+     shift-left zooming, try shift-middle or shift-right for alternate
+     XOR masks. Such mouse-set limits are equivalent to a limits command
+     specifying all four limits EXCEPT that the unzoom command can
+     revert to the limits before a series of mouse zooms and pans.
+
+     The limits you set using the limits or ylimits functions carry over
+     to the next plot -- that is, an fmaoperation does NOT reset the
+     limits to extreme values.
+
+   SEE ALSO: plsys, ylimits, logxy, zoom_factor, unzoom, plg
+
+    """
     if with_gist:
         if isinstance(xmin,tuple):
             # --- In this form, gist complains if a keyword dictionary is passed in,
@@ -878,8 +970,20 @@ def limits(xmin=None,xmax=None,ymin=None,ymax=None,**kw):
         return rr
     if with_matplotlib:
         callplotfunction("axis",[(xmin,xmax,ymin,ymax)],kw)
-limits.__doc__ = gist.limits.__doc__
 def pldj(x0,y0,x1,y1,local=1,**kw):
+    """
+pldj( x0, y0, x1, y1 )
+     Plot disjoint lines from (X0,Y0) to (X1,Y1).  X0, Y0, X1, and Y1
+     may have any dimensionality, but all must have the same number of
+     elements.
+     The following keywords are legal (each has a separate help entry):
+
+   KEYWORDS: legend, hide
+             type, width, color
+
+   SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj, plfp
+             limits, logxy, ylimits, fma, hcp
+    """
     y0,x0 = _converttolabfrm(kw,y0,x0)
     y1,x1 = _converttolabfrm(kw,y1,x1)
     if not _accumulateplotlists and not local:
@@ -892,8 +996,25 @@ def pldj(x0,y0,x1,y1,local=1,**kw):
         callplotfunction("pldj",[x0,y0,x1,y1],kw)
     if with_matplotlib:
         callplotfunction("plot",[array([x0,x1]),array([y0,y1])],kw)
-pldj.__doc__ = gist.pldj.__doc__
 def plfp(z,y,x,n,local=1,**kw):
+    """
+plfp( z, y, x, n )
+     Plot a list of filled polygons Y versus X, with colors Z.
+     The N array is a 1D list of lengths (number of corners) of the
+     polygons; the 1D colors array Z has the same length as N.  The
+     X and Y arrays have length equal to the sum of all dimensions
+     of N.
+     The Z array must have the same shape as Y and X.  If Z is of
+     type char, it is used `as is', otherwise it is linearly scaled
+     to fill the current palette, as with the bytscl function.
+     (See the bytscl function for explanation of top, cmin, cmax.)
+     The following keywords are legal (each has a separate help entry):
+
+   KEYWORDS: legend, hide, top, cmin, cmax
+
+   SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj
+             limits, logxy, ylimits, fma, hcp
+    """
     y,x = _converttolabfrm(kw,y,x)
     if not _accumulateplotlists and not local:
         z = gatherarray(z)
@@ -909,8 +1030,55 @@ def plfp(z,y,x,n,local=1,**kw):
             kw.setdefault('color',(0.,1.-c/200.,c/200.))
             callplotfunction("plot",[x[i:i+j],y[i:i+j]],kw)
             i += j
-plfp.__doc__ = gist.plfp.__doc__
 def plfc(z,y,x,ireg,local=1,**kw):
+    """
+plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
+      triangle = None, scale = "lin")
+      fills contours of Z on the mesh Y versus X.  Y, X, and IREG are
+      as for plm.  The Z array must have the same shape as Y and X.
+      The function being contoured takes the value Z at each point
+      (X, Y) -- that is, the Z array is presumed to be point-centered.
+
+      NOTE:  The ireg argument was not in the Yorick Gist plfc.
+
+      The CONTOURS keyword can be an integer specifying the number of
+      contours desired, or a list of the values of Z at which you want
+      contour curves.  These curves divide the mesh into len(CONTOURS+1)
+      regions, each of which is filled with a solid color.  If CONTOURS is
+      None or not given, 8 "nice" equally spaced level values spanning the
+      range of Z are selected.
+
+      If you specify CONTOURS, you may also specify COLORS, an array of
+      color numbers (Python typecode 'B', integers between 0 and the
+      length of the current palette - 1, normally 199) of length
+      len(CONTOURS)+1. If you do not specify them, equally
+      spaced colors are chosen.
+
+      If CONTOURS is an integer, SCALE expresses how contour levels
+      are determined.  SCALE may be "lin", "log", or "normal"
+      specifying linearly, logarithmically, or normally spaced
+      contours. Note that unlike Yorick's plfc, this routine does
+      not use spann to compute its contours. Neither, apparently,
+      does plc, which uses a third algorithm which matches neither
+      the one we use nor the one spann uses. So if you plot filled
+      contours and then plot contour lines, the contours will in
+      general not coincide exactly.
+
+      Note that you may use spann to calculate your contour levels
+      if you wish.
+
+      If leveloverlap is given, the upper contour of each segment is
+      extended by the specified fractional amount. This has the effect
+      that the segments will overlap each other. This is useful when
+      filled contour plots are converted to pdf - without the overlap,
+      there are small gaps between the contours where the background
+      color shows through. A recommended value is leveloverlap = 0.1.
+
+      The following keywords are legal (each has a separate help entry):
+    KEYWORDS: triangle, region
+    SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj, plfp, plmesh
+              color_bar, spann, contour, limits, logxy, range, fma, hcp
+    """
     y,x = _converttolabfrm(kw,y,x)
     if not _accumulateplotlists and not local:
         z = gatherarray(z)
@@ -923,8 +1091,30 @@ def plfc(z,y,x,ireg,local=1,**kw):
     if with_matplotlib:
         # --- Note: ireg could be handled by making z a masked array
         callplotfunction("contourf",[x,y,z],kw)
-plfc.__doc__ = gist.plfc.__doc__
 def plc(z,y=None,x=None,ireg=None,local=1,**kw):
+    """
+plc( z, y, x, levs=z_values )
+or plc( z, y, x, ireg, levs=z_values )
+or plc( z, levs=z_values )
+     Plot contours of Z on the mesh Y versus X.  Y, X, and IREG are
+     as for plm.  The Z array must have the same shape as Y and X.
+     The function being contoured takes the value Z at each point
+     (X,Y) -- that is, the Z array is presumed to be point-centered.
+     The Y, X, and IREG arguments may all be omitted to default to the
+     mesh set by the most recent plmesh call.
+     The LEVS keyword is a list of the values of Z at which you want
+     contour curves.  The default is eight contours spanning the
+     range of Z.
+     The following keywords are legal (each has a separate help entry):
+
+   KEYWORDS: legend, hide
+             type, width, color, smooth
+             marks, marker, mspace, mphase
+             smooth, triangle, region
+
+   SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj, plfp, plmesh
+             limits, logxy, ylimits, fma, hcp
+    """
     y,x = _converttolabfrm(kw,y,x)
     if not _accumulateplotlists and not local:
         z = gatherarray(z)
@@ -937,8 +1127,35 @@ def plc(z,y=None,x=None,ireg=None,local=1,**kw):
     if with_matplotlib:
         # --- Note: ireg could be handled by making z a masked array
         callplotfunction("contour",[x,y,z],kw)
-plc.__doc__ = gist.plc.__doc__
 def pli(z,x0=None,y0=None,x1=None,y1=None,local=1,**kw):
+    """
+pli( z )
+or pli( z, x1, y1 )
+or pli( z, x0, y0, x1, y1 )
+     Plot the image Z as a cell array -- an array of equal rectangular
+     cells colored according to the 2-D array Z.  The first dimension
+     of Z is plotted along x, the second dimension is along y.
+     If Z is of type char, it is used `as is', otherwise it is linearly
+     scaled to fill the current palette, as with the bytscl function.
+     (See the bytscl function for explanation of top, cmin, cmax.)
+
+     As for plf and plfp, Z may also be a 3D array with 1st dimension 3
+     of char giving the [r,g,b] components of each color.  See the
+     color keyword for cautions about using this if you do not have
+     a true color display.
+
+     If X1 and Y1 are given, they represent the coordinates of the
+     upper right corner of the image.  If X0, and Y0 are given, they
+     represent the coordinates of the lower left corner, which is at
+     (0,0) by default.  If only the Z array is given, each cell will be
+     a 1x1 unit square, with the lower left corner of the image at (0,0).
+     The following keywords are legal (each has a separate help entry):
+
+   KEYWORDS: legend, hide, top, cmin, cmax
+
+   SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj, plfp,
+             limits, logxy, ylimits, fma, hcp, palette, bytscl, histeq_scale
+    """
     # --- Do the pop since calling _converttolabfrm doesn't make sense
     # --- since x0 etc are scalars.
     kw.pop('withbends',False)
@@ -977,8 +1194,38 @@ def pli(z,x0=None,y0=None,x1=None,y1=None,local=1,**kw):
         yy = arange(y0-dy/2.,y1+dy/2.,dy)
         xg,yg = meshgrid(xx,yy)
         callplotfunction("pcolor",[xg,yg,z],kw)
-pli.__doc__ = gist.pli.__doc__
 def plf(z,y=None,x=None,ireg=None,local=1,**kw):
+    """
+plf( z, y, x )
+or plf( z, y, x, ireg )
+or plf( z )
+     Plot a filled mesh Y versus X.  Y, X, and IREG are as for plm.
+     The Z array must have the same shape as Y and X, or one smaller
+     in both dimensions.  If Z is of type char, it is used `as is',
+     otherwise it is linearly scaled to fill the current palette, as
+     with the bytscl function.
+     (See the bytscl function for explanation of top, cmin, cmax.)
+     The mesh is drawn with each zone in the color derived from the Z
+     function and the current palette; thus Z is interpreted as a
+     zone-centered array.
+     The Y, X, and IREG arguments may all be omitted to default to the
+     mesh set by the most recent plmesh call.
+     A solid edge can optionally be drawn around each zone by setting
+     the EDGES keyword non-zero.  ECOLOR and EWIDTH determine the edge
+     color and width.  The mesh is drawn zone by zone in order from
+     IREG(2+imax) to IREG(jmax*imax) (the latter is IREG(imax,jmax)),
+     so you can achieve 3D effects by arranging for this order to
+     coincide with back-to-front order.  If Z is nil, the mesh zones
+     are filled with the background color, which you can use to
+     produce 3D wire frames.
+     The following keywords are legal (each has a separate help entry):
+
+   KEYWORDS: legend, hide
+             region, top, cmin, cmax, edges, ecolor, ewidth
+
+   SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj, plfp, plmesh,
+             limits, logxy, ylimits, fma, hcp, palette, bytscl, histeq_scale
+    """
     y,x = _converttolabfrm(kw,y,x)
     if not _accumulateplotlists and not local:
         z = gatherarray(z)
@@ -991,8 +1238,33 @@ def plf(z,y=None,x=None,ireg=None,local=1,**kw):
     if with_matplotlib:
         # --- ireg not implemented now
         callplotfunction("pcolor",[x,y,z],kw)
-plf.__doc__ = gist.plf.__doc__
 def plv(vy,vx,y=None,x=None,ireg=None,local=1,**kw):
+    """
+plv( vy, vx, y, x, scale=dt )
+or plv( vy, vx, y, x, ireg, scale=dt )
+or plv( vy, vx, scale=dt )
+     Plot a vector field (VX,VY) on the mesh (X,Y).  Y, X, and IREG are
+     as for plm.  The VY and VX arrays must have the same shape as Y and X.
+     The Y, X, and IREG arguments may all be omitted to default to the
+     mesh set by the most recent plmesh call.
+     The SCALE keyword is the conversion factor from the units of
+     (VX,VY) to the units of (X,Y) -- a time interval if (VX,VY) is a velocity
+     and (X,Y) is a position -- which determines the length of the
+     vector `darts' plotted at the (X,Y) points.  If omitted, SCALE is
+     chosen so that the longest ray arrows have a length comparable
+     to a `typical' zone size.
+     You can use the scalem keyword in pledit to make adjustments to the
+     SCALE factor computed by default.
+     The following keywords are legal (each has a separate help entry):
+
+   KEYWORDS: legend, hide
+             type, width, color, smooth
+             marks, marker, mspace, mphase
+             triangle, region
+
+   SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj, plfp, plmesh, pledit,
+             limits, logxy, ylimits, fma, hcp
+    """
     y,x = _converttolabfrm(kw,y,x)
     if not _accumulateplotlists and not local:
         vy = gatherarray(vy)
@@ -1005,8 +1277,28 @@ def plv(vy,vx,y=None,x=None,ireg=None,local=1,**kw):
         callplotfunction("plv",[vy,vx,y,x,ireg],kw)
     if with_matplotlib:
         callplotfunction("quiver",[x,y,vx,vy],kw)
-plv.__doc__ = gist.plv.__doc__
 def plt(text,x,y,local=1,**kw):
+    """
+plt( text, x, y, tosys=0/1 )
+     Plot TEXT (a string) at the point (X,Y).  The exact relationship
+     between the point (X,Y) and the TEXT is determined by the
+     justify keyword.  TEXT may contain newline (`\n') characters
+     to output multiple lines of text with a single call.  The
+     coordinates (X,Y) are NDC coordinates (outside of any coordinate
+     system) unless the tosys keyword is present and non-zero, in
+     which case the TEXT will be placed in the current coordinate
+     system.  However, the character height is NEVER affected by the
+     scale of the coordinate system to which the text belongs.
+     Note that the pledit command takes dx and/or dy keywords to
+     adjust the position of existing text elements.
+     The following keywords are legal (each has a separate help entry):
+
+   KEYWORDS: legend, hide
+             color, font, height, opaque, path, justify
+
+   SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj, plfp, pledit
+             limits, ylimits, fma, hcp, pltitle
+    """
     y,x = _converttolabfrm(kw,y,x)
     if not _accumulateplotlists and not local:
         textlist = gather(text)
@@ -1027,15 +1319,32 @@ def plt(text,x,y,local=1,**kw):
             callplotfunction("plt",[text,x,y],kw)
         if with_matplotlib:
             callplotfunction("text",[x,y,text],kw)
-plt.__doc__ = gist.plt.__doc__
 def plsys(n=None,**kw):
+    """
+plsys( n )
+     Set the current coordinate system to number N in the current
+     graphics window.  If N equals 0, subsequent elements will be
+     plotted in absolute NDC coordinates outside of any coordinate
+     system.  The default style sheet `work.gs' defines only a single
+     coordinate system, so the only other choice is N equal 1.  You
+     can make up your own style sheet (using a text editor) which
+     defines multiple coordinate systems.  You need to do this if
+     you want to display four plots side by side on a single page,
+     for example.  The standard style sheets `work2.gs' and `boxed2.gs'
+     define two overlayed coordinate systems with the first labeled
+     to the right of the plot and the second labeled to the left of
+     the plot.  When using overlayed coordinate systems, it is your
+     responsibility to ensure that the x-axis limits in the two
+     systems are identical.
+
+   SEE ALSO: window, limits, plg
+    """
     if with_gist:
         if n is None: return getattr(_plotpackage,"plsys")()
         callplotfunction("plsys",[n])
     elif with_matplotlib:
         # --- plot systems are not yet implemented with matplotlib
         if n is None: return 1
-plsys.__doc__ = gist.plsys.__doc__
 
 ##########################################################################
 # --- Plot particles
