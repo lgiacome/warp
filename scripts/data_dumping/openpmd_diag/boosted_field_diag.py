@@ -302,9 +302,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 f_ar = field_array
 
             # Write this array to disk (if this snapshot has new slices)
-            if self.rank==0 and f_ar.size!=0:
-                self.write_slices( f_ar, iz_min, iz_max,
-                    snapshot, self.slice_handler.field_to_index )
+            if self.rank == 0:
+                if (f_ar is not None) and (f_ar.size != 0):
+                    self.write_slices( f_ar, iz_min, iz_max,
+                        snapshot, self.slice_handler.field_to_index )
 
 
     def write_slices( self, field_array, iz_min, iz_max, snapshot, f2i ): 
