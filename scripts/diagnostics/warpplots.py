@@ -89,16 +89,33 @@ except KeyError:
 with_gist = not with_matplotlib
 
 if with_matplotlib:
-    import pylab
+    #import pylab
+    import matplotlib.pyplot as pyplot
     from matplotlib.backends.backend_pdf import PdfPages
 
     # --- Set up some defaults to match the basic gist window.
-    pylab.rcParams['figure.figsize'] = (8.5,11.)
-    pylab.rcParams['figure.subplot.left'] = 0.1757
-    pylab.rcParams['figure.subplot.right'] = 0.1757 + 0.4386*11./8.5
-    pylab.rcParams['figure.subplot.bottom'] = 0.4257
-    pylab.rcParams['figure.subplot.top'] = 0.8643
-    pylab.rcParams['font.size'] = 16.0
+    plotsystems = [111, # full page
+                   111, # full page
+                   111, # full page (right axes not working yet)
+                   221, # upper left
+                   222, # upper right
+                   223, # lower left
+                   224, # lower right
+                   121, # left half
+                   122, # right half
+                   211, # top half
+                   212, # bottom half
+                   311, # top third
+                   312, # middle third
+                   313, # bottom third
+                   ]
+    plotsystem = 1
+    pyplot.rcParams['figure.figsize'] = (8.5,11.)
+    pyplot.rcParams['figure.subplot.left'] = 0.15
+    pyplot.rcParams['figure.subplot.right'] = 0.15 + 0.5*11./8.5
+    pyplot.rcParams['figure.subplot.bottom'] = 0.4
+    pyplot.rcParams['figure.subplot.top'] = 0.9
+    pyplot.rcParams['font.size'] = 14.0
     maxplotwindows = 64
 
 else:
@@ -167,7 +184,7 @@ if with_matplotlib:
 
     def universeaxes():
         # --- Create a new axes which covers the whole plot frame.
-        aa = pylab.axes([0.,0.,1.,1.],frameon=False)
+        aa = pyplot.axes([0.,0.,1.,1.],frameon=False)
         aa.axis([0.,1.,0.,1.])
         aa.set_axis_off()
         return aa
@@ -288,12 +305,14 @@ def setup(makepsfile=0,prefix=None,cgmlog=1,runcomments='',
         cgmlogfile = open(plogname,"w")
         cgmlogfile.write("CGMLOG file for "+pname+"\n\n")
 
-    # --- Print the versions to the plot file.
-    if with_matplotlib: universeaxes()
-
     if lversiontext:
-        plt(time.ctime(top.starttime)+'\n'+versionstext()+'\n'+runcomments,
-            0.15,0.88,justify="LT",local=1)
+        # --- Print the versions to the plot file.
+        text = time.ctime(top.starttime) + '\n' + versionstext() + '\n' + runcomments
+        if with_matplotlib:
+            universeaxes()
+            plt(text,0.1,0.9,justify="LT",local=1)
+        else:
+            plt(text,0.15,0.88,justify="LT",local=1)
         fma()
 
 # --- This wraps the lower level gist.window command. This allows setting
@@ -319,11 +338,11 @@ def window(n=None,**kw):
         _matplotactivewindow[0] = n
         if display != '':
             # --- Turn on interactive mode for matplotlib
-            pylab.interactive(True)
+            pyplot.interactive(True)
             # --- Create the new figure with n
-            pylab.figure(n,dpi=dpi)
+            pyplot.figure(n,dpi=dpi)
             # --- Turn show on (which turns on all windows)
-            pylab.show()
+            pyplot.show()
 
     if n not in numframeslist:
         # --- Setup the state quantities for a new window
@@ -419,9 +438,9 @@ def plotruninfo():
     "Plot run info to the current plot and plot info to the log file"
     if with_matplotlib:
         # --- Get the current axis.
-        ca = pylab.gca()
+        ca = pyplot.gca()
         # --- Create a new one which covers the whole plot frame.
-        aa = pylab.axes([0.,0.,1.,1.],frameon=False)
+        aa = pyplot.axes([0.,0.,1.,1.],frameon=False)
         aa.axis([0.,1.,0.,1.])
         aa.set_axis_off()
     ss = (arraytostr(top.pline3)+'\n'+
@@ -430,7 +449,7 @@ def plotruninfo():
     if with_gist:
         plt(ss,0.12,0.28,local=1)
     if with_matplotlib:
-        aa.text(0.12,0.28,ss)
+        aa.text(0.1,0.20,ss)
     runmaker = arraytostr(top.runmaker)
     runtime = arraytostr(top.runtime)
     runid = arraytostr(top.runid)
@@ -445,7 +464,7 @@ def plotruninfo():
         # --- a subscript. This is most important for the runid.
         plt(ss.replace('_','!_'),0.12,0.24,local=1)
     if with_matplotlib:
-        aa.text(0.12,0.24,ss)
+        aa.text(0.1,0.16,ss)
     # --- Increment and print frame number and log
     # --- numframeslist is now incremented in fma
     #numframeslist[active_window()] = numframeslist[active_window()] + 1
@@ -459,7 +478,7 @@ def plotruninfo():
             _hcp_frame_number[active_window()] = 0
         plt(repr(numframeslist[active_window()]),0.68,0.9,justify='RA',local=1)
     if with_matplotlib:
-        aa.text(0.68,0.9,repr(numframeslist[active_window()]),
+        aa.text(0.8,0.94,repr(numframeslist[active_window()]),
                 horizontalalignment='right',
                 verticalalignment='top')
     if cgmlogfile:
@@ -468,11 +487,11 @@ def plotruninfo():
                          top.it,framet,frameb,framel,framer))
     if with_matplotlib:
         # --- Restore the previous axis
-        pylab.axes(ca)
+        pyplot.axes(ca)
 
 ##########################################################################
 if with_gist: _plotpackage = gist
-if with_matplotlib: _plotpackage = pylab
+if with_matplotlib: _plotpackage = pyplot
 def setplotpackage(plotpackage):
     global _plotpackage
     _plotpackage = plotpackage
@@ -733,10 +752,10 @@ def fma(legend=1):
         oldlimits = limits()
     if with_matplotlib:
         try:
-            pylab.savefig(_matplotwindows[_matplotactivewindow[0]],format='pdf')
+            pyplot.savefig(_matplotwindows[_matplotactivewindow[0]],format='pdf')
         except (IndexError, KeyError):
             pass
-        pylab.clf()
+        pyplot.clf()
     # --- Increment frame number
     numframeslist[active_window()] = numframeslist[active_window()] + 1
     controllers.callbeforeplotfuncs()
@@ -753,7 +772,7 @@ def hcp(legend=1):
     if with_gist:
         callplotfunction("hcp")
     if with_matplotlib:
-        pylab.savefig(_matplotwindows[_matplotactivewindow[0]],format='pdf')
+        pyplot.savefig(_matplotwindows[_matplotactivewindow[0]],format='pdf')
     # --- Save the current frame number so that it can be removed from the
     # --- next frame which will have the incremented frame number.
     _hcp_frame_number[active_window()] = numframeslist[active_window()]
@@ -817,7 +836,7 @@ pla( y [, x] )
 
    SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj, plfp
              limits, logxy, ylimits, fma, hcp
-    """
+"""
     kw.setdefault('type',linetype)
     if len(shape(y)) == 0: y = [y]
     if x is not None and len(shape(x)) == 0: x = [x]
@@ -866,7 +885,7 @@ pla( y [, x] )
             mpisend(yy, dest = 0, tag = 3)
             mpisend(xx, dest = 0, tag = 3)
     else:
-        # --- convert some arguments for pylab
+        # --- convert some arguments for pyplot
         if with_matplotlib:
             if kw['type'] == 'solid': kw['linestyle'] = '-'
             if kw['type'] == 'none': kw['linestyle'] = 'None'
@@ -1339,12 +1358,18 @@ plsys( n )
 
    SEE ALSO: window, limits, plg
     """
+    global plotsystem
     if with_gist:
         if n is None: return getattr(_plotpackage,"plsys")()
         callplotfunction("plsys",[n])
     elif with_matplotlib:
         # --- plot systems are not yet implemented with matplotlib
-        if n is None: return 1
+        if n is None: return plotsystem
+        if n < 0 or n >= len(plotsystems):
+            raise Exception('Invalid plot system')
+        plotsystem = n
+        pyplot.subplot(plotsystems[plotsystem])
+        pyplot.subplots_adjust(wspace=0.4,hspace=0.4)
 
 ##########################################################################
 # --- Plot particles
@@ -1541,13 +1566,13 @@ def ptitles(titlet="",titleb="",titlel="",titler="",v=None,height=None,
             plt(titlet,ptitle_placement[v-1][0][0],ptitle_placement[v-1][0][1],
                 justify="CC",orient=0,local=1,height=height,color=titlet_color)
         if with_matplotlib:
-            pylab.title(titlet)
+            pyplot.title(titlet)
     if titleb:
         if with_gist:
             plt(titleb,ptitle_placement[v-1][1][0],ptitle_placement[v-1][1][1],
                 justify="CC",orient=0,local=1,height=height,color=titleb_color)
         if with_matplotlib:
-            pylab.xlabel(titleb + '\n' + titler)
+            pyplot.xlabel(titleb + '\n' + titler)
     if titlel:
         if with_gist:
             if ptitle_placement[v-1][2][0] < 0.5:
@@ -1557,7 +1582,7 @@ def ptitles(titlet="",titleb="",titlel="",titler="",v=None,height=None,
             plt(titlel,ptitle_placement[v-1][2][0],ptitle_placement[v-1][2][1],
                 justify="CC",orient=orient,local=1,height=height,color=titlel_color)
         if with_matplotlib:
-            pylab.ylabel(titlel)
+            pyplot.ylabel(titlel)
     if titler:
         if with_gist:
             plt(titler,ptitle_placement[v-1][3][0],ptitle_placement[v-1][3][1],
@@ -2620,9 +2645,9 @@ def colorbar(zmin,zmax,uselog=None,ncolor=100,view=None,levs=None,
     """
     # --- This is only ever done on processor 0, so otherwise return
     if me > 0: return
-    # --- The builtin colorbar is used with pylab
+    # --- The builtin colorbar is used with pyplot
     if with_matplotlib:
-        pylab.colorbar(pad=0.02,fraction=0.08)
+        pyplot.colorbar(pad=0.02,fraction=0.08)
         return
     if view is None: view = plsys()
     plsys(0)
@@ -4342,13 +4367,13 @@ def ppco(y,x,z,uz=1.,zmin=None,zmax=None,
         if usepalette:
             if with_matplotlib:
                 # --- lut is the number of colors in the current colormap
-                lut = pylab.rcParams['image.lut']
+                lut = pyplot.rcParams['image.lut']
                 c = nint(lut*ic/(ncolor-1.))
                 # --- cm is used to get the current colormap.
                 # --- Calling the colormap with an integer, returns an RGB tuple
                 # --- for that index.
                 from matplotlib import cm
-                c = getattr(cm,pylab.rcParams['image.cmap'])(c)
+                c = getattr(cm,pyplot.rcParams['image.cmap'])(c)
                 # --- Note that when plotted this way, the colors of the particle
                 # --- is not changed if the colormap is changed. A better way
                 # --- would be to use the scatter function, which allows the color
