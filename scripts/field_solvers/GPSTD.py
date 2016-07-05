@@ -184,7 +184,7 @@ class Fourier_Space():
         self.processdefaultsfromdict(Fourier_Space.__flaginputs__,kw)
         
         
-        j = 1j
+        
         # Dimensions of real space arrays 
         nx = self.nx
         ny = self.ny
@@ -320,6 +320,8 @@ class Fourier_Space():
             self.kyn = self.kyn/self.kmag
             self.kzn = self.kzn/self.kmag
 
+
+            j = 1j
             if self.l_staggered:
                 self.kxmn = self.kxn*np.exp(-j*self.kx_unmod*self.dx/2)
                 self.kxpn = self.kxn*np.exp( j*self.kx_unmod*self.dx/2)
