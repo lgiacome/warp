@@ -226,6 +226,18 @@ depose_rhoold_n_2dxz(rhoold:real,
                            l_particles_weight:logical,
                            l4symtry:logical)
                            subroutine
+depose_rhoold_n_3d(rhoold:real,
+                           n:integer,x(n):real,y(n):real,z(n):real,
+                           ux(n):real,uy(n):real,uz(n):real,
+                           gaminv(n):real,w:real,q:real,
+                           xmin:real,ymin:real,zmin:real,
+                           dt:real,dx:real,dy:real,dz:real,
+                           nx:integer,ny:integer,nz:integer,
+                           nxguard:integer,nyguard:integer,nzguard:integer,
+                           nox:integer,noy:integer,noz:integer,
+                           l_particles_weight:logical,
+                           l4symtry:logical)
+                           subroutine
 getf3d_linear(n:integer,xp(n):real,yp(n):real,zp(n):real,
                ex(n):real,ey(n):real,ez(n):real,
                xmin:real,ymin:real,zmin:real,
