@@ -189,13 +189,12 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 # Attribute values to iz_min, iz_max and size of the field
                 # array if field array is None 
                 if field_array is None:
-                    iz_min = 0
-                    iz_max = 0
+                    iz_min = -1
+                    iz_max = -1
                     flat_field_array = np.zeros(0)
                     nx_field_array = 0
                     if self.dim == "3d":
                         ny_field_array = 0
-
                 else:
                     flat_field_array = field_array.flatten()
                     if self.dim == "3d":
@@ -215,8 +214,8 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 # Gather arrays, iz_min and iz_max
                 g_ar = gatherarray(flat_field_array, root=0, 
                     comm=self.comm_world)
-                g_iz_min = np.array(self.comm_world.allgather(iz_min))
-                g_iz_max = np.array(self.comm_world.allgather(iz_max))
+                g_iz_min = np.array(self.comm_world.gather(iz_min))
+                g_iz_max = np.array(self.comm_world.gather(iz_max))
                 
                 if self.rank == 0:
 
@@ -236,9 +235,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                     # if one of the dimensions does not contain any non null 
                     # value, that implies void
                     if Nx != 0: 
-                        iz_min = min([n for n in g_iz_min if n>0]) \
+                        iz_min = min([n for n in g_iz_min if n>=0]) \
                             if g_iz_min.any() else 0
-                        iz_max = max([n for n in g_iz_max if n>0]) \
+                        iz_max = max([n for n in g_iz_max if n>=0]) \
                             if g_iz_max.any() else 0
                         n_slice = iz_max - iz_min
 
