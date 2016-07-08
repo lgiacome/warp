@@ -10,7 +10,7 @@ use mpirz
 use EM3D_BLOCKtypemodule
 use EM3D_YEEFIELDtypemodule
 use EM3D_SPLITYEEFIELDtypemodule
-USE EM2D_FIELDobjects
+!USE EM2D_FIELDobjects
 use EM3D_bnd
 !use GlobalVars
 !use Picglb

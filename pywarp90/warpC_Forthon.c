@@ -27,7 +27,7 @@ extern PyMODINIT_FUNC initfrzpy(void);
 extern PyMODINIT_FUNC initcirpy(void);
 extern PyMODINIT_FUNC initherpy(void);
 extern PyMODINIT_FUNC initchopy(void);
-extern PyMODINIT_FUNC initem2dpy(void);
+/* extern PyMODINIT_FUNC initem2dpy(void); */
 extern PyMODINIT_FUNC initem3dpy(void);
 #endif
 
@@ -123,7 +123,7 @@ PyMODINIT_FUNC initwarpC(void)
   initcirpy();
   initherpy();
   initchopy();
-  initem2dpy();
+  /* initem2dpy(); */
   initem3dpy();
 #endif
 

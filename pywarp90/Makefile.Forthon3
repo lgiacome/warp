@@ -15,10 +15,10 @@ INSTALLARGS = --pkgbase warp $(BUILDBASE) $(INSTALL)
 install: installso
 	(cd ../scripts;$(PYTHON) setup.py build $(BUILDBASE) install $(INSTALLOPTIONS))
 
-installso: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/envpydep $(BUILDBASEDIR)/w3dpydep $(BUILDBASEDIR)/f3dpydep $(BUILDBASEDIR)/wxypydep $(BUILDBASEDIR)/fxypydep $(BUILDBASEDIR)/wrzpydep $(BUILDBASEDIR)/frzpydep $(BUILDBASEDIR)/herpydep $(BUILDBASEDIR)/cirpydep $(BUILDBASEDIR)/chopydep $(BUILDBASEDIR)/em2dpydep $(BUILDBASEDIR)/em3dpydep ranffortran.c
+installso: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/envpydep $(BUILDBASEDIR)/w3dpydep $(BUILDBASEDIR)/f3dpydep $(BUILDBASEDIR)/wxypydep $(BUILDBASEDIR)/fxypydep $(BUILDBASEDIR)/wrzpydep $(BUILDBASEDIR)/frzpydep $(BUILDBASEDIR)/herpydep $(BUILDBASEDIR)/cirpydep $(BUILDBASEDIR)/chopydep $(BUILDBASEDIR)/em3dpydep ranffortran.c
 	$(PYTHON) setup.py $(FCOMP) build $(BUILDBASE) install $(INSTALLOPTIONS)
 
-build: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/envpydep $(BUILDBASEDIR)/w3dpydep $(BUILDBASEDIR)/f3dpydep $(BUILDBASEDIR)/wxypydep $(BUILDBASEDIR)/fxypydep $(BUILDBASEDIR)/wrzpydep $(BUILDBASEDIR)/frzpydep $(BUILDBASEDIR)/herpydep $(BUILDBASEDIR)/cirpydep $(BUILDBASEDIR)/chopydep $(BUILDBASEDIR)/em2dpydep $(BUILDBASEDIR)/em3dpydep ranffortran.c
+build: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/envpydep $(BUILDBASEDIR)/w3dpydep $(BUILDBASEDIR)/f3dpydep $(BUILDBASEDIR)/wxypydep $(BUILDBASEDIR)/fxypydep $(BUILDBASEDIR)/wrzpydep $(BUILDBASEDIR)/frzpydep $(BUILDBASEDIR)/herpydep $(BUILDBASEDIR)/cirpydep $(BUILDBASEDIR)/chopydep $(BUILDBASEDIR)/em3dpydep ranffortran.c
 	$(PYTHON) setup.py $(FCOMP) build $(BUILDBASE)
 
 $(BUILDBASEDIR)/toppydep: top.F top_lattice.F top_fsl.F dtop.F util.F top.v

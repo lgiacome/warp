@@ -54,7 +54,7 @@ if dummydist.commands[-1] == 'install':
     # --- doesn't update an older warpC.so even if there were changes.
     os.system('rm -rf %s'%dummybuild.build_platlib)
 
-warppkgs = ['top','env','w3d','f3d','wxy','fxy','wrz','frz','her','cir','cho','em2d','em3d']
+warppkgs = ['top','env','w3d','f3d','wxy','fxy','wrz','frz','her','cir','cho','em3d']
 
 def makeobjects(pkg):
     return [pkg+'.o',pkg+'_p.o',pkg+'pymodule.o']
@@ -74,8 +74,8 @@ if sys.hexversion < 0x03000000:
                                  'fxy_mgrid.o',
                                  'dwrz.o',
                                  'frz_mgrid.o','frz_mgrid_be.o','frz_ImplicitES.o',
-                                 'em2d_apml.o','em2d_apml_cummer.o',
-                                 'em2d_maxwell.o','em3d_maxwell.o']
+                                 #'em2d_apml.o','em2d_apml_cummer.o','em2d_maxwell.o',
+                                 'em3d_maxwell.o']
     if parallel:
         warpobjects = warpobjects + ['f3dslave.o','frzslave.o','topslave.o',
                                      'w3dslave.o']

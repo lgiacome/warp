@@ -16,10 +16,10 @@ MPIPARALLEL = --farg "-DMPIPARALLEL"
 install: installso
 	(cd ../scripts;$(PYTHON) setup.py build $(BUILDBASE) install $(INSTALLOPTIONS))
 
-installso: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/envparallelpydep $(BUILDBASEDIR)/w3dparallelpydep $(BUILDBASEDIR)/f3dparallelpydep $(BUILDBASEDIR)/wxyparallelpydep $(BUILDBASEDIR)/fxyparallelpydep $(BUILDBASEDIR)/wrzparallelpydep $(BUILDBASEDIR)/frzparallelpydep $(BUILDBASEDIR)/herparallelpydep $(BUILDBASEDIR)/cirparallelpydep $(BUILDBASEDIR)/choparallelpydep $(BUILDBASEDIR)/em2dparallelpydep $(BUILDBASEDIR)/em3dparallelpydep ranffortran.c
+installso: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/envparallelpydep $(BUILDBASEDIR)/w3dparallelpydep $(BUILDBASEDIR)/f3dparallelpydep $(BUILDBASEDIR)/wxyparallelpydep $(BUILDBASEDIR)/fxyparallelpydep $(BUILDBASEDIR)/wrzparallelpydep $(BUILDBASEDIR)/frzparallelpydep $(BUILDBASEDIR)/herparallelpydep $(BUILDBASEDIR)/cirparallelpydep $(BUILDBASEDIR)/choparallelpydep $(BUILDBASEDIR)/em3dparallelpydep ranffortran.c
 	$(PYTHON) setup.py $(FCOMP) --parallel build $(BUILDBASE) install $(INSTALLOPTIONS)
 
-build: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/envparallelpydep $(BUILDBASEDIR)/w3dparallelpydep $(BUILDBASEDIR)/f3dparallelpydep $(BUILDBASEDIR)/wxyparallelpydep $(BUILDBASEDIR)/fxyparallelpydep $(BUILDBASEDIR)/wrzparallelpydep $(BUILDBASEDIR)/frzparallelpydep $(BUILDBASEDIR)/herparallelpydep $(BUILDBASEDIR)/cirparallelpydep $(BUILDBASEDIR)/choparallelpydep $(BUILDBASEDIR)/em2dparallelpydep $(BUILDBASEDIR)/em3dparallelpydep ranffortran.c
+build: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/envparallelpydep $(BUILDBASEDIR)/w3dparallelpydep $(BUILDBASEDIR)/f3dparallelpydep $(BUILDBASEDIR)/wxyparallelpydep $(BUILDBASEDIR)/fxyparallelpydep $(BUILDBASEDIR)/wrzparallelpydep $(BUILDBASEDIR)/frzparallelpydep $(BUILDBASEDIR)/herparallelpydep $(BUILDBASEDIR)/cirparallelpydep $(BUILDBASEDIR)/choparallelpydep $(BUILDBASEDIR)/em3dparallelpydep ranffortran.c
 	$(PYTHON) setup.py $(FCOMP) --parallel build $(BUILDBASE)
 
 $(BUILDBASEDIR)/topparallelpydep: top.F top_lattice.F top_fsl.F dtop.F util.F topslave.F top.v

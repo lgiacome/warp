@@ -136,7 +136,7 @@ if sys.hexversion >= 0x03000000:
         from .cirparallelpy import *
         from .herparallelpy import *
         from .choparallelpy import *
-        from .em2dparallelpy import *
+        #from .em2dparallelpy import *
         from .em3dparallelpy import *
     else:
         from .toppy import *
@@ -150,7 +150,7 @@ if sys.hexversion >= 0x03000000:
         from .cirpy import *
         from .herpy import *
         from .chopy import *
-        from .em2dpy import *
+        #from .em2dpy import *
         from .em3dpy import *
 else:
     from toppy import *
@@ -164,7 +164,7 @@ else:
     from cirpy import *
     from herpy import *
     from chopy import *
-    from em2dpy import *
+    #from em2dpy import *
     from em3dpy import *
 
 from .utils.warputils import *
