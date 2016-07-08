@@ -38,23 +38,23 @@ $(BUILDBASEDIR)/f3dparallelpydep: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDI
 	$(FORTHON) -a --pkgsuffix parallel  $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) $(MPIPARALLEL) --macros top.v f3d f3d_mgrid.F f3d_ImplicitES.F f3d_mgrid_be.F f3d_bfield.F f3d_conductors.F fft.F f3dslave.F $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/wxyparallelpydep: $(BUILDBASEDIR)/topparallelpydep wxy.F wxy.v
+$(BUILDBASEDIR)/wxyparallelpydep: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/w3dparallelpydep wxy.F wxy.v
 	$(FORTHON) -a --pkgsuffix parallel  $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) $(MPIPARALLEL) wxy $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/fxyparallelpydep: $(BUILDBASEDIR)/topparallelpydep fxy.F fxy_mgrid.F fxy.v
+$(BUILDBASEDIR)/fxyparallelpydep: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/w3dparallelpydep $(BUILDBASEDIR)/f3dparallelpydep fxy.F fxy_mgrid.F fxy.v
 	$(FORTHON) -a --pkgsuffix parallel  $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) $(MPIPARALLEL) fxy fxy_mgrid.F $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/wrzparallelpydep: $(BUILDBASEDIR)/topparallelpydep wrz.F dwrz.F wrz.v
+$(BUILDBASEDIR)/wrzparallelpydep: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/w3dparallelpydep wrz.F dwrz.F wrz.v
 	$(FORTHON) -a --pkgsuffix parallel  $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) $(MPIPARALLEL) --macros top.v wrz dwrz.F $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/frzparallelpydep: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/w3dparallelpydep frz.F frz_mgrid.F90 frz_mgrid_be.F frz_ImplicitES.F frz.v frzslave.F90
+$(BUILDBASEDIR)/frzparallelpydep: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/w3dparallelpydep $(BUILDBASEDIR)/f3dparallelpydep frz.F frz_mgrid.F90 frz_mgrid_be.F frz_ImplicitES.F frz.v frzslave.F90
 	$(FORTHON) -a --pkgsuffix parallel  $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) $(MPIPARALLEL) --compile_first frzslave frz frz_mgrid.F90 frz_mgrid_be.F frz_ImplicitES.F frzslave.F90 $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/herparallelpydep: $(BUILDBASEDIR)/topparallelpydep her.F her.v
+$(BUILDBASEDIR)/herparallelpydep: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/wrzparallelpydep her.F her.v
 	$(FORTHON) -a --pkgsuffix parallel  $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) $(MPIPARALLEL) her $(INSTALLOPTIONS)
 	touch $@
 
@@ -62,7 +62,7 @@ $(BUILDBASEDIR)/cirparallelpydep: $(BUILDBASEDIR)/topparallelpydep cir.F cir.v
 	$(FORTHON) -a --pkgsuffix parallel  $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) $(MPIPARALLEL) cir $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/choparallelpydep: $(BUILDBASEDIR)/topparallelpydep cho.F cho.v
+$(BUILDBASEDIR)/choparallelpydep: $(BUILDBASEDIR)/topparallelpydep $(BUILDBASEDIR)/f3dparallelpydep cho.F cho.v
 	$(FORTHON) -a --pkgsuffix parallel  $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) $(MPIPARALLEL) cho $(INSTALLOPTIONS)
 	touch $@
 
