@@ -350,6 +350,7 @@ class Fourier_Space():
                 self.kzp = self.kz
 
         if len(dims)==2:
+            j = 1j
             # --- 2D YZ
             if nx==1:
                 for i in range(nzf):
