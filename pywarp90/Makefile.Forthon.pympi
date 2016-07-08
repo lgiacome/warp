@@ -57,7 +57,7 @@ chopy.$(SO): toppy.$(SO) f3dpy.$(SO) cho.F cho.v
 em2dpy.$(SO): toppy.$(SO) em2d.F90 em2d_apml.F90 em2d_apml_cummer.F90 em2d_maxwell.F90 em2d.v
 	$(FORTHON) -a $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) $(MPIPARALLEL) em2d em2d_apml.F90 em2d_apml_cummer.F90 em2d_maxwell.F90 $(BUILDARGS)
 
-em3dpy.$(SO): toppy.$(SO) em3d.F90 em3d_maxwell.F90 em3d.v
+em3dpy.$(SO): toppy.$(SO) frzpy.$(SO) em3d.F90 em3d_maxwell.F90 em3d.v
 	$(FORTHON) -a $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) $(MPIPARALLEL) em3d em3d_maxwell.F90 $(BUILDARGS)
 
 ranffortran.c: ranffortran.m
