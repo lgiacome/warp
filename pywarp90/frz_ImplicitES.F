@@ -79,7 +79,6 @@ c=============================================================================
       use Multigrid3d_diagnostic
       use DKInterp
       use Decompositionmodule
-      use formggetarraysuminterface
       integer(ISZ):: nxlocal,nzlocal,nxguardres,nzguardres,ns
       real(kind=8):: dx,dz,xmminlocal
       real(kind=8):: qomdt(0:ns-1)
@@ -215,15 +214,15 @@ c     --- This is probably not needed.
 
       if (lprintmgarraysumdiagnostic) then
         lpe0=(fsdecomp%ixproc==0.and.fsdecomp%izproc==0)
-        sss = mggetarraysum(nxlocal,0,nzlocal,1,0,1,chi0(:,:,0),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,1,0,1,chi0(:,:,0),fsdecomp,0,sss)
         if (lpe0) print*,"V1 chi0",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,1,0,1,chi(0,0,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,1,0,1,chi(0,0,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 chi00",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,1,0,1,chi(1,0,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,1,0,1,chi(1,0,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 chi10",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,1,0,1,chi(0,1,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,1,0,1,chi(0,1,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 chi01",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,1,0,1,chi(1,1,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,1,0,1,chi(1,1,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 chi11",mglevel,sss
       endif
 
@@ -886,7 +885,6 @@ c=============================================================================
       use ConductorTypemodule
       use Multigrid3d_diagnostic
       use coefficientsmodulees2d
-      use formggetarraysuminterface
       use Decompositionmodule
 c     use ImplicitMG2D
       integer(ISZ):: mglevel
@@ -964,37 +962,37 @@ c     --- the current level of refinement.
 
       if (lprintmgarraysumdiagnostic) then
         lpe0=(fsdecomp%ixproc==0.and.fsdecomp%izproc==0)
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0,sss)
         if (lpe0) print*,"V1 phi",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,rho,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,rho,fsdecomp,0,sss)
         if (lpe0) print*,"V1 rho",mglevel,sss/eps0
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,rhs,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,rhs,fsdecomp,0,sss)
         if (lpe0) print*,"V1 rhs",mglevel,sss/eps0
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(0,0,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(0,0,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 coeffs00",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(1,0,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(1,0,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 coeffs10",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(2,0,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(2,0,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 coeffs20",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(0,1,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(0,1,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 coeffs01",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(1,1,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(1,1,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 coeffs11",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(2,1,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(2,1,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 coeffs21",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(0,2,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(0,2,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 coeffs02",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(1,2,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(1,2,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 coeffs12",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(2,2,:,:),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,coeffs(2,2,:,:),fsdecomp,0,sss)
         if (lpe0) print*,"V1 coeffs22",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardres,0,nzguardres,chi0,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardres,0,nzguardres,chi0,fsdecomp,0,sss)
         if (lpe0) print*,"V1 chi0",mglevel,sss/eps0
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardres,0,nzguardres,bongrid(:,:,0),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardres,0,nzguardres,bongrid(:,:,0),fsdecomp,0,sss)
         if (lpe0) print*,"V1 bongrid0",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardres,0,nzguardres,bongrid(:,:,1),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardres,0,nzguardres,bongrid(:,:,1),fsdecomp,0,sss)
         if (lpe0) print*,"V1 bongrid1",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardres,0,nzguardres,bongrid(:,:,2),fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardres,0,nzguardres,bongrid(:,:,2),fsdecomp,0,sss)
         if (lpe0) print*,"V1 bongrid2",mglevel,sss
       endif
 
@@ -1008,9 +1006,9 @@ c     --- Do initial SOR passes.
       enddo
 
       if (lprintmgarraysumdiagnostic) then
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0,sss)
         if (lpe0) print*,"V2 phi",mglevel,sss
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,rho,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardrho,0,nzguardrho,rho,fsdecomp,0,sss)
         if (lpe0) print*,"V2 rho",mglevel,sss/eps0
       endif
 
@@ -1041,7 +1039,7 @@ c       --- Get the residual on the current grid.
 #endif
 
         if (lprintmgarraysumdiagnostic) then
-          sss = mggetarraysum(nxlocal,0,nzlocal,nxguardres,0,nzguardres,res,fsdecomp,0)
+          call mggetarraysum(nxlocal,0,nzlocal,nxguardres,0,nzguardres,res,fsdecomp,0,sss)
           if (lpe0) print*,"V3 res",mglevel,sss/eps0
         endif
 
@@ -1200,11 +1198,11 @@ c       --- Restriction
         endif
 #endif
         if (lprintmgarraysumdiagnostic) then
-          sss = mggetarraysum(nxlocalcoarse,0,nzlocalcoarse,nxguardrho,0,nzguardrho,rhocoarse,
-     &                        coarsedecomp,0)
+          call mggetarraysum(nxlocalcoarse,0,nzlocalcoarse,nxguardrho,0,nzguardrho,rhocoarse,
+     &                        coarsedecomp,0,sss)
           if (lpe0) print*,"V3 rhocoarse",mglevel,sss/eps0
-          sss = mggetarraysum(nxlocalcoarse,0,nzlocalcoarse,nxguardres,0,nzguardres,
-     &                        chi0coarse,coarsedecomp,0)
+          call mggetarraysum(nxlocalcoarse,0,nzlocalcoarse,nxguardres,0,nzguardres,
+     &                        chi0coarse,coarsedecomp,0,sss)
           if (lpe0) print*,"V3 chi0coarse",mglevel,sss/eps0
         endif
 
@@ -1220,27 +1218,27 @@ c       --- Continue at the next coarsest level.
      &                          lcndbndy,icndbndy,conductors,lrz,coarsedecomp)
 
         if (lprintmgarraysumdiagnostic) then
-          sss = mggetarraysum(nxlocalcoarse,0,nzlocalcoarse,nxguardphi,0,nzguardphi,phicoarse,
-     &                        coarsedecomp,0)
+          call mggetarraysum(nxlocalcoarse,0,nzlocalcoarse,nxguardphi,0,nzguardphi,phicoarse,
+     &                        coarsedecomp,0,sss)
           if (lpe0) print*,"V4 phicoarse",mglevel,sss
         endif
 
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0,sss)
 c       --- Add in resulting error.
         call expand2d(nx,nz,nxlocal,nzlocal,nxguardphi,nzguardphi,phi,
      &                nxcoarse,nzcoarse,nxlocalcoarse,nzlocalcoarse,
      &                phicoarse,localbounds,lxoffset,lzoffset)
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0,sss)
         call applyboundaryconditions3d(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,1,
      &                                 localbounds,.false.,.false.)
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0,sss)
 #ifdef MPIPARALLEL
         call mgexchange_phi_periodic(1,nxlocal,0,nzlocal,phi,
      &                               nxguardphi,0,nzguardphi,-1,-1,localbounds,fsdecomp)
 #endif
         call averageperiodicphi3d(nx,0,nz,nxlocal,0,nzlocal,phi,nxguardphi,0,nzguardphi,
      &                            globalbounds)
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0,sss)
 
         deallocate(res)
         deallocate(phicoarse,rhocoarse)
@@ -1268,7 +1266,7 @@ c       --- Add in resulting error.
         call mgexchange_phi(1,nxlocal,0,nzlocal,phi,nxguardphi,0,nzguardphi,
      &                      -1,-1,fsdecomp)
 #endif
-        sss = mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0)
+        call mggetarraysum(nxlocal,0,nzlocal,nxguardphi,0,nzguardphi,phi,fsdecomp,0,sss)
         if (lpe0) print*,"V5 phi",mglevel,sss
       endif
 

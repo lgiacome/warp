@@ -89,7 +89,6 @@ c=============================================================================
       use Subtimersf3d
       use Constant
       use ConductorTypemodule
-      use formggetarraysuminterface
       integer(ISZ):: nxlocal,nylocal,nzlocal,ns
       real(kind=8):: dx,dy,dz
       integer(ISZ):: delx,dely,delz
@@ -924,7 +923,6 @@ c=============================================================================
       use ConductorTypemodule
       use Multigrid3d_diagnostic
       use coefficientsmodulees3d
-      use formggetarraysuminterface
       use Decompositionmodule
       integer(ISZ):: mglevel
       real(kind=8):: mgscale
@@ -1025,33 +1023,33 @@ c     --- the current level of refinement.
 #else
         lpe0 = .true.
 #endif
-        sss = mggetarraysum(nxlocal,nylocal,nzlocal,1,1,1,phi,fsdecomp,0)
+        call mggetarraysum(nxlocal,nylocal,nzlocal,1,1,1,phi,fsdecomp,0,sss)
         if (lpe0) print*,"V1 phi",mglevel,sss
         reps0c = mgparam/(eps0*2.*(1./dx**2+1./dy**2+1./dz**2))
-        sss = mggetarraysum(nxlocal,nylocal,nzlocal,0,0,0,rho,fsdecomp,0)
+        call mggetarraysum(nxlocal,nylocal,nzlocal,0,0,0,rho,fsdecomp,0,sss)
         if (lpe0) print*,"V1 rho",mglevel,sss*reps0c
         do i=0,ns-1
-          sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,chi0(:,:,:,i),fsdecomp,0)
+          call mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,chi0(:,:,:,i),fsdecomp,0,sss)
           if (lpe0) print*,"V1 chi0",i,mglevel,sss
         enddo
-        sss = mggetarraysum(nxlocal,nylocal,nzlocal,0,0,0,coeffs0,fsdecomp,0)
+        call mggetarraysum(nxlocal,nylocal,nzlocal,0,0,0,coeffs0,fsdecomp,0,sss)
         if (lpe0) print*,"V1 coeffs0",mglevel,sss
-        sss = mggetarraysum(nxlocal,nylocal,nzlocal,0,0,0,rhs,fsdecomp,0)
+        call mggetarraysum(nxlocal,nylocal,nzlocal,0,0,0,rhs,fsdecomp,0,sss)
         if (lpe0) print*,"V1 rhs",mglevel,sss
         do i3=-1,1
           do i2=0,1
             do i1=0,2
-              sss = mggetarraysum(nxlocal,nylocal,nzlocal,0,0,0,coeffs(i1,i2,i3,:,:,:),fsdecomp,0)
+              call mggetarraysum(nxlocal,nylocal,nzlocal,0,0,0,coeffs(i1,i2,i3,:,:,:),fsdecomp,0,sss)
               if (lpe0) print*,"V1 coeffs",i1,i2,i3,mglevel,sss
             enddo
           enddo
         enddo
         if (withbadvance) then
-          sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,0),fsdecomp,0)
+          call mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,0),fsdecomp,0,sss)
           if (lpe0) print*,"V1 bongrid 0",mglevel,sss
-          sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,1),fsdecomp,0)
+          call mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,1),fsdecomp,0,sss)
           if (lpe0) print*,"V1 bongrid 1",mglevel,sss
-          sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,2),fsdecomp,0)
+          call mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,bongrid(:,:,:,2),fsdecomp,0,sss)
           if (lpe0) print*,"V1 bongrid 2",mglevel,sss
         endif
       endif
@@ -1063,9 +1061,9 @@ c     --- the current level of refinement.
       enddo
 
       if (lprintmgarraysumdiagnostic) then
-        sss = mggetarraysum(nxlocal,nylocal,nzlocal,1,1,1,phi,fsdecomp,0)
+        call mggetarraysum(nxlocal,nylocal,nzlocal,1,1,1,phi,fsdecomp,0,sss)
         if (lpe0) print*,"V2 phi",mglevel,sss
-        sss = mggetarraysum(nxlocal,nylocal,nzlocal,0,0,0,rho,fsdecomp,0)
+        call mggetarraysum(nxlocal,nylocal,nzlocal,0,0,0,rho,fsdecomp,0,sss)
         if (lpe0) print*,"V2 rho",mglevel,sss*reps0c
       endif
 
@@ -1096,7 +1094,7 @@ c       --- Get the residual on the current grid.
      &                      delx,dely,delz,-3,-1,fsdecomp)
 #endif
         if (lprintmgarraysumdiagnostic) then
-          sss = mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,res,fsdecomp,0)
+          call mggetarraysum(nxlocal,nylocal,nzlocal,delx,dely,delz,res,fsdecomp,0,sss)
           if (lpe0) print*,"V3 res",mglevel,sss*reps0c
         endif
 
@@ -1230,7 +1228,7 @@ c       --- Restriction
      &                  rhocoarse,0,0,0,1.,localbounds,localboundsc,
      &                  lxoffset,lyoffset,lzoffset)
         if (lprintmgarraysumdiagnostic) then
-          sss = mggetarraysum(nxlocalcoarse,nylocalcoarse,nzlocalcoarse,0,0,0,rhocoarse,coarsedecomp,0)
+          call mggetarraysum(nxlocalcoarse,nylocalcoarse,nzlocalcoarse,0,0,0,rhocoarse,coarsedecomp,0,sss)
           reps0c = mgparam/(eps0*2.*(1./dxcoarse**2+1./dycoarse**2+1./dzcoarse**2))
           if (lpe0) print*,"V3 rhocoarse",mglevel,sss*reps0c
         endif
@@ -1284,9 +1282,9 @@ c       --- Continue at the next coarsest level.
      &              delx,dely,delz,coarsedecomp)
 
         if (lprintmgarraysumdiagnostic) then
-          sss = mggetarraysum(nxlocalcoarse,nylocalcoarse,nzlocalcoarse,1,1,1,phicoarse,coarsedecomp,0)
+          call mggetarraysum(nxlocalcoarse,nylocalcoarse,nzlocalcoarse,1,1,1,phicoarse,coarsedecomp,0,sss)
           if (lpe0) print*,"V4 phicoarse",mglevel,sss
-          sss = mggetarraysum(nxlocal,nylocal,nzlocal,1,1,1,phi,fsdecomp,0)
+          call mggetarraysum(nxlocal,nylocal,nzlocal,1,1,1,phi,fsdecomp,0,sss)
           if (lpe0) print*,"V4 phi",mglevel,sss
         endif
 
@@ -1328,7 +1326,7 @@ c       --- Add in resulting error.
         call mgexchange_phi(1,nxlocal,nylocal,nzlocal,phi,1,1,1,
      &                      -1,-1,fsdecomp)
 #endif
-        sss = mggetarraysum(nxlocal,nylocal,nzlocal,1,1,1,phi,fsdecomp,0)
+        call mggetarraysum(nxlocal,nylocal,nzlocal,1,1,1,phi,fsdecomp,0,sss)
         if (lpe0) print*,"V5 phi",mglevel,sss
       endif
 
