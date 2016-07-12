@@ -3613,8 +3613,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f,'E_x', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfey( self, l_children=1, guards=0, direction=None, m=None,
                 output=False, show=True, **kw) :
@@ -3682,8 +3684,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d(f, 'E_y', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
 
     def pfez( self, l_children=1, guards=0, direction=None, m=None,
@@ -3747,8 +3751,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'E_z', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfer( self, l_children=1, guards=0, direction=None, m=None,
                 output=False, show=True, **kw) :
@@ -3932,8 +3938,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'B_x', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
 
     def pfby( self, l_children=1, guards=0, direction=None, m=None,
@@ -4000,8 +4008,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d(f, 'B_y', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
 
     def pfbz( self, l_children=1, guards=0, direction=None, m=None,
@@ -4064,8 +4074,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'B_z', direction=direction,**kw)
 
-        if output and me==0 :
-            return( f )
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfbr( self, l_children=1, guards=0, direction=None, m=None,
                             output=False, show=True, **kw) :
@@ -4246,8 +4258,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'J_x', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfjy( self, l_children=1, guards=0, direction=None, m=None,
                             output=False, show=True, **kw) :
@@ -4313,8 +4327,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'J_y', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfjz( self, l_children=1, guards=0, direction=None, m=None,
                             output=False, show=True, **kw) :
@@ -4377,8 +4393,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'J_z', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
 
     def pfjr( self, l_children=1, guards=0, direction=None, m=None,
@@ -4579,8 +4597,10 @@ class EM3D(SubcycledPoissonSolver):
             f = self.getarray(self.fields.F,guards,overlap=True)
             self.genericpfem3d( f, 'F', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfdive(self,l_children=1,guards=0,direction=None,**kw):
         self.genericpfem3d(self.getdive(guards,overlap=True),'div(E)',

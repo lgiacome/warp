@@ -36,7 +36,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period, em, top, w3d,
                  comm_world=None, fieldtypes=["rho", "E", "B", "J"],
-                 write_dir=None, lparallel_output=False ) :
+                 z_subsampling=1, write_dir=None, lparallel_output=False ) :
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -59,7 +59,11 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         period: int
             Number of iterations for which the data is accumulated in memory,
-            before finally writing it to the disk. 
+            before finally writing it to the disk.
+
+        z_subsampling: int
+            A factor which is applied on the resolution of the lab frame
+            reconstruction.
             
         See the documentation of FieldDiagnostic for the other parameters
         """
@@ -83,6 +87,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # (Needed to initialize metadata in the openPMD file)
         dz_lab = c*self.top.dt * self.inv_beta_boost*self.inv_gamma_boost
         Nz = int( (zmax_lab - zmin_lab)/dz_lab )
+        # In case of subsampling along z, increase dz and reduce Nz
+        if z_subsampling > 1:
+            dz_lab = dz_lab * z_subsampling
+            Nz = Nz / z_subsampling
         self.inv_dz_lab = 1./dz_lab
         
         # Create the list of LabSnapshot objects
@@ -487,9 +495,11 @@ class LabSnapshot:
         # Find the index of the slice in the lab frame
         iz_lab = int( (self.current_z_lab - self.zmin_lab)*inv_dz_lab )
 
-        # Store the values and the index
-        self.buffered_slices.append( slice_array )
-        self.buffer_z_indices.append( iz_lab )
+        # Store the slice, if it was not already previously stored
+        # (when dt is small and dz is large, this can happen)
+        if (iz_lab in self.buffer_z_indices) == False:
+            self.buffered_slices.append( slice_array )
+            self.buffer_z_indices.append( iz_lab )
 
     def compact_slices(self):
         """
