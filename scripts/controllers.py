@@ -72,22 +72,22 @@ import time
 
 class ControllerFunction:
     """
-  Class to handle the function lists.
+    Class to handle the function lists.
 
-  Note that for functions passed in that are methods of a class instance,
-  a full reference of the instance is saved. This extra reference means
-  that the object will not actually deleted if the user deletes the
-  original reference.  This is good since the user does not need to keep
-  the reference to the object (for example it can be created using a local
-  variable in a function). It is also good since this allows the installed
-  method to transfer across a dump and restart. It may be bad if the user
-  thinks an object was deleted, but it actually isn't since it had (unkown
-  to the user) installed a method in one of the controllers.
+    Note that for functions passed in that are methods of a class instance,
+    a full reference of the instance is saved. This extra reference means
+    that the object will not actually deleted if the user deletes the
+    original reference.  This is good since the user does not need to keep
+    the reference to the object (for example it can be created using a local
+    variable in a function). It is also good since this allows the installed
+    method to transfer across a dump and restart. It may be bad if the user
+    thinks an object was deleted, but it actually isn't since it had (unkown
+    to the user) installed a method in one of the controllers.
 
-  This class also provides what is effectively a picklable function
-  reference. Though it is not complete, since in some cases, functions
-  won't be restorable. For example, functions typed in interactively cannot
-  be restored since the source is not saved anywhere.
+    This class also provides what is effectively a picklable function
+    reference. Though it is not complete, since in some cases, functions
+    won't be restorable. For example, functions typed in interactively cannot
+    be restored since the source is not saved anywhere.
     """
 
     def __init__(self,name=None,lcallonce=0):
@@ -97,23 +97,26 @@ class ControllerFunction:
         self.name = name
         self.lcallonce = lcallonce
 
-    def __call__(self):
+    def __call__(self,*args,**kw):
         "Call all of the functions in the list"
-        tt = self.callfuncsinlist()
+        tt = self.callfuncsinlist(*args,**kw)
         self.time = self.time + tt
         if self.lcallonce: self.funcs = []
 
+    def clearlist(self):
+        self.funcs = []
+
     def __getstate__(self):
         """
-    The instance is picklable. Only the names of functions are saved. A full
-    reference to a method's object is saved. The names of functions replace
-    the funcs attribute in the dictionary returned. Note that nothing
-    special is needed on a restore since the function names will
-    automatically be converted back into functions the first time they are
-    called (so there is no __setstate__). For methods, the name is saved since
-    instancemethods cannot be pickled.
-    The ControllerFunctionContainer class below ensures that top level
-    controllers are restored properly.
+        The instance is picklable. Only the names of functions are saved. A full
+        reference to a method's object is saved. The names of functions replace
+        the funcs attribute in the dictionary returned. Note that nothing
+        special is needed on a restore since the function names will
+        automatically be converted back into functions the first time they are
+        called (so there is no __setstate__). For methods, the name is saved since
+        instancemethods cannot be pickled.
+        The ControllerFunctionContainer class below ensures that top level
+        controllers are restored properly.
         """
         dict = self.__dict__.copy()
         del dict['funcs']
@@ -123,11 +126,18 @@ class ControllerFunction:
         dict['funcs'] = funcnamelist
         return dict
 
+    def __nonzero__(self):
+        "Returns True of functions are installed, otherwise false"
+        return self.hasfuncsinstalled()
+
+    def __len__(self):
+        return len(self.funcs)
+
     def hasfuncsinstalled(self):
         "Checks if there are any functions installed"
         return len(self.funcs) > 0
 
-    def getmethodobject(self,func):
+    def _getmethodobject(self,func):
         return func[0]
 
     def getpicklablefuncs(self):
@@ -144,15 +154,17 @@ class ControllerFunction:
                     result = f
                 else:
                     continue
-            else:
+            elif isinstance(f,FunctionType):
                 result = f.__name__
+            else:
+                result = f
             yield result
 
     def controllerfunclist(self):
         funclistcopy = copy.copy(self.funcs)
         for f in funclistcopy:
             if isinstance(f,list):
-                object = self.getmethodobject(f)
+                object = self._getmethodobject(f)
                 if object is None:
                     self.funcs.remove(f)
                     continue
@@ -170,10 +182,13 @@ class ControllerFunction:
                 result = f
             if not callable(result):
                 print "\n\nWarning: a controller was found that is not callable."
+                if self.name is not None:
+                    print "For %s"%self.name
                 print "Only callable objects can be installed."
                 print "It is possible that the callable's name has been overwritten"
                 print "by something not callable. This can happen during restart"
                 print "if a function name had later been used as a variable name."
+                print self.name
                 if isinstance(f,basestring):
                     print "The name of the controller is ",f
                 print "\n\n"
@@ -211,7 +226,7 @@ class ControllerFunction:
                 self.funcs.remove(f)
                 return
             elif isinstance(func,list) and isinstance(f,types.MethodType):
-                object = self.getmethodobject(func)
+                object = self._getmethodobject(func)
                 if f.im_self is object and f.__name__ == func[1]:
                     self.funcs.remove(func)
                     return
@@ -235,7 +250,7 @@ class ControllerFunction:
             if f == func:
                 return 1
             elif isinstance(func,list) and isinstance(f,types.MethodType):
-                object = self.getmethodobject(func)
+                object = self._getmethodobject(func)
                 if f.im_self is object and f.__name__ == func[1]:
                     return 1
             elif isinstance(func,basestring):
@@ -256,6 +271,135 @@ class ControllerFunction:
             self.timers[f.__name__] = self.timers.get(f.__name__,0.) + (t2 - t1)
         aa = time.time()
         return aa - bb
+
+class PicklableFunction:
+    """
+    Class allowing pickable functions
+
+    This class provides a picklable function reference. Though it is not
+    complete, since in some cases, functions won't be restorable. For example,
+    functions typed in interactively cannot be restored since the source is not
+    saved anywhere.
+
+    Note that for functions passed in that are methods of a class instance,
+    a full reference of the instance is saved. This extra reference means
+    that the object will not actually deleted if the user deletes the
+    original reference.  This is good since the user does not need to keep
+    the reference to the object (for example it can be created using a local
+    variable in a function). It is also good since this allows the installed
+    method to transfer across a dump and restart. It may be bad if the user
+    thinks an object was deleted, but it actually isn't since it had (unkown
+    to the user) installed a method in one of the controllers.
+
+    """
+
+    def __init__(self,func):
+        self.installfunc(func)
+        self.time = 0.
+
+    def __call__(self,*args,**kw):
+        "Call the function"
+        return self.callfunc(*args,**kw)
+
+    def __getstate__(self):
+        """
+        The instance is picklable. Only the names of functions are saved. A full
+        reference to a method's object is saved. The names of function replace
+        the func attribute in the dictionary returned. Note that nothing
+        special is needed on a restore since the function names will
+        automatically be converted back into functions the first time they are
+        called (so there is no __setstate__). For methods, the name is saved since
+        instancemethods cannot be pickled.
+        The ControllerFunctionContainer class below ensures that top level
+        controllers are restored properly.
+        """
+        dict = self.__dict__.copy()
+        dict['func'] = self.getpicklablefunc()
+        return dict
+
+    def _getmethodobject(self,func):
+        return func[0]
+
+    def getpicklablefunc(self):
+        """Returns the function in a form that is picklable.
+        For functions, returns the name.
+        For instance methods, returns as is, the list containing the instance and method name.
+        """
+        if isinstance(self.func,list):
+            result = self.func
+        elif isinstance(self.func,basestring):
+            import __main__
+            if self.func in __main__.__dict__:
+                result = self.func
+            else:
+                # --- The function couldn't be found
+                result = None
+        elif isinstance(self.func,FunctionType):
+            result = self.func.__name__
+        else:
+            result = self.func
+        return result
+
+    def callablefunc(self):
+        if isinstance(self.func,list):
+            object = self._getmethodobject(self.func)
+            if object is None:
+                raise Exception("The method's class instance could not be found")
+            result = getattr(object,self.func[1])
+        elif isinstance(self.func,basestring):
+            import __main__
+            if self.func in __main__.__dict__:
+                result = __main__.__dict__[self.func]
+                # --- If the function with the name is found, then replace the
+                # --- name in the list with the function.
+                self.func = result
+            else:
+                raise Exception("The function couldn't be found")
+        else:
+            result = self.func
+        if not callable(result):
+            print "\n\nWarning: a controller was found that is not callable."
+            print "Only callable objects can be installed."
+            print "It is possible that the callable's name has been overwritten"
+            print "by something not callable. This can happen during restart"
+            print "if a function name had later been used as a variable name."
+            if isinstance(self.func,basestring):
+                print "The name of the controller is ",self.func
+            print "\n\n"
+            raise Exception("The function is not callable")
+        return result
+
+    def installfunc(self,f):
+        if isinstance(f,types.MethodType):
+            # --- If the function is a method of a class instance, then save a full
+            # --- reference to that instance and the method name.
+            finstance = f.im_self
+            fname = f.__name__
+            self.func = [finstance,fname]
+        elif callable(f):
+            self.func = f
+        else:
+            self.func = f
+
+    def isfunc(self,f):
+        if f == self.func:
+            return 1
+        elif isinstance(self.func,list) and isinstance(f,types.MethodType):
+            object = self._getmethodobject(self.func)
+            if f.im_self is object and f.__name__ == self.func[1]:
+                return 1
+        elif isinstance(self.func,basestring):
+            if f.__name__ == self.func:
+                return 1
+        return 0
+
+    def callfunc(self,*args,**kw):
+        t1 = time.time()
+        f = self.callablefunc()
+        result = f(*args,**kw)
+        t2 = time.time()
+        self.time += t2 - t1
+        return result
 
 #=============================================================================
 
@@ -287,14 +431,17 @@ userappliedfields = ControllerFunction('userappliedfields')
 class ControllerFunctionContainer:
     """
   This is a somewhat kludgy fix to how to get any saved functions restored.
-  A single instance of this class is created and this instance is what is save
+  A single instance of this class is created and this instance is what is saved
   in a dump. This instance will have a list of the controllers, so the
   controllers will be saved, but not as top level python variables.
   Upon restoration, this container will go through each of the saved controllers
   and reinstall the functions saved therein. This installs the functions in the
   original set of controllers created when this module was first imported.
-  Anything that may have already been installed will therefore be unaffected.
+  Anything that may have already been installed will by default be deleted.
     """
+    # --- This needs to be a class attribute, so that it can be set before
+    # --- and instance is being restored and __setstate__ called.
+    clearfunctionlists = True
     def __init__(self,clist):
         self.clist = clist
     def __setstate__(self,dict):
@@ -302,6 +449,15 @@ class ControllerFunctionContainer:
         import __main__
         self.__dict__.update(dict)
         for c in self.clist:
+            origcontroller = controllers.__dict__[c.name]
+            # --- NOTE: If clearfunctionlists was always True, the rest of the clist loop could
+            # --- be simplified to one of these single statements:
+            # --- origcontroller.funcs = c.funcs
+            # --- OR
+            # --- controllers.__dict__[c.name] = c
+            # --- With this second version, the resetting of self.clist below would not be needed.
+            if ControllerFunctionContainer.clearfunctionlists:
+                origcontroller.clearlist()
             for f in c.funcs:
                 if isinstance(f,basestring):
                     # --- Check if f is already in the original list of functions,
@@ -310,21 +466,21 @@ class ControllerFunctionContainer:
                     # --- This will be the case if, for example, the user execs the
                     # --- original input file, which sets up some functions, before
                     # --- doing the restart.
-                    origfuncs = controllers.__dict__[c.name].funcs
+                    origfuncs = origcontroller.funcs
                     try:
                         ffunc = __main__.__dict__[f]
                     except KeyError:
                         ffunc = None
                     if (f not in origfuncs and ffunc not in origfuncs):
-                        controllers.__dict__[c.name].installfuncinlist(f)
+                        origcontroller.installfuncinlist(f)
                 else:
                     # --- Otherwise, f is a method, so it can be directly installed.
                     # --- A check is still made to ensure it isn't installed twice.
                     # --- The check is only needed temporarily until the classes
                     # --- are fixed to not resinstall in the getstate.
                     ffunc = getattr(f[0],f[1])
-                    if not controllers.__dict__[c.name].isinstalledfuncinlist(ffunc):
-                        controllers.__dict__[c.name].installfuncinlist(ffunc)
+                    if not origcontroller.isinstalledfuncinlist(ffunc):
+                        origcontroller.installfuncinlist(ffunc)
         # --- The clist is obtained from the original instance in the controllers
         # --- module so that the list contains references to the original
         # --- controller instances. This is needed, since in the next dump,

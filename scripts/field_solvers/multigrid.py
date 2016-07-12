@@ -525,6 +525,7 @@ class MultiGrid3D(SubcycledPoissonSolver):
         # --- Only sets the E field from the potential
         n = len(x)
         if n == 0: return
+        if top.efetch[js] == 0: return
         if top.efetch[js] == 3 and isinstance(self.fieldp,float): return
         if top.efetch[js] != 3 and isinstance(self.potentialp,float): return
         if not f3d.lcorrectede:
@@ -1100,8 +1101,9 @@ class MultiGridImplicit3D(MultiGrid3D):
   tensor that appears from the direct implicit scheme.
     """
 
-    def __init__(self,lreducedpickle=1,**kw):
+    def __init__(self,lreducedpickle=1,withbadvance=true,**kw):
         MultiGrid3D.__init__(self,lreducedpickle,kwdict=kw)
+        self.withbadvance = withbadvance
         self.solvergeom = w3d.XYZgeom
         self.ncomponents = 1
 
@@ -1315,7 +1317,7 @@ class MultiGridImplicit3D(MultiGrid3D):
                             self.dx,self.dy,self.dz*zfact,
                             self.potential,self._rho,
                             top.nsimplicit,qomdt,self.chi0,
-                            rstar,self.linbend,
+                            rstar,self.linbend,self.withbadvance,
                             self.bounds,self.xmminlocal,self.ymminlocal,
                             self.zmminlocal*zfact,
                             self.getzgrid()*zfact,

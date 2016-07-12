@@ -1,5 +1,4 @@
 wrz
-#@(#) File WRZ.V, version $Revision: 3.12 $, $Date: 2009/02/03 19:35:49 $ 
 # Copyright (c) 1990-1998, The Regents of the University of California.
 # All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 # This is the parameter and variable database for package WRZ of code WARP
@@ -7,10 +6,6 @@ wrz
 # Alex Friedman, LLNL, (510)422-0827
 # David P. Grote, LLNL, (510)423-7194
 # Debbie Callahan, LLNL, (510)423-5926
- 
-*********** WRZversion dump:
-# Quantities associated with version control 
-verswrz character*19 /"$Revision: 3.12 $"/ # Current code version, set by CVS
  
 *********** InPltCtlrz dump:
 # Controls for when the various plots are made

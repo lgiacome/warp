@@ -1,5 +1,4 @@
 f3d
-#@(#) File F3D.V, version $Revision: 3.224 $, $Date: 2011/12/08 22:48:05 $
 # Copyright (c) 1990-1998, The Regents of the University of California.
 # All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 # This is the parameter and variable database for package F3D of code WARP6
@@ -8,9 +7,6 @@ f3d
 {
 LARGEPOS = 1.0e+36 # This must be the same as in top.v
 }
-
-*********** F3Dversion:
-versf3d character*19 /"$Revision: 3.224 $"/#  Code version version is set by CVS
 
 *********** F3Dvars:
 # Variables needed by the test driver of package F3D
@@ -376,6 +372,7 @@ mgsolveimplicites3d(iwhich:integer,nx:integer,ny:integer,nz:integer,
                     nxlocal:integer,nylocal:integer,nzlocal:integer,
                     dx:real,dy:real,dz:real,phi:real,rho:real,
                     ns:integer,qomdt:real,chi0:real,rstar:real,linbend:logical,
+                    withbadvance:logical,
                     bounds(0:5):integer,
                     xmminlocal:real,ymminlocal:real,zmminlocal:real,
                     zgrid:real,mgparam:real,

@@ -1,5 +1,5 @@
 import string as st
-#from numpy  import *
+import numpy as np
 #from gist import *
 from warp import *
 try:
@@ -37,7 +37,7 @@ def getpalhrgb(pname):
             r += [int(words[0])]
             g += [int(words[1])]
             b += [int(words[2])]
-    return h, array(r), array(g), array(b)
+    return h, np.array(r), np.array(g), np.array(b)
 
 
 def pltpalrgb(pname):
@@ -64,7 +64,7 @@ def gfpmaker(pname, br=None):
     else:
         br[1][0] = 0
         br[1][-1] = n-1
-        t = array([])
+        t = np.array([])
         for i in range(shape(br[1])[0]-1):
             dy = float(br[0][i+1]-br[0][i])
             dx = float(br[1][i+1]-br[1][i])
@@ -72,7 +72,7 @@ def gfpmaker(pname, br=None):
                 t = concatenate([t, br[0][i]+zeros(br[1][i+1]-br[1][i], Float)])
             else:
                 t = concatenate([t, arange(float(br[0][i]), float(br[0][i+1])-0.5*dy/dx, dy/dx, Float)])
-        t = concatenate([t, array([float(br[0][-1])])])
+        t = concatenate([t, np.array([float(br[0][-1])])])
     x = t/s
     rn = nint(r*x)
     gn = nint(g*x)
@@ -91,7 +91,7 @@ def gfpmaker(pname, br=None):
 def image2rgb(filename):
     im = Im.open(filename)
     nx, ny = im.size
-    rgbh = array(list(im.getdata()))
+    rgbh = np.array(list(im.getdata()))
     rgbh.resize((ny, nx, 4, ))
     return ny, nx, rgbh[:, :, 0], rgbh[:, :, 1], rgbh[:, :, 2]
 

@@ -15,10 +15,10 @@ INSTALLARGS = --pkgbase warp $(BUILDBASE) $(INSTALL)
 install: installso
 	(cd ../scripts;$(PYTHON) setup.py build $(BUILDBASE) install $(INSTALLOPTIONS))
 
-installso: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/envpydep $(BUILDBASEDIR)/w3dpydep $(BUILDBASEDIR)/f3dpydep $(BUILDBASEDIR)/wxypydep $(BUILDBASEDIR)/fxypydep $(BUILDBASEDIR)/wrzpydep $(BUILDBASEDIR)/frzpydep $(BUILDBASEDIR)/herpydep $(BUILDBASEDIR)/cirpydep $(BUILDBASEDIR)/chopydep $(BUILDBASEDIR)/em2dpydep $(BUILDBASEDIR)/em3dpydep ranffortran.c
+installso: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/envpydep $(BUILDBASEDIR)/w3dpydep $(BUILDBASEDIR)/f3dpydep $(BUILDBASEDIR)/wxypydep $(BUILDBASEDIR)/fxypydep $(BUILDBASEDIR)/wrzpydep $(BUILDBASEDIR)/frzpydep $(BUILDBASEDIR)/herpydep $(BUILDBASEDIR)/cirpydep $(BUILDBASEDIR)/chopydep $(BUILDBASEDIR)/em3dpydep ranffortran.c
 	$(PYTHON) setup.py $(FCOMP) build $(BUILDBASE) install $(INSTALLOPTIONS)
 
-build: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/envpydep $(BUILDBASEDIR)/w3dpydep $(BUILDBASEDIR)/f3dpydep $(BUILDBASEDIR)/wxypydep $(BUILDBASEDIR)/fxypydep $(BUILDBASEDIR)/wrzpydep $(BUILDBASEDIR)/frzpydep $(BUILDBASEDIR)/herpydep $(BUILDBASEDIR)/cirpydep $(BUILDBASEDIR)/chopydep $(BUILDBASEDIR)/em2dpydep $(BUILDBASEDIR)/em3dpydep ranffortran.c
+build: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/envpydep $(BUILDBASEDIR)/w3dpydep $(BUILDBASEDIR)/f3dpydep $(BUILDBASEDIR)/wxypydep $(BUILDBASEDIR)/fxypydep $(BUILDBASEDIR)/wrzpydep $(BUILDBASEDIR)/frzpydep $(BUILDBASEDIR)/herpydep $(BUILDBASEDIR)/cirpydep $(BUILDBASEDIR)/chopydep $(BUILDBASEDIR)/em3dpydep ranffortran.c
 	$(PYTHON) setup.py $(FCOMP) build $(BUILDBASE)
 
 $(BUILDBASEDIR)/toppydep: top.F top_lattice.F top_fsl.F dtop.F util.F top.v
@@ -37,23 +37,23 @@ $(BUILDBASEDIR)/f3dpydep: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/w3dpydep f3d.
 	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) --macros top.v f3d f3d_mgrid.F f3d_ImplicitES.F f3d_mgrid_be.F f3d_bfield.F f3d_conductors.F fft.F $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/wxypydep: $(BUILDBASEDIR)/toppydep wxy.F wxy.v
+$(BUILDBASEDIR)/wxypydep: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/w3dpydep wxy.F wxy.v
 	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) wxy $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/fxypydep: $(BUILDBASEDIR)/toppydep fxy.F fxy_mgrid.F fxy.v
+$(BUILDBASEDIR)/fxypydep: $(BUILDBASEDIR)/toppydep fxy.F $(BUILDBASEDIR)/w3dpydep $(BUILDBASEDIR)/f3dpydep fxy_mgrid.F fxy.v
 	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) fxy fxy_mgrid.F $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/wrzpydep: $(BUILDBASEDIR)/toppydep wrz.F dwrz.F wrz.v
+$(BUILDBASEDIR)/wrzpydep: $(BUILDBASEDIR)/toppydep wrz.F $(BUILDBASEDIR)/w3dpydep dwrz.F wrz.v
 	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) --macros top.v wrz dwrz.F $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/frzpydep: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/w3dpydep frz.F frz_mgrid.F90 frz_mgrid_be.F frz_ImplicitES.F frz.v
+$(BUILDBASEDIR)/frzpydep: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/w3dpydep $(BUILDBASEDIR)/f3dpydep frz.F frz_mgrid.F90 frz_mgrid_be.F frz_ImplicitES.F frz.v
 	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) frz frz_mgrid.F90 frz_mgrid_be.F frz_ImplicitES.F $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/herpydep: $(BUILDBASEDIR)/toppydep her.F her.v
+$(BUILDBASEDIR)/herpydep: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/wrzpydep her.F her.v
 	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) her $(INSTALLOPTIONS)
 	touch $@
 
@@ -61,7 +61,7 @@ $(BUILDBASEDIR)/cirpydep: $(BUILDBASEDIR)/toppydep cir.F cir.v
 	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) cir $(INSTALLOPTIONS)
 	touch $@
 
-$(BUILDBASEDIR)/chopydep: $(BUILDBASEDIR)/toppydep cho.F cho.v
+$(BUILDBASEDIR)/chopydep: $(BUILDBASEDIR)/toppydep $(BUILDBASEDIR)/f3dpydep cho.F cho.v
 	$(FORTHON) -a $(INSTALLARGS) $(VERBOSE) $(FCOMP) $(FARGS) $(DEBUG) cho $(INSTALLOPTIONS)
 	touch $@
 

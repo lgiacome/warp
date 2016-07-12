@@ -1,6 +1,5 @@
 #include "top.h"
 c=======================================================================
-c@(#) File FXY.M, version $Revision: 3.8 $, $Date: 2011/08/27 00:35:50 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  written by David P. Grote
@@ -11,7 +10,6 @@ c    Capacity matrix solver which works in xy space
 c
 c=======================================================================
       subroutine fxyinit
-      use FXYversion
 
 c  Called at first reference to package (not nec. a "run" etc.).
 
@@ -22,10 +20,9 @@ c  Called at first reference to package (not nec. a "run" etc.).
       end
 c=============================================================================
       subroutine fxyvers (iout)
-      use FXYversion
       integer(ISZ):: iout
 c  Echoes code version,etc. to output files when they're created
-      call printpkgversion(iout,"Fieldsolver FXY",versfxy)
+      call printpkgversion(iout,"Fieldsolver FXY")
       return
       end
 c=============================================================================
@@ -35,7 +32,6 @@ c=============================================================================
       end
 c=======================================================================
       subroutine fxyfin()
-      use FXYversion
 
 c  Deallocates dynamic storage used by test driver
 

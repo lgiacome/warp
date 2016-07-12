@@ -1,6 +1,5 @@
 #include "top.h"
 c************************************************************************** 
-c@(#) File FFT.M, version $Revision: 1.1 $ $Date: 2001/06/30 00:53:58 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c Contains FFT routines that are part of the TOP package.

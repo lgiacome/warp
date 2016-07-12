@@ -10,7 +10,7 @@ use mpirz
 use EM3D_BLOCKtypemodule
 use EM3D_YEEFIELDtypemodule
 use EM3D_SPLITYEEFIELDtypemodule
-USE EM2D_FIELDobjects
+!USE EM2D_FIELDobjects
 use EM3D_bnd
 !use GlobalVars
 !use Picglb
@@ -5621,23 +5621,24 @@ integer(ISZ):: n,i,it,zl,zr
        call shift_circarray_ncells_z(f%By_circ,f%nx,f%nz,f%circ_m,f%nxguard,f%nzguard,zl,zr,n)
        call shift_circarray_ncells_z(f%Bz_circ,f%nx,f%nz,f%circ_m,f%nxguard,f%nzguard,zl,zr,n)
    endif
-!  do it=1,f%ntimes
-!    do i=1,3
-!      call shift_3darray_ncells_z(f%Jarray(-f%nxguard,-f%nyguard,-f%nzguard,i,it), &
-!                                    f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
-!    end do
-!  end do
+   if (f%nxr>0) then
+      do it=1,f%ntimes
+         f%Rho => f%Rhoarray(:,:,:,it)
+         call shift_3darray_ncells_z(f%Rho,f%nxr,f%nyr,f%nzr,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
+      end do
+      f%Rho => f%Rhoarray(:,:,:,1)
+   end if
+   if (f%nxdrho>0) then
+      call shift_3darray_ncells_z(f%Rhoold_local,f%nxdrho,f%nydrho,f%nzdrho,f%nxdrhoguard,f%nydrhoguard,f%nzdrhoguard,zl,zr,n)
+   end if
    if (f%nxf>0) then
       call shift_3darray_ncells_z(f%F,f%nxf,f%nyf,f%nzf,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
       if ( f%l_2drz .and. f%circ_m > 0 ) then 
          call shift_circarray_ncells_z(f%F_circ,f%nxf,f%nzf,f%circ_m,f%nxguard,f%nzguard,zl,zr,n)
       endif
-         !    call shift_3darray_ncells_z(f%Rhoold,f%nxf,f%nyf,f%nzf,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
-!    call shift_3darray_ncells_z(f%Rho,f%nxf,f%nyf,f%nzf,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
-!    do it=1,f%ntimes
-!      call shift_3darray_ncells_z(f%Rhoarray(-f%nxguard,-f%nyguard,-f%nzguard,it), &
-!                                    f%nxf,f%nyf,f%nzf,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
-!    end do
+  end if
+  if (f%nxg>0) then
+      call shift_3darray_ncells_z(f%G,f%nxg,f%nyg,f%nzg,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
   end if
   if (f%nxcond>0) then
     call shift_3dlarray_ncells_z(f%incond,f%nxcond,f%nycond,f%nzcond,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
@@ -5985,14 +5986,18 @@ integer(ISZ):: n,i,it,xl,xr
     call shift_3darray_ncells_x(f%Jzarray(:,:,:,it), &
                                     f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   end do
+  if (f%nxr>0) then
+      do it=1,f%ntimes
+         f%Rho => f%Rhoarray(:,:,:,it)
+         call shift_3darray_ncells_x(f%Rho,f%nxr,f%nyr,f%nzr,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
+      end do
+      f%Rho => f%Rhoarray(:,:,:,1)
+  end if
   if (f%nxf>0) then
     call shift_3darray_ncells_x(f%F,f%nxf,f%nyf,f%nzf,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-    call shift_3darray_ncells_x(f%Rhoold,f%nxf,f%nyf,f%nzf,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-!    call shift_3darray_ncells_x(f%Rho,f%nxf,f%nyf,f%nzf,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-    do it=1,f%ntimes
-      call shift_3darray_ncells_x(f%Rhoarray(:,:,:,it), &
-                                    f%nxf,f%nyf,f%nzf,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-    end do
+  end if
+  if (f%nxg>0) then
+    call shift_3darray_ncells_x(f%G,f%nxf,f%nyf,f%nzf,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   end if
   if (f%nxpnext>0) then
     call shift_3darray_ncells_x(f%Expnext,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)

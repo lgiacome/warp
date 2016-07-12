@@ -1,7 +1,5 @@
 #include "top.h"
 c=============================================================================
-c@(#) File FRZ_MGRID_BE.F,
-c version $Revision: 1.38 $, $Date: 2010/06/08 21:08:18 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  This is the RZ multigrid field sovler which is part of the FRZ

@@ -1,5 +1,4 @@
 em2d
-#@(#) File EM2D.V, version $Revision: 1.20 $, $Date: 2009/11/18 22:02:04 $
 # Copyright (c) 1990-1998, The Regents of the University of California.
 # All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 # This is the parameter and variable database for the 3-D EM solver of code WARP

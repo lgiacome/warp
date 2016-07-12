@@ -1,6 +1,5 @@
 #include "top.h"
 c=======================================================================
-c@(#) File ENV.M, version $Revision: 3.44 $, $Date: 2011/06/23 20:00:49 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  It is the source file for the package ENV of the PIC code WARP,
@@ -9,7 +8,6 @@ c  envelope code and a Python interface.
 c
 c=======================================================================
       subroutine envinit
-      use ENVversion
 
 c  Called at first reference to package (not nec. a "run" etc.).
 
@@ -20,10 +18,9 @@ c  Called at first reference to package (not nec. a "run" etc.).
       end
 c=============================================================================
       subroutine envvers (iout)
-      use ENVversion
       integer(ISZ):: iout
 c  Echoes code version,etc. to output files when they're created
-      call printpkgversion(iout,"Envelope solver",versenv)
+      call printpkgversion(iout,"Envelope solver")
       return
       end
 c=============================================================================

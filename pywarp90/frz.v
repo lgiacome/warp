@@ -1,5 +1,4 @@
 frz
-#@(#) File FRZ.V, version $Revision: 3.74 $, $Date: 2010/09/30 13:51:16 $
 # Copyright (c) 1990-1998, The Regents of the University of California.
 # All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 # This is the parameter and variable database for package FRZ of code WARP6
@@ -8,9 +7,6 @@ frz
 # Debbie Callahan, LLNL, (510)423-5926
 {
 }
-
-*********** FRZversion:
-versfrz character*19 /"$Revision: 3.74 $"/#  Code version set by CVS
 
 *********** FRZvars:
 # Variables needed by the test driver of package FRZ
@@ -492,8 +488,11 @@ coeffs1(:,:,:,:) _real
 chi01(:,:,:) _real
 mgsolveimplicites2d(iwhich:integer,nx:integer,nz:integer,
                     nxlocal:integer,nzlocal:integer,
-                    dx:real,dz:real,phi:real,rho:real,ns:integer,
-                    qomdt:real,chi0:real,bounds:integer,
+                    dx:real,dz:real,
+                    nxguardphi:integer,nzguardphi:integer,
+                    nxguardrho:integer,nzguardrho:integer,
+                    phi:real,rho:real,ns:integer,
+                    qomdt:real,chi0:real,withbadvance:logical,bounds:integer,
                     xmminlocal:real,zmminlocal:real,zgrid:real,
                     mgparam:real,mgiters:integer,mgmaxiters:integer,
                     mgmaxlevels:integer,mgerror:real,mgtol:real,

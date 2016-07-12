@@ -21,6 +21,7 @@ from scipy.constants import c
 from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
+from parallel import gatherarray
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
@@ -35,7 +36,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period, em, top, w3d,
                  comm_world=None, fieldtypes=["rho", "E", "B", "J"],
-                 write_dir=None, lparallel_output=False ) :
+                 z_subsampling=1, write_dir=None, lparallel_output=False ) :
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -58,7 +59,11 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         period: int
             Number of iterations for which the data is accumulated in memory,
-            before finally writing it to the disk. 
+            before finally writing it to the disk.
+
+        z_subsampling: int
+            A factor which is applied on the resolution of the lab frame
+            reconstruction.
             
         See the documentation of FieldDiagnostic for the other parameters
         """
@@ -82,29 +87,36 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # (Needed to initialize metadata in the openPMD file)
         dz_lab = c*self.top.dt * self.inv_beta_boost*self.inv_gamma_boost
         Nz = int( (zmax_lab - zmin_lab)/dz_lab )
+        # In case of subsampling along z, increase dz and reduce Nz
+        if z_subsampling > 1:
+            dz_lab = dz_lab * z_subsampling
+            Nz = Nz / z_subsampling
         self.inv_dz_lab = 1./dz_lab
         
         # Create the list of LabSnapshot objects
         self.snapshots = []
         # Record the time it takes
-        measured_start = time.clock()
-        print('\nInitializing the lab-frame diagnostics: %d files...' %(
-            Ntot_snapshots_lab) )
+        if self.rank == 0:
+            measured_start = time.clock()
+            print('\nInitializing the lab-frame diagnostics: %d files...' %(
+                Ntot_snapshots_lab) )
         # Loop through the lab snapshots and create the corresponding files
         for i in range( Ntot_snapshots_lab ):
             t_lab = i * dt_snapshots_lab
             snapshot = LabSnapshot( t_lab,
                                     zmin_lab + v_lab*t_lab,
                                     zmax_lab + v_lab*t_lab,
-                                    self.write_dir, i )
+                                    self.write_dir, i, self.rank)
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
-            self.create_file_empty_meshes( snapshot.filename, i,
-                snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt )
+            if self.lparallel_output == False and self.rank == 0:
+                self.create_file_empty_meshes( snapshot.filename, i,
+                    snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt)
         # Print a message that records the time for initialization
-        measured_end = time.clock()
-        print('Time taken for initialization of the files: %.5f s' %(
-            measured_end-measured_start) )
+        if self.rank == 0:
+            measured_end = time.clock()
+            print('Time taken for initialization of the files: %.5f s' %(
+                measured_end-measured_start) )
 
         # Create a slice handler, which will do all the extraction, Lorentz
         # transformation, etc for each slice to be registered in a
@@ -165,6 +177,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         Writes the buffered slices of fields to the disk
 
         Erase the buffered slices of the LabSnapshot objects
+
+        Notice: In parallel version, data are gathered to proc 0
+        before being saved to disk
         """
         # Loop through the labsnapshots and flush the data
         for snapshot in self.snapshots:
@@ -172,14 +187,133 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             # Compact the successive slices that have been buffered
             # over time into a single array
             field_array, iz_min, iz_max = snapshot.compact_slices()
+
             # Erase the memory buffers
             snapshot.buffered_slices = []
             snapshot.buffer_z_indices = []
 
+            if (self.comm_world is not None) and (self.comm_world.size > 1):
+                # In MPI mode: gather the flattened field array to processor 0
+                # Attribute values to iz_min, iz_max and size of the field
+                # array if field array is None 
+                if field_array is None:
+                    iz_min = -1
+                    iz_max = -1
+                    flat_field_array = np.zeros(0)
+                    nx_field_array = 0
+                    if self.dim == "3d":
+                        ny_field_array = 0
+                else:
+                    flat_field_array = field_array.flatten()
+                    if self.dim == "3d":
+                        ny_field_array = np.shape(field_array)[2]
+                    if self.dim in ["2d","3d"]:
+                        nx_field_array = np.shape(field_array)[1]
+                    elif self.dim == "circ":
+                        nx_field_array = np.shape(field_array)[2]
+                        
+                # Gather the size of the field array
+                nx_rank = np.array(
+                    self.comm_world.allgather(nx_field_array))
+                if self.dim == "3d":
+                    ny_rank = np.array(
+                        self.comm_world.allgather(ny_field_array))
+                
+                # Gather arrays, iz_min and iz_max
+                g_ar = gatherarray(flat_field_array, root=0, 
+                    comm=self.comm_world)
+                g_iz_min = np.array(self.comm_world.gather(iz_min))
+                g_iz_max = np.array(self.comm_world.gather(iz_max))
+                
+                if self.rank == 0:
+
+                    # Ternary equation: test if field array is None. If not none, 
+                    # attribute the global size of Nx, else attribute 0
+                    Nx = (self.top.fsdecomp.nxglobal + 1) if g_ar.size!=0 else 0
+
+                    if self.dim == "3d":
+                        Ny = (self.top.fsdecomp.nyglobal + 1) \
+                        if g_ar.size!=0 else 0
+                    elif self.dim == "circ":
+                        Ncirc = 2*self.em.circ_m + 1
+                     
+                    n_slice = 0
+
+                    # Doesn't need to specify other dimenstions because
+                    # if one of the dimensions does not contain any non null 
+                    # value, that implies void
+                    if Nx != 0: 
+                        iz_min = min([n for n in g_iz_min if n>=0]) \
+                            if g_iz_min.any() else 0
+                        iz_max = max([n for n in g_iz_max if n>=0]) \
+                            if g_iz_max.any() else 0
+                        n_slice = iz_max - iz_min
+
+                    # Create an empty global field array, the one to be written 
+                    # in the disk 
+                    if self.dim == "2d":
+                        f_ar = np.empty((10, Nx, n_slice))
+                    elif self.dim == "3d":
+                        f_ar = np.empty((10, Nx, Ny, n_slice))
+                    elif self.dim == "circ":
+                        f_ar = np.empty((10, Ncirc, Nx, n_slice))
+
+                    # indx as index to determine which chunk of field_array
+                    # in x-direction comes from i processor
+                    indx = 0
+
+                    # indy as index to determine which chunk of field_array
+                    # in y-direction comes from i processor
+                    if self.dim == "3d":
+                        indy = 0
+                
+                    # sind as index to determine the slice it corresponds 
+                    # to in the global field array
+                    sind = 0
+
+                    # Loop through all the processors to reshape the flattened
+                    # array
+                    for i in xrange(self.top.nprocs):
+                        s = g_iz_max[i] - g_iz_min[i]
+
+                        if nx_rank[i] !=0 :
+                            # gxind as index to determine the slice it 
+                            # corresponds to in the x-direction in the global 
+                            # field array, valid for 2d, 3d and circ
+
+                            gxind = self.top.fsdecomp.ix[i%self.top.nxprocs]
+
+                            if self.dim =="2d":
+                                f_ar[:,gxind:gxind+nx_rank[i],sind:sind+s] \
+                                = np.reshape(g_ar[indx:indx+10*nx_rank[i]*s], 
+                                    (10,nx_rank[i],s))
+                            elif self.dim =="3d":
+                                # gyind: index only valid in 3d 
+                                gyind = self.top.fsdecomp.iy[i%self.top.nyprocs]
+                                f_ar[:,gxind:gxind+nx_rank[i],gyind:gyind\
+                                +ny_rank[i],sind:sind+s] = np.reshape(
+                                    g_ar[indx:indx+10*nx_rank[i]*ny_rank[i]*s], 
+                                    (10,nx_rank[i],ny_rank[i],s))
+                                indy += 10*ny_rank[i]*s
+                            elif self.dim =="circ":
+                                f_ar[:,:,gxind:gxind+nx_rank[i],sind:sind+s]\
+                                = np.reshape(
+                                    g_ar[indx:indx+10*Ncirc*nx_rank[i]*s], 
+                                    (10,Ncirc,nx_rank[i],s))
+                            indx += 10*nx_rank[i]*s
+                            
+                            if (i+1)%self.top.nxprocs==0:
+                                sind += s
+
+            else:
+                f_ar = field_array
+
             # Write this array to disk (if this snapshot has new slices)
-            if field_array is not None:
-                self.write_slices( field_array, iz_min, iz_max,
-                    snapshot, self.slice_handler.field_to_index )
+            if self.rank == 0:
+                if (f_ar is not None) and (f_ar.size != 0):
+                    self.write_slices( f_ar, iz_min, iz_max,
+                        snapshot, self.slice_handler.field_to_index )
+
 
     def write_slices( self, field_array, iz_min, iz_max, snapshot, f2i ): 
         """
@@ -257,22 +391,31 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         indices = self.global_indices
 
         # Write the fields depending on the geometry
-        if self.dim == "2d":
-            dset[ indices[0,0]:indices[1,0], iz_min:iz_max ] = data
-        elif self.dim == "3d":
-            dset[ indices[0,0]:indices[1,0],
-                  indices[0,1]:indices[1,1], iz_min:iz_max ] = data
-        elif self.dim == "circ":
-            # The first index corresponds to the azimuthal mode
-            dset[:, indices[0,0]:indices[1,0], iz_min:iz_max ] = data
-
+        if self.lparallel_output:
+            if self.dim == "2d":
+                dset[ indices[0,0]:indices[1,0], iz_min:iz_max ] = data
+            elif self.dim == "3d":
+                dset[ indices[0,0]:indices[1,0],
+                indices[0,1]:indices[1,1], iz_min:iz_max ] = data
+            elif self.dim == "circ":
+                # The first index corresponds to the azimuthal mode
+                dset[ :, indices[0,0]:indices[1,0], iz_min:iz_max ] = data
+           
+        else:
+            if self.dim == "2d":
+                dset[ :, iz_min:iz_max ] = data
+            elif self.dim == "3d":
+                dset[ :, :, iz_min:iz_max ] = data
+            elif self.dim == "circ":
+                # The first index corresponds to the azimuthal mode
+                dset[ :, :, iz_min:iz_max ] = data
 
 class LabSnapshot:
     """
     Class that stores data relative to one given snapshot
     in the lab frame (i.e. one given *time* in the lab frame)
     """
-    def __init__(self, t_lab, zmin_lab, zmax_lab, write_dir, i):
+    def __init__(self, t_lab, zmin_lab, zmax_lab, write_dir, i, rank):
         """
         Initialize a LabSnapshot 
 
@@ -289,10 +432,14 @@ class LabSnapshot:
             this snapshot is to be written
 
         i: int
-           Number of the file where this snapshot is to be written
+            Number of the file where this snapshot is to be written
+
+        rank: int
+            Index number of the processor
         """
         # Deduce the name of the filename where this snapshot writes
-        self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
+        if rank == 0:
+            self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
         self.iteration = i
 
         # Time and boundaries in the lab frame (constants quantities)
@@ -348,9 +495,11 @@ class LabSnapshot:
         # Find the index of the slice in the lab frame
         iz_lab = int( (self.current_z_lab - self.zmin_lab)*inv_dz_lab )
 
-        # Store the values and the index
-        self.buffered_slices.append( slice_array )
-        self.buffer_z_indices.append( iz_lab )
+        # Store the slice, if it was not already previously stored
+        # (when dt is small and dz is large, this can happen)
+        if (iz_lab in self.buffer_z_indices) == False:
+            self.buffered_slices.append( slice_array )
+            self.buffer_z_indices.append( iz_lab )
 
     def compact_slices(self):
         """
@@ -561,7 +710,7 @@ class SliceHandler:
         Parameter
         ---------
         fields: array of floats
-             An array that packs together the slices of the different fields.
+            An array that packs together the slices of the different fields.
             The shape of this arrays is:
             - (10, em.nxlocal+1,) for dim="2d"
             - (10, em.nxlocal+1, em.nylocal+1) for dim="3d"

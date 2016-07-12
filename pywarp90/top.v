@@ -1,5 +1,4 @@
 top
-#@(#) File TOP.V, version $Revision: 3.306 $, $Date: 2012/01/26 23:29:51 $
 # Copyright (c) 1990-1998, The Regents of the University of California.
 # All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 # This is the parameter and variable database for package TOP of code WARP
@@ -55,12 +54,7 @@ M_SUM        = M_GET_RHO + 1
 }
 
 *********** Code_version:
-# -------- CVS updates this when a new major "release" occurs ------------
 codeid   character*8  /"warp r3"/     # Name of code, and major version
-
-*********** TOPversion:
-# Version control for global commons
-verstop character*19 /"$Revision: 3.306 $"/ # Global common version, set by CVS
 
 *********** Machine_param:
 wordsize integer /64/ # Wordsize on current machine--used in bas.wrp
@@ -1148,12 +1142,12 @@ by0                       real [T]   /0./
    # Uniform B field in y
 bz0                       real [T]   /0./
    # Uniform axial "guide" B field
-ex0                       real /0./
+ex0                       real [V/m] /0./
    # Uniform E field in x
-ey0                       real /0./
+ey0                       real [V/m] /0./
    # Uniform E field in y
-ez0                       real /0./
-   # Linear Ez field for bunching force
+ez0                       real [V/m] /0./
+   # Uniform E field in z
 vbeamfrm                  real [M/S]
    # Velocity of the beam frame.  Normally the same as vbeam.
 boost_gamma               real /1./

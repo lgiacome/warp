@@ -57,11 +57,13 @@ class EM3D(SubcycledPoissonSolver):
                       'l_coarse_patch':false,
                       'stencil':false, # 0=Yee; 1=Cole-Karkkainen, 3=Lehe; if spectral=1, is used only for computing time step according to Courant condition of selected solver
                       'l_esirkepov':true, # flag for deposition using Esirkepov algorithm (real space on staggered grid with Yee EM solver)
+                      'l_deposit_nodal':None,
                       'l_getrho':false,'theta_damp':0.,
                       'sigmae':0.,'sigmab':0.,
-                      'colecoefs':None,'l_setcowancoefs':False,
+                      'colecoefs':None,'l_setcowancoefs':True,
                       'pml_method':1,
                       'l_correct_num_Cherenkov':False,
+                      'l_fieldcenterK':False, # if using staggered grid with node-centered gather (efetch=1); centers field by shifts in k-space rather than averaging in real space
                       'circ_m':0, 'l_laser_cart':0, 'type_rz_depose':0}
 
     def __init__(self,**kw):
@@ -125,6 +127,15 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_pushf:
             self.l_getrho = True
 
+        # --- Set l_deposit_nodal if not set by user
+        if self.l_esirkepov:
+            self.l_deposit_nodal = False
+        else:
+            if self.l_nodalgrid:
+                self.l_deposit_nodal=True
+            else:
+                l_deposit_nodal=False
+                
         # --- Impose type_rz_depose = 0 if not in circ mode
         if self.l_2drz == False :
             self.type_rz_depose = 0
@@ -506,6 +517,8 @@ class EM3D(SubcycledPoissonSolver):
         # --- Handle laser inputs
         self.setuplaser()
 
+        w3d.lfinalizerhofsapi=True
+
         self.finalized = True
 
     def allocatefieldarrays(self):
@@ -589,7 +602,12 @@ class EM3D(SubcycledPoissonSolver):
         # --- Check if laser_func is a dictionary
         self.laser_func_dict = None
         if isinstance(self.laser_func,dict):
-            self.laser_func_dict = self.laser_func
+            self.laser_func_dict = {}
+            for k,v in self.laser_func.iteritems():
+                self.laser_func_dict[k] = PicklableFunction(self.laser_func)
+            self.laser_func = None
+        elif self.laser_func is not None:
+            self.laser_func = PicklableFunction(self.laser_func)
 
         # --- Check if laser_amplitude is a function, table, or constant
         self.laser_amplitude_func = None
@@ -602,9 +620,13 @@ class EM3D(SubcycledPoissonSolver):
             self.laser_amplitude_table = self.laser_amplitude
             self.laser_amplitude_table_i = -1
         elif callable(self.laser_amplitude):
-            self.laser_amplitude_func = self.laser_amplitude
+            self.laser_amplitude_func = PicklableFunction(self.laser_amplitude)
+            self.laser_amplitude = None
         elif isinstance(self.laser_amplitude,dict):
-            self.laser_amplitude_dict = self.laser_amplitude
+            self.laser_amplitude_dict = {}
+            for k,v in self.laser_amplitude.iteritems():
+                self.laser_amplitude_dict[k] = PicklableFunction(v)
+            self.laser_amplitude = None
 
         # --- Check if laser_phase is a function, table, or constant
         self.laser_phase_func = None
@@ -616,7 +638,8 @@ class EM3D(SubcycledPoissonSolver):
             self.laser_phase_table = self.laser_phase
             self.laser_phase_table_i = -1
         elif callable(self.laser_phase):
-            self.laser_phase_func = self.laser_phase
+            self.laser_phase_func = PicklableFunction(self.laser_phase)
+            self.laser_phase = None
 
         if self.laser_mode==1:
             # --- sets positions of E fields on Yee mesh == laser_mode 1
@@ -736,7 +759,8 @@ class EM3D(SubcycledPoissonSolver):
                 self.laser_profile = self.laser_profile_init.flatten()
 
         elif callable(self.laser_profile):
-            self.laser_profile_func = self.laser_profile
+            self.laser_profile_func = PicklableFunction(self.laser_profile)
+            self.laser_profile = None
 
 #===============================================================================
     def add_laser(self,field):
@@ -1632,7 +1656,9 @@ class EM3D(SubcycledPoissonSolver):
                                         f.nxguard,f.nzguard,
                                         nox,
                                         noz,
-                                        l_particles_weight,w3d.l4symtry)
+                                        l_particles_weight,
+                                        w3d.l4symtry,
+                                        self.l_deposit_nodal,1,True)
             else:
                 if 0:#nox==1 and noy==1 and noz==1 and not w3d.l4symtry:
                     depose_jxjyjz_esirkepov_linear_serial(self.fields.Jx,self.fields.Jy,self.fields.Jz,n,
@@ -1782,7 +1808,10 @@ class EM3D(SubcycledPoissonSolver):
 #        # -- add laser if laser_mode==2
 #        if self.laser_mode==2:self.add_laser(self.block.core.yf)
         if self.l_nodalgrid:self.Jyee2node3d()
+        # --- apply boundary conditions 
         self.applysourceboundaryconditions()
+        # --- exchange guard cells data across domains
+        self.exchange_bc(self.block)
         if self.l_verbose:print 'finalizesourcep done'
 
     def Jyee2node3d(self):
@@ -1801,7 +1830,6 @@ class EM3D(SubcycledPoissonSolver):
                          block.zlbnd,
                          block.zrbnd,
                          self.type_rz_depose)
-        em3d_exchange_rho(block)
 
     def apply_current_bc(self,block):
         # --- point J to first slice of Jarray
@@ -1816,8 +1844,14 @@ class EM3D(SubcycledPoissonSolver):
                        block.zlbnd,
                        block.zrbnd,
                        self.type_rz_depose)
-        em3d_exchange_j(block)
 
+    def exchange_bc(self,block):
+        em3d_exchange_j(block)
+        if self.l_getrho:
+            em3d_exchange_rho(block)
+        if self.refinement is not None:
+            self.exchange_bc(self.field_coarse.block)
+    
     def applysourceboundaryconditions(self):
         # --- apply boundary condition on current
         self.apply_current_bc(self.block)
@@ -2397,7 +2431,9 @@ class EM3D(SubcycledPoissonSolver):
     def solve2ndhalf(self):
         self.allocatedataarrays()
         if self.solveroff:return
-        if self.fields.spectral:return
+        if self.fields.spectral:
+            self.move_window_fields()
+            return
         if self.mode==2:
             self.solve2ndhalfmode2()
             return
@@ -2425,7 +2461,7 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_verbose:print 'solve 1st half'
         if top.dt != self.dtinit:raise Exception('Time step has been changed since initialization of EM3D.')
         if self.fields.spectral:
-            self.move_window_fields()
+#            self.move_window_fields()
             self.push_spectral_psaotd()
         else:
             self.push_e()
@@ -2444,7 +2480,11 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_pushf:self.exchange_f()
         self.exchange_b()
         self.setebp()
-        if not self.l_nodalgrid and top.efetch[0] != 4:self.yee2node3d()
+        if not self.l_nodalgrid and top.efetch[0] != 4:
+            if self.l_fieldcenterK:
+                self.fieldcenterK()
+            else:
+                self.yee2node3d()
         if self.l_nodalgrid and top.efetch[0] == 4:
             self.fields.l_nodecentered=True
             self.node2yee3d()
@@ -3573,8 +3613,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f,'E_x', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfey( self, l_children=1, guards=0, direction=None, m=None,
                 output=False, show=True, **kw) :
@@ -3642,8 +3684,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d(f, 'E_y', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
 
     def pfez( self, l_children=1, guards=0, direction=None, m=None,
@@ -3707,8 +3751,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'E_z', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfer( self, l_children=1, guards=0, direction=None, m=None,
                 output=False, show=True, **kw) :
@@ -3892,8 +3938,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'B_x', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
 
     def pfby( self, l_children=1, guards=0, direction=None, m=None,
@@ -3960,8 +4008,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d(f, 'B_y', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
 
     def pfbz( self, l_children=1, guards=0, direction=None, m=None,
@@ -4024,8 +4074,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'B_z', direction=direction,**kw)
 
-        if output and me==0 :
-            return( f )
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfbr( self, l_children=1, guards=0, direction=None, m=None,
                             output=False, show=True, **kw) :
@@ -4206,8 +4258,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'J_x', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfjy( self, l_children=1, guards=0, direction=None, m=None,
                             output=False, show=True, **kw) :
@@ -4273,8 +4327,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'J_y', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfjz( self, l_children=1, guards=0, direction=None, m=None,
                             output=False, show=True, **kw) :
@@ -4337,8 +4393,10 @@ class EM3D(SubcycledPoissonSolver):
             if show :
                 self.genericpfem3d( f, 'J_z', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
 
     def pfjr( self, l_children=1, guards=0, direction=None, m=None,
@@ -4539,8 +4597,10 @@ class EM3D(SubcycledPoissonSolver):
             f = self.getarray(self.fields.F,guards,overlap=True)
             self.genericpfem3d( f, 'F', direction=direction,**kw)
 
-        if output and me==0 :
-            return(f[::-1])
+        if output:
+            if self.l_2drz == 0 : # Cartesian fields
+                f=self.gatherarray(f, direction=direction)
+            if me==0:return(f[::-1])
 
     def pfdive(self,l_children=1,guards=0,direction=None,**kw):
         self.genericpfem3d(self.getdive(guards,overlap=True),'div(E)',
@@ -6107,18 +6167,32 @@ class EM3D(SubcycledPoissonSolver):
            yl+ylguard:yu-yrguard,
            zl+zlguard:zu-zrguard]=self.blocknumber
 
-    def initstaticfields(self, relat_species=None):
+    def initstaticfields(self, relat_species=None,
+                         relat_pgroup=None, relat_jslist=None ):
         """
-        Initialize the space charge fields of the object, using
-        a (possibly relativistic) Poisson solver.
+        Initialize the space charge fields, using a Poisson solver.
 
+        - If no arguments are passed, this uses an electrostatic and
+        magnetostatic solver, using *all* particles as the source
+        
+        - If *either* relat_species *or* relat_pgroup and relat_jslist
+        are passed, this uses a relativistic Poisson solver, using *only*
+        the designated relativistic particles as the source
+        
         Parameter
         ---------
         relat_species: a Species object
-            A relativistic species.
-            If a species is given, it is assumed that all the fields
-            propagate at the same speed as this species, and a corresponding
-            electromagnetic, relativistic Poisson solver is used.
+            A relativistic species, whose charge density will serve
+            as the source for the relativistic Poisson solver
+
+        relat_pgroup: a ParticleGroup object
+            An object containing several species, among which
+            some species (which are designated by js_list, below)
+            will serve as the source for the relativistic Poission solver
+
+        jslist: a list of integers
+            Indicates which of species of the relat_pgroup will serve
+            as the source.
         """
         # --- This is needed because of the order in which things
         # --- are imported in warp.py.
@@ -6129,6 +6203,14 @@ class EM3D(SubcycledPoissonSolver):
         # --- This should be done to make sure that the EM arrays are set up
         self.allocatedataarrays()
 
+        # If needed, extract relat_pgroup and relat_jslist from the species
+        if relat_species is not None:
+            if (relat_pgroup is not None) or (relat_jslist is not None):
+                raise ValueError('Both `species` and `relat_pgroup`'
+                '/`relat_jslist` were passed. Please use one or the other.')
+            relat_pgroup = relat_species.pgroup
+            relat_jslist = relat_species.jslist
+        
         # --- Calculate the static fields.
         top.grid_overlap = 2
         if self.solvergeom == w3d.XYZgeom:
@@ -6146,11 +6228,11 @@ class EM3D(SubcycledPoissonSolver):
 
         esolver.conductordatalist = self.conductordatalist
         # check if used for calculation of relativistic beam
-        if relat_species is not None:
+        if relat_pgroup is not None:
           # pass particle group to density deposition
-          esolver.loadrho(pgroups=[relat_species.pgroup])
+          esolver.loadrho( pgroups=[relat_pgroup], jslist=relat_jslist )
           # Calculate the relativistic contraction factor along z
-          gaminv = relat_species.getgaminv()
+          gaminv = getgaminv( pgroup=relat_pgroup, jslist=relat_jslist )
           zfact = numpy.mean(1./gaminv)
           # Call the relativisitic Poisson solver
           esolver.solve(iwhich=0,zfact=zfact)
@@ -6195,7 +6277,7 @@ class EM3D(SubcycledPoissonSolver):
         # --- Calculate the fields on the Yee mesh by direct finite differences
         # --- of the potential (which is on a node centered grid)
 
-        if relat_species is None:
+        if relat_pgroup is None:
           zfact = 1.
           Ax = bsolver.potential[0,...]
           Ay = bsolver.potential[1,...]
@@ -6205,7 +6287,7 @@ class EM3D(SubcycledPoissonSolver):
         # get Lorentz factor of used particle group then use A calculated
         # from phi according to J.-L. Vay, Phys. Plasmas 15, 056701 (2008)
         else:
-          gaminv = relat_species.getgaminv()
+          gaminv = getgaminv( pgroup=relat_pgroup, jslist=relat_jslist )
           zfact = numpy.mean(1./gaminv)
           beta = sqrt(1.-1./zfact/zfact)
           Ax = zeros_like(esolver.phi)

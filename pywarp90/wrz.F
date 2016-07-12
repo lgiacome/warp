@@ -1,6 +1,5 @@
 #include "top.h"
 c=============================================================================
-c@(#) File WRZ.M, version $Revision: 3.30 $, $Date: 2011/05/06 00:01:20 $
 c# Copyright (c) 1990-1998, The Regents of the University of California.
 c# All rights reserved.  See LEGAL.LLNL for full text and disclaimer.
 c  This is main file of package WRZ of code WARP
@@ -19,10 +18,9 @@ c  Called at first reference to package (not nec. a "run" etc.).
       end
 c=============================================================================
       subroutine wrzvers (iout)
-      use WRZversion
       integer(ISZ):: iout
 c  Echoes code version, etc. to output files as they're created
-      call printpkgversion(iout,"Particle package WRZ",verswrz)
+      call printpkgversion(iout,"Particle package WRZ")
       return
       end
 c=============================================================================
