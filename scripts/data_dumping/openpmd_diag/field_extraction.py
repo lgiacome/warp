@@ -12,7 +12,7 @@ from data_dict import circ_dict_quantity, cart_dict_quantity, \
     x_offset_dict, y_offset_dict
 
 def get_dataset( dim, em, quantity, lgather,
-                 iz_slice=None, transverse_centered=False ):
+                 sub_sampling=[1,1,1], start=[0,0,0],iz_slice=None, transverse_centered=False ):
     """
     Extract fields from the grid and return them in a format
     which is close to their final layout in the openPMD file.
@@ -41,14 +41,17 @@ def get_dataset( dim, em, quantity, lgather,
         If None, the full field array is returned
         If not None, this is the index of the slice to be returned,
         within the local subdomain
-
+        
+    sub_sampling: array of int of size 3 defining subsampling period in each dir
+        by default, sub_sampling=[1,1,1] i.e all grid points are dumped 
+        
     transverse_centered: bool, optional
         Whether to return fields that are always transversally centered
         (implies that staggered fields will be transversally averaged)
 
     Returns
     -------
-    An array of reals whose format is close to the final openPMD layout.
+    An array of reals is returned with a final format close to the final openPMD layout.
 
     When there is no slicing (iz_slice is None), the returned array is of shape
     - (Nx+1, Nz+1) if dim="2d"
@@ -66,16 +69,16 @@ def get_dataset( dim, em, quantity, lgather,
     """
     if dim=="circ":
         return( get_circ_dataset( em, quantity, lgather=lgather,
-            iz_slice=iz_slice, transverse_centered=transverse_centered ) )
+            iz_slice=iz_slice,sub_sampling=sub_sampling, transverse_centered=transverse_centered ) )
     elif dim=="2d":
         return( get_cart2d_dataset( em, quantity, lgather=lgather,
-            iz_slice=iz_slice, transverse_centered=transverse_centered ) )
+            iz_slice=iz_slice, sub_sampling=sub_sampling, transverse_centered=transverse_centered ) )
     elif dim=="3d":
         return( get_cart3d_dataset( em, quantity, lgather=lgather,
-            iz_slice=iz_slice, transverse_centered=transverse_centered ) )
+            iz_slice=iz_slice,sub_sampling=sub_sampling, transverse_centered=transverse_centered ) )
 
 def get_circ_dataset( em, quantity, lgather,
-                      iz_slice=None, transverse_centered=False ):
+                      iz_slice=None, sub_sampling=[1,1,1], start=[0,0,0], transverse_centered=False ):
     """
     Get a given quantity in Circ coordinates
 
@@ -137,7 +140,7 @@ def get_circ_dataset( em, quantity, lgather,
         F = F[ :, nzg:-nzg ]
         if em.circ_m > 0:
             F_circ = F_circ[:, nzg:-nzg, :]
-
+                        
     # Gather array if lgather = True
     # (Multi-proc operations using gather)
     # Only done in non-parallel case
@@ -146,6 +149,16 @@ def get_circ_dataset( em, quantity, lgather,
         if em.circ_m > 0:
             F_circ = em.gatherarray( F_circ )
 
+    # Subsample field
+    if (F is not None):
+        if (iz_slice is None):
+            F=F[start[0]::sub_sampling[0], start[2]::sub_sampling[2]]
+            if em.circ_m>0: 
+                F_circ=F_circ[start[0]::sub_sampling[0], start[2]::sub_sampling[2], :]
+        else:
+            F=F[start[0]::sub_sampling[0]]
+            if em.circ_m>0: 
+                 F_circ=F_circ[start[0]::sub_sampling[0], :]
     # Reshape the array so that it is stored in openPMD layout,
     # with real and imaginary part of each mode separated
     if F is not None:
@@ -165,7 +178,7 @@ def get_circ_dataset( em, quantity, lgather,
     return( Ftot )
 
 def get_cart3d_dataset( em, quantity, lgather,
-                      iz_slice=None, transverse_centered=False ):
+                      iz_slice=None, sub_sampling=[1,1,1], start=[0,0,0], transverse_centered=False ):
     """
     Get a given quantity in 3D Cartesian coordinates
 
@@ -228,11 +241,17 @@ def get_cart3d_dataset( em, quantity, lgather,
                 'get_cart2d_dataset: lgather=True and iz_slice not None')
         F = em.gatherarray( F )
 
+    # Subsample field
+    if (F is not None): 
+        if (iz_slice is None):
+            F=F[start[0]::sub_sampling[0],start[1]::sub_sampling[1],start[2]::sub_sampling[2]]
+        else: 
+            F=F[start[0]::sub_sampling[0],start[1]::sub_sampling[1]]
     return( F )
 
 
 def get_cart2d_dataset( em, quantity, lgather,
-                      iz_slice=None, transverse_centered=False ):
+                      iz_slice=None, sub_sampling=[1,1,1], start=[0,0,0], transverse_centered=False ):
     """
     Get a given quantity in 2D Cartesian coordinates
 
@@ -288,5 +307,51 @@ def get_cart2d_dataset( em, quantity, lgather,
             raise ValueError('Incompatible parameters in '
                 'get_cart2d_dataset: lgather=True and iz_slice not None')
         F = em.gatherarray( F )
-
+        
+    # Subsample field
+    if (F is not None): 
+        if (iz_slice is None):
+            F=F[start[0]::sub_sampling[0],start[2]::sub_sampling[2]]
+        else: 
+            F=F[start[0]::sub_sampling[0]]
     return( F )
+
+def get_global_indices(ifull,nfull,sub_samplingp): 
+    """
+    Get new grid subdomain start indices and sizes with subsampling 
+
+    Parameters
+    ----------
+    ifull: array of int of size nproc_dir with nproc_dir the 
+        number of procs along oa given direction. This array 
+        contains start indices of each MPI subdomain 
+
+    nfull: array of int of size nproc_dir with nproc_dir the 
+        number of procs along oa given direction. This array 
+        contains the sizes (number of cells) of each MPI subdomain 
+
+    sub_samplingp: int defining subsampling period in a given dir
+
+    Returns
+    -------
+    istart: (array of int) for each proc, contains start indices of the new 
+            subsampled grid array within the nonsampled array 
+    
+    isub: (array of int) start indices of each MPI subdomain for dumping with subsampling
+
+    nsub: (array of int) number of cells of each MPI subdomain for dumping with 
+    subsampling; for each proc i nsub[i]+1 data (i.e grid points) will be dumped 
+    """
+    isub      = np.zeros(np.size(ifull),dtype="i8")
+    nsub      = np.zeros(np.size(nfull),dtype="i8")
+    istart    = np.zeros(np.size(nfull), dtype="i8")
+    isub[0]   = ifull[0]
+    istart[0] = 0
+    count     = ifull[0]+nfull[0]-istart[0]
+    nsub[0]   = (count-count%(sub_samplingp))/sub_samplingp # Number of cells of current domain 
+    for i in xrange(1,len(ifull)): 
+        istart[i] = istart[i-1]+(nsub[i-1]+1)*sub_samplingp # grid node index 
+        count     = ifull[i]+nfull[i]-istart[i]
+        nsub[i]      = (count-count%sub_samplingp)/sub_samplingp
+        
+    return [istart, isub, nsub]
