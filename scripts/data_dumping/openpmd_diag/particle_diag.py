@@ -23,7 +23,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
     def __init__(self, period, top, w3d, comm_world=None,
                  species = {"electrons": None},
                  particle_data=["position", "momentum", "weighting"],
-                 select=None, write_dir=None, lparallel_output=False) :
+                 select=None, write_dir=None, lparallel_output=False, sub_sample=None) :
         """
         Initialize the field diagnostics.
 
@@ -68,6 +68,10 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         lparallel_output : boolean
             Switch to set output mode (parallel or gathering)
             If "True" : Parallel output
+            
+        sub_sample : integer
+            If "None" : all particles are dumped
+            If not None: every sub_sample particle is dumped
         """
         # General setup
         OpenPMDDiagnostic.__init__(self, period, top, w3d, comm_world,
@@ -76,7 +80,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         self.particle_data = particle_data
         self.species_dict = species
         self.select = select
-
+        self.sub_sample = sub_sample 
+         
         # Correct the bounds in momenta (since the momenta in Warp
         # are not unitless, but have the units of a velocity)
         for momentum in ['ux', 'uy', 'uz']:
@@ -310,7 +315,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         the rules of self.select
         """
         # Initialize an array filled with True
-        select_array = np.ones( species.getn(gather = 0), dtype='bool' )
+        npart = species.getn(gather = 0)
+        select_array = np.ones(npart, dtype='bool')
 
         # Apply the rules successively
         if self.select is not None :
@@ -327,7 +333,11 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                     select_array = np.logical_and(
                         quantity_array < self.select[quantity][1],
                         select_array )
-
+        if self.sub_sample is not None:
+            subsamp_array = np.zeros(npart, dtype='bool') 
+            subsamp_array[::self.sub_sample]=1
+            # Subsample particle array 
+            select_array=np.logical_and(subsamp_array,select_array)
         return( select_array )
 
     def create_file_empty_particles( self, fullpath, iteration,
