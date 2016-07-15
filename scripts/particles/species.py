@@ -1179,7 +1179,7 @@ class Species(object):
         if not lvariableweights:
             if top.wpid != 0: kw['w'] = 1.*wscale
         else:
-            kw['w'] = 2*sqrt(x**2 + y**2)/rmax*wscale
+            kw['w'] = 2*sqrt((x-xmean)**2 + (y-ymean)**2)/rmax*wscale
 
         # --- Now the velocities are generated (after clipping the positions).
         vx = SpRandom(vxmean,vthx,np)
