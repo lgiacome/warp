@@ -23,8 +23,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
 
     def __init__(self, period, em, top, w3d, comm_world=None, 
                  fieldtypes=["rho", "E", "B", "J"], 
-                 sub_sampling=[1,1,1],
-                 write_dir=None, lparallel_output=False):
+                 sub_sampling=[1,1,1], write_dir=None, lparallel_output=False):
         """
         Initialize the field diagnostic.
 
