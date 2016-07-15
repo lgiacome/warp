@@ -23,7 +23,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
     def __init__(self, period, top, w3d, comm_world=None,
                  species = {"electrons": None},
                  particle_data=["position", "momentum", "weighting"],
-                 select=None, write_dir=None, lparallel_output=False, sub_sample=None) :
+                 select=None, write_dir=None, lparallel_output=False,
+                 sub_sample=None) :
         """
         Initialize the field diagnostics.
 

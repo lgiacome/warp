@@ -75,7 +75,8 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         # Initialize the normal attributes of a FieldDiagnostic
         FieldDiagnostic.__init__(self, period, em, top, w3d,
-                comm_world, fieldtypes, write_dir, lparallel_output)
+                comm_world, fieldtypes, write_dir=write_dir,
+                lparallel_output=lparallel_output)
 
         # Register the boost quantities
         self.gamma_boost = gamma_boost

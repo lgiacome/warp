@@ -23,8 +23,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
 
     def __init__(self, period, em, top, w3d, comm_world=None, 
                  fieldtypes=["rho", "E", "B", "J"], 
-                 sub_sampling=[1,1,1],
-                 write_dir=None, lparallel_output=False):
+                 sub_sampling=[1,1,1], write_dir=None, lparallel_output=False):
         """
         Initialize the field diagnostic.
 
@@ -90,9 +89,12 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             
         # Compute global indices of the domain 
         # With subsampling periods sub_sampling[0,1,2] in x, y, z 
-        [istartx,ixsub,nxsub] = get_global_indices(top.fsdecomp.ix, top.fsdecomp.nx, sub_sampling[0])
-        [istarty,iysub,nysub] = get_global_indices(top.fsdecomp.iy, top.fsdecomp.ny, sub_sampling[1])
-        [istartz,izsub,nzsub] = get_global_indices(top.fsdecomp.iz, top.fsdecomp.nz, sub_sampling[2])
+        istartx, ixsub, nxsub = get_global_indices(top.fsdecomp.ix,
+                                    top.fsdecomp.nx, sub_sampling[0])
+        istarty, iysub, nysub = get_global_indices(top.fsdecomp.iy,
+                                    top.fsdecomp.ny, sub_sampling[1])
+        istartz, izsub, nzsub = get_global_indices(top.fsdecomp.iz,
+                                    top.fsdecomp.nz, sub_sampling[2])
 
         # Determine the global indices of the local domain
         if (self.dim == "2d") or (self.dim=="circ"):
@@ -109,30 +111,32 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Indices within [global_indices[0,1],global_indices[1,1][ are dumped
         if self.dim == "3d":
             global_indices[0,1] = iysub[top.iprocgrid[1]]
-            global_indices[1,1] = global_indices[0,1] + nysub[top.iprocgrid[1]] + 1
+            global_indices[1,1] = global_indices[0,1] + \
+              nysub[top.iprocgrid[1]] + 1
             
         # In the z direction
         # Indices within [global_indices[0,-1],global_indices[1,-1][ are dumped
         global_indices[0,-1] = izsub[top.iprocgrid[2]]
-        global_indices[1,-1] = global_indices[0,-1] + nzsub[top.iprocgrid[2]] + 1
+        global_indices[1,-1] = global_indices[0,-1] + \
+          nzsub[top.iprocgrid[2]]+1
         
         # Set FieldDiagnostic attributes for dumping 
         self.global_indices = global_indices
         
         # Dumped data array dimensions in x,y,z
-        self.nx  = ((em.nx)-(em.nx)%sub_sampling[0])/sub_sampling[0]
-        self.ny  = ((em.ny)-(em.ny)%sub_sampling[1])/sub_sampling[1]
-        self.nz  = ((em.nz)-(em.nz)%sub_sampling[2])/sub_sampling[2]
+        self.nx = ((em.nx)-(em.nx)%sub_sampling[0])/sub_sampling[0]
+        self.ny = ((em.ny)-(em.ny)%sub_sampling[1])/sub_sampling[1]
+        self.nz = ((em.nz)-(em.nz)%sub_sampling[2])/sub_sampling[2]
         
         # Mesh cell sizes of dumped grid arrays 
-        self.dx  = em.dx*sub_sampling[0]
-        self.dy  = em.dy*sub_sampling[1]
-        self.dz  = em.dz*sub_sampling[2]
+        self.dx = em.dx*sub_sampling[0]
+        self.dy = em.dy*sub_sampling[1]
+        self.dz = em.dz*sub_sampling[2]
         
-        # Start indices of data to be dumped in non-sampled grid array along x,y,z 
-        self.start=[istartx[top.iprocgrid[0]] - top.fsdecomp.ix[top.iprocgrid[0]],
-                    istarty[top.iprocgrid[1]] - top.fsdecomp.iy[top.iprocgrid[1]],
-                    istartz[top.iprocgrid[2]] - top.fsdecomp.iz[top.iprocgrid[2]]]
+        # Start indices of data to be dumped in non-sampled grid array in x,y,z 
+        self.start=[istartx[top.iprocgrid[0]]-top.fsdecomp.ix[top.iprocgrid[0]],
+                    istarty[top.iprocgrid[1]]-top.fsdecomp.iy[top.iprocgrid[1]],
+                    istartz[top.iprocgrid[2]]-top.fsdecomp.iz[top.iprocgrid[2]]]
         # Subsampling period 
         self.sub_sampling=sub_sampling
 
@@ -177,7 +181,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
                     self.write_dataset( field_grp, path, quantity )
 
         # Close the file
-        if f is not None:      
+        if f is not None:   
             f.close()
 
     # Writing methods
@@ -239,12 +243,14 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Fill the dataset with these quantities
         # Gathering mode
         if self.lparallel_output == False:
-            F = get_cart2d_dataset( self.em, quantity, lgather=True, sub_sampling=self.sub_sampling, start=self.start )
+            F = get_cart2d_dataset( self.em, quantity, lgather=True,
+                    sub_sampling=self.sub_sampling, start=self.start )
             if self.rank == 0:
     	        dset[:,:] = F
         # Parallel mode
         else:
-            F = get_cart2d_dataset( self.em, quantity, lgather=False, sub_sampling=self.sub_sampling, start=self.start )
+            F = get_cart2d_dataset( self.em, quantity, lgather=False,
+                    sub_sampling=self.sub_sampling, start=self.start )
             indices = self.global_indices
             with dset.collective:
                 dset[ indices[0,0]:indices[1,0],
@@ -257,12 +263,14 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Fill the dataset with these quantities
         # Gathering mode
         if self.lparallel_output == False:
-            F = get_cart3d_dataset( self.em, quantity, lgather=True, sub_sampling=self.sub_sampling, start=self.start )
+            F = get_cart3d_dataset( self.em, quantity, lgather=True,
+                    sub_sampling=self.sub_sampling, start=self.start )
             if self.rank == 0:
     	        dset[:,:,:] = F
         # Parallel mode
         else:
-            F = get_cart3d_dataset( self.em, quantity, lgather=False, sub_sampling=self.sub_sampling, start=self.start )
+            F = get_cart3d_dataset( self.em, quantity, lgather=False,
+                    sub_sampling=self.sub_sampling, start=self.start )
             indices = self.global_indices
             with dset.collective:
                 dset[ indices[0,0]:indices[1,0],
