@@ -521,9 +521,9 @@ class ParticleCatcher:
           - uzfrm*self.z_prev_captured/c**2
         
         # Position in lab frame
-        z_captured = self.gamma_boost*(self.z_captured + \
+        self.z_captured = self.gamma_boost*(self.z_captured + \
             self.beta_boost*c*self.top.time)
-        z_prev_captured = self.gamma_boost*(self.z_prev_captured \
+        self.z_prev_captured = self.gamma_boost*(self.z_prev_captured \
             + self.beta_boost*c*(self.top.time-self.top.dt))
  
         # Momentum in lab frame
