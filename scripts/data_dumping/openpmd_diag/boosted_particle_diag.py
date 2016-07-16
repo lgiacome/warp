@@ -514,6 +514,11 @@ class ParticleCatcher:
         lab frame. These are classical Lorentz transformation equations
         """
         uzfrm = -self.beta_boost*self.gamma_boost*c
+
+        # Time in lab frame
+        self.t = self.gamma_boost*self.top.time - uzfrm*self.z_captured/c**2
+        self.t_prev = self.gamma_boost*(self.top.time - self.top.dt) \
+          - uzfrm*self.z_prev_captured/c**2
         
         # Position in lab frame
         z_captured = self.gamma_boost*(self.z_captured + \
@@ -526,15 +531,6 @@ class ParticleCatcher:
         - self.gamma_captured*uzfrm
         self.uz_prev_captured = self.gamma_boost*self.uz_prev_captured \
         - self.gamma_prev_captured*uzfrm
-
-        # Time in lab frame
-        self.t = self.gamma_boost*self.top.time - uzfrm*self.z_captured/c**2
-        self.t_prev = self.gamma_boost*(self.top.time - self.top.dt) \
-          - uzfrm*self.z_prev_captured/c**2
-
-        # Copy the position in lab frame to self.z_captured
-        self.z_captured = z_captured
-        self.z_prev_captured = z_prev_captured
 
     def interpolate_to_time(self, t_output):
         """
