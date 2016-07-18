@@ -275,9 +275,15 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                     # Loop through all the processors to reshape the flattened
                     # array
                     for i in xrange(self.top.nprocs):
-                        s = g_iz_max[i] - g_iz_min[i]
 
                         if nx_rank[i] !=0 :
+
+                            # Find the longitudinal indices of the slice,
+                            # within the array f_ar of length nslice
+                            s_min = g_iz_min[i] - iz_min
+                            s_max = g_iz_max[i] - iz_min
+                            s = s_max - s_min
+                            
                             # gxind as index to determine the slice it 
                             # corresponds to in the x-direction in the global 
                             # field array, valid for 2d, 3d and circ
@@ -285,26 +291,23 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                             gxind = self.top.fsdecomp.ix[i%self.top.nxprocs]
 
                             if self.dim =="2d":
-                                f_ar[:,gxind:gxind+nx_rank[i],sind:sind+s] \
+                                f_ar[:,gxind:gxind+nx_rank[i],s_min:s_max] \
                                 = np.reshape(g_ar[indx:indx+10*nx_rank[i]*s], 
                                     (10,nx_rank[i],s))
                             elif self.dim =="3d":
                                 # gyind: index only valid in 3d 
                                 gyind = self.top.fsdecomp.iy[i%self.top.nyprocs]
                                 f_ar[:,gxind:gxind+nx_rank[i],gyind:gyind\
-                                +ny_rank[i],sind:sind+s] = np.reshape(
+                                +ny_rank[i],s_min:s_max] = np.reshape(
                                     g_ar[indx:indx+10*nx_rank[i]*ny_rank[i]*s], 
                                     (10,nx_rank[i],ny_rank[i],s))
                                 indy += 10*ny_rank[i]*s
                             elif self.dim =="circ":
-                                f_ar[:,:,gxind:gxind+nx_rank[i],sind:sind+s]\
+                                f_ar[:,:,gxind:gxind+nx_rank[i],s_min:s_max]\
                                 = np.reshape(
                                     g_ar[indx:indx+10*Ncirc*nx_rank[i]*s], 
                                     (10,Ncirc,nx_rank[i],s))
                             indx += 10*nx_rank[i]*s
-                            
-                            if (i+1)%self.top.nxprocs==0:
-                                sind += s
 
             else:
                 f_ar = field_array
