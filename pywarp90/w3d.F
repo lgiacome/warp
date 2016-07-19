@@ -91,8 +91,8 @@ c=============================================================================
       use InPart
       use InPart3d
       use InMesh3d
-      use Fields3d
-      use Fields3dParticles
+      use Mesh3d
+!     use Fields3dParticles
       use GridBoundary3d
       use Multipole
       use Io
@@ -265,12 +265,8 @@ c  Print values of input variables, other interesting things to text file
 
 c  Create the dynamic arrays for fields
 
-      nmxy  = max(nx,ny)
-      nmxyz = max(nx,ny,nz)
-      call gchange("Fields3d", 0)
       call setupSubcycling(pgroup)
       call setupSelfB(pgroup)
-      call setupFields3dParticles()
 
 c  Setup the initial location and velocity of the beam frame.
 
@@ -614,22 +610,6 @@ c  Continue to run.
 c=============================================================================
       subroutine w3dfin()
       use Subtimersw3d
-      use InGen
-      use InGen3d
-      use InDiag
-      use InPart
-      use InPart3d
-      use InMesh3d
-      use Fields3d
-      use Io
-      use Lattice
-      use LatticeInternal
-      use Picglb
-      use Picglb3d
-      use Win_Moments
-      use Z_Moments
-      use Z_arrays
-      use Hist
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
 
@@ -654,7 +634,8 @@ c  create final printouts
 
 c  release storage
 
-      call gfree ("Fields3d")
+      call gfree ("Mesh3d")
+      call gfree ("Fields3dSolver")
       call gfree ("Fields3dParticles")
       call gfree ("Hist")
       call gfree ("Win_Moments")
@@ -680,7 +661,6 @@ c=============================================================================
       use InDiag3d
       use InPart
       use InMesh3d
-      use Fields3d
       use Fields3dParticles
       use Io
       use Particles, Only: pgroup,nplive
@@ -1200,7 +1180,6 @@ c=============================================================================
       use Picglb3d
       use Constant
       use Z_arrays
-      use Fields3d
 
 c Calculate ear fields to confine the beam axially.
 c Controlled by ifears.  If zero, no ear fields.
@@ -1585,7 +1564,6 @@ c=============================================================================
       use Lattice
       use LatticeInternal
       use Particles,Only: nplive,wpid,chdtspid,uxoldpid,uyoldpid,uzoldpid,lmappid,zbirthlabpid
-      use Fields3d
       use Subcycling
       use Fields3dParticles
       use Picglb
@@ -2492,7 +2470,6 @@ c=============================================================================
       use Subtimersw3d
       use InGen3d
       use InMesh3d
-      use Fields3d
 
 c  Sets the slices on the exterior of phi for periodicity
 c  sets slice at -1 equal to the slice at nzlocal-1
@@ -2546,7 +2523,7 @@ c=============================================================================
       use InGen,Only: fstype
       use InGen3d
       use InMesh3d
-      use Fields3d,Only: rho
+      use Fields3dSolver,Only: rho
       use GridBoundary3d
       use DebugFlags,Only: debug
 #ifdef MPIPARALLEL
@@ -10310,7 +10287,6 @@ c=============================================================================
       use Picglb
       use Picglb3d
       use Particles,Only: wpid
-      use Fields3d
       use Subcycling
       use Fields3dParticles
       use GridBoundary3d
@@ -10663,7 +10639,6 @@ c=============================================================================
       subroutine assignrhopandphipforparticles(rhopin,phipin)
       use InGen3d
       use InMesh3d
-      use Fields3d
       use Fields3dParticles
       real(kind=8),target:: rhopin(-nxguardrho:nxp+nxguardrho,
      &                             -nyguardrho:nyp+nyguardrho,
@@ -10733,7 +10708,7 @@ c       --- has the wrong shape.
 c=============================================================================
       subroutine assignrhoandphiforfieldsolve(rhopin,phipin)
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
       real(kind=8),target:: rhopin(-nxguardrho:nxp+nxguardrho,
      &                             -nyguardrho:nyp+nyguardrho,
@@ -10774,7 +10749,7 @@ c=============================================================================
 #ifdef MPIPARALLEL
       use InMesh3d,Only: nxlocal,nylocal,nzlocal,nxguarde,nyguarde,nzguarde
 #endif
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
 
 #ifndef MPIPARALLEL
@@ -10811,7 +10786,7 @@ c=============================================================================
       use InGen
       use InGen3d
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Subcycling
       use Fields3dParticles
 #ifdef MPIPARALLEL
@@ -10902,7 +10877,6 @@ c=============================================================================
       use InPart,Only: depos_order,efetch
       use Picglb3d
       use InMesh3d
-      use Fields3d
       use Fields3dParticles
       use Subcycling,Only:nrhopndtscopies,nsndts,nsndtsphi
       use SelfB,Only: nsselfb
@@ -10985,7 +10959,6 @@ c=============================================================================
       use InPart,Only: efetch,depos_order
       use InGen3d
       use InMesh3d
-      use Fields3d
       use Subcycling
       use Fields3dParticles
       use FieldSolveAPI
@@ -11073,7 +11046,6 @@ c=============================================================================
       use InPart,Only: efetch,depos_order
       use InGen3d
       use InMesh3d
-      use Fields3d
       use Subcycling,Only: nsndts,ndtstorho
       use Fields3dParticles
       use FieldSolveAPI
@@ -11583,7 +11555,7 @@ c=============================================================================
       use Picglb3d,Only: dx,dy,dz
       use InMesh3d
       use InGen3d
-      use Fields3d,Only: xmesh,ymesh,zmesh,xmeshlocal,ymeshlocal,zmeshlocal
+      use Mesh3d
 
 c  Calculate mesh dimensioning quantities
 
@@ -11605,6 +11577,9 @@ c  Calculate mesh dimensioning quantities
         dy = 1.
         dz = 1.
       end if
+
+      call gchange("Mesh3d", 0)
+
       do i = 0, nx
          xmesh(i) = i*dx + xmmin
       enddo
@@ -11771,7 +11746,7 @@ c=============================================================================
       use InGen3d
       use InMesh3d
       use Picglb3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
       integer(ISZ):: n
       real(kind=8):: x(n),y(n),z(n),p(n)
@@ -12028,7 +12003,6 @@ c===========================================================================
       use Picglb
       use Picglb3d
       use InMesh3d
-      use Fields3d
       use Fields3dParticles
       use Apertures
 
@@ -12454,7 +12428,7 @@ c===========================================================================
 #ifdef MPIPARALLEL
       use InGen3d
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
       use Parallel
 #endif
@@ -12514,7 +12488,7 @@ c===========================================================================
       use Subtimersw3d
       use InGen3d
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
 
 c This gets the phi at iz=nzlocal and in the guard cells. It is only needed for
@@ -12630,7 +12604,7 @@ c===========================================================================
       use InGen3d
       use InMesh3d
       use Picglb3d
-      use Fields3d
+      use Fields3dSolver
       use Subcycling
       use Fields3dParticles
       use LatticeInternal
@@ -12699,6 +12673,12 @@ c       --- turn back on the bends after the fieldsolve when computing in a boos
 
         return
       endif
+
+      call gchange("Fields3dSolver", 0)
+
+c     --- This is always done with the built in solvers
+c     --- (even with the RZ solver which does use the w3d.rho array)
+      call setupFields3dParticles()
 
 c     --- Make sure that rho has been finalized and is ready for the solve
       if (.not. lrhofinalized) call finalizerho()
@@ -12871,7 +12851,7 @@ c===========================================================================
       use InMesh3d
       use Picglb
       use Picglb3d
-      use Fields3d
+      use Fields3dSolver
 
 c Does the FFT field solve in bends.
 
@@ -12984,7 +12964,7 @@ c=============================================================================
       use Picglb3d
       use Picglb
       use GridBoundary3d
-      use Fields3d
+      use Fields3dSolver
       use LatticeInternal
       use BoltzmannElectrons
       use Parallel
@@ -13024,6 +13004,10 @@ c fits and so was replaced with if statements.
       xlen = nx*dx
       ylen = ny*dy
       zlen = nz*dz
+
+      nmxy  = max(nx,ny)
+      nmxyz = max(nx,ny,nz)
+      call gchange("Fields3dSolver", 0)
 
       if (fstype == 0) then
           call vpois3d(iwhich,phi,phi,kxsq,kysq,kzsq,

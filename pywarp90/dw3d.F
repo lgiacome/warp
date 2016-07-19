@@ -11,7 +11,6 @@ c=============================================================================
       subroutine prntpa3d(lprntpara)
       use Beam_acc
       use InMesh3d
-      use Fields3d
       use InGen
       use Lattice
       use Picglb3d
@@ -202,7 +201,7 @@ c=============================================================================
       use InGen3d
       use Picglb3d
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Z_arrays
       use InDiag3d
       use Parallel
@@ -244,14 +243,14 @@ c=============================================================================
 
 c  Calculates the line charge density from the rho argument.
 
-      real(kind=8),pointer:: scrtch(:)
+      real(kind=8),pointer:: workz(:)
       real(kind=8):: zz,zg,wzg,dzi
       integer(ISZ):: iz,izg
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
       if (.not. lgtlchg3d) return
 
-      allocate(scrtch(0:nzlocal))
+      allocate(workz(0:nzlocal))
 
       if (nzlocal == 0) then
         dzi = 0.
@@ -269,18 +268,18 @@ c First, sum up the charge density in each axial plane.
 
         if (l2symtry) then
 c         --- 2-fold: account for only one side of rho being stored
-          scrtch(iz) = sum(rho(0:nxlocal,0,iz)) +
-     &                 2.*sum(rho(0:nxlocal,1:nylocal,iz))
+          workz(iz) = sum(rho(0:nxlocal,0,iz)) +
+     &                2.*sum(rho(0:nxlocal,1:nylocal,iz))
 
         elseif (l4symtry) then
 c         --- 4-fold: account for only one quadrant of rho being stored
-          scrtch(iz) = rho(0,0,iz) + 4.*sum(rho(1:nxlocal,1:nylocal,iz)) +
-     &                               2.*sum(rho(1:nxlocal,0,iz)) +
-     &                               2.*sum(rho(0,1:nylocal,iz))
+          workz(iz) = rho(0,0,iz) + 4.*sum(rho(1:nxlocal,1:nylocal,iz)) +
+     &                              2.*sum(rho(1:nxlocal,0,iz)) +
+     &                              2.*sum(rho(0,1:nylocal,iz))
 
         else
 c         --- no symmetries...
-          scrtch(iz) = sum(rho(0:nxlocal,0:nylocal,iz))
+          workz(iz) = sum(rho(0:nxlocal,0:nylocal,iz))
 
         endif
 
@@ -304,12 +303,12 @@ c       --- at nzlocal.
         if (0 <= izg .and.
      &      (izg < nzlocal .or.
      &       (izg == nzlocal .and. islastproc))) then
-          linechg(iz) = scrtch(izg)*dx*dy*(1. - wzg)
+          linechg(iz) = workz(izg)*dx*dy*(1. - wzg)
         else
           linechg(iz) = 0.
         endif
         if (0 < izg+1 .and. izg+1 <= nzlocal) then
-          linechg(iz) = linechg(iz) + scrtch(izg+1)*dx*dy*wzg
+          linechg(iz) = linechg(iz) + workz(izg+1)*dx*dy*wzg
         endif
 
       enddo
@@ -318,7 +317,7 @@ c       --- at nzlocal.
       call parallelnonzerorealarray(linechg,nzzarr+1)
 #endif
 
-      deallocate(scrtch)
+      deallocate(workz)
 
 !$OMP MASTER
       if (lw3dtimesubs) timegtlchg3dfromrho = timegtlchg3dfromrho + wtime() - substarttime
@@ -345,7 +344,7 @@ c=============================================================================
 
 c  Calculates the line charge density from the rho argument.
 
-      real(kind=8),pointer:: scrtch(:)
+      real(kind=8),pointer:: workz(:)
       real(kind=8),pointer:: cellarea(:)
       real(kind=8):: zz,zg,wzg,dzi
       integer(ISZ):: ix,iz,izg
@@ -353,7 +352,7 @@ c  Calculates the line charge density from the rho argument.
       if (lw3dtimesubs) substarttime = wtime()
       if (.not. lgtlchg3d) return
 
-      allocate(scrtch(0:nzlocal))
+      allocate(workz(0:nzlocal))
       allocate(cellarea(0:nxlocal))
 
       if (nzlocal == 0) then
@@ -374,7 +373,7 @@ c First, sum up the charge density in each axial plane.
 
 !$OMP PARALLEL DO
       do iz=0,nzlocal
-        scrtch(iz) = sum(rho(0:nxlocal,iz)*cellarea)
+        workz(iz) = sum(rho(0:nxlocal,iz)*cellarea)
       enddo
 !$OMP END PARALLEL DO
 
@@ -395,12 +394,12 @@ c       --- at nzlocal.
         if (0 <= izg .and.
      &      (izg < nzlocal .or.
      &       (izg == nzlocal .and. islastproc))) then
-          linechg(iz) = scrtch(izg)*(1. - wzg)
+          linechg(iz) = workz(izg)*(1. - wzg)
         else
           linechg(iz) = 0.
         endif
         if (0 < izg+1 .and. izg+1 <= nzlocal) then
-          linechg(iz) = linechg(iz) + scrtch(izg+1)*wzg
+          linechg(iz) = linechg(iz) + workz(izg+1)*wzg
         endif
 
       enddo
@@ -409,7 +408,7 @@ c       --- at nzlocal.
       call parallelnonzerorealarray(linechg,nzzarr+1)
 #endif
 
-      deallocate(scrtch)
+      deallocate(workz)
       deallocate(cellarea)
 
 !$OMP MASTER
@@ -425,7 +424,7 @@ c=============================================================================
       use InMesh3d
       use Picglb
       use Picglb3d
-      use Fields3d
+      use Fields3dSolver
       use Win_Moments
       use Z_Moments
 
@@ -533,7 +532,7 @@ c  Sets 1d array for the charge density on the axis
       use InDiag3d
       use Picglb
       use Picglb3d
-      use Fields3d
+      use Fields3dSolver
       use Z_arrays
 #ifdef MPIPARALLEL
       use Parallel
@@ -597,7 +596,7 @@ c=============================================================================
       use Picglb
       use Picglb3d
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Moments
       use InPart
       use InGen
@@ -609,6 +608,7 @@ c Calculate the electrostatic energy, sum of rho*phi*dx*dy*dz/2
 c Includes external fields: Uniform focusing and eears for cigars
 c This does it in a partially vectorized manner.
 
+      real(kind=8),pointer:: workxy(:,:)
       integer(ISZ):: ix,iy,iz,izb
       real(kind=8):: zm,zz,phiextun,wzb
       real(kind=8):: substarttime,wtime
@@ -628,14 +628,11 @@ c This does it in a partially vectorized manner.
 c     conversion factor to go from grid frame to beam frame
       zz = zmminlocal + zgrid - zbeam
 
-      do iy=0,nylocal
-        do ix=0,nxlocal
-          scrtch(ix,iy) = 0.0
-        enddo
-      enddo
+      allocate(workxy(0:nxlocal,0:nylocal))
+      workxy = 0.
 
 c     --- Loop order switched for the OpenMP parallel version - this
-c     --- avoids requiring the accumulation into scrtch to be put
+c     --- avoids requiring the accumulation into workxy to be put
 c     --- into a critical section.
 !$OMP PARALLEL
 !$OMP DO PRIVATE(phiextun,izb,wzb,ix,iy,iz)
@@ -661,11 +658,11 @@ c         --- the field solver.
         do iy=0,nylocal
 #endif
           do ix=0,nxlocal
-            scrtch(ix,iy) = scrtch(ix,iy) + rho(ix,iy,iz)*(phi(ix,iy,iz)
-     &                       - dedr*.5*((ix*dx+xmmin)**2 + (iy*dy+ymmin)**2)
-     &                       - dexdx*.5*(ix*dx+xmmin)**2 
-     &                       - deydy*.5*(iy*dy+ymmin)**2
-     &                       + phiextun)
+            workxy(ix,iy) = workxy(ix,iy) + rho(ix,iy,iz)*(phi(ix,iy,iz)
+     &                      - dedr*.5*((ix*dx+xmmin)**2 + (iy*dy+ymmin)**2)
+     &                      - dexdx*.5*(ix*dx+xmmin)**2 
+     &                      - deydy*.5*(iy*dy+ymmin)**2
+     &                      + phiextun)
           enddo
         enddo
       enddo
@@ -677,26 +674,28 @@ c     --- Apply appropriate multiplication factors for symmetries
 c       --- Center point is unchanged
 c       --- Edges are doubled
 c       --- Bulk is quadrupoled
-        scrtch(0,1:nylocal) = 2.*scrtch(0,1:nylocal)
-        scrtch(1:nxlocal,0) = 2.*scrtch(1:nxlocal,0)
-        scrtch(1:nxlocal,1:nylocal) = 4.*scrtch(1:nxlocal,1:nylocal)
+        workxy(0,1:nylocal) = 2.*workxy(0,1:nylocal)
+        workxy(1:nxlocal,0) = 2.*workxy(1:nxlocal,0)
+        workxy(1:nxlocal,1:nylocal) = 4.*workxy(1:nxlocal,1:nylocal)
       else if (l2symtry) then
 c       --- Edge is unchanged
 c       --- Bulk is doubled
-        scrtch(1:nxlocal,0:nylocal) = 2.*scrtch(1:nxlocal,0:nylocal)
+        workxy(1:nxlocal,0:nylocal) = 2.*workxy(1:nxlocal,0:nylocal)
       endif
 
       do iy=1,nylocal
         do ix=0,nxlocal
-          scrtch(ix,0) = scrtch(ix,0) + scrtch(ix,iy)
+          workxy(ix,0) = workxy(ix,0) + workxy(ix,iy)
         enddo
       enddo
 
       do ix=0,nxlocal
-        ese = ese + scrtch(ix,0)
+        ese = ese + workxy(ix,0)
       enddo
 
       ese = dx*dy*dz*0.5*ese
+
+      deallocate(workxy)
 
 !$OMP MASTER
       if (lw3dtimesubs) timegetese3d = timegetese3d + wtime() - substarttime
@@ -725,12 +724,12 @@ c Calculate the electrostatic energy, sum of rho*phi*dx*dy*dz/2
 c This does it in a partially vectorized manner.
 
       integer(ISZ):: ix,iy,iz
-      real(kind=8),pointer:: scrtch(:,:)
+      real(kind=8),pointer:: workxy(:,:)
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
 
-      allocate(scrtch(0:nxlocal,0:nylocal))
-      scrtch = 0.0
+      allocate(workxy(0:nxlocal,0:nylocal))
+      workxy = 0.0
 
 c     --- Note that the z planes iz=0 and nzlocal may need skipping depending
 c     --- on the boundary conditions.
@@ -738,7 +737,7 @@ c     --- on the boundary conditions.
       do iz=0,nzlocal
         do iy=0,nylocal
           do ix=0,nxlocal
-            scrtch(ix,iy) = scrtch(ix,iy) + rho(ix,iy,iz)*phi(ix,iy,iz)
+            workxy(ix,iy) = workxy(ix,iy) + rho(ix,iy,iz)*phi(ix,iy,iz)
           enddo
         enddo
       enddo
@@ -748,28 +747,28 @@ c     --- Apply appropriate multiplication factors for symmetries
 c       --- Center point is unchanged
 c       --- Edges are doubled
 c       --- Bulk is quadrupoled
-        scrtch(0,1:nylocal) = 2.*scrtch(0,1:nylocal)
-        scrtch(1:nxlocal,0) = 2.*scrtch(1:nxlocal,0)
-        scrtch(1:nxlocal,1:nylocal) = 4.*scrtch(1:nxlocal,1:nylocal)
+        workxy(0,1:nylocal) = 2.*workxy(0,1:nylocal)
+        workxy(1:nxlocal,0) = 2.*workxy(1:nxlocal,0)
+        workxy(1:nxlocal,1:nylocal) = 4.*workxy(1:nxlocal,1:nylocal)
       else if (l2symtry) then
 c       --- Edge is unchanged
 c       --- Bulk is doubled
-        scrtch(1:nxlocal,0:nylocal) = 2.*scrtch(1:nxlocal,0:nylocal)
+        workxy(1:nxlocal,0:nylocal) = 2.*workxy(1:nxlocal,0:nylocal)
       endif
 
       do iy=1,nylocal
         do ix=0,nxlocal
-          scrtch(ix,0) = scrtch(ix,0) + scrtch(ix,iy)
+          workxy(ix,0) = workxy(ix,0) + workxy(ix,iy)
         enddo
       enddo
 
       do ix=0,nxlocal
-        ese = ese + scrtch(ix,0)
+        ese = ese + workxy(ix,0)
       enddo
 
       ese = dx*dy*dz*0.5*ese
 
-      deallocate(scrtch)
+      deallocate(workxy)
 
 !$OMP MASTER
       if (lw3dtimesubs) timegetese3dfromrhophi = timegetese3dfromrhophi + wtime() - substarttime
@@ -797,30 +796,30 @@ c This does it in a partially vectorized manner.
 
       integer(ISZ):: ix,iz
       real(kind=8):: r
-      real(kind=8),pointer:: scrtch(:)
+      real(kind=8),pointer:: workx(:)
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
 
-      allocate(scrtch(0:nxlocal))
-      scrtch = 0.0
+      allocate(workx(0:nxlocal))
+      workx = 0.0
 
 c     --- Note that the z planes iz=0 and nzlocal may need skipping depending
 c     --- on the boundary conditions.
 
       do iz=0,nzlocal
         do ix=0,nxlocal
-          scrtch(ix) = scrtch(ix) + rho(ix,iz)*phi(ix,iz)
+          workx(ix) = workx(ix) + rho(ix,iz)*phi(ix,iz)
         enddo
       enddo
 
       do ix=0,nxlocal
         r = xmminlocal + ix*dx
-        ese = ese + r*scrtch(ix)
+        ese = ese + r*workx(ix)
       enddo
 
       ese = 2.*pi*dx*dz*0.5*ese
 
-      deallocate(scrtch)
+      deallocate(workx)
 
 !$OMP MASTER
       if (lw3dtimesubs) timegeteserzfromrhophi = timegeteserzfromrhophi + wtime() - substarttime
@@ -836,7 +835,7 @@ c  Sets 1d array for the potential on the axis
       use Z_arrays
       use Picglb
       use Picglb3d
-      use Fields3d
+      use Fields3dSolver
 #ifdef MPIPARALLEL
       use Parallel
 #endif
@@ -899,7 +898,7 @@ c  Sets 1d array for the space charge E field on the axis
       use Picglb
       use Picglb3d
       use Z_arrays
-      use Fields3d
+      use Fields3dSolver
 #ifdef MPIPARALLEL
       use Parallel
 #endif
@@ -1018,7 +1017,7 @@ c=============================================================================
       use InPart
       use Picglb
       use Picglb3d
-      use Fields3d
+      use Mesh3d
       type(ParticleGroup):: pgroup
       integer(ISZ):: iz,ndiv,itask
       real(kind=8):: divx(0:ndiv), divy(0:ndiv)
@@ -1189,7 +1188,8 @@ c=============================================================================
       use InGen3d
       use InMesh3d
       use Picglb3d
-      use Fields3d
+      use Mesh3d
+      use Fields3dSolver
       use Multipole
       integer(ISZ):: nlmod, irpowmx
       real(kind=8):: aper, xcen, ycen 

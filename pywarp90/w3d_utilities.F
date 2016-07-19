@@ -951,7 +951,6 @@ c===========================================================================
       use InMesh3d
       use Picglb
       use Picglb3d
-      use Fields3d
       use Fields3dParticles
       use Io
       use Z_arrays

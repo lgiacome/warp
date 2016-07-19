@@ -5060,7 +5060,6 @@ c=============================================================================
       use InjectVars3d
       use InMesh3d
       use Constant
-      use Fields3d
       use Fields3dParticles
       use Picglb
       use Picglb3d

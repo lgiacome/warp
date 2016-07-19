@@ -6406,7 +6406,6 @@ use Picglb
 use InGen3d
 use Picglb3d
 use InMesh3d
-use Fields3d
 use Z_arrays
 use InDiag3d
 
@@ -9372,7 +9371,7 @@ use ParticleGroupmodule
 use InPart,Only: efetch
 use multigridrz
 use FRZmgrid
-use Fields3d,Only: selfe
+use Fields3dSolver,Only: selfe
 use Picglb
 
 type(ParticleGroup):: pgroup
@@ -10523,7 +10522,7 @@ END subroutine get_phi_subgrid
 
 subroutine set_basegrid_phi()
 USE multigridrz
-USE Fields3d
+USE Fields3dSolver
 implicit none
 
   basegrid%phi(1:basegrid%nr+1,:) = phi(:,0,:)
