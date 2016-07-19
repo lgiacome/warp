@@ -11,8 +11,8 @@ import numpy as np
 from data_dict import circ_dict_quantity, cart_dict_quantity, \
     x_offset_dict, y_offset_dict
 
-def get_dataset( dim, em, quantity, lgather,
-                 sub_sampling=[1,1,1], start=[0,0,0],iz_slice=None, transverse_centered=False ):
+def get_dataset( dim, em, quantity, lgather, sub_sampling=[1,1,1],
+            start=[0,0,0], iz_slice=None, transverse_centered=False ):
     """
     Extract fields from the grid and return them in a format
     which is close to their final layout in the openPMD file.
@@ -69,16 +69,19 @@ def get_dataset( dim, em, quantity, lgather,
     """
     if dim=="circ":
         return( get_circ_dataset( em, quantity, lgather=lgather,
-            iz_slice=iz_slice,sub_sampling=sub_sampling, transverse_centered=transverse_centered ) )
+            iz_slice=iz_slice,sub_sampling=sub_sampling,
+            transverse_centered=transverse_centered ) )
     elif dim=="2d":
         return( get_cart2d_dataset( em, quantity, lgather=lgather,
-            iz_slice=iz_slice, sub_sampling=sub_sampling, transverse_centered=transverse_centered ) )
+            iz_slice=iz_slice, sub_sampling=sub_sampling,
+            transverse_centered=transverse_centered ) )
     elif dim=="3d":
         return( get_cart3d_dataset( em, quantity, lgather=lgather,
-            iz_slice=iz_slice,sub_sampling=sub_sampling, transverse_centered=transverse_centered ) )
+            iz_slice=iz_slice,sub_sampling=sub_sampling,
+            transverse_centered=transverse_centered ) )
 
-def get_circ_dataset( em, quantity, lgather,
-                      iz_slice=None, sub_sampling=[1,1,1], start=[0,0,0], transverse_centered=False ):
+def get_circ_dataset( em, quantity, lgather, iz_slice=None,
+        sub_sampling=[1,1,1], start=[0,0,0], transverse_centered=False ):
     """
     Get a given quantity in Circ coordinates
 
@@ -177,8 +180,8 @@ def get_circ_dataset( em, quantity, lgather,
 
     return( Ftot )
 
-def get_cart3d_dataset( em, quantity, lgather,
-                      iz_slice=None, sub_sampling=[1,1,1], start=[0,0,0], transverse_centered=False ):
+def get_cart3d_dataset( em, quantity, lgather, iz_slice=None,
+            sub_sampling=[1,1,1], start=[0,0,0], transverse_centered=False ):
     """
     Get a given quantity in 3D Cartesian coordinates
 
@@ -250,8 +253,8 @@ def get_cart3d_dataset( em, quantity, lgather,
     return( F )
 
 
-def get_cart2d_dataset( em, quantity, lgather,
-                      iz_slice=None, sub_sampling=[1,1,1], start=[0,0,0], transverse_centered=False ):
+def get_cart2d_dataset( em, quantity, lgather, iz_slice=None,
+        sub_sampling=[1,1,1], start=[0,0,0], transverse_centered=False ):
     """
     Get a given quantity in 2D Cartesian coordinates
 
@@ -337,7 +340,8 @@ def get_global_indices(ifull,nfull,sub_samplingp):
     istart: (array of int) for each proc, contains start indices of the new 
             subsampled grid array within the nonsampled array 
     
-    isub: (array of int) start indices of each MPI subdomain for dumping with subsampling
+    isub: (array of int) start indices of each MPI subdomain for 
+            dumping with subsampling
 
     nsub: (array of int) number of cells of each MPI subdomain for dumping with 
     subsampling; for each proc i nsub[i]+1 data (i.e grid points) will be dumped 

@@ -104,19 +104,19 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             
         # In the x direction 
         # Indices within [global_indices[0,0],global_indices[1,0][ are dumped  
-        global_indices[0,0] = ixsub[top.iprocgrid[0]]
+        global_indices[0,0] = istartx[top.iprocgrid[0]]
         global_indices[1,0] = global_indices[0,0] + nxsub[top.iprocgrid[0]] + 1
         
         # In the y direction
         # Indices within [global_indices[0,1],global_indices[1,1][ are dumped
         if self.dim == "3d":
-            global_indices[0,1] = iysub[top.iprocgrid[1]]
+            global_indices[0,1] = istarty[top.iprocgrid[1]]
             global_indices[1,1] = global_indices[0,1] + \
               nysub[top.iprocgrid[1]] + 1
             
         # In the z direction
         # Indices within [global_indices[0,-1],global_indices[1,-1][ are dumped
-        global_indices[0,-1] = izsub[top.iprocgrid[2]]
+        global_indices[0,-1] = istartz[top.iprocgrid[2]]
         global_indices[1,-1] = global_indices[0,-1] + \
           nzsub[top.iprocgrid[2]]+1
         

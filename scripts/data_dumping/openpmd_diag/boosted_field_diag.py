@@ -296,7 +296,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             # Longitudinal indices within the array global_array
             s_min = iz_min_list[ i_proc ] - global_iz_min
             s_max = iz_max_list[ i_proc ] - global_iz_min
-
+            
             # Copy the arrays to the proper position
             if self.dim == "2d":
                 global_array[ :, ix_min:ix_max, s_min:s_max ] \
