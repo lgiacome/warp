@@ -299,15 +299,15 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
             # Copy the arrays to the proper position
             if self.dim == "2d":
-                global_array[ :, ix_min:ix_max, s_min:s_max ] \ 
-                  = field_array[ i_proc ]
+                global_array[ :, ix_min:ix_max, s_min:s_max ] \
+                  = field_array_list[i_proc][ :, :ix_max-ix_min]
             elif self.dim == "3d":
                 global_array[ :, ix_min:ix_max, iy_min:iy_max, s_min:s_max ] \
-                  = field_array[ i_proc ]
+                  = field_array_list[i_proc][ :, :ix_max-ix_min, :iy_max-iy_min]
             elif self.dim == "circ":
                 # The second index corresponds to the azimuthal mode
                 global_array[ :, :, ix_min:ix_max, s_min:s_max ] \
-                  = field_array[ i_proc ]
+                  = field_array_list[i_proc][ :, :, :ix_max-ix_min]
 
         return( global_array, global_iz_min, global_iz_max )
 
