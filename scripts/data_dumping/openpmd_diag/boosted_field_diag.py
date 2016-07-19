@@ -215,10 +215,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                         
                 # Gather the size of the field array
                 nx_rank = np.array(
-                    self.comm_world.allgather(nx_field_array))
+                    self.comm_world.gather(nx_field_array))
                 if self.dim == "3d":
                     ny_rank = np.array(
-                        self.comm_world.allgather(ny_field_array))
+                        self.comm_world.gather(ny_field_array))
                 
                 # Gather arrays, iz_min and iz_max
                 g_ar = gatherarray(flat_field_array, root=0, 
