@@ -119,7 +119,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             # Initialize a corresponding empty file
             if self.lparallel_output == False and self.rank == 0:
                 self.create_file_empty_meshes( snapshot.filename, i,
-                    snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt)
+                snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt )
 
         # Print a message that records the time for initialization
         if self.rank == 0:
@@ -244,7 +244,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             # Write the gathered slices to disk
             if (self.rank == 0) and (global_field_array is not None):
                 self.write_slices( global_field_array, global_iz_min,
-                    global_iz_max, snapshot, self.slice_handler.field_to_index)
+                global_iz_max, snapshot, self.slice_handler.field_to_index )
 
 
     def gather_slices( self, field_array_list, iz_min_list, iz_max_list ):
@@ -732,7 +732,7 @@ class SliceHandler:
             fields[ f2i['By'], ... ] = by_lab
             # Use temporary arrays when changing Ey and Bx in place
             ey_lab = gamma*( fields[f2i['Ey']] - cbeta * fields[f2i['Bx']] )
-            bx_lab = gamma*( fields[f2i['Bx']] - beta_c * fields[f2i['Ey']] ) 
+            bx_lab = gamma*( fields[f2i['Bx']] - beta_c * fields[f2i['Ey']] )
             fields[ f2i['Ey'], ... ] = ey_lab
             fields[ f2i['Bx'], ... ] = bx_lab
         elif self.dim=="circ":
