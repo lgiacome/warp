@@ -21,7 +21,7 @@ from scipy.constants import c
 from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
-from parallel import gatherarray
+from parallel import gather
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
@@ -78,6 +78,13 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 comm_world, fieldtypes, write_dir=write_dir,
                 lparallel_output=lparallel_output)
 
+        # Gather the indices that correspond to the positions
+        # of each subdomain within full domain
+        # (Needed for MPI communications of slices)
+        if (self.comm_world is not None) and (self.comm_world.size > 1):
+            self.global_indices_list = gather( self.global_indices,
+                                               comm=self.comm_world )
+
         # Register the boost quantities
         self.gamma_boost = gamma_boost
         self.inv_gamma_boost = 1./gamma_boost
@@ -113,6 +120,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             if self.lparallel_output == False and self.rank == 0:
                 self.create_file_empty_meshes( snapshot.filename, i,
                     snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt)
+
         # Print a message that records the time for initialization
         if self.rank == 0:
             measured_end = time.clock()
@@ -173,6 +181,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 # Register this in the buffers of this snapshot
                 snapshot.register_slice( slice_array, self.inv_dz_lab )
 
+
     def flush_to_disk( self ):
         """
         Writes the buffered slices of fields to the disk
@@ -187,136 +196,120 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
             # Compact the successive slices that have been buffered
             # over time into a single array
+            # This returns None, None, None for proc which has no slices
             field_array, iz_min, iz_max = snapshot.compact_slices()
 
             # Erase the memory buffers
             snapshot.buffered_slices = []
             snapshot.buffer_z_indices = []
 
-            if (self.comm_world is not None) and (self.comm_world.size > 1):
-                # In MPI mode: gather the flattened field array to processor 0
-                # Attribute values to iz_min, iz_max and size of the field
-                # array if field array is None 
-                if field_array is None:
-                    iz_min = -1
-                    iz_max = -1
-                    flat_field_array = np.zeros(0)
-                    nx_field_array = 0
-                    if self.dim == "3d":
-                        ny_field_array = 0
-                else:
-                    flat_field_array = field_array.flatten()
-                    if self.dim == "3d":
-                        ny_field_array = np.shape(field_array)[2]
-                    if self.dim in ["2d","3d"]:
-                        nx_field_array = np.shape(field_array)[1]
-                    elif self.dim == "circ":
-                        nx_field_array = np.shape(field_array)[2]
-                        
-                # Gather the size of the field array
-                nx_rank = np.array(
-                    self.comm_world.gather(nx_field_array))
-                if self.dim == "3d":
-                    ny_rank = np.array(
-                        self.comm_world.gather(ny_field_array))
+            # Gather the compacted slices from several proc
+
+            if (self.comm_world is None) or (self.comm_world.size == 1):
+                # Serial simulation
+
+                global_field_array = field_array
+                global_iz_min = iz_min
+                global_iz_max = iz_max
                 
-                # Gather arrays, iz_min and iz_max
-                g_ar = gatherarray(flat_field_array, root=0, 
-                    comm=self.comm_world)
-                g_iz_min = np.array(self.comm_world.gather(iz_min))
-                g_iz_max = np.array(self.comm_world.gather(iz_max))
-                
+            else:
+                # Parallel simulation
+
+                # Gather objects into lists (one element per proc)
+                field_array_list = gather( field_array, comm=self.comm_world )
+                iz_min_list = gather( iz_min, comm=self.comm_world )
+                iz_max_list = gather( iz_max, comm=self.comm_world )
+
+                # First proc: merge the field arrays from each proc
                 if self.rank == 0:
 
-                    # Ternary equation: test if field array is None. If not none, 
-                    # attribute the global size of Nx, else attribute 0
-                    Nx = (self.top.fsdecomp.nxglobal + 1) if g_ar.size!=0 else 0
+                    # Check whether any processor had some slices
+                    no_slices = True
+                    for i_proc in xrange(self.top.nprocs):
+                        if field_array_list[i_proc] is not None:
+                            no_slices = False
 
-                    if self.dim == "3d":
-                        Ny = (self.top.fsdecomp.nyglobal + 1) \
-                        if g_ar.size!=0 else 0
-                    elif self.dim == "circ":
-                        Ncirc = 2*self.em.circ_m + 1
-                     
-                    n_slice = 0
+                    # If there are no slices, set global quantities to None
+                    if no_slices:
+                        global_field_array = None
+                        global_iz_min = None
+                        global_iz_max = None
 
-                    # Doesn't need to specify other dimenstions because
-                    # if one of the dimensions does not contain any non null 
-                    # value, that implies void
-                    if Nx != 0: 
-                        iz_min = min([n for n in g_iz_min if n>=0]) \
-                            if g_iz_min.any() else 0
-                        iz_max = max([n for n in g_iz_max if n>=0]) \
-                            if g_iz_max.any() else 0
-                        n_slice = iz_max - iz_min
+                    # If there are some slices, gather them
+                    else:
+                        global_field_array, global_iz_min, global_iz_max = \
+                          self.gather_slices(
+                              field_array_list, iz_min_list, iz_max_list )
 
-                    # Create an empty global field array, the one to be written 
-                    # in the disk 
-                    if self.dim == "2d":
-                        f_ar = np.empty((10, Nx, n_slice))
-                    elif self.dim == "3d":
-                        f_ar = np.empty((10, Nx, Ny, n_slice))
-                    elif self.dim == "circ":
-                        f_ar = np.empty((10, Ncirc, Nx, n_slice))
+            # Write the gathered slices to disk
+            if (self.rank == 0) and (global_field_array is not None):
+                self.write_slices( global_field_array, global_iz_min,
+                    global_iz_max, snapshot, self.slice_handler.field_to_index)
 
-                    # indx as index to determine which chunk of field_array
-                    # in x-direction comes from i processor
-                    indx = 0
 
-                    # indy as index to determine which chunk of field_array
-                    # in y-direction comes from i processor
-                    if self.dim == "3d":
-                        indy = 0
-                
-                    # sind as index to determine the slice it corresponds 
-                    # to in the global field array
-                    sind = 0
+    def gather_slices( self, field_array_list, iz_min_list, iz_max_list ):
+        """
+        Merge the arrays in field_array_list (one array per proc) into
+        a single array
 
-                    # Loop through all the processors to reshape the flattened
-                    # array
-                    for i in xrange(self.top.nprocs):
+        Parameters
+        ----------
+        field_array_list: list of arrays
+           One element per proc (the element is None if the proc had no data)
+           The shape of the array is the one returned by `compact_slices`
 
-                        if nx_rank[i] !=0 :
+        iz_min_list, iz_max_list: lists of integers
+           One element per proc (the element is None if the proc had no data)
+           The index along z between which each field_array should be included
+           into the global array (iz_min is inclusive, iz_max exclusive)
+        """
+        # Find the global iz_min and global iz_max
+        global_iz_min = min([n for n in iz_min_list if n is not None])
+        global_iz_max = max([n for n in iz_max_list if n is not None])
 
-                            # Find the longitudinal indices of the slice,
-                            # within the array f_ar of length nslice
-                            s_min = g_iz_min[i] - iz_min
-                            s_max = g_iz_max[i] - iz_min
-                            s = s_max - s_min
-                            
-                            # gxind as index to determine the slice it 
-                            # corresponds to in the x-direction in the global 
-                            # field array, valid for 2d, 3d and circ
+        # Allocate a the global field array, with the proper size
+        nslice = global_iz_max - global_iz_min
+        # Circ case
+        if self.dim == "circ":
+            data_shape = ( 10, 2*self.em.circ_m+1, self.nx+1, nslice )
+        # 2D case
+        elif self.dim == "2d":
+            data_shape = ( 10, self.nx+1, nslice )
+        # 3D case
+        elif self.dim == "3d":
+            data_shape = ( 10, self.nx+1, self.ny+1, nslice )
+        global_array = np.zeros( data_shape )
 
-                            gxind = self.top.fsdecomp.ix[i%self.top.nxprocs]
+        # Loop through all the processors
+        # Fit the field arrays one by one into the global_array
+        for i_proc in xrange(self.top.nprocs):
 
-                            if self.dim =="2d":
-                                f_ar[:,gxind:gxind+nx_rank[i],s_min:s_max] \
-                                = np.reshape(g_ar[indx:indx+10*nx_rank[i]*s], 
-                                    (10,nx_rank[i],s))
-                            elif self.dim =="3d":
-                                # gyind: index only valid in 3d 
-                                gyind = self.top.fsdecomp.iy[i%self.top.nyprocs]
-                                f_ar[:,gxind:gxind+nx_rank[i],gyind:gyind\
-                                +ny_rank[i],s_min:s_max] = np.reshape(
-                                    g_ar[indx:indx+10*nx_rank[i]*ny_rank[i]*s], 
-                                    (10,nx_rank[i],ny_rank[i],s))
-                                indy += 10*ny_rank[i]*s
-                            elif self.dim =="circ":
-                                f_ar[:,:,gxind:gxind+nx_rank[i],s_min:s_max]\
-                                = np.reshape(
-                                    g_ar[indx:indx+10*Ncirc*nx_rank[i]*s], 
-                                    (10,Ncirc,nx_rank[i],s))
-                            indx += 10*nx_rank[i]*s
+            # If this proc has no data, skip it
+            if field_array_list[ i_proc ] is None:
+                continue
 
-            else:
-                f_ar = field_array
+            # Find the indices where the array will be fitted
+            ix_min = self.global_indices_list[ i_proc ][0,0]
+            ix_max = self.global_indices_list[ i_proc ][1,0]
+            iy_min = self.global_indices_list[ i_proc ][0,1]
+            iy_max = self.global_indices_list[ i_proc ][1,1]
+            # Longitudinal indices within the array global_array
+            s_min = iz_min_list[ i_proc ] - global_iz_min
+            s_max = iz_max_list[ i_proc ] - global_iz_min
 
-            # Write this array to disk (if this snapshot has new slices)
-            if self.rank == 0:
-                if (f_ar is not None) and (f_ar.size != 0):
-                    self.write_slices( f_ar, iz_min, iz_max,
-                        snapshot, self.slice_handler.field_to_index )
+            # Copy the arrays to the proper position
+            if self.dim == "2d":
+                global_array[ :, ix_min:ix_max, s_min:s_max ] \ 
+                  = field_array[ i_proc ]
+            elif self.dim == "3d":
+                global_array[ :, ix_min:ix_max, iy_min:iy_max, s_min:s_max ] \
+                  = field_array[ i_proc ]
+            elif self.dim == "circ":
+                # The second index corresponds to the azimuthal mode
+                global_array[ :, :, ix_min:ix_max, s_min:s_max ] \
+                  = field_array[ i_proc ]
+
+        return( global_array, global_iz_min, global_iz_max )
 
 
     def write_slices( self, field_array, iz_min, iz_max, snapshot, f2i ): 
