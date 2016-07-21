@@ -7285,8 +7285,20 @@ c       --- Formerly depos == "dspline2"
      &                                  nxguardrho,nyguardrho,nzguardrho,
      &                                  dx,dy,dz,xmmin,ymmin,zmmin,
      &                                  l2symtry,l4symtry)
-        endif
+       endif
 
+      else if (ALL(depos_order == 3)) then
+
+c       --- Direct deposition using a third order spline
+        if (.not. lcylindrical) then
+           call setrho3ddirectspline3(rho,np,xp,yp,zp,zgrid,q,wght,
+     &                                nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
+     &                                dx,dy,dz,xmmin,ymmin,zmmin,
+     &                                l2symtry,l4symtry)
+        else
+           call kaboom("setho3dw: cylindrical geometry is not supported for depos_order=3")
+        endif
+        
       else
         call kaboom("setho3d: order of deposition is not supported in the electrostatic solver")
         return
@@ -8478,6 +8490,231 @@ c       --- there'd be a hazard if we interchanged the loops.
 !$OMP END DO
 
       deallocate(indx,s)
+
+!$OMP END PARALLEL
+
+      return
+      end
+c=============================================================================
+      subroutine setrho3ddirectspline3(rho,np,xp,yp,zp,zgrid,q,wght,
+     &                           nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
+     &                           dx,dy,dz,xmmin,ymmin,zmmin,l2symtry,l4symtry)
+      use GlobalVars
+      integer(ISZ):: np
+      integer(ISZ):: nx,ny,nz,nxguardrho,nyguardrho,nzguardrho
+      real(kind=8):: dx,dy,dz
+      real(kind=8):: zgrid,q,wght
+      real(kind=8):: rho(-nxguardrho:nx+nxguardrho,
+     &                   -nyguardrho:ny+nyguardrho,
+     &                   -nzguardrho:nz+nzguardrho)
+      real(kind=8):: xp(np), yp(np), zp(np), wfact(np)
+      real(kind=8):: xmmin,ymmin,zmmin
+      logical(ISZ):: l2symtry,l4symtry
+      real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+
+c  Sets charge density
+c  Uses a third order spline with direct deposition (no particle blocks)
+
+      integer(ISZ):: ip,ii,jj,kk
+      real(kind=8):: g,dxi,dyi,dzi
+      real(kind=8):: wx,wy,wz
+      real(kind=8):: u0,u1,u2,u3,v0,v1,v2,v3,w0,w1,w2,w3
+      real(kind=8):: gxf,gyf,gxfm1,gyfm1
+
+      if (np == 0) return
+
+      g = wght*q/(dx*dy*dz)
+      dxi = 1./dx
+      dyi = 1./dy
+      dzi = 1./dz
+      if (l2symtry) then
+c       --- The particle weight is reduced by a factor of 2 except near the
+c       --- transverse boundaries.
+        g = g*0.5
+      elseif (l4symtry) then
+c       --- The particle weight is reduced by a factor of 4 except near the
+c       --- transverse boundaries.
+        g = g*0.25
+      endif
+
+! np was made FIRSTPRIVATE to get around a bug when the expression
+! np+1-ipmin was evaluating to 1-ipmin (as if np was zero).
+! I don't know why it works, but it does.
+!$OMP PARALLEL PRIVATE(ii,jj,kk,wx,wy,wz,u2,u1,u0,v2,v1,v0,w2,w1,w0,ip)
+!$OMP&FIRSTPRIVATE(np)
+
+      if (ny > 0) then
+
+        if (nxguardrho <= 0 .or. nyguardrho <= 0 .or. nzguardrho <= 0) then
+          call kaboom("setrho3ddirectspline3: there must be at least one guard cell on all axes")
+          return
+        endif
+
+c     --- vectorized loop to compute indices, weights
+!$OMP DO
+        do ip = 1,np
+
+c     --- determine the position of the particle with respect to the grid
+          kk = int((zp(ip) - zgrid -zmmin)*dzi)
+          wz = (zp(ip) - zgrid - zmmin)*dzi - kk
+          if (l4symtry) then
+            ii = int((abs(xp(ip)) - xmmin)*dxi)
+            wx = (abs(xp(ip)) - xmmin)*dxi - ii
+          else
+            ii = int((xp(ip) - xmmin)*dxi)
+            wx = (xp(ip) - xmmin)*dxi - ii
+          endif
+          if (l2symtry .or. l4symtry) then
+            jj = int((abs(yp(ip)) - ymmin)*dyi)
+            wy = (abs(yp(ip)) - ymmin)*dyi - jj
+          else
+            jj = int((yp(ip) - ymmin)*dyi)
+            wy = (yp(ip) - ymmin)*dyi - jj
+          endif
+
+c     --- calculate weights for each cell
+          u0 = onesixth*(1-wx)**3
+          u1 = twothird - wx**2*(1-0.5*wx)
+          u2 = twothird - (1-wx)**2*(1-0.5*(1-wx))
+          u3 = onesixth*wx**3
+          v0 = onesixth*(1-wy)**3
+          v1 = twothird - wy**2*(1-0.5*wy)
+          v2 = twothird - (1-wy)**2*(1-0.5*(1-wy))
+          v3 = onesixth*wy**3
+          w0 = onesixth*(1-wz)**3
+          w1 = twothird - wz**2*(1-0.5*wz)
+          w2 = twothird - (1-wz)**2*(1-0.5*(1-wz))
+          w3 = onesixth*wz**3
+
+c     --- add the charge for each cell
+          rho(ii-1,jj-1,kk-1) = rho(ii-1,jj-1,kk-1) + u0*v0*w0*g
+          rho(ii  ,jj-1,kk-1) = rho(ii  ,jj-1,kk-1) + u1*v0*w0*g
+          rho(ii+1,jj-1,kk-1) = rho(ii+1,jj-1,kk-1) + u2*v0*w0*g
+          rho(ii+2,jj-1,kk-1) = rho(ii+2,jj-1,kk-1) + u3*v0*w0*g
+          rho(ii-1,jj  ,kk-1) = rho(ii-1,jj  ,kk-1) + u0*v1*w0*g
+          rho(ii  ,jj  ,kk-1) = rho(ii  ,jj  ,kk-1) + u1*v1*w0*g
+          rho(ii+1,jj  ,kk-1) = rho(ii+1,jj  ,kk-1) + u2*v1*w0*g
+          rho(ii+2,jj  ,kk-1) = rho(ii+2,jj  ,kk-1) + u3*v1*w0*g
+          rho(ii-1,jj+1,kk-1) = rho(ii-1,jj+1,kk-1) + u0*v2*w0*g
+          rho(ii  ,jj+1,kk-1) = rho(ii  ,jj+1,kk-1) + u1*v2*w0*g
+          rho(ii+1,jj+1,kk-1) = rho(ii+1,jj+1,kk-1) + u2*v2*w0*g
+          rho(ii+2,jj+1,kk-1) = rho(ii+2,jj+1,kk-1) + u3*v2*w0*g
+          rho(ii-1,jj+2,kk-1) = rho(ii-1,jj+2,kk-1) + u0*v3*w0*g
+          rho(ii  ,jj+2,kk-1) = rho(ii  ,jj+2,kk-1) + u1*v3*w0*g
+          rho(ii+1,jj+2,kk-1) = rho(ii+1,jj+2,kk-1) + u2*v3*w0*g
+          rho(ii+2,jj+2,kk-1) = rho(ii+2,jj+2,kk-1) + u3*v3*w0*g
+          
+          rho(ii-1,jj-1,kk  ) = rho(ii-1,jj-1,kk  ) + u0*v0*w1*g
+          rho(ii  ,jj-1,kk  ) = rho(ii  ,jj-1,kk  ) + u1*v0*w1*g
+          rho(ii+1,jj-1,kk  ) = rho(ii+1,jj-1,kk  ) + u2*v0*w1*g
+          rho(ii+2,jj-1,kk  ) = rho(ii+2,jj-1,kk  ) + u3*v0*w1*g
+          rho(ii-1,jj  ,kk  ) = rho(ii-1,jj  ,kk  ) + u0*v1*w1*g
+          rho(ii  ,jj  ,kk  ) = rho(ii  ,jj  ,kk  ) + u1*v1*w1*g
+          rho(ii+1,jj  ,kk  ) = rho(ii+1,jj  ,kk  ) + u2*v1*w1*g
+          rho(ii+2,jj  ,kk  ) = rho(ii+2,jj  ,kk  ) + u3*v1*w1*g
+          rho(ii-1,jj+1,kk  ) = rho(ii-1,jj+1,kk  ) + u0*v2*w1*g
+          rho(ii  ,jj+1,kk  ) = rho(ii  ,jj+1,kk  ) + u1*v2*w1*g
+          rho(ii+1,jj+1,kk  ) = rho(ii+1,jj+1,kk  ) + u2*v2*w1*g
+          rho(ii+2,jj+1,kk  ) = rho(ii+2,jj+1,kk  ) + u3*v2*w1*g
+          rho(ii-1,jj+2,kk  ) = rho(ii-1,jj+2,kk  ) + u0*v3*w1*g
+          rho(ii  ,jj+2,kk  ) = rho(ii  ,jj+2,kk  ) + u1*v3*w1*g
+          rho(ii+1,jj+2,kk  ) = rho(ii+1,jj+2,kk  ) + u2*v3*w1*g
+          rho(ii+2,jj+2,kk  ) = rho(ii+2,jj+2,kk  ) + u3*v3*w1*g
+
+          rho(ii-1,jj-1,kk+1) = rho(ii-1,jj-1,kk+1) + u0*v0*w2*g
+          rho(ii  ,jj-1,kk+1) = rho(ii  ,jj-1,kk+1) + u1*v0*w2*g
+          rho(ii+1,jj-1,kk+1) = rho(ii+1,jj-1,kk+1) + u2*v0*w2*g
+          rho(ii+2,jj-1,kk+1) = rho(ii+2,jj-1,kk+1) + u3*v0*w2*g
+          rho(ii-1,jj  ,kk+1) = rho(ii-1,jj  ,kk+1) + u0*v1*w2*g
+          rho(ii  ,jj  ,kk+1) = rho(ii  ,jj  ,kk+1) + u1*v1*w2*g
+          rho(ii+1,jj  ,kk+1) = rho(ii+1,jj  ,kk+1) + u2*v1*w2*g
+          rho(ii+2,jj  ,kk+1) = rho(ii+2,jj  ,kk+1) + u3*v1*w2*g
+          rho(ii-1,jj+1,kk+1) = rho(ii-1,jj+1,kk+1) + u0*v2*w2*g
+          rho(ii  ,jj+1,kk+1) = rho(ii  ,jj+1,kk+1) + u1*v2*w2*g
+          rho(ii+1,jj+1,kk+1) = rho(ii+1,jj+1,kk+1) + u2*v2*w2*g
+          rho(ii+2,jj+1,kk+1) = rho(ii+2,jj+1,kk+1) + u3*v2*w2*g
+          rho(ii-1,jj+2,kk+1) = rho(ii-1,jj+2,kk+1) + u0*v3*w2*g
+          rho(ii  ,jj+2,kk+1) = rho(ii  ,jj+2,kk+1) + u1*v3*w2*g
+          rho(ii+1,jj+2,kk+1) = rho(ii+1,jj+2,kk+1) + u2*v3*w2*g
+          rho(ii+2,jj+2,kk+1) = rho(ii+2,jj+2,kk+1) + u3*v3*w2*g
+
+          rho(ii-1,jj-1,kk+2) = rho(ii-1,jj-1,kk+2) + u0*v0*w3*g
+          rho(ii  ,jj-1,kk+2) = rho(ii  ,jj-1,kk+2) + u1*v0*w3*g
+          rho(ii+1,jj-1,kk+2) = rho(ii+1,jj-1,kk+2) + u2*v0*w3*g
+          rho(ii+2,jj-1,kk+2) = rho(ii+2,jj-1,kk+2) + u3*v0*w3*g
+          rho(ii-1,jj  ,kk+2) = rho(ii-1,jj  ,kk+2) + u0*v1*w3*g
+          rho(ii  ,jj  ,kk+2) = rho(ii  ,jj  ,kk+2) + u1*v1*w3*g
+          rho(ii+1,jj  ,kk+2) = rho(ii+1,jj  ,kk+2) + u2*v1*w3*g
+          rho(ii+2,jj  ,kk+2) = rho(ii+2,jj  ,kk+2) + u3*v1*w3*g
+          rho(ii-1,jj+1,kk+2) = rho(ii-1,jj+1,kk+2) + u0*v2*w3*g
+          rho(ii  ,jj+1,kk+2) = rho(ii  ,jj+1,kk+2) + u1*v2*w3*g
+          rho(ii+1,jj+1,kk+2) = rho(ii+1,jj+1,kk+2) + u2*v2*w3*g
+          rho(ii+2,jj+1,kk+2) = rho(ii+2,jj+1,kk+2) + u3*v2*w3*g
+          rho(ii-1,jj+2,kk+2) = rho(ii-1,jj+2,kk+2) + u0*v3*w3*g
+          rho(ii  ,jj+2,kk+2) = rho(ii  ,jj+2,kk+2) + u1*v3*w3*g
+          rho(ii+1,jj+2,kk+2) = rho(ii+1,jj+2,kk+2) + u2*v3*w3*g
+          rho(ii+2,jj+2,kk+2) = rho(ii+2,jj+2,kk+2) + u3*v3*w3*g
+          
+        enddo
+!$OMP END DO
+
+      else
+
+        if (nxguardrho <= 0 .or. nzguardrho <= 0) then
+          call kaboom("setrho3ddirectspline3w: there must be at least one guard cell on all axes")
+          return
+        endif
+
+c     --- NY = 0
+c     --- vectorized loop to compute indices, weights
+!$OMP DO
+        do ip = 1,np
+
+c     --- determine the position of the particle with respect to the grid
+          kk = int((zp(ip) - zgrid -zmmin)*dzi)
+          wz = (zp(ip+1) - zgrid - zmmin)*dzi - kk
+          if (l4symtry) then
+            ii = int((abs(xp(ip)) - xmmin)*dxi)
+            wx = (abs(xp(ip)) - xmmin)*dxi - ii
+          else
+            ii = int((xp(ip) - xmmin)*dxi)
+            wx = (xp(ip) - xmmin)*dxi - ii
+         endif
+
+c     --- calculate weights for each cell
+          u0 = onesixth*(1-wx)**3
+          u1 = twothird - wx**2*(1-0.5*wx)
+          u2 = twothird - (1-wx)**2*(1-0.5*(1-wx))
+          u3 = onesixth*wx**3
+          w0 = onesixth*(1-wz)**3
+          w1 = twothird - wz**2*(1-0.5*wz)
+          w2 = twothird - (1-wz)**2*(1-0.5*(1-wz))
+          w3 = onesixth*wz**3
+
+          rho(ii-1,0,kk-1) = rho(ii-1,0,kk-1) + u0*w0*g
+          rho(ii  ,0,kk-1) = rho(ii  ,0,kk-1) + u1*w0*g
+          rho(ii+1,0,kk-1) = rho(ii+1,0,kk-1) + u2*w0*g
+          rho(ii+2,0,kk-1) = rho(ii+2,0,kk-1) + u3*w0*g
+
+          rho(ii-1,0,kk  ) = rho(ii-1,0,kk  ) + u0*w1*g
+          rho(ii  ,0,kk  ) = rho(ii  ,0,kk  ) + u1*w1*g
+          rho(ii+1,0,kk  ) = rho(ii+1,0,kk  ) + u2*w1*g
+          rho(ii+2,0,kk  ) = rho(ii+2,0,kk  ) + u3*w1*g
+
+          rho(ii-1,0,kk+1) = rho(ii-1,0,kk+1) + u0*w2*g
+          rho(ii  ,0,kk+1) = rho(ii  ,0,kk+1) + u1*w2*g
+          rho(ii+1,0,kk+1) = rho(ii+1,0,kk+1) + u2*w2*g
+          rho(ii+2,0,kk+1) = rho(ii+2,0,kk+1) + u3*w2*g
+
+          rho(ii-1,0,kk+2) = rho(ii-1,0,kk+2) + u0*w3*g
+          rho(ii  ,0,kk+2) = rho(ii  ,0,kk+2) + u1*w3*g
+          rho(ii+1,0,kk+2) = rho(ii+1,0,kk+2) + u2*w3*g
+          rho(ii+2,0,kk+2) = rho(ii+2,0,kk+2) + u3*w3*g
+
+        enddo
+!$OMP END DO
+        
+      endif
 
 !$OMP END PARALLEL
 
@@ -9765,7 +10002,7 @@ c     --- add the charge for each cell
       else
 
         if (nxguardrho <= 0 .or. nzguardrho <= 0) then
-          call kaboom("setrho3ddirectspline2: there must be at least one guard cell on all axes")
+          call kaboom("setrho3ddirectspline3w: there must be at least one guard cell on all axes")
           return
         endif
 
