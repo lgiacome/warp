@@ -664,7 +664,7 @@ class ParticleCatcher:
             slice_array = np.reshape(
                 temp_slice_array,(np.shape(p2i.keys())[0],-1))
 
-        # Multiplying momenta by the spcies mass to make them unitless
+        # Multiplying momenta by the species mass to make them unitless
         for quantity in ["ux", "uy", "uz"]:
             slice_array[p2i[quantity]] *= species.mass
 
