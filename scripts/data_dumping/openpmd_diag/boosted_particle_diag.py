@@ -584,11 +584,11 @@ class ParticleCatcher:
         elif quantity == "z":
             ar = np.array(self.z_captured)
         elif quantity == "ux":
-            ar = np.array(self.ux_captured*self.mass)
+            ar = np.array(self.ux_captured)
         elif quantity == "uy":
-            ar = np.array(self.uy_captured*self.mass)
+            ar = np.array(self.uy_captured)
         elif quantity == "uz":
-            ar = np.array(self.uz_captured*self.mass)
+            ar = np.array(self.uz_captured)
         elif quantity == "w":
             ar = np.array(self.w_captured)
         elif quantity == "gamma":
@@ -663,6 +663,10 @@ class ParticleCatcher:
             # has the same size as slice_array
             slice_array = np.reshape(
                 temp_slice_array,(np.shape(p2i.keys())[0],-1))
+
+        # Multiplying momenta by the species mass to make them unitless
+        for quantity in ["ux", "uy", "uz"]:
+            slice_array[p2i[quantity]] *= species.mass
 
         return slice_array
 
