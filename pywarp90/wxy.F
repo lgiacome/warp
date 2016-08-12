@@ -276,11 +276,15 @@ c  Calculate mesh dimensioning quantities
 
 c Calculate location of axis in mesh, the term dx*1.e-5 acts as fuzz
       ix_axis = nint(-xmmin/dx)
+      ixlocal_axis = nint(-xmminlocal/dx)
       iy_axis = nint(-ymmin/dy)
+      iylocal_axis = nint(-ymminlocal/dy)
       if (nz == 0) then
         iz_axis = 0
+        izlocal_axis = 0
       else
-        iz_axis = nint(-zmminlocal/dz)
+        iz_axis = nint(-zmmin/dz)
+        izlocal_axis = nint(-zmminlocal/dz)
       endif
 
 c Initialize grid when solvergeom=XYgeom

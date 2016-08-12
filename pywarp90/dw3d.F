@@ -443,8 +443,8 @@ c  Sets rho window diagnostics (they need data from the 3d mesh)
 
       rhomid = 0.
       rhomax = 0.
-      if (0 <= ix_axis .and. ix_axis <= nxlocal .and.
-     &    0 <= iy_axis .and. iy_axis <= nylocal) then
+      if (0 <= ixlocal_axis .and. ixlocal_axis <= nxlocal .and.
+     &    0 <= iylocal_axis .and. iylocal_axis <= nylocal) then
 
 !$OMP PARALLEL DO PRIVATE(zwin,iz,z1,z0)
         do iwin = 0,nzwind
@@ -454,8 +454,8 @@ c  Sets rho window diagnostics (they need data from the 3d mesh)
      &        0 <= iz .and. iz < nzlocal) then
             z1 = (zwin + zbeam - zgrid - zmminlocal)*dzi - iz
             z0 = 1. - z1
-            rhomid(iwin) = z0*rho(ix_axis,iy_axis,iz) +
-     &                     z1*rho(ix_axis,iy_axis,iz+1)
+            rhomid(iwin) = z0*rho(ixlocal_axis,iylocal_axis,iz) +
+     &                     z1*rho(ixlocal_axis,iylocal_axis,iz+1)
             do iy = 0,nylocal
               do ix = 0,nxlocal
                  rhomax(iwin) = max(rhomax(iwin),
@@ -477,16 +477,16 @@ c  Sets rho grid diagnostics (they need data from the 3d mesh)
       if (ifzmmnt > 0) then
 
         rhomidz = 0.
-        if (0 <= ix_axis .and. ix_axis <= nxlocal .and.
-     &      0 <= iy_axis .and. iy_axis <= nylocal) then
+        if (0 <= ixlocal_axis .and. ixlocal_axis <= nxlocal .and.
+     &      0 <= iylocal_axis .and. iylocal_axis <= nylocal) then
 
 c         --- rho on axis
           do iz = 0,nzmmnt
              ii = (zmntmesh(iz) + zbeam - zgrid - zmminlocal)*dzi
              ww = (zmntmesh(iz) + zbeam - zgrid - zmminlocal)*dzi - ii
              if (ii >= 0 .and. ii < nzlocal)
-     &         rhomidz(iz) = rho(ix_axis,iy_axis,ii)*(1. - ww) +
-     &                       rho(ix_axis,iy_axis,ii+1)*ww
+     &         rhomidz(iz) = rho(ixlocal_axis,iylocal_axis,ii)*(1. - ww) +
+     &                       rho(ixlocal_axis,iylocal_axis,ii+1)*ww
           enddo
 
         endif
@@ -545,8 +545,8 @@ c  Sets 1d array for the charge density on the axis
 
       rhoax = 0.
 
-      if (0 <= ix_axis .and. ix_axis <= nxlocal .and.
-     &    0 <= iy_axis .and. iy_axis <= nylocal) then
+      if (0 <= ixlocal_axis .and. ixlocal_axis <= nxlocal .and.
+     &    0 <= iylocal_axis .and. iylocal_axis <= nylocal) then
 
         if (nz == 0) then
           dzi = 0.
@@ -554,8 +554,8 @@ c  Sets 1d array for the charge density on the axis
           dzi = 1./dz
         endif
 
-        ix = ix_axis
-        iy = iy_axis
+        ix = ixlocal_axis
+        iy = iylocal_axis
 
 #ifdef MPIPARALLEL
         iz0 = fsdecomp%iz(fsdecomp%izproc)
@@ -660,7 +660,7 @@ c         --- the field solver.
           do ix=0,nxlocal
             workxy(ix,iy) = workxy(ix,iy) + rho(ix,iy,iz)*(phi(ix,iy,iz)
      &                      - dedr*.5*((ix*dx+xmmin)**2 + (iy*dy+ymmin)**2)
-     &                      - dexdx*.5*(ix*dx+xmmin)**2 
+     &                      - dexdx*.5*(ix*dx+xmmin)**2
      &                      - deydy*.5*(iy*dy+ymmin)**2
      &                      + phiextun)
           enddo
@@ -847,8 +847,8 @@ c  Sets 1d array for the potential on the axis
 
       phiax = 0.
 
-      if (0 <= ix_axis .and. ix_axis <= nxlocal .and.
-     &    0 <= iy_axis .and. iy_axis <= nylocal) then
+      if (0 <= ixlocal_axis .and. ixlocal_axis <= nxlocal .and.
+     &    0 <= iylocal_axis .and. iylocal_axis <= nylocal) then
 
         if (nz == 0) then
           dzi = 0.
@@ -856,9 +856,9 @@ c  Sets 1d array for the potential on the axis
           dzi = 1./dz
         endif
 
-        ix = ix_axis
-        iy = iy_axis
-      
+        ix = ixlocal_axis
+        iy = iylocal_axis
+
 #ifdef MPIPARALLEL
         iz0 = fsdecomp%iz(fsdecomp%izproc)
 #else
@@ -910,8 +910,8 @@ c  Sets 1d array for the space charge E field on the axis
 
       ezax = 0.
 
-      if (0 <= ix_axis .and. ix_axis <= nxlocal .and.
-     &    0 <= iy_axis .and. iy_axis <= nylocal) then
+      if (0 <= ixlocal_axis .and. ixlocal_axis <= nxlocal .and.
+     &    0 <= iylocal_axis .and. iylocal_axis <= nylocal) then
 
         if (nz == 0) then
           dzi = 0.
@@ -919,11 +919,11 @@ c  Sets 1d array for the space charge E field on the axis
           dzi = 1./dz
         endif
 
-        ix = ix_axis
-        wx = ix_axis - ix
+        ix = ixlocal_axis
+        wx = ixlocal_axis - ix
         wx1 = 1. - wx
-        iy = iy_axis
-        wy = iy_axis - iy
+        iy = iylocal_axis
+        wy = iylocal_axis - iy
         wy1 = 1. - wy
 
 #ifdef MPIPARALLEL
@@ -1102,60 +1102,60 @@ c=============================================================================
       use InMesh3d
       use Multipole
       integer(ISZ):: nlmod, irpowmx
-      real(kind=8):: aper, xcen, ycen 
-      integer(ISZ):: lmod(nlmod) 
-      logical(ISZ):: lcosex, lsinex 
+      real(kind=8):: aper, xcen, ycen
+      integer(ISZ):: lmod(nlmod)
+      logical(ISZ):: lcosex, lsinex
       integer(ISZ):: nmult,nres
       real(kind=8):: tol
 
-c Calculates the multipole moments as an axial function of z from the 
-c electrostatic potential using a linear least squares fit to extract the 
-c radial dependence.  Both the multipole expansion and the numerical 
-c method employed is described in detail in Appendix A and B of HIF note 
-c number 94-3 by Steve Lund.    
+c Calculates the multipole moments as an axial function of z from the
+c electrostatic potential using a linear least squares fit to extract the
+c radial dependence.  Both the multipole expansion and the numerical
+c method employed is described in detail in Appendix A and B of HIF note
+c number 94-3 by Steve Lund.
 c
 c Inputs:
 c
-c    nlmod           number of azimuthal mode numbers to calculate moments 
-c    lmod(1:nlmod)   specific  azimuthal mode numbers to calculate moments 
-c    irpowmx         maximum radial power cutoff of moments 
+c    nlmod           number of azimuthal mode numbers to calculate moments
+c    lmod(1:nlmod)   specific  azimuthal mode numbers to calculate moments
+c    irpowmx         maximum radial power cutoff of moments
 c    lcosex          log. flag -- calc. multipoles, cos(theta) expansion terms
 c    lsinex          log. flag -- calc. multipoles, sin(theta) expansion terms
 c    aper            aperture of moments calculation (for no apeture set to 1.)
-c    xcen            transverse x-coordinate moments are calculated about 
-c    ycen            transverse y-coordinate moments are calculated about 
+c    xcen            transverse x-coordinate moments are calculated about
+c    ycen            transverse y-coordinate moments are calculated about
 c    nmult           multipling factor on the number of radial points to fit
 c    nres            scaling for minimum radius to fit
 c    tol             tolerance for fitting
 c
 c Outputs (passed via common block) interpreter variables:
-c [ All but nmom are actually calculated in the work routine multpwrk 
+c [ All but nmom are actually calculated in the work routine multpwrk
 c   called in multpole. ]
-c  
-c    nmom                  number of terms in multipole expansion 
-c    lazi(1:nmom)          vector of azimuthal mode numbers of moments 
-c    irpow(1:nmom)         vector of radial powers of moments 
+c
+c    nmom                  number of terms in multipole expansion
+c    lazi(1:nmom)          vector of azimuthal mode numbers of moments
+c    irpow(1:nmom)         vector of radial powers of moments
 c    rmomcex(1:nmom,0:nzlocal)  multipoles, cos(theta) expansion terms on axial grid
 c    rmomsex(1:nmom,0:nzlocal)  multipoles, sin(theta) expansion terms on axial grid
-c 
 c
-c The multipole expansion is of the following schematic form 
 c
-c                                               
+c The multipole expansion is of the following schematic form
 c
-c                        
+c
+c
+c
 c                    /--  /--
-c phi(r,theta,iz) =  \--  \--   (  rmomcex(iz)_l,k cos(l theta) + 
-c                       l   k       
+c phi(r,theta,iz) =  \--  \--   (  rmomcex(iz)_l,k cos(l theta) +
+c                       l   k
 c                                  rmomsex(iz)_l,k sin(l theta)   )(r/aper)^k
 c
 c
-c   where /-- denote constrained sums.  The azimuthal mode number sum l 
+c   where /-- denote constrained sums.  The azimuthal mode number sum l
 c         \--
-c   is over the nlmod mode numbers specified by the vector lmod(1:nlmod), 
-c   and the sum over radial powers k ranges from l to irpowmx in steps of 
-c   2 (as a consequence of Maxwell's equations).  
-c         
+c   is over the nlmod mode numbers specified by the vector lmod(1:nlmod),
+c   and the sum over radial powers k ranges from l to irpowmx in steps of
+c   2 (as a consequence of Maxwell's equations).
+c
 
 
       integer(ISZ):: l, k
@@ -1163,24 +1163,24 @@ c
 c     --- Set number of z grid points.
       nzmom = nzlocal
 
-c     --- find the total number of moments nmom to be calculated and 
-c     --- resize dynamic arrays in the common block Multipole 
-      nmom = 0 
+c     --- find the total number of moments nmom to be calculated and
+c     --- resize dynamic arrays in the common block Multipole
+      nmom = 0
       do l = 1,nlmod
         do k = lmod(l),irpowmx,2
           nmom = nmom + 1
-        enddo 
+        enddo
       enddo
       call gchange("Multipole",0)
 
-c     --- call work routine to do the actual multipole calculation.  This 
-c     --- structure is necessary to avoid addressing problems associated 
+c     --- call work routine to do the actual multipole calculation.  This
+c     --- structure is necessary to avoid addressing problems associated
 c     --- with resizing multidimensional arrays
       call  multpwrk(lmod,nlmod,irpowmx,lcosex,lsinex,aper,xcen,ycen,
      &               nmult,nres,tol)
 
-      return 
-      end 
+      return
+      end
 c=============================================================================
       subroutine multpwrk(lmod,nlmod,irpowmx,lcosex,lsinex,aper,xcen,ycen,
      &                    nmult,nres,tol)
@@ -1192,133 +1192,133 @@ c=============================================================================
       use Fields3dSolver
       use Multipole
       integer(ISZ):: nlmod, irpowmx
-      real(kind=8):: aper, xcen, ycen 
-      integer(ISZ):: lmod(nlmod) 
-      logical(ISZ):: lcosex, lsinex 
+      real(kind=8):: aper, xcen, ycen
+      integer(ISZ):: lmod(nlmod)
+      logical(ISZ):: lcosex, lsinex
       integer(ISZ):: nmult,nres
       real(kind=8):: tol
 
-c Work routine for the calculation of multipole moments as an axial 
-c function of z.  See comments in routine multpole for variable and 
-c general method descriptions.   
+c Work routine for the calculation of multipole moments as an axial
+c function of z.  See comments in routine multpole for variable and
+c general method descriptions.
 c Standard values for nmult=2, nres=10, tol=1.e-5.
 
-     
-      integer(ISZ):: nptsmx, nfitmx 
+
+      integer(ISZ):: nptsmx, nfitmx
       parameter(nfitmx = 20, nptsmx = 500)
-     
-      integer(ISZ):: k, l, iz, imom, lfund, nfit, npts, ngmin 
-      integer(ISZ):: np, ith, ipow, ifit, nth, ix, iy    
+
+      integer(ISZ):: k, l, iz, imom, lfund, nfit, npts, ngmin
+      integer(ISZ):: np, ith, ipow, ifit, nth, ix, iy
       real(kind=8):: ds, xsymin, ysymin, xsymax, ysymax
-      real(kind=8):: dth, xc, yc, phiinter, chisq   
+      real(kind=8):: dth, xc, yc, phiinter, chisq
       real(kind=8):: rdat(nptsmx), basis(nptsmx,nfitmx)
       real(kind=8):: usvd(nptsmx,nfitmx), vsvd(nfitmx,nfitmx), wsvd(nfitmx)
-      real(kind=8):: tmp(nptsmx) 
-      real(kind=8):: azicosint(nptsmx), azisinint(nptsmx) 
+      real(kind=8):: tmp(nptsmx)
+      real(kind=8):: azicosint(nptsmx), azisinint(nptsmx)
       real(kind=8):: rmomcst(nfitmx), rmomsst(nfitmx)
 
-c     --- define constants 
+c     --- define constants
       ds = sqrt((dx*dx+dy*dy)/2.)
 
-c     --- for each moment index i = 1 to nmom, specify azimuthal mode numbers 
-c     --- lmod(i) and radial powers irpow(i) consistent with the mode numbers 
-c     --- given in lmod(nlmod) and the maximum radial cutoff power irpowmx 
-      imom = 0 
+c     --- for each moment index i = 1 to nmom, specify azimuthal mode numbers
+c     --- lmod(i) and radial powers irpow(i) consistent with the mode numbers
+c     --- given in lmod(nlmod) and the maximum radial cutoff power irpowmx
+      imom = 0
       do l = 1,nlmod
         do k = lmod(l),irpowmx,2
           imom = imom + 1
           lazi(imom)  = lmod(l)
-          irpow(imom) = k 
-        enddo 
-      enddo 
+          irpow(imom) = k
+        enddo
+      enddo
 
-c     --- start moments calculation 
+c     --- start moments calculation
       imom = 0
-c     --- loop over each moment index with same azimuthal mode number l 
-      do lfund = 1,nlmod 
-c       --- azimuthal mode number l   
+c     --- loop over each moment index with same azimuthal mode number l
+      do lfund = 1,nlmod
+c       --- azimuthal mode number l
         l = lmod(lfund)
 c       --- number of radial power terms nfit used in least-squares fit
         nfit = irpowmx/2 + 1 - (l+mod(irpowmx+1,2))/2
         if (nfit > nfitmx) then
           call kaboom("multpwrk: too many radial multipoles, inc. nfitmx")
-        endif  
-c       --- calculate number radial data points npts, min grid index ngmin 
+        endif
+c       --- calculate number radial data points npts, min grid index ngmin
         npts  = nmult*nfit
-        if (npts > nptsmx) then 
+        if (npts > nptsmx) then
           call kaboom("multpwrk: too many radial data points, inc. nptsmx")
-        endif 
+        endif
         ngmin = (nres-1)*l/(2.*pi)
         if (ngmin < 2) ngmin = 2
 c       --- check for bound errors
-        xsymin = xmmin 
-        ysymin = ymmin 
+        xsymin = xmmin
+        ysymin = ymmin
         xsymax = xmmin + dx*nx
         ysymax = ymmin + dy*ny
-        if (l2symtry) ysymin = -ymmax 
-        if (l4symtry) then 
-          xsymin = -xsymax 
-          ysymin = -ysymax 
-        endif  
-        if ( (xcen + (npts-1+ngmin)*ds >= xsymax ) .or. 
-     &       (xcen - (npts-1+ngmin)*ds <= xsymin)       ) then 
+        if (l2symtry) ysymin = -ymmax
+        if (l4symtry) then
+          xsymin = -xsymax
+          ysymin = -ysymax
+        endif
+        if ( (xcen + (npts-1+ngmin)*ds >= xsymax ) .or.
+     &       (xcen - (npts-1+ngmin)*ds <= xsymin)       ) then
           call kaboom("multpwrk: data out of x-grid bound")
-        endif   
-        if ( (ycen + (npts-1+ngmin)*ds >= ysymax ) .or. 
-     &       (ycen - (npts-1+ngmin)*ds <= ysymin)       ) then 
+        endif
+        if ( (ycen + (npts-1+ngmin)*ds >= ysymax ) .or.
+     &       (ycen - (npts-1+ngmin)*ds <= ysymin)       ) then
           call kaboom("multpwrk: data out of y-grid bound")
-        endif   
-c       --- calculate npts radial data points and a npts x (kmax-l)/2 basis 
+        endif
+c       --- calculate npts radial data points and a npts x (kmax-l)/2 basis
 c       --- array of radial powers basis for use in radial least squares fit
         do np = 1,npts
-c         --- assign radial data point 
-          rdat(np) = (np-1+ngmin)*ds  
-c         --- fill (kmax-l)/2 vector column of basis matrix 
+c         --- assign radial data point
+          rdat(np) = (np-1+ngmin)*ds
+c         --- fill (kmax-l)/2 vector column of basis matrix
           ifit = 0
           do ipow = l,irpowmx,2
             ifit = ifit + 1
-            basis(np,ifit) = rdat(np)**ipow 
-          enddo 
-        enddo 
-c       --- calculate singular value decomposition of basis matrix for 
-c       --- use in the linear least squares fit, first copy basis to usvd  
-        do np = 1,npts 
+            basis(np,ifit) = rdat(np)**ipow
+          enddo
+        enddo
+c       --- calculate singular value decomposition of basis matrix for
+c       --- use in the linear least squares fit, first copy basis to usvd
+        do np = 1,npts
           do ifit = 1,nfit
-            usvd(np,ifit) = basis(np,ifit)  
-          enddo 
-        enddo 
+            usvd(np,ifit) = basis(np,ifit)
+          enddo
+        enddo
         call dvdcmp(usvd,npts,nfit,nptsmx,nfitmx,wsvd,vsvd,tmp)
-c       --- loop over axial grid index iz, and calculate multipoles 
-c       --- with azimuthal mode number l at each index 
+c       --- loop over axial grid index iz, and calculate multipoles
+c       --- with azimuthal mode number l at each index
         do iz = 0,nzlocal
-c         --- azimuthal integrals of the potential at each radial data point 
+c         --- azimuthal integrals of the potential at each radial data point
           do np = 1,npts
-c           --- angular increments in integral 
+c           --- angular increments in integral
             dth = ds/rdat(np)
             nth = int(2.*pi/dth)
             dth = 2.*pi/nth
-c           --- azimuthal integral 
+c           --- azimuthal integral
             azicosint(np) = 0.
             azisinint(np) = 0.
             do ith = 0,nth-1
-c             --- transverse x and y coordinates to calculate potential  
+c             --- transverse x and y coordinates to calculate potential
               xc = xcen + rdat(np)*cos(dth*ith)
               yc = ycen + rdat(np)*sin(dth*ith)
-c             --- symmetry operations for 2-fold (l2symtry) and 
-c             --- 4-fold (l4symtry) symmetry about the y and x-y axes 
-              if (l2symtry) then 
-                if ((yc-ymmin) < 0.) yc = 2.*ymmin - yc 
-              endif 
+c             --- symmetry operations for 2-fold (l2symtry) and
+c             --- 4-fold (l4symtry) symmetry about the y and x-y axes
+              if (l2symtry) then
+                if ((yc-ymmin) < 0.) yc = 2.*ymmin - yc
+              endif
               if (l4symtry) then
-                if ((xc-xmmin) < 0.) xc = 2.*xmmin - xc 
-                if ((yc-ymmin) < 0.) yc = 2.*ymmin - yc 
-              endif 
-c             --- bottom left grid indices of transverse grid box 
-c             --- bounding (xc,yc) 
-              ix = int( ( xc - xmmin )/dx ) 
-              iy = int( ( yc - ymmin )/dy ) 
-c             --- area interpolated potential at (xc,yc) 
-              phiinter = 
+                if ((xc-xmmin) < 0.) xc = 2.*xmmin - xc
+                if ((yc-ymmin) < 0.) yc = 2.*ymmin - yc
+              endif
+c             --- bottom left grid indices of transverse grid box
+c             --- bounding (xc,yc)
+              ix = int( ( xc - xmmin )/dx )
+              iy = int( ( yc - ymmin )/dy )
+c             --- area interpolated potential at (xc,yc)
+              phiinter =
      &          ( phi(ix  ,iy  ,iz)*
      &              (xmesh(ix+1) - xc       )*(ymesh(iy+1) - yc       ) +
      &            phi(ix+1,iy  ,iz)*
@@ -1326,39 +1326,39 @@ c             --- area interpolated potential at (xc,yc)
      &            phi(ix+1,iy+1,iz)*
      &              (xc          - xmesh(ix))*(yc          - ymesh(iy)) +
      &            phi(ix  ,iy+1,iz)*
-     &              (xmesh(ix+1) - xc       )*(yc          - ymesh(iy))    )/ 
-     &          (dx*dy) 
-c             --- add contributions for cosine and sine azimuthal integrals 
+     &              (xmesh(ix+1) - xc       )*(yc          - ymesh(iy))    )/
+     &          (dx*dy)
+c             --- add contributions for cosine and sine azimuthal integrals
               azicosint(np) = azicosint(np) + phiinter*cos(l*dth*ith)
               azisinint(np) = azisinint(np) + phiinter*sin(l*dth*ith)
             enddo
-c           --- set azimuthal integrals to zero if not calculated 
+c           --- set azimuthal integrals to zero if not calculated
             if (.not. lcosex) azicosint(np) = 0.
-            if (.not. lsinex) azisinint(np) = 0.   
-c           --- rescale azimuthal integrals  
+            if (.not. lsinex) azisinint(np) = 0.
+c           --- rescale azimuthal integrals
             azicosint(np) = (2./real(nth))*azicosint(np)
             azisinint(np) = (2./real(nth))*azisinint(np)
-            if (l == 0) then 
+            if (l == 0) then
               azicosint(np) = 0.5*azicosint(np)
               azisinint(np) = 0.
-            endif  
-          enddo  
-c         --- calculate vectors of moments, rmomcst and rmomsst for cosine 
-c         --- and sine expansion terms using linear least squares algorithm 
+            endif
+          enddo
+c         --- calculate vectors of moments, rmomcst and rmomsst for cosine
+c         --- and sine expansion terms using linear least squares algorithm
           call dvdfit(rdat,azicosint,npts,nptsmx,rmomcst,basis,nfit,nfitmx,
      &                usvd,wsvd,vsvd,tmp,tol,chisq)
           call dvdfit(rdat,azisinint,npts,nptsmx,rmomsst,basis,nfit,nfitmx,
      &                usvd,wsvd,vsvd,tmp,tol,chisq)
-c         --- load moments calculated in axial grid indexed vectors of 
-c         --- multipole moments 
+c         --- load moments calculated in axial grid indexed vectors of
+c         --- multipole moments
           do ifit = 1,nfit
             rmomcex(imom+ifit,iz) = rmomcst(ifit)*aper**irpow(imom+ifit)
-            rmomsex(imom+ifit,iz) = rmomsst(ifit)*aper**irpow(imom+ifit)  
+            rmomsex(imom+ifit,iz) = rmomsst(ifit)*aper**irpow(imom+ifit)
           enddo
-        enddo 
-        imom = imom + nfit 
+        enddo
+        imom = imom + nfit
       enddo
 
-      return 
-      end 
+      return
+      end
 c=============================================================================

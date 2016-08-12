@@ -283,13 +283,17 @@ c  Setup grid cells sizes and mesh arrays
       if (dz == 0.) call kaboom("w3dgen: dz is zero!")
 
 c  Calculate location of axis in mesh, the term dx*1.e-5 acts as fuzp
-      ix_axis = nint(-xmminlocal/dx)
+      ix_axis = nint(-xmmin/dx)
+      ixlocal_axis = nint(-xmminlocal/dx)
       if(solvergeom==XYZgeom .or.solvergeom==AMRgeom .or. solvergeom==XYgeom) then
-        iy_axis = nint(-ymminlocal/dy)
+        iy_axis = nint(-ymmin/dy)
+        iylocal_axis = nint(-ymminlocal/dy)
       else ! RZgeom, XZgeom, Zgeom, Rgeom
         iy_axis = 0
+        iylocal_axis = 0
       endif
-      iz_axis = nint(-zmminlocal/dz)
+      iz_axis = nint(-zmmin/dz)
+      izlocal_axis = nint(-zmminlocal/dz)
 
 c  Setup arrays for potential and charge density for the particles.
       xpmin = xmmin

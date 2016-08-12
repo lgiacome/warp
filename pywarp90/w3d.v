@@ -562,6 +562,9 @@ nxyz             integer /0/
 ix_axis          integer [1] # x location of axis in mesh
 iy_axis          integer [1] # y location of axis in mesh
 iz_axis          integer [1] # z location of axis in mesh
+ixlocal_axis     integer [1] # x location of axis in mesh relative to local coordinates
+iylocal_axis     integer [1] # y location of axis in mesh relative to local coordinates
+izlocal_axis     integer [1] # z location of axis in mesh relative to local coordinates
 
 *********** InjectVars3d dump:
 inj_ninj             integer  # Auto set to either 1 or ninject. Set to 1
