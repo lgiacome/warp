@@ -63,10 +63,14 @@ class Secondaries:
                particleboundaries3d not to call the controllers. If there are
                other conductors that the new particles could be lost in, then
                this option needs to be set to true for that scraping to happen.
+     - luseoldpositionifout=False:
+           If the new particle position is outside of the grid, use the old position of the lost particle
+           (its position from the previous time step).
     """
     def __init__(self,isinc=None,conductors=None,issec=None,set_params_user=None,material=None,
                       xoldpid=None,yoldpid=None,zoldpid=None,min_age=None,vmode=1,l_verbose=0,
                       l_set_params_user_only=0,lcallscrapercontrollers=0,l_trackssnparents=0,l_usenew=0,
+                      luseoldpositionifout=False,
                       maxsec=None):
         self.totalcount = 0
         self.totallost = 0
@@ -105,6 +109,7 @@ class Secondaries:
                 top.tbirthpid=nextpid()
                 setuppgroup(top.pgroup)
         self.l_usenew=l_usenew
+        self.luseoldpositionifout = luseoldpositionifout
         self.install()
         if xoldpid is None:
             self.xoldpid=top.npid-3
@@ -486,17 +491,18 @@ class Secondaries:
                                                   -uzboost,
                                                   top.boost_gamma)
                     if self.l_trackssnparents: ssnplost = take(top.pidlost[i1:i2,top.ssnpid-1],iit)
-                    if self.vmode==1:
-                        vxplost=uxplost*gaminvlost
-                        vyplost=uyplost*gaminvlost
-                        vzplost=uzplost*gaminvlost
-                    elif self.vmode==2:
+                    if self.vmode == 2 or self.luseoldpositionifout:
                         xplostold = take(top.pidlost[i1:i2,self.xoldpid],iit,0)
                         yplostold = take(top.pidlost[i1:i2,self.yoldpid],iit,0)
                         zplostold = take(top.pidlost[i1:i2,self.zoldpid],iit,0)
-                        vxplost = (xplost-xplostold)/top.dt
-                        vyplost = (yplost-yplostold)/top.dt
-                        vzplost = (zplost-zplostold)/top.dt
+                    if self.vmode==1:
+                        vxplost = uxplost*gaminvlost
+                        vyplost = uyplost*gaminvlost
+                        vzplost = uzplost*gaminvlost
+                    elif self.vmode==2:
+                        vxplost = (xplost - xplostold)/top.dt
+                        vyplost = (yplost - yplostold)/top.dt
+                        vzplost = (zplost - zplostold)/top.dt
                     else:
                         raise Exception('Error in Secondaries, one should have lmode=1 or 2, but have lmode=%g'%self.lmode)
                     # --- set energy of incident particle in eV
@@ -836,6 +842,11 @@ class Secondaries:
                                         condition = (xnew<xmin) or (xnew>xmax) or \
                                                     (ynew<ymin) or (ynew>ymax) or \
                                                     (znew<zmin) or (znew>zmax)
+                                    if condition and self.luseoldpositionifout:
+                                        xnew = xplostold[i]
+                                        ynew = yplostold[i]
+                                        znew = zplostold[i]
+                                        condition = False
                                     if condition:
                                         print 'WARNING from secondaries: new particle outside boundaries, skip creation',
                                         print '\nLost particle position: ',xplost[i],yplost[i],zplost[i],
@@ -965,6 +976,11 @@ class Secondaries:
                                     condition = (xnew<xmin) or (xnew>xmax) or \
                                                 (ynew<ymin) or (ynew>ymax) or \
                                                 (znew<zmin) or (znew>zmax)
+                                if condition and self.luseoldpositionifout:
+                                    xnew = xplostold[i]
+                                    ynew = yplostold[i]
+                                    znew = zplostold[i]
+                                    condition = False
                                 if condition:
                                     print 'WARNING from secondaries: new neutral particle outside boundaries, skip creation',
                                     print '\nLost particle position: ',xplost[i],yplost[i],zplost[i],
@@ -1164,17 +1180,18 @@ class Secondaries:
                                                   -uzboost,
                                                   top.boost_gamma)
                     if self.l_trackssnparents: ssnplost = take(top.pidlost[i1:i2,top.ssnpid-1],iit)
-                    if self.vmode==1:
-                        vxplost=uxplost*gaminvlost
-                        vyplost=uyplost*gaminvlost
-                        vzplost=uzplost*gaminvlost
-                    elif self.vmode==2:
+                    if self.vmode == 2 or self.luseoldpositionifout:
                         xplostold = take(top.pidlost[i1:i2,self.xoldpid],iit,0)
                         yplostold = take(top.pidlost[i1:i2,self.yoldpid],iit,0)
                         zplostold = take(top.pidlost[i1:i2,self.zoldpid],iit,0)
-                        vxplost = (xplost-xplostold)/top.dt
-                        vyplost = (yplost-yplostold)/top.dt
-                        vzplost = (zplost-zplostold)/top.dt
+                    if self.vmode==1:
+                        vxplost = uxplost*gaminvlost
+                        vyplost = uyplost*gaminvlost
+                        vzplost = uzplost*gaminvlost
+                    elif self.vmode==2:
+                        vxplost = (xplost - xplostold)/top.dt
+                        vyplost = (yplost - yplostold)/top.dt
+                        vzplost = (zplost - zplostold)/top.dt
                     else:
                         raise Exception('Error in Secondaries, one should have lmode=1 or 2, but have lmode=%g'%self.lmode)
                     # set energy of incident particle in eV
@@ -1695,6 +1712,11 @@ class Secondaries:
                                     condition = (xnew<xmin) or (xnew>xmax) or \
                                                 (ynew<ymin) or (ynew>ymax) or \
                                                 (znew<zmin) or (znew>zmax)
+                                if condition and self.luseoldpositionifout:
+                                    xnew = xplostold[i]
+                                    ynew = yplostold[i]
+                                    znew = zplostold[i]
+                                    condition = False
                                 if condition:
                                     print 'WARNING from secondaries: new neutral particle outside boundaries, skip creation',
                                     print '\nLost particle position: ',xplost[i],yplost[i],zplost[i],
