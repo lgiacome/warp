@@ -827,6 +827,16 @@ class MultiGrid3D(SubcycledPoissonSolver):
                 conductorobject.oddsubgrid.n = 0
                 self.installedconductorlists[fselfb] = []
 
+    def cond_potmg(self,mglevel=0,mgform=None,iselfb=0,phi=None):
+        conductorobject = self.getconductorobject(top.pgroup.fselfb[iselfb])
+        if phi is None:
+            phi = self.potential
+        if mgform is None:
+            mgform = self.mgform
+        cond_potmg(conductorobject.interior,self.nxlocal,self.nylocal,self.nzlocal,
+                   self.nxguardphi,self.nyguardphi,self.nzguardphi,
+                   phi,mglevel,self.mgform,false)
+
     def find_mgparam(self,lsavephi=false,resetpasses=1):
         # --- This is a temporary kludge, the same as is done in genericpf
         self._phi = self.potential
