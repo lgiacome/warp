@@ -922,8 +922,8 @@ cc      write(*,*) "sddx2d=",sddx2d
 
 c=============================================================================
       subroutine compton_scatter_electrons(photon_energy, photon_density, photon_px, photon_py, photon_pz,
-     &                                     nx, ny, nz, dx, dy, dz, xmmin, ymmin, zmmin, dt,
-     &                                     boost_gamma, time, weightingmethod,
+     &                                     nx, ny, nz, dx, dy, dz, xmmin, ymmin, zmmin, zgrid0, dt,
+     &                                     boost_gamma, time, weightingmethod, anglethreshold,
      &                                     electrongroup, electrons, photongroup, photons, tbirthpid)
       use Constant
       use ParticleGroupModule
@@ -934,14 +934,17 @@ c=============================================================================
       real(kind=8):: photon_py(0:nx,0:ny,0:nz)
       real(kind=8):: photon_pz(0:nx,0:ny,0:nz)
       real(kind=8):: dx, dy, dz, dt
-      real(kind=8):: xmmin, ymmin, zmmin
+      real(kind=8):: xmmin, ymmin, zmmin, zgrid0
       real(kind=8):: boost_gamma, time
       integer(ISZ):: weightingmethod
+      real(kind=8):: anglethreshold
       type(ParticleGroup):: electrongroup
       type(ParticleGroup):: photongroup
       integer(ISZ):: photons
       integer(ISZ):: electrons
       integer(ISZ):: tbirthpid
+
+c zgrid0 is the location of the grid at time = 0
 
       integer(ISZ):: ie0, ie, ig
       integer(ISZ):: ix, iy, iz
@@ -960,12 +963,13 @@ c=============================================================================
       real(kind=8):: f, h, factor
 
       real(kind=8):: boost_uz
-      real(kind=8):: xlab, ylab, zlab
+      real(kind=8):: xlab, ylab, zlab, tlab
       real(kind=8):: uxlab, uylab, uzlab, gamma_lab
       real(kind=8):: ux, uy, uz
       real(kind=8):: gamma_frame, umag
       real(kind=8):: uxframe, uyframe, uzframe
       real(kind=8):: uxhat, uyhat, uzhat, udotv, pdotv
+      real(kind=8):: zgrid
       real(kind=8):: pdens, px, py, pz, pe, p_tot, p_perp
       real(kind=8):: px_old, py_old, pz_old
       real(kind=8):: p_old, e_old, p_new, e_new
@@ -976,18 +980,24 @@ c=============================================================================
       real(kind=8):: wx, wy, wz
       real(kind=8):: cphi, sphi, ctheta, stheta
 
+      integer(ISZ):: nscattered
+      real(kind=8), save:: fracscattered = 1.
+
+      if (electrongroup%nps(electrons) == 0) return
+
       boost_uz = clight*sqrt(boost_gamma*boost_gamma - 1.)
 
       e_radius = echarge**2/(4.0*pi*eps0*emass*clight**2)
       e_area = pi*e_radius**2
 
       ! --- Make a overestimate of how many photons will be added, ~10% of electrons
-      nnewspace = 0.1*electrongroup%nps(electrons) + 1
+      nnewspace = 2.*fracscattered*electrongroup%nps(electrons)*electrongroup%sw(electrons)/photongroup%sw(photons) + 1
 
       ! --- Make some space to start with.
       call chckpart(photongroup,photons,0,nnewspace)
 
       ! --- Loop over electrons
+      nscattered = 0
       do ie0=0, electrongroup%nps(electrons)-1
 
         ! --- Note that with handling the index this way, the correct
@@ -999,6 +1009,7 @@ c=============================================================================
         xlab = electrongroup%xp(ie)
         ylab = electrongroup%yp(ie)
         zlab = boost_gamma*electrongroup%zp(ie) + boost_uz*time
+        tlab = boost_gamma*time + boost_uz*electrongroup%zp(ie)/clight**2
         uxlab = electrongroup%uxp(ie)
         uylab = electrongroup%uyp(ie)
         uzlab = boost_gamma*electrongroup%uzp(ie) + boost_uz/electrongroup%gaminv(ie)
@@ -1017,12 +1028,17 @@ c=============================================================================
           uzhat = uzframe/umag
         endif
 
+        zgrid = zgrid0 - clight*tlab
         ix = int((xlab - xmmin)/dx)
         iy = int((ylab - ymmin)/dy)
-        iz = int((zlab - zmmin)/dz)
+        iz = int((zlab - zmmin - zgrid)/dz)
         wx =     (xlab - xmmin)/dx - ix
         wy =     (ylab - ymmin)/dy - iy
-        wz =     (zlab - zmmin)/dz - iz
+        wz =     (zlab - zmmin - zgrid)/dz - iz
+
+        if (ix < 0 .or. ix >= nx .or.
+     &      iy < 0 .or. iy >= ny .or.
+     &      iz < 0 .or. iz >= nz) cycle
 
         ! --- Get the photon density at the electron location (in lab frame)
         pdens = photon_density(ix  ,iy  ,iz  )*(1. - wx)*(1. - wy)*(1. - wz) +
@@ -1113,10 +1129,10 @@ c=============================================================================
 
         if (weightingmethod == 1) then
             ! --- Every electron will produce a small number of photons
-            nnewphotons = prob*electrongroup%sw(electrons)/photongroup%sw(photons) + rn2
+            nnewphotons = prob*electrongroup%sw(electrons)/photongroup%sw(photons) + (1. - rn1)
             ! --- Adjust the probability so that the appropriate
             ! --- fraction of electrons is scattered.
-            prob = photongroup%sw(photons)/electrongroup%sw(electrons)
+            !prob = photongroup%sw(photons)/electrongroup%sw(electrons)
         else
             ! --- Only a subset of electrons will produce all of the photons
             if (rn1 < prob) then
@@ -1128,7 +1144,7 @@ c=============================================================================
 
         if (nnewphotons == 0) cycle
 
-        call chckpart(photongroup,photons,0,nnewphotons)
+        !call chckpart(photongroup,photons,0,nnewphotons)
 
         ! --- rotate photon to align with z axis
         p_perp = sqrt(px**2 + py**2)
@@ -1213,10 +1229,6 @@ c=============================================================================
           py =  ctheta*sphi*psx + cphi*psy + stheta*sphi*psz
           pz = -stheta*     psx +            ctheta*     psz
 
-          ! --- Make sure there is enough space for the new photon
-          ig = photongroup%ins(photons) + photongroup%nps(photons)
-          photongroup%nps(photons) = photongroup%nps(photons) + 1
-
           ! --- Transform back into the lab frame (from the electron rest frame)
           if (umag > 0.) then
             pdotv = px*uxhat + py*uyhat + pz*uzhat
@@ -1229,6 +1241,14 @@ c=============================================================================
             pzlab = pz
           endif
           pelab = sqrt(pxlab**2 + pylab**2 + pzlab**2)*clight
+
+          ! --- Don't save the gammas at too large of an angle.
+          theta = atan2(sqrt(pxlab**2 + pylab**2), pzlab)
+          if (theta > anglethreshold) cycle
+
+          ! --- Make sure there is enough space for the new photon
+          ig = photongroup%ins(photons) + photongroup%nps(photons)
+          photongroup%nps(photons) = photongroup%nps(photons) + 1
 
           ! --- New photon is created at the electron position (in lab frame)
           photongroup%xp(ig) = xlab
@@ -1290,9 +1310,13 @@ c=============================================================================
           electrongroup%uzp(ie) = uz
           electrongroup%gaminv(ie) = 1./sqrt(1. + (ux**2 + uy**2 + uz**2)/clight**2)
 
+          nscattered = nscattered + 1
+
         endif
 
       enddo
+
+      fracscattered = 1.*nscattered/electrongroup%nps(electrons)
 
       end subroutine compton_scatter_electrons
 c=============================================================================
