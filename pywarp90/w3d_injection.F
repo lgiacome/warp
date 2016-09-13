@@ -546,6 +546,14 @@ c           --- particles that are removed.
                   pgroup%gaminv(ii) = -1.
                 endif
               enddo
+            else if (solvergeom == XZgeom) then
+              do ii=pgroup%ins(is),pgroup%ins(is)+nn-1
+                xm = pgroup%xp(ii)
+                if (l4symtry) xm = abs(xm)
+                if (xm < xpminlocal .or. xm >= xpmaxlocal) then
+                  pgroup%gaminv(ii) = -1.
+                endif
+              enddo
             else
               do ii=pgroup%ins(is),pgroup%ins(is)+nn-1
                 xm = pgroup%xp(ii)
@@ -1582,6 +1590,14 @@ c           --- particles that are removed.
               do ii=pgroup%ins(is),pgroup%ins(is)+pgroup%nps(is)-1
                 rr = pgroup%xp(ii)**2 + pgroup%yp(ii)**2
                 if (rr < xpminlocal**2 .or. rr >= xpmaxlocal**2) then
+                  pgroup%gaminv(ii) = -1.
+                endif
+              enddo
+            else if (solvergeom == XZgeom) then
+              do ii=pgroup%ins(is),pgroup%ins(is)+pgroup%nps(is)-1
+                xm = pgroup%xp(ii)
+                if (l4symtry) xm = abs(xm)
+                if (xm < xpminlocal .or. xm >= xpmaxlocal) then
                   pgroup%gaminv(ii) = -1.
                 endif
               enddo
