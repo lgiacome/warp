@@ -6,21 +6,6 @@ c===========================================================================
       subroutine init_w3d_parallel
       use Subtimersw3d
       use Parallel
-      use InGen
-      use InGen3d
-      use InDiag
-      use InPart
-      use InMesh3d
-      use Picglb
-      use Picglb3d
-      use Fields3d
-      use Fields3dParticles
-      use Io
-      use Z_arrays
-      use LatticeInternal
-      use Z_Moments
-      use InjectVars
-      use InjectVars3d
 
 c This is the routine which divies up the work among the slaves.
 
@@ -67,12 +52,12 @@ c===========================================================================
       integer(MPIISZ):: mpierror,comm_world_mpiisz
       include "mpif.h"
       comm_world_mpiisz = comm_world
-      
+
 !     --- If cartesian communicator not created, use a duplicate of mpi_comm_world instead
-      if (.NOT. lcomm_cartesian) THEN 
-        ! Copy communicator 
+      if (.NOT. lcomm_cartesian) THEN
+        ! Copy communicator
         call MPI_COMM_DUP(comm_world_mpiisz,decomp%mpi_comm,mpierror)
-      endif 
+      endif
 
 c     --- Create communicator groups for processors along each axis.
       call MPI_COMM_SPLIT(decomp%mpi_comm,
@@ -83,8 +68,8 @@ c     --- Create communicator groups for processors along each axis.
      &                    decomp%my_index,decomp%mpi_comm_y,mpierror)
       call MPI_COMM_SPLIT(decomp%mpi_comm,
      &                    decomp%ixproc+decomp%iyproc*decomp%nxprocs,
-     &                    decomp%my_index,decomp%mpi_comm_z,mpierror)      
-      
+     &                    decomp%my_index,decomp%mpi_comm_z,mpierror)
+
       return
       end
 c===========================================================================

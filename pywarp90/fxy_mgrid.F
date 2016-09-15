@@ -895,7 +895,6 @@ c various mesh resolutions needed by the MG solver.
       integer(ISZ):: il,ic1,ie1,io1,ic2,ie2,io2,mglevels
       real(kind=8):: dx1,dy1
       integer(ISZ):: nx1,ny1
-      integer(ISZ):: ix_axis1,iy_axis1
 
       mglevels = conductors%levels
 

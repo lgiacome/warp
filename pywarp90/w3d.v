@@ -318,19 +318,20 @@ exeomlagpid integer        # Electric field pid index, lag-averaged for damping
 eyeomlagpid integer        # Electric field pid index, lag-averaged for damping
 ezeomlagpid integer        # Electric field pid index, lag-averaged for damping
 
-*********** Fields3d:
+*********** Mesh3d:
 # Large arrays: potential and charge density, plot scratch, etc.
-bndferr                 real    [1]     # Error after bent-self-field solve
-bndfit                  integer [1]     # Iters used, bent-self-field solve
 xmesh(0:nx)             _real [m] +dump # X coordinates of mesh points
 ymesh(0:ny)             _real [m] +dump # Y coordinates of mesh points
 zmesh(0:nz)             _real [m] +dump # Z coordinates of global mesh points
 xmeshlocal(0:nxlocal)   _real [m] +dump +parallel # x coordinates of local mesh points
 ymeshlocal(0:nylocal)   _real [m] +dump +parallel # y coordinates of local mesh points
 zmeshlocal(0:nzlocal)   _real [m] +dump +parallel # Z coordinates of local mesh points
+
+*********** Fields3dSolver:
+bndferr                 real    [1]     # Error after bent-self-field solve
+bndfit                  integer [1]     # Iters used, bent-self-field solve
 nmxy                    integer /0/ +dump # larger of nx, ny
 nmxyz                   integer /0/ +dump +parallel # largest of nx, ny, nz
-scrtch(-1:nmxyz+1,-1:nmxy+1)  _real           # Scratch for fieldsolve, plots
 phi(:,:,:)              _real [V] +parallel # Electrostatic potential
 rho(:,:,:)              _real [C/m**3] +parallel # Charge density
 selfe(:,:,:,:)          _real [V/m] +parallel # Self E field
@@ -345,6 +346,7 @@ kzsq(0:nz)              _real [1/m**2]  # Discrete analog to kz^2/4Pi
 rstar(-1:nzlocal+1)     _real [m]       # Radius of curv of refrnce orbit
 phiprv(0:nx,0:nzlocal)  _real [V]       # Prev phi at y_mid, for error test
 phisav(0:nx,-1:nzlocal) _real [V]       # Phi at current y slice (scratch)
+scrtch(-1:nmxyz+1,-1:nmxy+1)  _real           # Scratch for fieldsolve, plots
 xywork3d(2,0:nx,0:ny)   _real           # Work space for transverse FFTs
 zwork(2,0:nx,0:nz)      _real           # Work space used to optimize vsftz
 
@@ -560,6 +562,9 @@ nxyz             integer /0/
 ix_axis          integer [1] # x location of axis in mesh
 iy_axis          integer [1] # y location of axis in mesh
 iz_axis          integer [1] # z location of axis in mesh
+ixlocal_axis     integer [1] # x location of axis in mesh relative to local coordinates
+iylocal_axis     integer [1] # y location of axis in mesh relative to local coordinates
+izlocal_axis     integer [1] # z location of axis in mesh relative to local coordinates
 
 *********** InjectVars3d dump:
 inj_ninj             integer  # Auto set to either 1 or ninject. Set to 1
@@ -822,8 +827,9 @@ compton_scatter_electrons(photon_energy:real,
                           photon_py(0:nx,0:ny,0:nz):real,
                           photon_pz(0:nx,0:ny,0:nz):real,
                           nx:integer, ny:integer, nz:integer, dx:real, dy:real, dz:real,
-                          xmmin:real, ymmin:real, zmmin:real, dt:real,
+                          xmmin:real, ymmin:real, zmmin:real, zgrid0:real, dt:real,
                           boost_gamma:real, time:real, weightingmethod:integer,
+                          anglethreshold:real,
                           electrongroup:ParticleGroup, electrons:integer,
                           photongroup:ParticleGroup, photons:integer,
                           tbirthpid:integer) subroutine

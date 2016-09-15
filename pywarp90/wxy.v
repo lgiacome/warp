@@ -79,7 +79,7 @@ loadrhoxy(pgroup:ParticleGroup,ins:integer,nps:integer,is:integer,
              subroutine # Simple interface to setrhoxy
 fetchexy(pgroup:ParticleGroup,ipmin:integer,ip:integer,is:integer,
          ex:real,ey:real,ez:real)
-	     subroutine # Returns electric field on particles from phi
+             subroutine # Returns electric field on particles from phi
 
 *********** Subtimerswxy:
 lwxytimesubs logical /.false./

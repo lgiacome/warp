@@ -37,8 +37,11 @@ def printparameters():
         f20%("   times dt/dz                = ",top.vthzdtodz," ") + \
         f20%("Longitudinal Debye wavelength = ",top.lamdebz," m") + \
         f20%("   over dz                    = ",top.lamdebzodz," ")
-    if with_matplotlib: universeaxes()
-    plt(textblock,0.12,0.88,justify="LT")
+    if with_matplotlib:
+        universeaxes()
+        plt(textblock,0.1,0.9,justify="LT")
+    else:
+        plt(textblock,0.12,0.88,justify="LT")
     fma()
 
     # --- Start a new frame since they all don't fit on one
@@ -76,7 +79,10 @@ def printparameters():
         f20%("Geometric factor = ",top.gfactor," ") + \
         f40%("X-, Y-Emittance over Space charge forces = ",top.femtxofscx,
              ", ",top.femtyofscy," ")
-    if with_matplotlib: universeaxes()
-    plt(textblock,0.12,0.88,justify="LT")
+    if with_matplotlib:
+        universeaxes()
+        plt(textblock,0.1,0.9,justify="LT")
+    else:
+        plt(textblock,0.12,0.88,justify="LT")
     fma()
 

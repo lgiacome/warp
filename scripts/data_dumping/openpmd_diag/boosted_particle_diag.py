@@ -55,7 +55,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             before finally writing it to the disk. 
                 
         See the documentation of ParticleDiagnostic for the other parameters
-
         """
         # Do not leave write_dir as None, as this may conflict with
         # the default directory ('./diags') in which diagnostics in the
@@ -146,7 +145,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
                     slice_array = self.particle_catcher.extract_slice(
                         species, self.select, snapshot.prev_z_boost,
-                        snapshot.current_z_boost )
+                        snapshot.current_z_boost, snapshot.t_lab )
                     snapshot.register_slice( slice_array, species_name )
 
     def flush_to_disk(self):
@@ -479,10 +478,8 @@ class ParticleCatcher:
         # - check if the output position *in the boosted frame*
         #   crosses the zboost_prev in a backward motion
         selected_indices = np.compress((
-            ((current_z >= current_z_boost ) & 
-             (previous_z <= prev_z_boost )) |
-            ((current_z <= current_z_boost ) & 
-            (previous_z >= prev_z_boost ))
+            ((current_z >= current_z_boost ) & (previous_z <= prev_z_boost )) |
+            ((current_z <= current_z_boost ) & (previous_z >= prev_z_boost ))
             ), particle_indices)
 
         num_part = np.shape(selected_indices)[0]
@@ -517,56 +514,53 @@ class ParticleCatcher:
         lab frame. These are classical Lorentz transformation equations
         """
         uzfrm = -self.beta_boost*self.gamma_boost*c
-        len_z = np.shape(self.z_captured)[0]
+
+        # Time in lab frame
+        self.t = self.gamma_boost*self.top.time - uzfrm*self.z_captured/c**2
+        self.t_prev = self.gamma_boost*(self.top.time - self.top.dt) \
+          - uzfrm*self.z_prev_captured/c**2
         
-        # Position
+        # Position in lab frame
         self.z_captured = self.gamma_boost*(self.z_captured + \
             self.beta_boost*c*self.top.time)
         self.z_prev_captured = self.gamma_boost*(self.z_prev_captured \
             + self.beta_boost*c*(self.top.time-self.top.dt))
  
-        # Momentum
+        # Momentum in lab frame
         self.uz_captured = self.gamma_boost*self.uz_captured \
         - self.gamma_captured*uzfrm
         self.uz_prev_captured = self.gamma_boost*self.uz_prev_captured \
         - self.gamma_prev_captured*uzfrm
 
-        # Time
-        self.t = self.gamma_boost*self.top.time*np.ones(len_z) \
-        - uzfrm*self.z_captured/c**2
-        self.t_prev = self.gamma_boost*(self.top.time - self.top.dt)\
-        *np.ones(len_z) - uzfrm*self.z_prev_captured/c**2
-
-    def collapse_to_mid_point(self):
+    def interpolate_to_time(self, t_output):
         """
-        Collapse the particle quantities to the mid point between 
-        t_prev and t_current
-        """
-        # Putting particles' current and previous time in an array for 
-        # convenience in mean calculation
-        t_mid = .5*(self.t + self.t_prev)
+        Interpolate the particle quantities in time to the instant t
 
-        self.x_captured  = self.x_prev_captured*(self.t - t_mid)/\
-        (self.t - self.t_prev) + self.x_captured*(t_mid - self.t_prev)/\
-        (self.t - self.t_prev)
-        self.y_captured  = self.y_prev_captured*(self.t - t_mid)/\
-        (self.t - self.t_prev) + self.y_captured*(t_mid - self.t_prev)/\
-        (self.t - self.t_prev)
-        self.z_captured  = self.z_prev_captured*(self.t - t_mid)/\
-        (self.t - self.t_prev) + self.z_captured*(t_mid - self.t_prev)/\
-        (self.t - self.t_prev)
-        self.ux_captured = self.ux_prev_captured*(self.t - t_mid)/\
-        (self.t - self.t_prev) + self.ux_captured*(t_mid - self.t_prev)/\
-        (self.t - self.t_prev)
-        self.uy_captured = self.uy_prev_captured*(self.t - t_mid)/\
-        (self.t - self.t_prev) + self.uy_captured*(t_mid - self.t_prev)/\
-        (self.t - self.t_prev)
-        self.uz_captured = self.uz_prev_captured*(self.t - t_mid)/\
-        (self.t - self.t_prev) + self.uz_captured*(t_mid - self.t_prev)/\
-        (self.t - self.t_prev)
-        self.gamma_captured  = self.gamma_prev_captured*(self.t - t_mid)/\
-        (self.t-self.t_prev) + self.gamma_captured*(t_mid - self.t_prev)/\
-        (self.t-self.t_prev)
+        Parameter
+        ---------
+        t_output: float
+            Time **in the lab frame** at which the quantities should be
+            interpolated. (Typically, the time of a given LabSnapshot)
+        """
+        # Calculation interpolation weights, for the time interpolation
+        weight_prev = (self.t - t_output)/(self.t - self.t_prev)
+        weight_next = (t_output - self.t_prev)/(self.t - self.t_prev)
+
+        # Perform the interpolation
+        self.x_captured = \
+          self.x_prev_captured * weight_prev + self.x_captured * weight_next
+        self.y_captured = \
+          self.y_prev_captured * weight_prev + self.y_captured * weight_next
+        self.z_captured = \
+          self.z_prev_captured * weight_prev + self.z_captured * weight_next
+        self.ux_captured = \
+          self.ux_prev_captured * weight_prev + self.ux_captured * weight_next
+        self.uy_captured = \
+          self.uy_prev_captured * weight_prev + self.uy_captured * weight_next
+        self.uz_captured = \
+          self.uz_prev_captured * weight_prev + self.uz_captured * weight_next
+        self.gamma_captured = self.gamma_prev_captured * weight_prev + \
+          self.gamma_captured * weight_next
 
     def gather_array(self, quantity):
         """
@@ -590,18 +584,19 @@ class ParticleCatcher:
         elif quantity == "z":
             ar = np.array(self.z_captured)
         elif quantity == "ux":
-            ar = np.array(self.ux_captured*self.mass)
+            ar = np.array(self.ux_captured)
         elif quantity == "uy":
-            ar = np.array(self.uy_captured*self.mass)
+            ar = np.array(self.uy_captured)
         elif quantity == "uz":
-            ar = np.array(self.uz_captured*self.mass)
+            ar = np.array(self.uz_captured)
         elif quantity == "w":
             ar = np.array(self.w_captured)
         elif quantity == "gamma":
             ar = np.array(self.gamma_captured)
         return ar
 
-    def extract_slice(self, species, select, prev_z_boost, current_z_boost ):
+    def extract_slice(self, species, select, prev_z_boost,
+                      current_z_boost, t_output ):
         """
         Extract a slice of the particles that corresponds to a given
         lab snapshot, and transform them to the lab frame
@@ -625,6 +620,11 @@ class ParticleCatcher:
             Only particles that have crossed this plane, between the previous
             iteration and the current iteration, are extracted
 
+        t_output: float (s)
+            Time **in the lab frame** at which the quantities should be
+            obtained. (Typically, the time of a given LabSnapshot.) This
+            is used when interpolating between two simulation timesteps.
+
         Returns
         -------
         slice_array: An array of reals of shape (8, num_part) 
@@ -641,9 +641,8 @@ class ParticleCatcher:
         # Transform the particles from boosted frame back to lab frame
         self.transform_particles_to_lab_frame()
 
-        # Collapse the particle quantities using interpolation to
-        # the the midpoint of t and t_prev
-        self.collapse_to_mid_point()
+        # Interpolate the particle quantities in time, to t_output
+        self.interpolate_to_time( t_output )
         slice_array = np.empty((np.shape(p2i.keys())[0], num_part,))
 
         for quantity in self.particle_to_index.keys():
@@ -664,6 +663,10 @@ class ParticleCatcher:
             # has the same size as slice_array
             slice_array = np.reshape(
                 temp_slice_array,(np.shape(p2i.keys())[0],-1))
+
+        # Multiplying momenta by the species mass to make them unitless
+        for quantity in ["ux", "uy", "uz"]:
+            slice_array[p2i[quantity]] *= species.mass
 
         return slice_array
 

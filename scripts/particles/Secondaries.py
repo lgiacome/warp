@@ -3,14 +3,25 @@ Secondaries: class for generating secondaries
 """
 from ..warp import *
 from ..utils.appendablearray import AppendableArray
-import pos
-from pos import pos as posC
+
+try:
+    import pos
+    from pos import pos as posC
+    try:
+        pos_version = pos.__version__
+        pos.init_physical_constants() # needed for pos_version >= '17p3'
+    except AttributeError:
+        pos_version = '15p3'
+except ImportError:
+    pos = None
+
 try:
     from txphysics import txigenelec, txstopping, txrand
     l_txphysics = 1
 except:
     print 'WARNING: module txphysics is not accessible.'
     l_txphysics = 0
+
 try:
     import desorb
     l_desorb = 1
@@ -19,10 +30,6 @@ except:
     l_desorb = 0
 import time
 
-try:
-    pos_version = pos.__version__
-except AttributeError:
-    pos_version = '15p3'
 
 def secondariesdoc():
     from ..particles import Secondaries
@@ -56,10 +63,15 @@ class Secondaries:
                particleboundaries3d not to call the controllers. If there are
                other conductors that the new particles could be lost in, then
                this option needs to be set to true for that scraping to happen.
+     - luseoldpositionifout=False:
+           If the new particle position is outside of the grid, use the old position of the lost particle
+           (its position from the previous time step).
     """
     def __init__(self,isinc=None,conductors=None,issec=None,set_params_user=None,material=None,
                       xoldpid=None,yoldpid=None,zoldpid=None,min_age=None,vmode=1,l_verbose=0,
-                      l_set_params_user_only=0,lcallscrapercontrollers=0,l_trackssnparents=0,l_usenew=0):
+                      l_set_params_user_only=0,lcallscrapercontrollers=0,l_trackssnparents=0,l_usenew=0,
+                      luseoldpositionifout=False,
+                      maxsec=None):
         self.totalcount = 0
         self.totallost = 0
         top.lresetlostpart=true
@@ -80,7 +92,16 @@ class Secondaries:
         self.set_params_user=set_params_user
         self.l_set_params_user_only=l_set_params_user_only
         self.mat_number=1
-        self.call_set_params_user(posC.maxsec,self.mat_number)
+        if maxsec is None:
+            if pos is None:
+                maxsec = 10
+            else:
+                maxsec = posC.maxsec
+        else:
+            if pos is not None:
+                assert maxsec == posC.maxsec, Exception('maxsec must be the same as posC.maxsec')
+        self.maxsec = maxsec
+        self.call_set_params_user(maxsec,self.mat_number)
         self.min_age=min_age
         if self.min_age is not None:
             w3d.l_inj_rec_inittime=true
@@ -88,6 +109,7 @@ class Secondaries:
                 top.tbirthpid=nextpid()
                 setuppgroup(top.pgroup)
         self.l_usenew=l_usenew
+        self.luseoldpositionifout = luseoldpositionifout
         self.install()
         if xoldpid is None:
             self.xoldpid=top.npid-3
@@ -109,14 +131,12 @@ class Secondaries:
                 top.ssnparentpid=nextpid()
                 setuppgroup(top.pgroup)
         # --- set variables for secondary electrons routines
-        if pos_version >= '17p3':
-            pos.init_physical_constants()
         self.secelec_ns = zeros(1,'l')
-        self.secelec_un = zeros(posC.maxsec,'d')
-        self.secelec_ut = zeros(posC.maxsec,'d')
-        self.secelec_uz = zeros(posC.maxsec,'d')
-        self.secelec_ityps  = zeros(posC.maxsec,'l')
-        self.secelec_ekstot = zeros(posC.maxsec,'d')
+        self.secelec_un = zeros(maxsec,'d')
+        self.secelec_ut = zeros(maxsec,'d')
+        self.secelec_uz = zeros(maxsec,'d')
+        self.secelec_ityps  = zeros(maxsec,'l')
+        self.secelec_ekstot = zeros(maxsec,'d')
         self.secelec_dele   = zeros(1,'d')
         self.secelec_delr   = zeros(1,'d')
         self.secelec_delts  = zeros(1,'d')
@@ -141,10 +161,10 @@ class Secondaries:
         self.power_dep=AppendableArray(typecode='d') # instantaneous power deposition [W]
         self.power_emit=AppendableArray(typecode='d') # instantaneous power emission [W]
         self.power_diff=AppendableArray(typecode='d') # instantaneous power deposition [W]
-        if posC.nsteps_g==0:
-            self.piditype=0
-        else:
-            self.piditype=nextpid()-1
+        self.piditype = 0
+        if pos is not None:
+            if posC.nsteps_g != 0:
+                self.piditype = nextpid()
 
         self.lrecursivegenerate = 0
 
@@ -276,7 +296,7 @@ class Secondaries:
         self.uy[js][il:iu]=uy
         self.uz[js][il:iu]=uz
         if weight is not None:self.pid[js][il:iu,top.wpid-1]=weight
-        if itype is not None:self.pid[js][il:iu,self.piditype]=itype.astype(float64)
+        if itype is not None:self.pid[js][il:iu,self.piditype-1]=itype.astype(float64)
         if ssnparent is not None:self.pid[js][il:iu,top.ssnparentpid-1]=ssnparent
         self.nps[js]+=nn
 
@@ -284,7 +304,7 @@ class Secondaries:
         if weight is not None or itype is not None or ssnparent is not None:
             pid = zeros((nn,top.npid))
             if weight is not None:pid[:,top.wpid-1]=weight
-            if itype is not None:pid[:,self.piditype]=itype.astype(float64)
+            if itype is not None:pid[:,self.piditype-1]=itype.astype(float64)
             if ssnparent is not None:pid[:,top.ssnparentpid-1]=ssnparent
         else:
             pid=0.
@@ -471,17 +491,18 @@ class Secondaries:
                                                   -uzboost,
                                                   top.boost_gamma)
                     if self.l_trackssnparents: ssnplost = take(top.pidlost[i1:i2,top.ssnpid-1],iit)
-                    if self.vmode==1:
-                        vxplost=uxplost*gaminvlost
-                        vyplost=uyplost*gaminvlost
-                        vzplost=uzplost*gaminvlost
-                    elif self.vmode==2:
+                    if self.vmode == 2 or self.luseoldpositionifout:
                         xplostold = take(top.pidlost[i1:i2,self.xoldpid],iit,0)
                         yplostold = take(top.pidlost[i1:i2,self.yoldpid],iit,0)
                         zplostold = take(top.pidlost[i1:i2,self.zoldpid],iit,0)
-                        vxplost = (xplost-xplostold)/top.dt
-                        vyplost = (yplost-yplostold)/top.dt
-                        vzplost = (zplost-zplostold)/top.dt
+                    if self.vmode==1:
+                        vxplost = uxplost*gaminvlost
+                        vyplost = uyplost*gaminvlost
+                        vzplost = uzplost*gaminvlost
+                    elif self.vmode==2:
+                        vxplost = (xplost - xplostold)/top.dt
+                        vyplost = (yplost - yplostold)/top.dt
+                        vzplost = (zplost - zplostold)/top.dt
                     else:
                         raise Exception('Error in Secondaries, one should have lmode=1 or 2, but have lmode=%g'%self.lmode)
                     # --- set energy of incident particle in eV
@@ -821,6 +842,11 @@ class Secondaries:
                                         condition = (xnew<xmin) or (xnew>xmax) or \
                                                     (ynew<ymin) or (ynew>ymax) or \
                                                     (znew<zmin) or (znew>zmax)
+                                    if condition and self.luseoldpositionifout:
+                                        xnew = xplostold[i]
+                                        ynew = yplostold[i]
+                                        znew = zplostold[i]
+                                        condition = False
                                     if condition:
                                         print 'WARNING from secondaries: new particle outside boundaries, skip creation',
                                         print '\nLost particle position: ',xplost[i],yplost[i],zplost[i],
@@ -950,6 +976,11 @@ class Secondaries:
                                     condition = (xnew<xmin) or (xnew>xmax) or \
                                                 (ynew<ymin) or (ynew>ymax) or \
                                                 (znew<zmin) or (znew>zmax)
+                                if condition and self.luseoldpositionifout:
+                                    xnew = xplostold[i]
+                                    ynew = yplostold[i]
+                                    znew = zplostold[i]
+                                    condition = False
                                 if condition:
                                     print 'WARNING from secondaries: new neutral particle outside boundaries, skip creation',
                                     print '\nLost particle position: ',xplost[i],yplost[i],zplost[i],
@@ -1149,17 +1180,18 @@ class Secondaries:
                                                   -uzboost,
                                                   top.boost_gamma)
                     if self.l_trackssnparents: ssnplost = take(top.pidlost[i1:i2,top.ssnpid-1],iit)
-                    if self.vmode==1:
-                        vxplost=uxplost*gaminvlost
-                        vyplost=uyplost*gaminvlost
-                        vzplost=uzplost*gaminvlost
-                    elif self.vmode==2:
+                    if self.vmode == 2 or self.luseoldpositionifout:
                         xplostold = take(top.pidlost[i1:i2,self.xoldpid],iit,0)
                         yplostold = take(top.pidlost[i1:i2,self.yoldpid],iit,0)
                         zplostold = take(top.pidlost[i1:i2,self.zoldpid],iit,0)
-                        vxplost = (xplost-xplostold)/top.dt
-                        vyplost = (yplost-yplostold)/top.dt
-                        vzplost = (zplost-zplostold)/top.dt
+                    if self.vmode==1:
+                        vxplost = uxplost*gaminvlost
+                        vyplost = uyplost*gaminvlost
+                        vzplost = uzplost*gaminvlost
+                    elif self.vmode==2:
+                        vxplost = (xplost - xplostold)/top.dt
+                        vyplost = (yplost - yplostold)/top.dt
+                        vzplost = (zplost - zplostold)/top.dt
                     else:
                         raise Exception('Error in Secondaries, one should have lmode=1 or 2, but have lmode=%g'%self.lmode)
                     # set energy of incident particle in eV
@@ -1680,6 +1712,11 @@ class Secondaries:
                                     condition = (xnew<xmin) or (xnew>xmax) or \
                                                 (ynew<ymin) or (ynew>ymax) or \
                                                 (znew<zmin) or (znew>zmax)
+                                if condition and self.luseoldpositionifout:
+                                    xnew = xplostold[i]
+                                    ynew = yplostold[i]
+                                    znew = zplostold[i]
+                                    condition = False
                                 if condition:
                                     print 'WARNING from secondaries: new neutral particle outside boundaries, skip creation',
                                     print '\nLost particle position: ',xplost[i],yplost[i],zplost[i],
@@ -1849,6 +1886,8 @@ class Secondaries:
         He -> Au - mat_num=4
         K  -> SS - mat_num=5
         """
+        if pos is None:
+            return
         if mat_num is None:
             raise Exception("Error in set_params: mat_num has not been setup.")
 

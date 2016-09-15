@@ -91,8 +91,8 @@ c=============================================================================
       use InPart
       use InPart3d
       use InMesh3d
-      use Fields3d
-      use Fields3dParticles
+      use Mesh3d
+!     use Fields3dParticles
       use GridBoundary3d
       use Multipole
       use Io
@@ -265,12 +265,8 @@ c  Print values of input variables, other interesting things to text file
 
 c  Create the dynamic arrays for fields
 
-      nmxy  = max(nx,ny)
-      nmxyz = max(nx,ny,nz)
-      call gchange("Fields3d", 0)
       call setupSubcycling(pgroup)
       call setupSelfB(pgroup)
-      call setupFields3dParticles()
 
 c  Setup the initial location and velocity of the beam frame.
 
@@ -287,13 +283,17 @@ c  Setup grid cells sizes and mesh arrays
       if (dz == 0.) call kaboom("w3dgen: dz is zero!")
 
 c  Calculate location of axis in mesh, the term dx*1.e-5 acts as fuzp
-      ix_axis = nint(-xmminlocal/dx)
+      ix_axis = nint(-xmmin/dx)
+      ixlocal_axis = nint(-xmminlocal/dx)
       if(solvergeom==XYZgeom .or.solvergeom==AMRgeom .or. solvergeom==XYgeom) then
-        iy_axis = nint(-ymminlocal/dy)
+        iy_axis = nint(-ymmin/dy)
+        iylocal_axis = nint(-ymminlocal/dy)
       else ! RZgeom, XZgeom, Zgeom, Rgeom
         iy_axis = 0
+        iylocal_axis = 0
       endif
-      iz_axis = nint(-zmminlocal/dz)
+      iz_axis = nint(-zmmin/dz)
+      izlocal_axis = nint(-zmminlocal/dz)
 
 c  Setup arrays for potential and charge density for the particles.
       xpmin = xmmin
@@ -614,22 +614,6 @@ c  Continue to run.
 c=============================================================================
       subroutine w3dfin()
       use Subtimersw3d
-      use InGen
-      use InGen3d
-      use InDiag
-      use InPart
-      use InPart3d
-      use InMesh3d
-      use Fields3d
-      use Io
-      use Lattice
-      use LatticeInternal
-      use Picglb
-      use Picglb3d
-      use Win_Moments
-      use Z_Moments
-      use Z_arrays
-      use Hist
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
 
@@ -654,7 +638,8 @@ c  create final printouts
 
 c  release storage
 
-      call gfree ("Fields3d")
+      call gfree ("Mesh3d")
+      call gfree ("Fields3dSolver")
       call gfree ("Fields3dParticles")
       call gfree ("Hist")
       call gfree ("Win_Moments")
@@ -680,7 +665,6 @@ c=============================================================================
       use InDiag3d
       use InPart
       use InMesh3d
-      use Fields3d
       use Fields3dParticles
       use Io
       use Particles, Only: pgroup,nplive
@@ -1200,7 +1184,6 @@ c=============================================================================
       use Picglb3d
       use Constant
       use Z_arrays
-      use Fields3d
 
 c Calculate ear fields to confine the beam axially.
 c Controlled by ifears.  If zero, no ear fields.
@@ -1585,7 +1568,6 @@ c=============================================================================
       use Lattice
       use LatticeInternal
       use Particles,Only: nplive,wpid,chdtspid,uxoldpid,uyoldpid,uzoldpid,lmappid,zbirthlabpid
-      use Fields3d
       use Subcycling
       use Fields3dParticles
       use Picglb
@@ -2492,7 +2474,6 @@ c=============================================================================
       use Subtimersw3d
       use InGen3d
       use InMesh3d
-      use Fields3d
 
 c  Sets the slices on the exterior of phi for periodicity
 c  sets slice at -1 equal to the slice at nzlocal-1
@@ -2546,7 +2527,7 @@ c=============================================================================
       use InGen,Only: fstype
       use InGen3d
       use InMesh3d
-      use Fields3d,Only: rho
+      use Fields3dSolver,Only: rho
       use GridBoundary3d
       use DebugFlags,Only: debug
 #ifdef MPIPARALLEL
@@ -7285,8 +7266,20 @@ c       --- Formerly depos == "dspline2"
      &                                  nxguardrho,nyguardrho,nzguardrho,
      &                                  dx,dy,dz,xmmin,ymmin,zmmin,
      &                                  l2symtry,l4symtry)
-        endif
+       endif
 
+      else if (ALL(depos_order == 3)) then
+
+c       --- Direct deposition using a third order spline
+        if (.not. lcylindrical) then
+           call setrho3ddirectspline3(rho,np,xp,yp,zp,zgrid,q,wght,
+     &                                nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
+     &                                dx,dy,dz,xmmin,ymmin,zmmin,
+     &                                l2symtry,l4symtry)
+        else
+           call kaboom("setho3dw: cylindrical geometry is not supported for depos_order=3")
+        endif
+        
       else
         call kaboom("setho3d: order of deposition is not supported in the electrostatic solver")
         return
@@ -8484,6 +8477,231 @@ c       --- there'd be a hazard if we interchanged the loops.
       return
       end
 c=============================================================================
+      subroutine setrho3ddirectspline3(rho,np,xp,yp,zp,zgrid,q,wght,
+     &                           nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
+     &                           dx,dy,dz,xmmin,ymmin,zmmin,l2symtry,l4symtry)
+      use GlobalVars
+      integer(ISZ):: np
+      integer(ISZ):: nx,ny,nz,nxguardrho,nyguardrho,nzguardrho
+      real(kind=8):: dx,dy,dz
+      real(kind=8):: zgrid,q,wght
+      real(kind=8):: rho(-nxguardrho:nx+nxguardrho,
+     &                   -nyguardrho:ny+nyguardrho,
+     &                   -nzguardrho:nz+nzguardrho)
+      real(kind=8):: xp(np), yp(np), zp(np), wfact(np)
+      real(kind=8):: xmmin,ymmin,zmmin
+      logical(ISZ):: l2symtry,l4symtry
+      real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+
+c  Sets charge density
+c  Uses a third order spline with direct deposition (no particle blocks)
+
+      integer(ISZ):: ip,ii,jj,kk
+      real(kind=8):: g,dxi,dyi,dzi
+      real(kind=8):: wx,wy,wz
+      real(kind=8):: u0,u1,u2,u3,v0,v1,v2,v3,w0,w1,w2,w3
+      real(kind=8):: gxf,gyf,gxfm1,gyfm1
+
+      if (np == 0) return
+
+      g = wght*q/(dx*dy*dz)
+      dxi = 1./dx
+      dyi = 1./dy
+      dzi = 1./dz
+      if (l2symtry) then
+c       --- The particle weight is reduced by a factor of 2 except near the
+c       --- transverse boundaries.
+        g = g*0.5
+      elseif (l4symtry) then
+c       --- The particle weight is reduced by a factor of 4 except near the
+c       --- transverse boundaries.
+        g = g*0.25
+      endif
+
+! np was made FIRSTPRIVATE to get around a bug when the expression
+! np+1-ipmin was evaluating to 1-ipmin (as if np was zero).
+! I don't know why it works, but it does.
+!$OMP PARALLEL PRIVATE(ii,jj,kk,wx,wy,wz,u2,u1,u0,v2,v1,v0,w2,w1,w0,ip)
+!$OMP&FIRSTPRIVATE(np)
+
+      if (ny > 0) then
+
+        if (nxguardrho <= 0 .or. nyguardrho <= 0 .or. nzguardrho <= 0) then
+          call kaboom("setrho3ddirectspline3: there must be at least one guard cell on all axes")
+          return
+        endif
+
+c     --- vectorized loop to compute indices, weights
+!$OMP DO
+        do ip = 1,np
+
+c     --- determine the position of the particle with respect to the grid
+          kk = int((zp(ip) - zgrid -zmmin)*dzi)
+          wz = (zp(ip) - zgrid - zmmin)*dzi - kk
+          if (l4symtry) then
+            ii = int((abs(xp(ip)) - xmmin)*dxi)
+            wx = (abs(xp(ip)) - xmmin)*dxi - ii
+          else
+            ii = int((xp(ip) - xmmin)*dxi)
+            wx = (xp(ip) - xmmin)*dxi - ii
+          endif
+          if (l2symtry .or. l4symtry) then
+            jj = int((abs(yp(ip)) - ymmin)*dyi)
+            wy = (abs(yp(ip)) - ymmin)*dyi - jj
+          else
+            jj = int((yp(ip) - ymmin)*dyi)
+            wy = (yp(ip) - ymmin)*dyi - jj
+          endif
+
+c     --- calculate weights for each cell
+          u0 = onesixth*(1-wx)**3
+          u1 = twothird - wx**2*(1-0.5*wx)
+          u2 = twothird - (1-wx)**2*(1-0.5*(1-wx))
+          u3 = onesixth*wx**3
+          v0 = onesixth*(1-wy)**3
+          v1 = twothird - wy**2*(1-0.5*wy)
+          v2 = twothird - (1-wy)**2*(1-0.5*(1-wy))
+          v3 = onesixth*wy**3
+          w0 = onesixth*(1-wz)**3
+          w1 = twothird - wz**2*(1-0.5*wz)
+          w2 = twothird - (1-wz)**2*(1-0.5*(1-wz))
+          w3 = onesixth*wz**3
+
+c     --- add the charge for each cell
+          rho(ii-1,jj-1,kk-1) = rho(ii-1,jj-1,kk-1) + u0*v0*w0*g
+          rho(ii  ,jj-1,kk-1) = rho(ii  ,jj-1,kk-1) + u1*v0*w0*g
+          rho(ii+1,jj-1,kk-1) = rho(ii+1,jj-1,kk-1) + u2*v0*w0*g
+          rho(ii+2,jj-1,kk-1) = rho(ii+2,jj-1,kk-1) + u3*v0*w0*g
+          rho(ii-1,jj  ,kk-1) = rho(ii-1,jj  ,kk-1) + u0*v1*w0*g
+          rho(ii  ,jj  ,kk-1) = rho(ii  ,jj  ,kk-1) + u1*v1*w0*g
+          rho(ii+1,jj  ,kk-1) = rho(ii+1,jj  ,kk-1) + u2*v1*w0*g
+          rho(ii+2,jj  ,kk-1) = rho(ii+2,jj  ,kk-1) + u3*v1*w0*g
+          rho(ii-1,jj+1,kk-1) = rho(ii-1,jj+1,kk-1) + u0*v2*w0*g
+          rho(ii  ,jj+1,kk-1) = rho(ii  ,jj+1,kk-1) + u1*v2*w0*g
+          rho(ii+1,jj+1,kk-1) = rho(ii+1,jj+1,kk-1) + u2*v2*w0*g
+          rho(ii+2,jj+1,kk-1) = rho(ii+2,jj+1,kk-1) + u3*v2*w0*g
+          rho(ii-1,jj+2,kk-1) = rho(ii-1,jj+2,kk-1) + u0*v3*w0*g
+          rho(ii  ,jj+2,kk-1) = rho(ii  ,jj+2,kk-1) + u1*v3*w0*g
+          rho(ii+1,jj+2,kk-1) = rho(ii+1,jj+2,kk-1) + u2*v3*w0*g
+          rho(ii+2,jj+2,kk-1) = rho(ii+2,jj+2,kk-1) + u3*v3*w0*g
+          
+          rho(ii-1,jj-1,kk  ) = rho(ii-1,jj-1,kk  ) + u0*v0*w1*g
+          rho(ii  ,jj-1,kk  ) = rho(ii  ,jj-1,kk  ) + u1*v0*w1*g
+          rho(ii+1,jj-1,kk  ) = rho(ii+1,jj-1,kk  ) + u2*v0*w1*g
+          rho(ii+2,jj-1,kk  ) = rho(ii+2,jj-1,kk  ) + u3*v0*w1*g
+          rho(ii-1,jj  ,kk  ) = rho(ii-1,jj  ,kk  ) + u0*v1*w1*g
+          rho(ii  ,jj  ,kk  ) = rho(ii  ,jj  ,kk  ) + u1*v1*w1*g
+          rho(ii+1,jj  ,kk  ) = rho(ii+1,jj  ,kk  ) + u2*v1*w1*g
+          rho(ii+2,jj  ,kk  ) = rho(ii+2,jj  ,kk  ) + u3*v1*w1*g
+          rho(ii-1,jj+1,kk  ) = rho(ii-1,jj+1,kk  ) + u0*v2*w1*g
+          rho(ii  ,jj+1,kk  ) = rho(ii  ,jj+1,kk  ) + u1*v2*w1*g
+          rho(ii+1,jj+1,kk  ) = rho(ii+1,jj+1,kk  ) + u2*v2*w1*g
+          rho(ii+2,jj+1,kk  ) = rho(ii+2,jj+1,kk  ) + u3*v2*w1*g
+          rho(ii-1,jj+2,kk  ) = rho(ii-1,jj+2,kk  ) + u0*v3*w1*g
+          rho(ii  ,jj+2,kk  ) = rho(ii  ,jj+2,kk  ) + u1*v3*w1*g
+          rho(ii+1,jj+2,kk  ) = rho(ii+1,jj+2,kk  ) + u2*v3*w1*g
+          rho(ii+2,jj+2,kk  ) = rho(ii+2,jj+2,kk  ) + u3*v3*w1*g
+
+          rho(ii-1,jj-1,kk+1) = rho(ii-1,jj-1,kk+1) + u0*v0*w2*g
+          rho(ii  ,jj-1,kk+1) = rho(ii  ,jj-1,kk+1) + u1*v0*w2*g
+          rho(ii+1,jj-1,kk+1) = rho(ii+1,jj-1,kk+1) + u2*v0*w2*g
+          rho(ii+2,jj-1,kk+1) = rho(ii+2,jj-1,kk+1) + u3*v0*w2*g
+          rho(ii-1,jj  ,kk+1) = rho(ii-1,jj  ,kk+1) + u0*v1*w2*g
+          rho(ii  ,jj  ,kk+1) = rho(ii  ,jj  ,kk+1) + u1*v1*w2*g
+          rho(ii+1,jj  ,kk+1) = rho(ii+1,jj  ,kk+1) + u2*v1*w2*g
+          rho(ii+2,jj  ,kk+1) = rho(ii+2,jj  ,kk+1) + u3*v1*w2*g
+          rho(ii-1,jj+1,kk+1) = rho(ii-1,jj+1,kk+1) + u0*v2*w2*g
+          rho(ii  ,jj+1,kk+1) = rho(ii  ,jj+1,kk+1) + u1*v2*w2*g
+          rho(ii+1,jj+1,kk+1) = rho(ii+1,jj+1,kk+1) + u2*v2*w2*g
+          rho(ii+2,jj+1,kk+1) = rho(ii+2,jj+1,kk+1) + u3*v2*w2*g
+          rho(ii-1,jj+2,kk+1) = rho(ii-1,jj+2,kk+1) + u0*v3*w2*g
+          rho(ii  ,jj+2,kk+1) = rho(ii  ,jj+2,kk+1) + u1*v3*w2*g
+          rho(ii+1,jj+2,kk+1) = rho(ii+1,jj+2,kk+1) + u2*v3*w2*g
+          rho(ii+2,jj+2,kk+1) = rho(ii+2,jj+2,kk+1) + u3*v3*w2*g
+
+          rho(ii-1,jj-1,kk+2) = rho(ii-1,jj-1,kk+2) + u0*v0*w3*g
+          rho(ii  ,jj-1,kk+2) = rho(ii  ,jj-1,kk+2) + u1*v0*w3*g
+          rho(ii+1,jj-1,kk+2) = rho(ii+1,jj-1,kk+2) + u2*v0*w3*g
+          rho(ii+2,jj-1,kk+2) = rho(ii+2,jj-1,kk+2) + u3*v0*w3*g
+          rho(ii-1,jj  ,kk+2) = rho(ii-1,jj  ,kk+2) + u0*v1*w3*g
+          rho(ii  ,jj  ,kk+2) = rho(ii  ,jj  ,kk+2) + u1*v1*w3*g
+          rho(ii+1,jj  ,kk+2) = rho(ii+1,jj  ,kk+2) + u2*v1*w3*g
+          rho(ii+2,jj  ,kk+2) = rho(ii+2,jj  ,kk+2) + u3*v1*w3*g
+          rho(ii-1,jj+1,kk+2) = rho(ii-1,jj+1,kk+2) + u0*v2*w3*g
+          rho(ii  ,jj+1,kk+2) = rho(ii  ,jj+1,kk+2) + u1*v2*w3*g
+          rho(ii+1,jj+1,kk+2) = rho(ii+1,jj+1,kk+2) + u2*v2*w3*g
+          rho(ii+2,jj+1,kk+2) = rho(ii+2,jj+1,kk+2) + u3*v2*w3*g
+          rho(ii-1,jj+2,kk+2) = rho(ii-1,jj+2,kk+2) + u0*v3*w3*g
+          rho(ii  ,jj+2,kk+2) = rho(ii  ,jj+2,kk+2) + u1*v3*w3*g
+          rho(ii+1,jj+2,kk+2) = rho(ii+1,jj+2,kk+2) + u2*v3*w3*g
+          rho(ii+2,jj+2,kk+2) = rho(ii+2,jj+2,kk+2) + u3*v3*w3*g
+          
+        enddo
+!$OMP END DO
+
+      else
+
+        if (nxguardrho <= 0 .or. nzguardrho <= 0) then
+          call kaboom("setrho3ddirectspline3w: there must be at least one guard cell on all axes")
+          return
+        endif
+
+c     --- NY = 0
+c     --- vectorized loop to compute indices, weights
+!$OMP DO
+        do ip = 1,np
+
+c     --- determine the position of the particle with respect to the grid
+          kk = int((zp(ip) - zgrid -zmmin)*dzi)
+          wz = (zp(ip+1) - zgrid - zmmin)*dzi - kk
+          if (l4symtry) then
+            ii = int((abs(xp(ip)) - xmmin)*dxi)
+            wx = (abs(xp(ip)) - xmmin)*dxi - ii
+          else
+            ii = int((xp(ip) - xmmin)*dxi)
+            wx = (xp(ip) - xmmin)*dxi - ii
+         endif
+
+c     --- calculate weights for each cell
+          u0 = onesixth*(1-wx)**3
+          u1 = twothird - wx**2*(1-0.5*wx)
+          u2 = twothird - (1-wx)**2*(1-0.5*(1-wx))
+          u3 = onesixth*wx**3
+          w0 = onesixth*(1-wz)**3
+          w1 = twothird - wz**2*(1-0.5*wz)
+          w2 = twothird - (1-wz)**2*(1-0.5*(1-wz))
+          w3 = onesixth*wz**3
+
+          rho(ii-1,0,kk-1) = rho(ii-1,0,kk-1) + u0*w0*g
+          rho(ii  ,0,kk-1) = rho(ii  ,0,kk-1) + u1*w0*g
+          rho(ii+1,0,kk-1) = rho(ii+1,0,kk-1) + u2*w0*g
+          rho(ii+2,0,kk-1) = rho(ii+2,0,kk-1) + u3*w0*g
+
+          rho(ii-1,0,kk  ) = rho(ii-1,0,kk  ) + u0*w1*g
+          rho(ii  ,0,kk  ) = rho(ii  ,0,kk  ) + u1*w1*g
+          rho(ii+1,0,kk  ) = rho(ii+1,0,kk  ) + u2*w1*g
+          rho(ii+2,0,kk  ) = rho(ii+2,0,kk  ) + u3*w1*g
+
+          rho(ii-1,0,kk+1) = rho(ii-1,0,kk+1) + u0*w2*g
+          rho(ii  ,0,kk+1) = rho(ii  ,0,kk+1) + u1*w2*g
+          rho(ii+1,0,kk+1) = rho(ii+1,0,kk+1) + u2*w2*g
+          rho(ii+2,0,kk+1) = rho(ii+2,0,kk+1) + u3*w2*g
+
+          rho(ii-1,0,kk+2) = rho(ii-1,0,kk+2) + u0*w3*g
+          rho(ii  ,0,kk+2) = rho(ii  ,0,kk+2) + u1*w3*g
+          rho(ii+1,0,kk+2) = rho(ii+1,0,kk+2) + u2*w3*g
+          rho(ii+2,0,kk+2) = rho(ii+2,0,kk+2) + u3*w3*g
+
+        enddo
+!$OMP END DO
+        
+      endif
+
+!$OMP END PARALLEL
+
+      return
+      end
+c=============================================================================
       subroutine setrho3ddirectspline2(rho,np,xp,yp,zp,zgrid,q,wght,
      &                           nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
      &                           dx,dy,dz,xmmin,ymmin,zmmin,l2symtry,l4symtry)
@@ -8954,6 +9172,7 @@ c     --- normal loop
       return
       end
 c=============================================================================
+
 c=============================================================================
       subroutine setrho3dw(rho,np,xp,yp,zp,zgrid,wfact,q,wght,depos,depos_order,
      &                     nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
@@ -9010,6 +9229,18 @@ c       --- Formerly depos == "dspline2"
      &                                   nxguardrho,nyguardrho,nzguardrho,
      &                                   dx,dy,dz,xmmin,ymmin,zmmin,
      &                                   l2symtry,l4symtry)
+        endif
+
+      else if (ALL(depos_order == 3)) then
+
+c       --- Direct deposition using a third order spline
+        if (.not. lcylindrical) then
+           call setrho3ddirectspline3w(rho,np,xp,yp,zp,zgrid,wfact,q,wght,
+     &                                nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
+     &                                dx,dy,dz,xmmin,ymmin,zmmin,
+     &                                l2symtry,l4symtry)
+        else
+           call kaboom("setho3dw: cylindrical geometry is not supported for depos_order=3")
         endif
 
       else
@@ -9585,6 +9816,236 @@ c       --- normal loop
       return
       end
 c=============================================================================
+      subroutine setrho3ddirectspline3w(rho,np,xp,yp,zp,zgrid,wfact,q,wght,
+     &                           nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
+     &                           dx,dy,dz,xmmin,ymmin,zmmin,l2symtry,l4symtry)
+      use GlobalVars
+      integer(ISZ):: np
+      integer(ISZ):: nx,ny,nz,nxguardrho,nyguardrho,nzguardrho
+      real(kind=8):: dx,dy,dz
+      real(kind=8):: zgrid,q,wght
+      real(kind=8):: rho(-nxguardrho:nx+nxguardrho,
+     &                   -nyguardrho:ny+nyguardrho,
+     &                   -nzguardrho:nz+nzguardrho)
+      real(kind=8):: xp(np), yp(np), zp(np), wfact(np)
+      real(kind=8):: xmmin,ymmin,zmmin
+      logical(ISZ):: l2symtry,l4symtry
+      real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+
+c  Sets charge density
+c  Uses a third order spline with direct deposition (no particle blocks)
+
+      integer(ISZ):: ip,ii,jj,kk
+      real(kind=8):: g0,g,dxi,dyi,dzi
+      real(kind=8):: wx,wy,wz
+      real(kind=8):: u0,u1,u2,u3,v0,v1,v2,v3,w0,w1,w2,w3
+      real(kind=8):: gxf,gyf,gxfm1,gyfm1
+
+      if (np == 0) return
+
+      g0 = wght*q/(dx*dy*dz)
+      dxi = 1./dx
+      dyi = 1./dy
+      dzi = 1./dz
+      if (l2symtry) then
+c       --- The particle weight is reduced by a factor of 2 except near the
+c       --- transverse boundaries.
+        g0 = g0*0.5
+      elseif (l4symtry) then
+c       --- The particle weight is reduced by a factor of 4 except near the
+c       --- transverse boundaries.
+        g0 = g0*0.25
+      endif
+
+! np was made FIRSTPRIVATE to get around a bug when the expression
+! np+1-ipmin was evaluating to 1-ipmin (as if np was zero).
+! I don't know why it works, but it does.
+!$OMP PARALLEL PRIVATE(ii,jj,kk,wx,wy,wz,u2,u1,u0,v2,v1,v0,w2,w1,w0,ip)
+!$OMP&FIRSTPRIVATE(np)
+
+      if (ny > 0) then
+
+        if (nxguardrho <= 0 .or. nyguardrho <= 0 .or. nzguardrho <= 0) then
+          call kaboom("setrho3ddirectspline3: there must be at least one guard cell on all axes")
+          return
+        endif
+
+c     --- vectorized loop to compute indices, weights
+!$OMP DO
+        do ip = 1,np
+
+c     --- determine the position of the particle with respect to the grid
+          kk = int((zp(ip) - zgrid -zmmin)*dzi)
+          wz = (zp(ip) - zgrid - zmmin)*dzi - kk
+          if (l4symtry) then
+            ii = int((abs(xp(ip)) - xmmin)*dxi)
+            wx = (abs(xp(ip)) - xmmin)*dxi - ii
+          else
+            ii = int((xp(ip) - xmmin)*dxi)
+            wx = (xp(ip) - xmmin)*dxi - ii
+          endif
+          if (l2symtry .or. l4symtry) then
+            jj = int((abs(yp(ip)) - ymmin)*dyi)
+            wy = (abs(yp(ip)) - ymmin)*dyi - jj
+          else
+            jj = int((yp(ip) - ymmin)*dyi)
+            wy = (yp(ip) - ymmin)*dyi - jj
+          endif
+
+c     --- calculate weights for each cell
+          u0 = onesixth*(1-wx)**3
+          u1 = twothird - wx**2*(1-0.5*wx)
+          u2 = twothird - (1-wx)**2*(1-0.5*(1-wx))
+          u3 = onesixth*wx**3
+          v0 = onesixth*(1-wy)**3
+          v1 = twothird - wy**2*(1-0.5*wy)
+          v2 = twothird - (1-wy)**2*(1-0.5*(1-wy))
+          v3 = onesixth*wy**3
+          w0 = onesixth*(1-wz)**3
+          w1 = twothird - wz**2*(1-0.5*wz)
+          w2 = twothird - (1-wz)**2*(1-0.5*(1-wz))
+          w3 = onesixth*wz**3
+
+          g = g0*wfact(ip)
+
+c     --- add the charge for each cell
+          rho(ii-1,jj-1,kk-1) = rho(ii-1,jj-1,kk-1) + u0*v0*w0*g
+          rho(ii  ,jj-1,kk-1) = rho(ii  ,jj-1,kk-1) + u1*v0*w0*g
+          rho(ii+1,jj-1,kk-1) = rho(ii+1,jj-1,kk-1) + u2*v0*w0*g
+          rho(ii+2,jj-1,kk-1) = rho(ii+2,jj-1,kk-1) + u3*v0*w0*g
+          rho(ii-1,jj  ,kk-1) = rho(ii-1,jj  ,kk-1) + u0*v1*w0*g
+          rho(ii  ,jj  ,kk-1) = rho(ii  ,jj  ,kk-1) + u1*v1*w0*g
+          rho(ii+1,jj  ,kk-1) = rho(ii+1,jj  ,kk-1) + u2*v1*w0*g
+          rho(ii+2,jj  ,kk-1) = rho(ii+2,jj  ,kk-1) + u3*v1*w0*g
+          rho(ii-1,jj+1,kk-1) = rho(ii-1,jj+1,kk-1) + u0*v2*w0*g
+          rho(ii  ,jj+1,kk-1) = rho(ii  ,jj+1,kk-1) + u1*v2*w0*g
+          rho(ii+1,jj+1,kk-1) = rho(ii+1,jj+1,kk-1) + u2*v2*w0*g
+          rho(ii+2,jj+1,kk-1) = rho(ii+2,jj+1,kk-1) + u3*v2*w0*g
+          rho(ii-1,jj+2,kk-1) = rho(ii-1,jj+2,kk-1) + u0*v3*w0*g
+          rho(ii  ,jj+2,kk-1) = rho(ii  ,jj+2,kk-1) + u1*v3*w0*g
+          rho(ii+1,jj+2,kk-1) = rho(ii+1,jj+2,kk-1) + u2*v3*w0*g
+          rho(ii+2,jj+2,kk-1) = rho(ii+2,jj+2,kk-1) + u3*v3*w0*g
+          
+          rho(ii-1,jj-1,kk  ) = rho(ii-1,jj-1,kk  ) + u0*v0*w1*g
+          rho(ii  ,jj-1,kk  ) = rho(ii  ,jj-1,kk  ) + u1*v0*w1*g
+          rho(ii+1,jj-1,kk  ) = rho(ii+1,jj-1,kk  ) + u2*v0*w1*g
+          rho(ii+2,jj-1,kk  ) = rho(ii+2,jj-1,kk  ) + u3*v0*w1*g
+          rho(ii-1,jj  ,kk  ) = rho(ii-1,jj  ,kk  ) + u0*v1*w1*g
+          rho(ii  ,jj  ,kk  ) = rho(ii  ,jj  ,kk  ) + u1*v1*w1*g
+          rho(ii+1,jj  ,kk  ) = rho(ii+1,jj  ,kk  ) + u2*v1*w1*g
+          rho(ii+2,jj  ,kk  ) = rho(ii+2,jj  ,kk  ) + u3*v1*w1*g
+          rho(ii-1,jj+1,kk  ) = rho(ii-1,jj+1,kk  ) + u0*v2*w1*g
+          rho(ii  ,jj+1,kk  ) = rho(ii  ,jj+1,kk  ) + u1*v2*w1*g
+          rho(ii+1,jj+1,kk  ) = rho(ii+1,jj+1,kk  ) + u2*v2*w1*g
+          rho(ii+2,jj+1,kk  ) = rho(ii+2,jj+1,kk  ) + u3*v2*w1*g
+          rho(ii-1,jj+2,kk  ) = rho(ii-1,jj+2,kk  ) + u0*v3*w1*g
+          rho(ii  ,jj+2,kk  ) = rho(ii  ,jj+2,kk  ) + u1*v3*w1*g
+          rho(ii+1,jj+2,kk  ) = rho(ii+1,jj+2,kk  ) + u2*v3*w1*g
+          rho(ii+2,jj+2,kk  ) = rho(ii+2,jj+2,kk  ) + u3*v3*w1*g
+
+          rho(ii-1,jj-1,kk+1) = rho(ii-1,jj-1,kk+1) + u0*v0*w2*g
+          rho(ii  ,jj-1,kk+1) = rho(ii  ,jj-1,kk+1) + u1*v0*w2*g
+          rho(ii+1,jj-1,kk+1) = rho(ii+1,jj-1,kk+1) + u2*v0*w2*g
+          rho(ii+2,jj-1,kk+1) = rho(ii+2,jj-1,kk+1) + u3*v0*w2*g
+          rho(ii-1,jj  ,kk+1) = rho(ii-1,jj  ,kk+1) + u0*v1*w2*g
+          rho(ii  ,jj  ,kk+1) = rho(ii  ,jj  ,kk+1) + u1*v1*w2*g
+          rho(ii+1,jj  ,kk+1) = rho(ii+1,jj  ,kk+1) + u2*v1*w2*g
+          rho(ii+2,jj  ,kk+1) = rho(ii+2,jj  ,kk+1) + u3*v1*w2*g
+          rho(ii-1,jj+1,kk+1) = rho(ii-1,jj+1,kk+1) + u0*v2*w2*g
+          rho(ii  ,jj+1,kk+1) = rho(ii  ,jj+1,kk+1) + u1*v2*w2*g
+          rho(ii+1,jj+1,kk+1) = rho(ii+1,jj+1,kk+1) + u2*v2*w2*g
+          rho(ii+2,jj+1,kk+1) = rho(ii+2,jj+1,kk+1) + u3*v2*w2*g
+          rho(ii-1,jj+2,kk+1) = rho(ii-1,jj+2,kk+1) + u0*v3*w2*g
+          rho(ii  ,jj+2,kk+1) = rho(ii  ,jj+2,kk+1) + u1*v3*w2*g
+          rho(ii+1,jj+2,kk+1) = rho(ii+1,jj+2,kk+1) + u2*v3*w2*g
+          rho(ii+2,jj+2,kk+1) = rho(ii+2,jj+2,kk+1) + u3*v3*w2*g
+
+          rho(ii-1,jj-1,kk+2) = rho(ii-1,jj-1,kk+2) + u0*v0*w3*g
+          rho(ii  ,jj-1,kk+2) = rho(ii  ,jj-1,kk+2) + u1*v0*w3*g
+          rho(ii+1,jj-1,kk+2) = rho(ii+1,jj-1,kk+2) + u2*v0*w3*g
+          rho(ii+2,jj-1,kk+2) = rho(ii+2,jj-1,kk+2) + u3*v0*w3*g
+          rho(ii-1,jj  ,kk+2) = rho(ii-1,jj  ,kk+2) + u0*v1*w3*g
+          rho(ii  ,jj  ,kk+2) = rho(ii  ,jj  ,kk+2) + u1*v1*w3*g
+          rho(ii+1,jj  ,kk+2) = rho(ii+1,jj  ,kk+2) + u2*v1*w3*g
+          rho(ii+2,jj  ,kk+2) = rho(ii+2,jj  ,kk+2) + u3*v1*w3*g
+          rho(ii-1,jj+1,kk+2) = rho(ii-1,jj+1,kk+2) + u0*v2*w3*g
+          rho(ii  ,jj+1,kk+2) = rho(ii  ,jj+1,kk+2) + u1*v2*w3*g
+          rho(ii+1,jj+1,kk+2) = rho(ii+1,jj+1,kk+2) + u2*v2*w3*g
+          rho(ii+2,jj+1,kk+2) = rho(ii+2,jj+1,kk+2) + u3*v2*w3*g
+          rho(ii-1,jj+2,kk+2) = rho(ii-1,jj+2,kk+2) + u0*v3*w3*g
+          rho(ii  ,jj+2,kk+2) = rho(ii  ,jj+2,kk+2) + u1*v3*w3*g
+          rho(ii+1,jj+2,kk+2) = rho(ii+1,jj+2,kk+2) + u2*v3*w3*g
+          rho(ii+2,jj+2,kk+2) = rho(ii+2,jj+2,kk+2) + u3*v3*w3*g
+          
+        enddo
+!$OMP END DO
+
+      else
+
+        if (nxguardrho <= 0 .or. nzguardrho <= 0) then
+          call kaboom("setrho3ddirectspline3w: there must be at least one guard cell on all axes")
+          return
+        endif
+
+c     --- NY = 0
+c     --- vectorized loop to compute indices, weights
+!$OMP DO
+        do ip = 1,np
+
+c     --- determine the position of the particle with respect to the grid
+          kk = int((zp(ip) - zgrid -zmmin)*dzi)
+          wz = (zp(ip+1) - zgrid - zmmin)*dzi - kk
+          if (l4symtry) then
+            ii = int((abs(xp(ip)) - xmmin)*dxi)
+            wx = (abs(xp(ip)) - xmmin)*dxi - ii
+          else
+            ii = int((xp(ip) - xmmin)*dxi)
+            wx = (xp(ip) - xmmin)*dxi - ii
+         endif
+
+c     --- calculate weights for each cell
+          u0 = onesixth*(1-wx)**3
+          u1 = twothird - wx**2*(1-0.5*wx)
+          u2 = twothird - (1-wx)**2*(1-0.5*(1-wx))
+          u3 = onesixth*wx**3
+          w0 = onesixth*(1-wz)**3
+          w1 = twothird - wz**2*(1-0.5*wz)
+          w2 = twothird - (1-wz)**2*(1-0.5*(1-wz))
+          w3 = onesixth*wz**3
+
+          g = g0*wfact(ip)
+
+          rho(ii-1,0,kk-1) = rho(ii-1,0,kk-1) + u0*w0*g
+          rho(ii  ,0,kk-1) = rho(ii  ,0,kk-1) + u1*w0*g
+          rho(ii+1,0,kk-1) = rho(ii+1,0,kk-1) + u2*w0*g
+          rho(ii+2,0,kk-1) = rho(ii+2,0,kk-1) + u3*w0*g
+
+          rho(ii-1,0,kk  ) = rho(ii-1,0,kk  ) + u0*w1*g
+          rho(ii  ,0,kk  ) = rho(ii  ,0,kk  ) + u1*w1*g
+          rho(ii+1,0,kk  ) = rho(ii+1,0,kk  ) + u2*w1*g
+          rho(ii+2,0,kk  ) = rho(ii+2,0,kk  ) + u3*w1*g
+
+          rho(ii-1,0,kk+1) = rho(ii-1,0,kk+1) + u0*w2*g
+          rho(ii  ,0,kk+1) = rho(ii  ,0,kk+1) + u1*w2*g
+          rho(ii+1,0,kk+1) = rho(ii+1,0,kk+1) + u2*w2*g
+          rho(ii+2,0,kk+1) = rho(ii+2,0,kk+1) + u3*w2*g
+
+          rho(ii-1,0,kk+2) = rho(ii-1,0,kk+2) + u0*w3*g
+          rho(ii  ,0,kk+2) = rho(ii  ,0,kk+2) + u1*w3*g
+          rho(ii+1,0,kk+2) = rho(ii+1,0,kk+2) + u2*w3*g
+          rho(ii+2,0,kk+2) = rho(ii+2,0,kk+2) + u3*w3*g
+
+        enddo
+!$OMP END DO
+        
+      endif
+
+!$OMP END PARALLEL
+
+      return
+      end
+
+c=============================================================================
       subroutine setrho3ddirectspline2w(rho,np,xp,yp,zp,zgrid,wfact,q,wght,
      &                           nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
      &                           dx,dy,dz,xmmin,ymmin,zmmin,l2symtry,l4symtry)
@@ -9942,7 +10403,7 @@ c       --- normal loop
 !$OMP END PARALLEL
 
       return
-      end
+      end      
 c=============================================================================
       subroutine setrho3ddirectspline2cylw(rho,np,xp,yp,zp,zgrid,wfact,q,wght,
      &                           nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
@@ -10310,7 +10771,6 @@ c=============================================================================
       use Picglb
       use Picglb3d
       use Particles,Only: wpid
-      use Fields3d
       use Subcycling
       use Fields3dParticles
       use GridBoundary3d
@@ -10663,7 +11123,6 @@ c=============================================================================
       subroutine assignrhopandphipforparticles(rhopin,phipin)
       use InGen3d
       use InMesh3d
-      use Fields3d
       use Fields3dParticles
       real(kind=8),target:: rhopin(-nxguardrho:nxp+nxguardrho,
      &                             -nyguardrho:nyp+nyguardrho,
@@ -10733,7 +11192,7 @@ c       --- has the wrong shape.
 c=============================================================================
       subroutine assignrhoandphiforfieldsolve(rhopin,phipin)
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
       real(kind=8),target:: rhopin(-nxguardrho:nxp+nxguardrho,
      &                             -nyguardrho:nyp+nyguardrho,
@@ -10774,7 +11233,7 @@ c=============================================================================
 #ifdef MPIPARALLEL
       use InMesh3d,Only: nxlocal,nylocal,nzlocal,nxguarde,nyguarde,nzguarde
 #endif
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
 
 #ifndef MPIPARALLEL
@@ -10811,7 +11270,7 @@ c=============================================================================
       use InGen
       use InGen3d
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Subcycling
       use Fields3dParticles
 #ifdef MPIPARALLEL
@@ -10902,7 +11361,6 @@ c=============================================================================
       use InPart,Only: depos_order,efetch
       use Picglb3d
       use InMesh3d
-      use Fields3d
       use Fields3dParticles
       use Subcycling,Only:nrhopndtscopies,nsndts,nsndtsphi
       use SelfB,Only: nsselfb
@@ -10985,7 +11443,6 @@ c=============================================================================
       use InPart,Only: efetch,depos_order
       use InGen3d
       use InMesh3d
-      use Fields3d
       use Subcycling
       use Fields3dParticles
       use FieldSolveAPI
@@ -11073,7 +11530,6 @@ c=============================================================================
       use InPart,Only: efetch,depos_order
       use InGen3d
       use InMesh3d
-      use Fields3d
       use Subcycling,Only: nsndts,ndtstorho
       use Fields3dParticles
       use FieldSolveAPI
@@ -11583,7 +12039,7 @@ c=============================================================================
       use Picglb3d,Only: dx,dy,dz
       use InMesh3d
       use InGen3d
-      use Fields3d,Only: xmesh,ymesh,zmesh,xmeshlocal,ymeshlocal,zmeshlocal
+      use Mesh3d
 
 c  Calculate mesh dimensioning quantities
 
@@ -11605,6 +12061,9 @@ c  Calculate mesh dimensioning quantities
         dy = 1.
         dz = 1.
       end if
+
+      call gchange("Mesh3d", 0)
+
       do i = 0, nx
          xmesh(i) = i*dx + xmmin
       enddo
@@ -11771,7 +12230,7 @@ c=============================================================================
       use InGen3d
       use InMesh3d
       use Picglb3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
       integer(ISZ):: n
       real(kind=8):: x(n),y(n),z(n),p(n)
@@ -12028,7 +12487,6 @@ c===========================================================================
       use Picglb
       use Picglb3d
       use InMesh3d
-      use Fields3d
       use Fields3dParticles
       use Apertures
 
@@ -12454,7 +12912,7 @@ c===========================================================================
 #ifdef MPIPARALLEL
       use InGen3d
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
       use Parallel
 #endif
@@ -12514,7 +12972,7 @@ c===========================================================================
       use Subtimersw3d
       use InGen3d
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
 
 c This gets the phi at iz=nzlocal and in the guard cells. It is only needed for
@@ -12630,7 +13088,7 @@ c===========================================================================
       use InGen3d
       use InMesh3d
       use Picglb3d
-      use Fields3d
+      use Fields3dSolver
       use Subcycling
       use Fields3dParticles
       use LatticeInternal
@@ -12699,6 +13157,12 @@ c       --- turn back on the bends after the fieldsolve when computing in a boos
 
         return
       endif
+
+      call gchange("Fields3dSolver", 0)
+
+c     --- This is always done with the built in solvers
+c     --- (even with the RZ solver which does use the w3d.rho array)
+      call setupFields3dParticles()
 
 c     --- Make sure that rho has been finalized and is ready for the solve
       if (.not. lrhofinalized) call finalizerho()
@@ -12871,7 +13335,7 @@ c===========================================================================
       use InMesh3d
       use Picglb
       use Picglb3d
-      use Fields3d
+      use Fields3dSolver
 
 c Does the FFT field solve in bends.
 
@@ -12984,7 +13448,7 @@ c=============================================================================
       use Picglb3d
       use Picglb
       use GridBoundary3d
-      use Fields3d
+      use Fields3dSolver
       use LatticeInternal
       use BoltzmannElectrons
       use Parallel
@@ -13024,6 +13488,10 @@ c fits and so was replaced with if statements.
       xlen = nx*dx
       ylen = ny*dy
       zlen = nz*dz
+
+      nmxy  = max(nx,ny)
+      nmxyz = max(nx,ny,nz)
+      call gchange("Fields3dSolver", 0)
 
       if (fstype == 0) then
           call vpois3d(iwhich,phi,phi,kxsq,kysq,kzsq,

@@ -53,6 +53,8 @@ def printparameters3d():
 
     if with_matplotlib:
         universeaxes()
-    plt(textblock, 0.12, 0.88, justify='LT')
+        plt(textblock, 0.1, 0.9, justify='LT')
+    else:
+        plt(textblock, 0.12, 0.88, justify='LT')
     fma()
 

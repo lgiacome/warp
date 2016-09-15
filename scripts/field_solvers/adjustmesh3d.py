@@ -111,9 +111,12 @@ def resizemesh(nx=None,ny=None,nz=None,lloadrho=True,lfieldsol=True,
 
     # --- Find the grid axis
     w3d.ix_axis = nint(-w3d.xmmin/w3d.dx)
+    w3d.ixlocal_axis = nint(-w3d.xmminlocal/w3d.dx)
     if w3d.solvergeom in [w3d.XYZgeom, w3d.AMRgeom]:
         w3d.iy_axis = nint(-w3d.ymmin/w3d.dy)
+        w3d.iylocal_axis = nint(-w3d.ymminlocal/w3d.dy)
     w3d.iz_axis = nint(-w3d.zmmin/w3d.dz)
+    w3d.izlocal_axis = nint(-w3d.zmminlocal/w3d.dz)
 
     # --- if requested, resize injection arrays accordingly
     if(linj):
@@ -220,8 +223,10 @@ def resizemeshxy(nx=None,ny=None,xmmin=None,xmmax=None,ymmin=None,ymmax=None,
 
     # --- Find the grid axis
     w3d.ix_axis = nint(-w3d.xmmin/w3d.dx)
+    w3d.ixlocal_axis = nint(-w3d.xmminlocal/w3d.dx)
     if w3d.solvergeom in [w3d.XYZgeom, w3d.AMRgeom]:
         w3d.iy_axis = nint(-w3d.ymmin/w3d.dy)
+        w3d.iylocal_axis = nint(-w3d.ymminlocal/w3d.dy)
 
     # --- Fix selfe if needed
     allocateselfepforparticles(false)

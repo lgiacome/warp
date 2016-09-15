@@ -2676,7 +2676,6 @@ c===========================================================================
       use Subtimersf3d
       use InGen
       use LatticeInternal
-      use Fields3d
       use Timers
       use Picglb, only: zgrid
       use GridBoundary3d

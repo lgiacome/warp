@@ -60,7 +60,7 @@ c=============================================================================
       use InPart
       use InPart3d
       use InMesh3d
-      use Fields3d
+      use Mesh3d
       use Fields3dParticles
       use Io
       use Lattice
@@ -104,8 +104,8 @@ c  (rwallfac = 1 is probably NOT a good guess)
 
       rwall = rwallfac * sqrt( xmmax**2 + xmmin**2 )
 
-c  Calculate derived quantities and species related arrays (both set from 
-c  derivqty and an internal call to species).  
+c  Calculate derived quantities and species related arrays (both set from
+c  derivqty and an internal call to species).
 
       call derivqty
 
@@ -214,12 +214,8 @@ c  Setup arrays for potential and charge density for the particles.
 
 c  Create the dynamic arrays for fields
 
-      nmxy  = max(nx,ny)
-      nmxyz = max(nx,ny,nz)
-      call gallot("Fields3d", 0)
       call setupSubcycling(pgroup)
       call setupSelfB(pgroup)
-      call setupFields3dParticles()
 
 c  Initialize beam frame location and velocity
 
@@ -240,8 +236,10 @@ c  Set the value of prwall, radius at which particles are lost
         if (prwallyz(k) == 0.) prwallyz(k) = prwally
         if (prwelipz(k) == 1.) prwelipz(k) = prwelip
       enddo
-        
-c  Calculate mesh dimensioning quantities 
+
+c  Calculate mesh dimensioning quantities
+
+      call gchange("Mesh3d",0)
 
       dx = (xmmax - xmmin) / nx
       dy = (ymmax - ymmin) / ny
@@ -278,11 +276,15 @@ c  Calculate mesh dimensioning quantities
 
 c Calculate location of axis in mesh, the term dx*1.e-5 acts as fuzz
       ix_axis = nint(-xmmin/dx)
+      ixlocal_axis = nint(-xmminlocal/dx)
       iy_axis = nint(-ymmin/dy)
+      iylocal_axis = nint(-ymminlocal/dy)
       if (nz == 0) then
         iz_axis = 0
+        izlocal_axis = 0
       else
-        iz_axis = nint(-zmminlocal/dz)
+        iz_axis = nint(-zmmin/dz)
+        izlocal_axis = nint(-zmminlocal/dz)
       endif
 
 c Initialize grid when solvergeom=XYgeom
@@ -292,7 +294,7 @@ c Initialize grid when solvergeom=XYgeom
         call init_base(nx,ny,dx,dy,xmmin,ymmin,.false.)
       end if
 
-c  Create the dynamic arrays for particles (set npmax to an estimated 
+c  Create the dynamic arrays for particles (set npmax to an estimated
 c  length for now, for those loading schemes that don't actually
 c  use a user-set npmax directly)
 
@@ -339,7 +341,7 @@ c  Create the dynamic arrays for "window" moments
       do iwin = 1, NWINDOWS
          if (zwindows(1,iwin) .ne. zwindows(2,iwin)) nzwind = nzwind + 1
       enddo
-      call gallot("Win_Moments", 0)
+      call gchange("Win_Moments", 0)
 
 c  Create the dynamic arrays for z moments
 c  The slice code should only calculate the global particle moments (and
@@ -350,7 +352,7 @@ c  thick slice model, though, should still calculate the zmoments.
       call remark(" ---  Allocating Z_Moments")
       if (.not. lthick .and. ifzmmnt > 0) ifzmmnt = 1
       if (nzmmnt == 0) nzmmnt = nz
-      call gallot("Z_Moments", 0)
+      call gchange("Z_Moments", 0)
       if (zmmntmax == 0.) zmmntmax = zmmaxlocal
       if (zmmntmin == 0.) zmmntmin = zmminlocal
       if (nzmmnt == 0) then
@@ -388,7 +390,7 @@ c  Setup history mechanism
 c       --- create the dynamic arrays for history data; set pointer into them
         call remark(" ---  Allocating history arrays")
         if (lenhist == 0) lenhist = min ( nt/nhist + 1, 100)
-        call gallot("Hist", 0)
+        call gchange("Hist", 0)
         jhist = -1
       elseif (nhist < 0) then
 c       --- call interpreter routine to setup hst package
@@ -574,22 +576,6 @@ c     endif
 c=============================================================================
       subroutine wxyfin()
       use Subtimerswxy
-      use InGen
-      use InGen3d
-      use InDiag
-      use InPart
-      use InPart3d
-      use InMesh3d
-      use Fields3d
-      use Io
-      use Lattice
-      use LatticeInternal
-      use Picglb
-      use Picglb3d
-      use Win_Moments
-      use Z_Moments
-      use Z_arrays
-      use Hist
 
 c  Finish up at end of RUN, or on receipt of FIN
 c  This routine is never called, at present; history plots are
@@ -613,7 +599,8 @@ c  create final printouts
 
 c  release storage
 
-      call gfree ("Fields3d")
+      call gfree ("Mesh3d")
+      call gfree ("Fields3dSolver")
       call gfree ("Hist")
       call gfree ("Win_Moments")
       call gfree ("Z_Moments")
@@ -636,7 +623,7 @@ c=============================================================================
       use InDiag
       use InPart
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles,Only: selfep
       use Io
       use Particles,Only: pgroup,nplive
@@ -649,9 +636,9 @@ c=============================================================================
       character(*):: caller
       logical(ISZ):: thisstep,thiszbeam,dolabwn
 
-c  When called by WXYEXE, stepxy advances the system forward in time one 
-c  timestep and gathers diagnostics.  When called by WXYGEN, stepxy takes 
-c  a step of zero size, to compute fields, and gather diagnostics at start 
+c  When called by WXYEXE, stepxy advances the system forward in time one
+c  timestep and gathers diagnostics.  When called by WXYGEN, stepxy takes
+c  a step of zero size, to compute fields, and gather diagnostics at start
 c  of run.
 
 
@@ -696,8 +683,8 @@ c  it will still be true that zbeaml < zbeamr.
       zbeaml   = zbeam - abs(0.5*vbeamfrm*dt)
       zbeamr   = zbeam + abs(0.5*vbeamfrm*dt)
 
-c  Set logical flags to determine if "always" or "seldom" phase space 
-c  plots, restart dumps, final timesteps, and moment accumulations should 
+c  Set logical flags to determine if "always" or "seldom" phase space
+c  plots, restart dumps, final timesteps, and moment accumulations should
 c  be done at the end of this step.
 
       lfinishd = (it .ge. nt) .or. (time .ge. tstop*(1.-MACHEPS)) .or.
@@ -719,26 +706,26 @@ c  be done at the end of this step.
      &            lmoments .or. lhist .or. llabwn .or. llast .or.
      &            (it .eq. 0) .or. allspecl)
 
-c  Set the "gap" electric field. 
+c  Set the "gap" electric field.
 
       call setegap
 
-c  Gather moments used in diagnostics at "special" timesteps only. 
-c  Compute line charge density (gtlchg3d) and the axial line charge 
+c  Gather moments used in diagnostics at "special" timesteps only.
+c  Compute line charge density (gtlchg3d) and the axial line charge
 c  (srhoax3d) on 1-d meshes.  Note -- these moments accumulations are
-c  done at this phase of the particle advance to allow for the eventual 
-c  use of a single array for rho and phi.   
+c  done at this phase of the particle advance to allow for the eventual
+c  use of a single array for rho and phi.
 
-      if (lspecial .and. ldiag) then 
+      if (lspecial .and. ldiag) then
         call gtlchg3d
         call srhoax3d
-      endif 
+      endif
 
 c  Set lattice; this is done just before field solve, and so is
 c  relative to ZBEAM in the same way that self-fields are.
       call setlatt
 
-c  Field-solve for potential 
+c  Field-solve for potential
 
       if (lbeforefs) call callpythonfunc("beforefs","controllers")
       call fieldsolxy(-1)
@@ -762,7 +749,7 @@ c  which are not used at this time.
      &              tempmaxp,tempminp,tempzmmnts0,tempzmmnts)
 
 c  If a flag was set making this a "special" step,
-c  do a half-advance to bring v to t.l. it 
+c  do a half-advance to bring v to t.l. it
 
       if (caller == "wxyexe") then
          call padvncxy ("synchv",pgroup)
@@ -775,18 +762,18 @@ c  Finalize the moments calculation
      &              0.,0.,0.,0.,0.,3,nplive,0.,0.,0.,
      &              1,0,ns,tempmaxp,tempminp,tempzmmnts0,tempzmmnts)
 
-c  Gather moments used in diagnostics at "special" timesteps only. 
-c  Compute mean beam z velocity from current and line charge density 
-c  on a 1-d mesh.  Also, calculate the electrostatic energy (getese3d), 
-c  electrostatic potential on axis (sphiax3d), and the axial electric 
-c  field (sezax3d).  
+c  Gather moments used in diagnostics at "special" timesteps only.
+c  Compute mean beam z velocity from current and line charge density
+c  on a 1-d mesh.  Also, calculate the electrostatic energy (getese3d),
+c  electrostatic potential on axis (sphiax3d), and the axial electric
+c  field (sezax3d).
 
       if (lspecial .and. ldiag) then
         call getvzofz
-        call getese3d 
-        call sphiax3d 
+        call getese3d
+        call sphiax3d
         call  sezax3d
-      endif 
+      endif
 
 c  1d array plot diagnostics.
 
@@ -824,7 +811,7 @@ c=============================================================================
 c  Calculates "external" E, B fields
 c  Calculates electric or magnetic AG focusing fields, bending and dipole
 c  fields, and accelerating fields.
-c  Includes back-rotation associated with coordinate transformation into By. 
+c  Includes back-rotation associated with coordinate transformation into By.
 
 c  NOTE: When we (someday) set B_self from a Lorentz transformation
 c  on E_self, we'll have to carefully work out a sequence of calls,
@@ -832,7 +819,7 @@ c  since this routine is called more than once in the PADVNCXY loop on
 c  a single step at present.  Perhaps we will also have to compute
 c  B_self more than once.
 
-      integer(ISZ):: j,ip,in,iele,ii 
+      integer(ISZ):: j,ip,in,iele,ii
       real(kind=8):: timetemp,wtime
       real(kind=8):: substarttime
       if (lwxytimesubs) substarttime = wtime()
@@ -842,7 +829,7 @@ c  B_self more than once.
 c     --- handle quads
       call applyquad(np,xp,yp,1,zbeam,vbeam,1.,dtl,dtr,dt,.true.,ex,ey,bx,by)
 
-c     --- handle dipos 
+c     --- handle dipos
       call applydipo(np,1,zbeam,vbeam,1.,dtl,dtr,dt,.true.,ex,ey,bx,by)
 
 c     --- handle sexts
@@ -938,7 +925,7 @@ c=============================================================================
       use InGenxy
       use InGen3d
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles,Only: selfep
       use FieldSolveAPI
       type(ParticleGroup):: pgroup
@@ -1097,7 +1084,7 @@ c===========================================================================
 c Gets self electric field for particles
 c The field is obtained from directly finite differencing phi for each
 c particle, using linear weighting.
- 
+
 c Note that the phi1d passed in is assumed to start at phi(-1,-1).
 
 c Algorithm notes: phi array is dimensioned (-1:nx+1,-1:ny+1) outside,
@@ -1823,7 +1810,6 @@ c=============================================================================
       use LatticeInternal
       use Particles,Only: nplive,wpid,xoldpid,yoldpid,zoldpid,uxoldpid,uyoldpid,uzoldpid
       use Particlesxy
-      use Fields3d
       use Picglb
       use Picglb3d
       use GridBoundary3d
@@ -1999,7 +1985,7 @@ c           --- Obtain bend radii and residence factors
 c           --- Correct Ez_self for warped mesh effect
             call bendezxy (ip,xp(i1:i2),zp(i1:i2),ez(i1:i2),
      &                     bendres,bendradi,bends,bnezflag)
-c           --- Add in Ez from axially-smoothed gaps 
+c           --- Add in Ez from axially-smoothed gaps
             call gapfield (ip,zp(i1:i2),ez(i1:i2),zbeam,zzmin,egap,dzz)
 c           --- Add in ears and uniform focusing E field pieces
             call otherexy (ip,xp(i1:i2),yp(i1:i2),dedr,dexdx,deydy,dbdr,
@@ -2190,7 +2176,7 @@ c            --- Obtain bend radii and residence factors
 c            --- Correct Ez_self for warped mesh effect
              call bendezxy (ip,xp(i1:i2),zp(i1:i2),ez(i1:i2),
      &                      bendres,bendradi,bends,bnezflag)
-c            --- Add in Ez from axially-smoothed gaps 
+c            --- Add in Ez from axially-smoothed gaps
              call gapfield (ip,zp(i1:i2),ez(i1:i2),zbeam,zzmin,egap,dzz)
 c            --- Add in ears and uniform focusing E field pieces
              call otherexy (ip,xp(i1:i2),yp(i1:i2),dedr,dexdx,deydy,dbdr,
@@ -2452,7 +2438,7 @@ c  Push the particle velocity with E field
       if (lwxytimesubs) timeepushxy = timeepushxy + wtime() - substarttime
       return
       end
-c============================================================================= 
+c=============================================================================
       subroutine bpushxy(np,uxp,uyp,uzp,gaminv,bx,by,bz,q,m,dtp,fdt,ibpush)
       use Subtimerswxy
       integer(ISZ):: np,ibpush
@@ -2513,7 +2499,7 @@ c        --- tan(alpha) / alpha algorithm
       if (lwxytimesubs) timebpushxy = timebpushxy + wtime() - substarttime
       return
       end
-c=========================================================================== 
+c===========================================================================
       subroutine xpushxy(np,xp,yp,zp,uxp,uyp,uzp,gaminv,dtp)
       use Subtimerswxy
       integer(ISZ):: np
@@ -2534,8 +2520,8 @@ c  Advance particle positions
 
       if (lwxytimesubs) timexpushxy = timexpushxy + wtime() - substarttime
       return
-      end      
-c============================================================================ 
+      end
+c============================================================================
       subroutine initzpxy(pgroup)
       use ParticleGroupmodule
       use InPart
@@ -2556,7 +2542,7 @@ c zbeam.
 
       return
       end
-c============================================================================ 
+c============================================================================
       subroutine initdtp(pgroup)
       use ParticleGroupmodule
       use Subtimerswxy
@@ -2590,7 +2576,7 @@ c     --- if any values are zero.
       if (lwxytimesubs) timeinitdtp = timeinitdtp + wtime() - substarttime
       return
       end
-c============================================================================ 
+c============================================================================
       subroutine setdtp(np,dtp,xp,zp,zpo,uzp,bendres,bendradi,zgridprv)
       use Subtimerswxy
       use InGenxy
@@ -2652,8 +2638,8 @@ c           --- rather than just move the particle ds.
 
       if (lwxytimesubs) timesetdtp = timesetdtp + wtime() - substarttime
       return
-      end      
-c============================================================================ 
+      end
+c============================================================================
       subroutine getnewdtpwithe(np,dtp,uzp,gaminv,ez,q,m,ds)
       use Subtimerswxy
       integer(ISZ):: np
@@ -2667,7 +2653,7 @@ c============================================================================
       if (lwxytimesubs) timegetnewdtpwithe = timegetnewdtpwithe + wtime() - substarttime
       return
       end
-c============================================================================ 
+c============================================================================
       subroutine nextbend(zbeam,zz)
       use Subtimerswxy
       use InGen
@@ -2707,7 +2693,7 @@ c       --- If no bends, return a big number.
       if (lwxytimesubs) timenextbend = timenextbend + wtime() - substarttime
       return
       end
-c============================================================================ 
+c============================================================================
       subroutine bendezxy(np,xp,zp,ez,bendres,bendradi,bends,bnezflag)
       use Subtimerswxy
       integer(ISZ):: np
@@ -2730,8 +2716,8 @@ c  at smaller radii, zones are closer together, so field is larger.
 
       if (lwxytimesubs) timebendezxy = timebendezxy + wtime() - substarttime
       return
-      end      
-c=========================================================================== 
+      end
+c===========================================================================
       subroutine exbendcorxy(np,xp,zp,uxp,uzp,zpo,ds,bendres,bendradi,lexbend)
       use Subtimerswxy
       integer(ISZ):: np
@@ -2780,7 +2766,7 @@ c         --- translate velocity
       if (lwxytimesubs) timeexbendcorxy = timeexbendcorxy + wtime() - substarttime
       return
       end
-c=========================================================================== 
+c===========================================================================
       subroutine bendcorxy(np,xp,zp,uxp,uzp,gaminv,dtp,zpo,ds,
      &                     bendres,bendradi,lexbend)
       use Subtimerswxy
@@ -2813,8 +2799,8 @@ c       --- and 1 - this avoids potential problems with roundoff errors.
 
       if (lwxytimesubs) timebendcorxy = timebendcorxy + wtime() - substarttime
       return
-      end      
-c=========================================================================== 
+      end
+c===========================================================================
       subroutine setrhoxy(rho,np,xp,yp,zp,zgrid,uzp,gaminv,
      &                    q,wght,vbeamfrm,depos,depos_order,
      &                    nx,ny,nz,nxguardrho,nyguardrho,nzguardrho,
@@ -4239,7 +4225,7 @@ c       --- normal loop
 c=============================================================================
       subroutine assignrhoandphiforfieldsolvexy(rhopin,phipin)
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
       real(kind=8),target:: rhopin(-nxguardrho:nxp+nxguardrho,
      &                             -nyguardrho:nyp+nyguardrho,
@@ -4272,7 +4258,7 @@ c=============================================================================
       use Particles,Only: wpid
       use Particlesxy
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       use Fields3dParticles
       use GridBoundary3d
       use wxy_interfaces
@@ -4514,7 +4500,7 @@ c=============================================================================
       use InGen3d
       use Picglb3d
       use InMesh3d
-      use Fields3d
+      use Fields3dSolver
       real(kind=8):: bendradi
 
 c FFT/bend iterative field solver.
@@ -4597,7 +4583,7 @@ c=============================================================================
       use InMesh3d
       use Picglb
       use Picglb3d
-      use Fields3d
+      use Fields3dSolver
       use LatticeInternal
       use GridBoundary3d
       integer(ISZ):: iwhich
@@ -4614,6 +4600,8 @@ c otherwise only does a FFT field solve in 2D.
 
 c     --- Return if not doing any field solves.
       if ( fstype == -1) return
+
+      call gchange("Fields3dSolver", 0)
 
 c     --- Call appropriate field solver
       if (lvp3d) then
@@ -4685,7 +4673,7 @@ c=============================================================================
       use InMesh3d
       use Picglb3d
       use Picglb
-      use Fields3d
+      use Fields3dSolver
       use Fieldsxy
 
       integer(ISZ):: iwhich
@@ -4694,6 +4682,10 @@ c=============================================================================
       if (lwxytimesubs) substarttime = wtime()
 
 c  Interface to VPOIS2D and VPOIS3D using variables from database of package 3D
+
+      nmxy  = max(nx,ny)
+      nmxyz = max(nx,ny,nz)
+      call gchange("Fields3dSolver", 0)
 
       if (lvp3d) then
 c       --- Use 3d field solver
