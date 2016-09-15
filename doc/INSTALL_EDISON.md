@@ -59,24 +59,20 @@ FCOMP = -F intel --fcompexec ftn --fargs "-fPIC" --cargs "-fPIC"
 INSTALLOPTIONS = --home=$(SCRATCH)/warp_install
 ```
   
-- Be sure you are using the intel compiler: module load PrgEnv-intel  
+- Be sure you are using the intel compiler: `module load PrgEnv-intel`  
   
 - Then, in the directory `warp/pywarp90`, enter `make -f Makefile.Forthon.pympi install`. The compilation then lasts for a few minutes.
 
-## Installing the Warp initialization tools
-
-- Download the source by entering `git clone
-  https://bitbucket.org/remilehe/warp-initialization-tools.git`
-
-- `cd` into the direction `warp-initialization-tools` and type `python setup.py install --home=$SCRATCH/warp_install` 
-
 ## Running simulations
 
-The file `warp_script.py`, which is located in the `example_script/`
-of this package, can be used as an example. In order to run this
-simulation, create a new submission directory and copy
-`warp_script.py` to this directory. Here is an example of a submission script.
+In order to run a simulation, create a new directory,
+copy your Warp input script to this directory, and rename this script
+to `warp_script.py`. (The folder `scripts/examples/` of the
+[Warp repository](https://bitbucket.org/berkeleylab/warp/src) contains
+several examples of input scripts.)
 
+Then create a submission script named `submission_script`. Here is an
+example of a typical submission script.
 ```
 #!/bin/bash
 #SBATCH --job-name=test_simulation

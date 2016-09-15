@@ -39,12 +39,14 @@ lines, as in the following example (note that the lines are commented out):
 
 ## Running simulations
 
-The file `warp_script.py`, which is located in the `example_script/`
-of this package, can be used as an example. In order to run this
-simulation, create a new submission directory and copy
-`warp_script.py` to this directory. Here is an example of a submission
-script that uses Shifter.
+In order to run a simulation, create a new directory,
+copy your Warp input script to this directory, and rename this script
+to `warp_script.py`. (The folder `scripts/examples/` of the
+[Warp repository](https://bitbucket.org/berkeleylab/warp/src) contains
+several examples of input scripts.)
 
+Then create a submission script named `submission_script`. Here is an
+example of a typical submission script.
 ```
 #!/bin/bash -l
 #SBATCH --job-name=test_simulation

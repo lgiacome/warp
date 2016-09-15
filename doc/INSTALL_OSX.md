@@ -83,14 +83,24 @@ if parallel:
 
 Then install Warp by running:
 ```
-make -f Makefile.Forthon install
-make -f Makefile.Forthon.pympi install
+make install
+make pinstall
 ```
 
-## Installing the Warp initialization tools
+## Running a simulation
 
-Run
-```git clone https://remilehe@bitbucket.org/remilehe/warp-initialization-tools.git```
+In order to run a simulation, create a new directory,
+copy your Warp input script to this directory, and rename this script
+to `warp_script.py`. (The folder `scripts/examples/` of the
+[Warp repository](https://bitbucket.org/berkeleylab/warp/src) contains
+several examples of input scripts.)
 
-then `cd` into the directory `warp-initialization-tools` and type
-```python setup.py install```
+Then launch the simulation by typing either (for serial simulations)
+```
+python warp_script.py
+```
+or (for e.g. a parallel simulation with a 2x3x2 domain decomposition in 3D)
+```
+mpirun -np 12 python warp_script.py -p 2 3 2
+```
+
