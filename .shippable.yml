@@ -9,5 +9,12 @@ build:
     pull: false
 
   ci:
+    # Run the standard warp tests
     - cd /home/warp_user/warp/warp_test/
     - python runalltests.py
+    # Check that the example scripts run (with MPI and restart)
+    - cd /home/warp_user/run/
+    - cp ../warp/scripts/examples/plasma_acceleration/* ./
+    - mpirun -np 4 python warp_script.py -p 2 1 2
+    - mpirun -np 4 python restart_after_warp_script.py -p 2 1 2
+    - mpirun -np 2 python warp_boostedframe_script.py

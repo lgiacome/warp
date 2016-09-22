@@ -61,4 +61,5 @@ RUN git clone https://bitbucket.org/dpgrote/pygist.git \
     && python setup.py install
 
 # Prepare the run directory
-WORKDIR /home/warp_user/warp/
+RUN mkdir run/
+WORKDIR /home/warp_user/run/
