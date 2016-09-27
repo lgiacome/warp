@@ -179,7 +179,7 @@ def prepare_weights( n_e, nppcellx, nppcelly, nppcellz,
         nppcellx = nppcelly =1
     elif dim=="2d":
         nppcelly = 1
-    elif dim=="circ":
+    elif dim=="circ" and circ_m > 0:
         if nppcelly % (4*circ_m) != 0:
             raise ValueError('nppcelly should be a multiple of 4*circ_m')
 
