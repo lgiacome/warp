@@ -16,7 +16,7 @@ Usage:
 from warp import *
 
 # Reload the simulation from the dump files
-dump_name = 'warp_script000500'
+dump_name = 'lpa_script000500'
 # - Single proc case
 if npes == 1:
     restart( dump_name + '.dump')
