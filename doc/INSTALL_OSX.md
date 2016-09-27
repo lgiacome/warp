@@ -60,7 +60,7 @@ Run `pip install Forthon`
 
 Run ```git clone https://bitbucket.org/berkeleylab/warp.git```
 
-then `cd` into the repository `pywarp90` and create two files:
+then `cd` into the repository `warp/pywarp90` and create two files:
 
 - A file named `Makefile.local.pympi` which contains the following text:
 
