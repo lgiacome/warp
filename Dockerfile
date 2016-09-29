@@ -4,13 +4,11 @@ FROM ubuntu:14.04
 RUN apt-get update \
     && apt-get install -y \
     wget \
-    gfortran \
+    mpich \
     make \
     git \
     libx11-dev \
     && rm -rf /var/lib/apt/lists/*
-
-
 
 # Create a new user and copy the current branch of Warp
 # into the Docker container 
@@ -34,15 +32,15 @@ ENV PATH /home/warp_user/miniconda2/bin:$PATH
 
 # Install python dependencies for warp
 RUN conda update conda \
-    && conda install -c conda-forge --yes \
+    && conda install --yes \
     numpy \
     scipy \
     pytest \
     h5py \
     && conda clean --tarballs
 
-# Install matplotlib
-RUN pip install matplotlib
+# Install matplotlib and mpi4py via pip
+RUN pip install matplotlib mpi4py
 
 # Install Forthon
 RUN pip install --upgrade pip \
