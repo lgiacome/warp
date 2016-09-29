@@ -53,8 +53,8 @@ RUN cd warp/pywarp90 \
     && echo "if parallel:" >> setup.local.py \
     && echo "   library_dirs += ['~/miniconda2/lib']" >> setup.local.py \
     && echo "   libraries = fcompiler.libs + ['mpichf90', 'mpich', 'opa', 'mpl']" >> setup.local.py \
-    && make install \
-    && make pinstall
+    && make -j install \
+    && make -j pinstall
 
 # Install pygist
 RUN git clone https://bitbucket.org/dpgrote/pygist.git \
