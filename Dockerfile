@@ -32,13 +32,15 @@ ENV PATH /home/warp_user/miniconda2/bin:$PATH
 
 # Install python dependencies for warp
 RUN conda update conda \
-    && conda install --yes \
+    && conda install -c conda-forge --yes \
     numpy \
     scipy \
-    matplotlib \
+    pytest \
     h5py \
-    mpi4py \
     && conda clean --tarballs
+
+# Install matplotlib
+pip install matplotlib
 
 # Install Forthon
 RUN pip install --upgrade pip \
