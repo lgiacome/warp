@@ -10,6 +10,8 @@ RUN apt-get update \
     libx11-dev \
     && rm -rf /var/lib/apt/lists/*
 
+
+
 # Create a new user and copy the current branch of Warp
 # into the Docker container 
 RUN useradd --create-home warp_user
@@ -40,7 +42,7 @@ RUN conda update conda \
     && conda clean --tarballs
 
 # Install matplotlib
-pip install matplotlib
+RUN pip install matplotlib
 
 # Install Forthon
 RUN pip install --upgrade pip \
