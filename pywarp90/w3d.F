@@ -11790,7 +11790,7 @@ c     --- Reset lost particles counter if requested
       if (lresetlostpart) then
         do js=js1,js2
 c         --- do it only if species was advanced on this time step
-          if (pgroup%ldts(js)) then
+          if (pgroup%ldts(js) .and. pgroup%lboundaries(js)) then
             npslost(js+1)=0
           end if
         end do
@@ -11815,7 +11815,7 @@ c     --- absorb particles passing through semitransparent disc
       call semitransparent_disc(pgroup,dz)
 
       do js=js1,js2
-        if (pgroup%ldts(js) .and. pgroup%nps(js+1) > 0) then
+        if (pgroup%ldts(js) .and. pgroup%nps(js+1) > 0 .and. pgroup%lboundaries(js)) then
            call stckxy3d(pgroup,js,zbeam,.true.)
         endif
       enddo
@@ -11825,7 +11825,7 @@ c     --- absorb particles passing through semitransparent disc
 
       do js=js1,js2
 c       --- do it only if species was advanced on this time step
-        if (pgroup%ldts(js)) then
+        if (pgroup%ldts(js) .and. pgroup%lboundaries(js)) then
           call processlostpart(pgroup,js+1,clearlostpart,
      &                         time+dt*pgroup%ndts(js),zbeam)
         endif
@@ -11877,7 +11877,7 @@ c     --- Reset lost particles counter if requested
       if (lresetlostpart) then
         do js=js1,js2
 c         --- do it only if species was advanced on this time step
-          if (pgroup%ldts(js)) then
+          if (pgroup%ldts(js) .and. pgroup%lboundaries(js)) then
             npslost(js+1)=0
           end if
         end do
@@ -11903,7 +11903,7 @@ c     --- absorb particles passing through semitransparent disc
       call semitransparent_disc(pgroup,dz)
 
       do js=js1,js2
-        if (pgroup%ldts(js) .and. pgroup%nps(js+1) > 0) then
+        if (pgroup%ldts(js) .and. pgroup%nps(js+1) > 0 .and. pgroup%lboundaries(js)) then
            call stckxy3d(pgroup,js,zbeam,.true.)
         endif
       enddo
@@ -11913,7 +11913,7 @@ c     --- absorb particles passing through semitransparent disc
 
       do js=js1,js2
 c       --- do it only if species was advanced on this time step
-        if (pgroup%ldts(js)) then
+        if (pgroup%ldts(js) .and. pgroup%lboundaries(js)) then
           call processlostpart(pgroup,js+1,clearlostpart,
      &                         time+dt*pgroup%ndts(js),zbeam)
         endif
