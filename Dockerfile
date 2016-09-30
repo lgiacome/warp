@@ -51,7 +51,7 @@ RUN cd warp/pywarp90 \
     && echo 'FCOMP= -F gfortran' >> Makefile.local \
     && echo 'FCOMP= -F gfortran --fcompex mpif90' >> Makefile.local.pympi \
     && echo "if parallel:" >> setup.local.py \
-    && echo "   library_dirs += ['~/miniconda2/lib']" >> setup.local.py \
+    && echo "   library_dirs += ['/usr/lib/x86_64-linux-gnu']" >> setup.local.py \
     && echo "   libraries = fcompiler.libs + ['mpichf90', 'mpich', 'opa', 'mpl']" >> setup.local.py \
     && make -j install \
     && make -j pinstall
