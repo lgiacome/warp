@@ -2531,6 +2531,7 @@ dtscale(ns) _real /1./ # Scale factor applied to time step size for each
 limplicit(0:ns-1) _logical /0/ # Flags implicit particle species
 iimplicit(0:ns-1) _integer /-1/ # Group number for implicit particles
 ldoadvance(0:ns-1) _logical /1/ # Flags whether particles are time advanced
+lboundaries(0:ns-1) _logical /1/ # Flags whether boundary conditions need to be applied
 lparaxial(ns)    _logical   /0/ # Flags to turn on/off paraxial approximation
 zshift(ns) _real /0./
 lebcancel_pusher logical   /.false./ # turns on/off cancellation of E+VxB within V push

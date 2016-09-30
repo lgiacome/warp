@@ -3547,7 +3547,7 @@ c but only if the x direction is domain decomposed.
 c       --- periodic boundary condition
         syslen = xmmax - xmmin
         do is=js1+1,js2+1
-          if (.not. pgroup%ldts(is-1)) cycle
+          if (.not. pgroup%ldts(is-1) .or. .not. pgroup%lboundaries(is-1)) cycle
           do ip=pgroup%ins(is),pgroup%ins(is)+pgroup%nps(is)-1
             if (pgroup%xp(ip) < xmmin) then
               pgroup%xp(ip) = pgroup%xp(ip) +
@@ -3566,7 +3566,7 @@ c       --- particles absorbed (Dirichlet)
         if (lrz) then
 
           do is=js1+1,js2+1
-            if (.not. pgroup%ldts(is-1)) cycle
+            if (.not. pgroup%ldts(is-1) .or. .not. pgroup%lboundaries(is-1)) cycle
             do ip=pgroup%ins(is),pgroup%ins(is)+pgroup%nps(is)-1
               rrsq = pgroup%xp(ip)**2 + pgroup%yp(ip)**2
               if (rrsq > xmmax**2) then
@@ -3579,7 +3579,7 @@ c       --- particles absorbed (Dirichlet)
         else
 
           do is=js1+1,js2+1
-            if (.not. pgroup%ldts(is-1)) cycle
+            if (.not. pgroup%ldts(is-1) .or. .not. pgroup%lboundaries(is-1)) cycle
             do ip=pgroup%ins(is),pgroup%ins(is)+pgroup%nps(is)-1
               if (pgroup%xp(ip) <= xmmin .or. pgroup%xp(ip) >= xmmax) then
                 pgroup%gaminv(ip) = 0.
@@ -3595,7 +3595,7 @@ c       --- particles absorbed (Dirichlet)
         if (lrz) then
 
           do is=js1+1,js2+1
-            if (.not. pgroup%ldts(is-1)) cycle
+            if (.not. pgroup%ldts(is-1) .or. .not. pgroup%lboundaries(is-1)) cycle
             do ip=pgroup%ins(is),pgroup%ins(is)+pgroup%nps(is)-1
               rrsq = pgroup%xp(ip)**2 + pgroup%yp(ip)**2
               if (rrsq >= xmmax**2) then
@@ -3619,7 +3619,7 @@ c                 --- compared to the dimensions of the grid.
         else
 
           do is=js1+1,js2+1
-            if (.not. pgroup%ldts(is-1)) cycle
+            if (.not. pgroup%ldts(is-1) .or. .not. pgroup%lboundaries(is-1)) cycle
             do ip=pgroup%ins(is),pgroup%ins(is)+pgroup%nps(is)-1
               if (pgroup%xp(ip) >= xmmax) then
                 if (pgroup%xp(ip) > xmmax) then
@@ -3689,7 +3689,7 @@ c but only if the y direction is domain decomposed.
 c     --- periodic boundary condition
         syslen = ymmax - ymmin
         do is=js1+1,js2+1
-          if (.not. pgroup%ldts(is-1)) cycle
+          if (.not. pgroup%ldts(is-1) .or. .not. pgroup%lboundaries(is-1)) cycle
           do ip=pgroup%ins(is),pgroup%ins(is)+pgroup%nps(is)-1
             if (pgroup%yp(ip) < ymmin) then
               pgroup%yp(ip) = pgroup%yp(ip) +
@@ -3706,7 +3706,7 @@ c     --- periodic boundary condition
 
 c       --- particles absorbed (Dirichlet)
       do is=js1+1,js2+1
-          if (.not. pgroup%ldts(is-1)) cycle
+          if (.not. pgroup%ldts(is-1) .or. .not. pgroup%lboundaries(is-1)) cycle
           do ip=pgroup%ins(is),pgroup%ins(is)+pgroup%nps(is)-1
             if (pgroup%yp(ip) <= ymmin .or. pgroup%yp(ip) >= ymmax) then
               pgroup%gaminv(ip) = 0.
@@ -3718,7 +3718,7 @@ c       --- particles absorbed (Dirichlet)
       elseif(pboundxy==reflect) then
 
         do is=js1+1,js2+1
-          if (.not. pgroup%ldts(is-1)) cycle
+          if (.not. pgroup%ldts(is-1) .or. .not. pgroup%lboundaries(is-1)) cycle
           do ip=pgroup%ins(is),pgroup%ins(is)+pgroup%nps(is)-1
             if (pgroup%yp(ip) >= ymmax) then
               if (pgroup%yp(ip) > ymmax) then
@@ -3785,7 +3785,7 @@ c but only if the z direction is domain decomposed.
 c     --- periodic boundary condition
         syslen = zmmax - zmmin
         do is=js1+1,js2+1
-          if (.not. pgroup%ldts(is-1)) cycle
+          if (.not. pgroup%ldts(is-1) .or. .not. pgroup%lboundaries(is-1)) cycle
           indts = ndtstorho(pgroup%ndts(is-1))
           if (indts > -1) then
             zg = zgridndts(indts)
@@ -3808,7 +3808,7 @@ c     --- periodic boundary condition
       else
 c     --- other boundary condition (particles absorbed or reflected)
         do is=js1+1,js2+1
-          if (.not. pgroup%ldts(is-1)) cycle
+          if (.not. pgroup%ldts(is-1) .or. .not. pgroup%lboundaries(is-1)) cycle
           indts = ndtstorho(pgroup%ndts(is-1))
           if (indts > -1) then
             zg = zgridndts(indts)
