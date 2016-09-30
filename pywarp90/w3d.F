@@ -887,7 +887,8 @@ c  Field-solve for potential.
 
 c  Pre-calculate the self-E if it is needed for sete3d. This is done
 c  after the call to afterfs in case some manipulation is done to phi.
-         if ((ANY(efetch == 3) .or. ANY(depos_order > 1)) .and. fstype < 12 .and.
+         if ((ANY(efetch == 3) .or. ANY(depos_order > 1)) .and.
+     &       fstype .ne. -1 .and. fstype < 12 .and.
      &        (solvergeom == XYZgeom .or.
      &         solvergeom == RZgeom .or.
      &         solvergeom == XZgeom .or.
@@ -7199,6 +7200,8 @@ c  Sets charge density using various algorithms
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
 
+      if (q*wght == 0.) return
+
       if (ALL(depos_order == 1)) then
 
 c       --- Vectorized deposition loop
@@ -11488,6 +11491,7 @@ c     --- Just return if the efetch is turned off.
         npfsapi = 0
         ndtsfsapi = 0
       elseif(solvergeom==XYZgeom) then
+        if (.not. associated(phipndts)) return
         tmpnsndts = getnsndtsforsubcycling()
         indts = min(tmpnsndts-1,ndtstorho(pgroup%ndts(is-1)))
         call allocateselfepforparticles(.false.)
@@ -11786,7 +11790,7 @@ c     --- Reset lost particles counter if requested
       if (lresetlostpart) then
         do js=js1,js2
 c         --- do it only if species was advanced on this time step
-          if (pgroup%ldts(js)) then
+          if (pgroup%ldts(js) .and. pgroup%lboundaries(js)) then
             npslost(js+1)=0
           end if
         end do
@@ -11811,7 +11815,7 @@ c     --- absorb particles passing through semitransparent disc
       call semitransparent_disc(pgroup,dz)
 
       do js=js1,js2
-        if (pgroup%ldts(js) .and. pgroup%nps(js+1) > 0) then
+        if (pgroup%ldts(js) .and. pgroup%nps(js+1) > 0 .and. pgroup%lboundaries(js)) then
            call stckxy3d(pgroup,js,zbeam,.true.)
         endif
       enddo
@@ -11821,7 +11825,7 @@ c     --- absorb particles passing through semitransparent disc
 
       do js=js1,js2
 c       --- do it only if species was advanced on this time step
-        if (pgroup%ldts(js)) then
+        if (pgroup%ldts(js) .and. pgroup%lboundaries(js)) then
           call processlostpart(pgroup,js+1,clearlostpart,
      &                         time+dt*pgroup%ndts(js),zbeam)
         endif
@@ -11873,7 +11877,7 @@ c     --- Reset lost particles counter if requested
       if (lresetlostpart) then
         do js=js1,js2
 c         --- do it only if species was advanced on this time step
-          if (pgroup%ldts(js)) then
+          if (pgroup%ldts(js) .and. pgroup%lboundaries(js)) then
             npslost(js+1)=0
           end if
         end do
@@ -11899,7 +11903,7 @@ c     --- absorb particles passing through semitransparent disc
       call semitransparent_disc(pgroup,dz)
 
       do js=js1,js2
-        if (pgroup%ldts(js) .and. pgroup%nps(js+1) > 0) then
+        if (pgroup%ldts(js) .and. pgroup%nps(js+1) > 0 .and. pgroup%lboundaries(js)) then
            call stckxy3d(pgroup,js,zbeam,.true.)
         endif
       enddo
@@ -11909,7 +11913,7 @@ c     --- absorb particles passing through semitransparent disc
 
       do js=js1,js2
 c       --- do it only if species was advanced on this time step
-        if (pgroup%ldts(js)) then
+        if (pgroup%ldts(js) .and. pgroup%lboundaries(js)) then
           call processlostpart(pgroup,js+1,clearlostpart,
      &                         time+dt*pgroup%ndts(js),zbeam)
         endif

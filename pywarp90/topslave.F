@@ -117,6 +117,7 @@ c       --- done below (which would make the pointer references obsolete)
 
 c       --- Loop over species
         do is=is1,is2
+          if (.not. pgroup%lboundaries(is-1)) cycle
           if (axis == 2) then
             indts = ndtstorho(pgroup%ndts(is-1))
             zgrid = zgridndts(indts)
