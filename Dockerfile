@@ -53,8 +53,8 @@ RUN cd warp/pywarp90 \
     && echo "if parallel:" >> setup.local.py \
     && echo "   library_dirs += ['/usr/lib/x86_64-linux-gnu']" >> setup.local.py \
     && echo "   libraries = fcompiler.libs + ['mpichf90', 'mpich', 'opa', 'mpl']" >> setup.local.py \
-    && make -j install \
-    && make -j pinstall
+    && make install \
+    && make pinstall
 
 # Install pygist
 RUN git clone https://bitbucket.org/dpgrote/pygist.git \
