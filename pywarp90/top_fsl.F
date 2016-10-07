@@ -1468,6 +1468,9 @@ c=============================================================================
      &                                  fgrid,localpbounds)
       use Subtimerstop
       use Parallel
+#ifdef MPIPARALLEL
+      use mpi
+#endif
       integer(ISZ):: nvx,nvz,nx,nz,nxguard,nzguard
       real(kind=8):: fgrid(-1:nvx+1,-1:nvz+1,-nxguard:nx+1,-nzguard:nz+1)
       integer(ISZ):: localpbounds(0:5)
@@ -1483,7 +1486,6 @@ c Each is only responsible for sending out the source is owns.
       integer(MPIISZ):: iplower,ipupper,iparity
       integer(MPIISZ):: lowertype,uppertype
       integer(MPIISZ):: nn
-      include "mpif.h"
       integer(MPIISZ):: mpi_comm
       integer(MPIISZ):: mpierror
       integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE)

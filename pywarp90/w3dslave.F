@@ -6,6 +6,7 @@ c===========================================================================
       subroutine init_w3d_parallel
       use Subtimersw3d
       use Parallel
+      use mpi
 
 c This is the routine which divies up the work among the slaves.
 
@@ -15,7 +16,6 @@ c This is the routine which divies up the work among the slaves.
       logical(MPIISZ):: initialized
       integer(MPIISZ):: mpierror,comm_world_mpiisz,nprocstmp,my_indextmp
       integer(ISZ):: convertindextoproc
-      include "mpif.h"
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
       comm_world_mpiisz = comm_world
@@ -46,29 +46,36 @@ c get number of slaves and my_pe
 c===========================================================================
       subroutine initializedecomp_work(decomp)
       use Parallel,Only: comm_world, lcomm_cartesian
+      use mpi
       use Decompositionmodule
       type(Decomposition):: decomp
 
-      integer(MPIISZ):: mpierror,comm_world_mpiisz
-      include "mpif.h"
+      integer(MPIISZ):: mpierror,comm_world_mpiisz, new_comm, new_comm_temp
+      integer(MPIISZ):: color, key
       comm_world_mpiisz = comm_world
 
 !     --- If cartesian communicator not created, use a duplicate of mpi_comm_world instead
       if (.NOT. lcomm_cartesian) THEN
         ! Copy communicator
-        call MPI_COMM_DUP(comm_world_mpiisz,decomp%mpi_comm,mpierror)
+        call MPI_COMM_DUP(comm_world_mpiisz,new_comm,mpierror)
+        decomp%mpi_comm = new_comm
       endif
 
 c     --- Create communicator groups for processors along each axis.
-      call MPI_COMM_SPLIT(decomp%mpi_comm,
-     &                    decomp%iyproc+decomp%izproc*decomp%nyprocs,
-     &                    decomp%my_index,decomp%mpi_comm_x,mpierror)
-      call MPI_COMM_SPLIT(decomp%mpi_comm,
-     &                    decomp%izproc+decomp%ixproc*decomp%nzprocs,
-     &                    decomp%my_index,decomp%mpi_comm_y,mpierror)
-      call MPI_COMM_SPLIT(decomp%mpi_comm,
-     &                    decomp%ixproc+decomp%iyproc*decomp%nxprocs,
-     &                    decomp%my_index,decomp%mpi_comm_z,mpierror)
+      color = decomp%iyproc+decomp%izproc*decomp%nyprocs
+      key = decomp%my_index
+      call MPI_COMM_SPLIT(new_comm,color,key,new_comm_temp,mpierror)
+      decomp%mpi_comm_x = new_comm_temp
+
+      color = decomp%izproc+decomp%ixproc*decomp%nzprocs
+      key = decomp%my_index
+      call MPI_COMM_SPLIT(new_comm,color,key,new_comm_temp,mpierror)
+      decomp%mpi_comm_y = new_comm_temp
+
+      color = decomp%ixproc+decomp%iyproc*decomp%nxprocs
+      key = decomp%my_index
+      call MPI_COMM_SPLIT(new_comm,color,key,new_comm_temp,mpierror)
+      decomp%mpi_comm_z = new_comm_temp
 
       return
       end
@@ -76,6 +83,7 @@ c===========================================================================
       subroutine sw_globalsum(ns,sw)
       use Subtimersw3d
       use Parallel,Only: comm_world
+      use mpi
       integer(ISZ):: ns
       real(kind=8):: sw(ns)
 c As calculated in stptl3d, sw depends on 1 over the number of particles
@@ -85,7 +93,6 @@ c total number of particles.
       real(kind=8):: swtemp(ns)
       integer(ISZ):: is
       integer(MPIISZ):: mpierror,comm_world_mpiisz
-      include "mpif.h"
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
       comm_world_mpiisz = comm_world
@@ -111,6 +118,7 @@ c===========================================================================
      &                                        sourcep,ppdecomp)
       use Subtimersw3d
       use Decompositionmodule
+      use mpi
       integer(ISZ):: nc,nxp,nyp,nzp,nxguardrho,nyguardrho,nzguardrho
       real(kind=8):: sourcep(0:nc-1,-nxguardrho:nxp+nxguardrho,
      &                              -nyguardrho:nyp+nyguardrho,
@@ -136,7 +144,6 @@ c only responsible for sending out the source is owns.
       integer(MPIISZ):: dims,nlocal(-1:2),starts(-1:2),sizes(-1:2)
       integer(MPIISZ):: sendtype,recvtype
       integer(MPIISZ):: itemp,ineighbor,nn
-      include "mpif.h"
       integer(MPIISZ):: mpi_comm
       integer(MPIISZ):: mpierror
       integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE)
@@ -334,6 +341,7 @@ c=============================================================================
      &                                         nxguardrho,nyguardrho,nzguardrho,
      &                                         nprocs,iproc,mpi_comm)
       use Subtimersw3d
+      use mpi
       integer(ISZ):: axis,nc,nxlocal,nylocal,nzlocal
       integer(ISZ):: nxguardrho,nyguardrho,nzguardrho
       real(kind=8):: source(0:nc-1,-nxguardrho:nxlocal+nxguardrho,
@@ -350,7 +358,6 @@ c  Only first and last processors do anything.
       real(kind=8),allocatable:: sourcetemp(:,:,:,:)
       integer(MPIISZ):: nn,pe
       integer(ISZ):: convertindextoproc
-      include "mpif.h"
       integer(MPIISZ):: dims,nlocal(-1:2),starts(-1:2),sizes(-1:2)
       integer(MPIISZ):: nguards(0:2)
       integer(MPIISZ):: sendtype
@@ -440,6 +447,7 @@ c=============================================================================
      &                                         fsdecomp,ppdecomp)
       use Subtimersw3d
       use Decompositionmodule
+      use mpi
       integer(ISZ):: nc,nxlocal,nylocal,nzlocal
       integer(ISZ):: nxguardrho,nyguardrho,nzguardrho
       real(kind=8):: source(0:nc-1,-nxguardrho:nxlocal+nxguardrho,
@@ -458,17 +466,16 @@ c only responsible for sending out the source it owns.
 
       integer(ISZ):: npx,npy,npz
       integer(ISZ):: right_nx,right_ny,right_nz
-      integer(ISZ):: ix,iy,iz
+      integer(ISZ):: ix,iy,iz,ii
       integer(ISZ):: my_ixpp,my_iypp,my_izpp
       integer(ISZ):: my_nxpp,my_nypp,my_nzpp
       integer(ISZ):: my_ixfs,my_iyfs,my_izfs
       integer(ISZ):: my_nxfs,my_nyfs,my_nzfs
-      include "mpif.h"
       integer(MPIISZ):: dims,nlocal(-1:2),nplocal(-1:2),starts(-1:2),sizes(-1:2)
       integer(MPIISZ):: nguards(0:2)
-      integer(MPIISZ),allocatable:: recvtypes(:,:,:),sendtypes(:,:,:)
-      integer(MPIISZ),allocatable:: sendcounts(:,:,:),recvcounts(:,:,:)
-      integer(MPIISZ),allocatable:: displs(:,:,:)
+      integer(MPIISZ),allocatable:: recvtypes(:),sendtypes(:)
+      integer(MPIISZ),allocatable:: sendcounts(:),recvcounts(:)
+      integer(MPIISZ),allocatable:: displs(:)
       integer(MPIISZ):: mpierror,mpi_comm_mpiisz
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
@@ -476,11 +483,11 @@ c only responsible for sending out the source it owns.
       npx = fsdecomp%nxprocs
       npy = fsdecomp%nyprocs
       npz = fsdecomp%nzprocs
-      allocate(sendtypes(0:npx-1,0:npy-1,0:npz-1))
-      allocate(recvtypes(0:npx-1,0:npy-1,0:npz-1))
-      allocate(sendcounts(0:npx-1,0:npy-1,0:npz-1))
-      allocate(recvcounts(0:npx-1,0:npy-1,0:npz-1))
-      allocate(displs(0:npx-1,0:npy-1,0:npz-1))
+      allocate(sendtypes(0:npx*npy*npz-1))
+      allocate(recvtypes(0:npx*npy*npz-1))
+      allocate(sendcounts(0:npx*npy*npz-1))
+      allocate(recvcounts(0:npx*npy*npz-1))
+      allocate(displs(0:npx*npy*npz-1))
 
       dims = 4
       nguards = (/nxguardrho,nyguardrho,nzguardrho/)
@@ -522,6 +529,7 @@ c     --- Data to be sent
       do iz=0,fsdecomp%nzprocs-1
         do iy=0,fsdecomp%nyprocs-1
           do ix=0,fsdecomp%nxprocs-1
+            ii = ix + iy*npx + iz*npx*npy
 
             starts(0) = max(my_ixpp,fsdecomp%ix(ix)) - my_ixpp
             sizes(0) = min(my_ixpp+my_nxpp-right_nx,
@@ -543,12 +551,12 @@ c     --- Data to be sent
               call MPI_TYPE_CREATE_SUBARRAY(dims,nplocal,sizes,starts,
      &                                      MPI_ORDER_FORTRAN,
      &                                      MPI_DOUBLE_PRECISION,
-     &                                      sendtypes(ix,iy,iz),mpierror)
-              call MPI_TYPE_COMMIT(sendtypes(ix,iy,iz),mpierror)
-              sendcounts(ix,iy,iz) = 1
+     &                                      sendtypes(ii),mpierror)
+              call MPI_TYPE_COMMIT(sendtypes(ii),mpierror)
+              sendcounts(ii) = 1
             else
-              sendtypes(ix,iy,iz) = MPI_DOUBLE_PRECISION
-              sendcounts(ix,iy,iz) = 0
+              sendtypes(ii) = MPI_DOUBLE_PRECISION
+              sendcounts(ii) = 0
             endif
 
           enddo
@@ -578,6 +586,7 @@ c     --- Data to be sent
             if (ix < ppdecomp%nxprocs-1) then
               right_nx=ppdecomp%ix(ix)+ppdecomp%nx(ix)-ppdecomp%ix(ix+1)+1
             endif
+            ii = ix + iy*npx + iz*npx*npy
 
             starts(0) = max(my_ixfs,ppdecomp%ix(ix)) - my_ixfs
             sizes(0) = min(my_ixfs+my_nxfs,
@@ -599,12 +608,12 @@ c     --- Data to be sent
               call MPI_TYPE_CREATE_SUBARRAY(dims,nlocal,sizes,starts,
      &                                      MPI_ORDER_FORTRAN,
      &                                      MPI_DOUBLE_PRECISION,
-     &                                      recvtypes(ix,iy,iz),mpierror)
-              call MPI_TYPE_COMMIT(recvtypes(ix,iy,iz),mpierror)
-              recvcounts(ix,iy,iz) = 1
+     &                                      recvtypes(ii),mpierror)
+              call MPI_TYPE_COMMIT(recvtypes(ii),mpierror)
+              recvcounts(ii) = 1
             else
-              recvtypes(ix,iy,iz) = MPI_DOUBLE_PRECISION
-              recvcounts(ix,iy,iz) = 0
+              recvtypes(ii) = MPI_DOUBLE_PRECISION
+              recvcounts(ii) = 0
             endif
 
           enddo
@@ -621,11 +630,12 @@ c     --- Free all of the types
       do iz=0,fsdecomp%nzprocs-1
         do iy=0,fsdecomp%nyprocs-1
           do ix=0,fsdecomp%nxprocs-1
-            if (sendcounts(ix,iy,iz) > 0) then
-              call MPI_TYPE_FREE(sendtypes(ix,iy,iz),mpierror)
+            ii = ix + iy*npx + iz*npx*npy
+            if (sendcounts(ii) > 0) then
+              call MPI_TYPE_FREE(sendtypes(ii),mpierror)
             endif
-            if (recvcounts(ix,iy,iz) > 0) then
-              call MPI_TYPE_FREE(recvtypes(ix,iy,iz),mpierror)
+            if (recvcounts(ii) > 0) then
+              call MPI_TYPE_FREE(recvtypes(ii),mpierror)
             endif
           enddo
         enddo
@@ -647,6 +657,7 @@ c=============================================================================
       subroutine perpot3d_slave(pot,nc,nx,ny,nzlocal,delx,dely)
       use Subtimersw3d
       use Parallel
+      use mpi
       integer(ISZ):: nc,nx,ny,nzlocal,delx,dely
       real(kind=8):: pot(0:nc-1,-delx:nx+delx,-dely:ny+dely,-1:nzlocal+1)
 c  Sets the slices on the exterior of a potential for periodicity
@@ -654,7 +665,6 @@ c  sets slice at -1 equal to the slice at nzlocal-1
 c  sets slice at nzlocal+1 equal to the slice at 1
 c  Only first and last processors do anything.
       integer(MPIISZ):: nn1,nn2,pe0,pens
-      include "mpif.h"
       integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE),mpirequest
       integer(MPIISZ):: mpierror,comm_world_mpiisz
       integer(MPIISZ):: messid = 70
@@ -700,6 +710,7 @@ c=============================================================================
      &                                         fsdecomp,ppdecomp)
       use Subtimersw3d
       use Decompositionmodule
+      use mpi
       integer(ISZ):: nc,nxlocal,nylocal,nzlocal
       integer(ISZ):: nxguardphi,nyguardphi,nzguardphi
       real(kind=8):: phi(0:nc-1,-nxguardphi:nxlocal+nxguardphi,
@@ -716,7 +727,7 @@ c This gets phi from neighboring processors, and at the very least gets
 c phi in the guard planes, iz=-1 and +1.
 
       integer(ISZ):: npx,npy,npz
-      integer(ISZ):: ix,iy,iz
+      integer(ISZ):: ix,iy,iz, ii
       integer(ISZ):: my_ixpp,my_iypp,my_izpp
       integer(ISZ):: my_nxpp,my_nypp,my_nzpp
       integer(ISZ):: my_ixfs,my_iyfs,my_izfs
@@ -725,11 +736,10 @@ c phi in the guard planes, iz=-1 and +1.
       integer(ISZ):: iyglobal,iymaxp,iymaxfs
       integer(ISZ):: izglobal,izmaxp,izmaxfs
       integer(MPIISZ):: iproc,nn
-      include "mpif.h"
       integer(MPIISZ):: dims,nlocal(-1:2),nplocal(-1:2),starts(-1:2),sizes(-1:2)
-      integer(MPIISZ),allocatable:: recvtypes(:,:,:),sendtypes(:,:,:)
-      integer(MPIISZ),allocatable:: sendcounts(:,:,:),recvcounts(:,:,:)
-      integer(MPIISZ),allocatable:: displs(:,:,:)
+      integer(MPIISZ),allocatable:: recvtypes(:),sendtypes(:)
+      integer(MPIISZ),allocatable:: sendcounts(:),recvcounts(:)
+      integer(MPIISZ),allocatable:: displs(:)
       integer(MPIISZ):: mpierror,mpi_comm_mpiisz
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
@@ -737,11 +747,11 @@ c phi in the guard planes, iz=-1 and +1.
       npx = fsdecomp%nxprocs
       npy = fsdecomp%nyprocs
       npz = fsdecomp%nzprocs
-      allocate(sendtypes(0:npx-1,0:npy-1,0:npz-1))
-      allocate(recvtypes(0:npx-1,0:npy-1,0:npz-1))
-      allocate(sendcounts(0:npx-1,0:npy-1,0:npz-1))
-      allocate(recvcounts(0:npx-1,0:npy-1,0:npz-1))
-      allocate(displs(0:npx-1,0:npy-1,0:npz-1))
+      allocate(sendtypes(0:npx*npy*npz-1))
+      allocate(recvtypes(0:npx*npy*npz-1))
+      allocate(sendcounts(0:npx*npy*npz-1))
+      allocate(recvcounts(0:npx*npy*npz-1))
+      allocate(displs(0:npx*npy*npz-1))
 
       dims = 4
       nlocal = (/nc,1+nxlocal+2*nxguardphi,
@@ -769,6 +779,7 @@ c     --- Data to be sent
       do iz=0,fsdecomp%nzprocs-1
         do iy=0,fsdecomp%nyprocs-1
           do ix=0,fsdecomp%nxprocs-1
+            ii = ix + iy*npx + iz*npx*npy
 
             ixglobal = max(my_ixfs - nxguardphi,ppdecomp%ix(ix) - nxguardphi)
             ixmaxp   = ppdecomp%ix(ix) + ppdecomp%nx(ix) + nxguardphi
@@ -792,12 +803,12 @@ c     --- Data to be sent
               call MPI_TYPE_CREATE_SUBARRAY(dims,nlocal,sizes,starts,
      &                                      MPI_ORDER_FORTRAN,
      &                                      MPI_DOUBLE_PRECISION,
-     &                                      sendtypes(ix,iy,iz),mpierror)
-              call MPI_TYPE_COMMIT(sendtypes(ix,iy,iz),mpierror)
-              sendcounts(ix,iy,iz) = 1
+     &                                      sendtypes(ii),mpierror)
+              call MPI_TYPE_COMMIT(sendtypes(ii),mpierror)
+              sendcounts(ii) = 1
             else
-              sendtypes(ix,iy,iz) = MPI_DOUBLE_PRECISION
-              sendcounts(ix,iy,iz) = 0
+              sendtypes(ii) = MPI_DOUBLE_PRECISION
+              sendcounts(ii) = 0
             endif
 
           enddo
@@ -814,6 +825,7 @@ c     --- Data to be sent
       do iz=0,fsdecomp%nzprocs-1
         do iy=0,fsdecomp%nyprocs-1
           do ix=0,fsdecomp%nxprocs-1
+            ii = ix + iy*npx + iz*npx*npy
 
             ixglobal = max(my_ixpp - nxguardphi,fsdecomp%ix(ix) - nxguardphi)
             ixmaxp   = my_ixpp + my_nxpp + nxguardphi
@@ -837,12 +849,12 @@ c     --- Data to be sent
               call MPI_TYPE_CREATE_SUBARRAY(dims,nplocal,sizes,starts,
      &                                      MPI_ORDER_FORTRAN,
      &                                      MPI_DOUBLE_PRECISION,
-     &                                      recvtypes(ix,iy,iz),mpierror)
-              call MPI_TYPE_COMMIT(recvtypes(ix,iy,iz),mpierror)
-              recvcounts(ix,iy,iz) = 1
+     &                                      recvtypes(ii),mpierror)
+              call MPI_TYPE_COMMIT(recvtypes(ii),mpierror)
+              recvcounts(ii) = 1
             else
-              recvtypes(ix,iy,iz) = MPI_DOUBLE_PRECISION
-              recvcounts(ix,iy,iz) = 0
+              recvtypes(ii) = MPI_DOUBLE_PRECISION
+              recvcounts(ii) = 0
             endif
 
           enddo
@@ -859,11 +871,12 @@ c     --- Free all of the types
       do iz=0,fsdecomp%nzprocs-1
         do iy=0,fsdecomp%nyprocs-1
           do ix=0,fsdecomp%nxprocs-1
-            if (sendcounts(ix,iy,iz) > 0) then
-              call MPI_TYPE_FREE(sendtypes(ix,iy,iz),mpierror)
+            ii = ix + iy*npx + iz*npx*npy
+            if (sendcounts(ii) > 0) then
+              call MPI_TYPE_FREE(sendtypes(ii),mpierror)
             endif
-            if (recvcounts(ix,iy,iz) > 0) then
-              call MPI_TYPE_FREE(recvtypes(ix,iy,iz),mpierror)
+            if (recvcounts(ii) > 0) then
+              call MPI_TYPE_FREE(recvtypes(ii),mpierror)
             endif
           enddo
         enddo
@@ -887,6 +900,7 @@ c=============================================================================
      &                             phi)
       use Subtimersw3d
       use Parallel
+      use mpi
       integer(ISZ):: nx,ny,nzlocal
       integer(ISZ):: nxguardphi,nyguardphi,nzguardphi
       real(kind=8):: phi(-nxguardphi:nx+nxguardphi,
@@ -905,8 +919,7 @@ c iz=-1 and +1.
       integer(MPIISZ):: nn,iproc,nnxy
       integer(MPIISZ):: izsend(0:nzprocs-1),nzsend(0:nzprocs-1)
       integer(MPIISZ):: izrecv(0:nzprocs-1),nzrecv(0:nzprocs-1)
-      include "mpif.h"
-      integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE,nzprocs),mpirequest(nzprocs)
+      integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE,0:nzprocs-1),mpirequest(nzprocs)
       integer(MPIISZ):: mpierror,w,comm_world_mpiisz
       integer(MPIISZ):: messid = 81
       integer(ISZ):: convertindextoproc
@@ -982,7 +995,7 @@ c     --- Then, gather up the data sent to this processor.
      &                                 nxprocs,nyprocs,nzprocs)
             call MPI_RECV(phi(:,:,izrecv(i):izrecv(i)+nzrecv(i)-1),nn,
      &                    MPI_DOUBLE_PRECISION,
-     &                    iproc,messid,comm_world_mpiisz,mpistatus,mpierror)
+     &                    iproc,messid,comm_world_mpiisz,mpistatus(:,i),mpierror)
           endif
         endif
       enddo
@@ -1031,6 +1044,7 @@ c=============================================================================
 c=============================================================================
 c=============================================================================
       module sourcetransfermessagedatatypemodule
+        use mpi
 c       --- This module holds a data type which can store all of the data
 c       --- needed for transferring sourcep to source. This data is cached
 c       --- since it is expensive to calculate and to setup the MPI
@@ -1092,7 +1106,6 @@ c returned, giving a substantial time savings.
         integer(ISZ):: pe_nxgppu,pe_nygppu,pe_nzgppu
         integer(ISZ):: nxgfs,nygfs,nzgfs
         integer(ISZ):: ixmin,ixmax,iymin,iymax,izmin,izmax
-        include "mpif.h"
         integer(MPIISZ):: dims,nlocal(-1:2),nlocalp(-1:2)
         integer(MPIISZ):: starts(-1:2),sizes(-1:2)
         integer(MPIISZ):: mpierror
@@ -1430,6 +1443,7 @@ c=============================================================================
       use Subtimersw3d
       use Decompositionmodule
       use sourcetransfermessagedatatypemodule
+      use mpi
       integer(ISZ):: nc,nxlocal,nylocal,nzlocal,nxp,nyp,nzp
       integer(ISZ):: nxguardrho,nyguardrho,nzguardrho
       real(kind=8):: sourcep(0:nc-1,-nxguardrho:nxp+nxguardrho,
@@ -1452,7 +1466,6 @@ c decomposition.
       integer(ISZ):: ifs1(0:2),ifs2(0:2)
       integer(ISZ):: ipp1(0:2),ipp2(0:2)
 
-      include "mpif.h"
       integer(MPIISZ):: ipisz
       integer(MPIISZ):: messid = 62
       integer(MPIISZ):: mpierror,comm_world_mpiisz
@@ -1527,6 +1540,7 @@ c=============================================================================
       use Subtimersw3d
       use Decompositionmodule
       use sourcetransfermessagedatatypemodule
+      use mpi
       integer(ISZ):: nc
       integer(ISZ):: nx1,ny1,nz1
       integer(ISZ):: nx2,ny2,nz2
@@ -1550,7 +1564,6 @@ c Exchange data from one decomposition to another
       integer(ISZ):: ifs1(0:2),ifs2(0:2)
       integer(ISZ):: ipp1(0:2),ipp2(0:2)
 
-      include "mpif.h"
       integer(MPIISZ):: ipisz
       integer(MPIISZ):: messid = 64
       integer(MPIISZ):: mpierror,comm_world_mpiisz
