@@ -604,7 +604,7 @@ class EM3D(SubcycledPoissonSolver):
         if isinstance(self.laser_func,dict):
             self.laser_func_dict = {}
             for k,v in self.laser_func.iteritems():
-                self.laser_func_dict[k] = PicklableFunction(self.laser_func)
+                self.laser_func_dict[k] = PicklableFunction(v)
             self.laser_func = None
         elif self.laser_func is not None:
             self.laser_func = PicklableFunction(self.laser_func)
