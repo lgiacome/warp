@@ -281,17 +281,9 @@ set_numerics( depos_order, efetch, particle_pusher, dim)
 
 # Setup the field solver object
 # -----------------------------
-em = EM3D(
-    stencil=stencil,
-    npass_smooth=npass_smooth,
-    alpha_smooth=alpha_smooth,
-    stride_smooth=stride_smooth,
-    l_2dxz= (dim in ["2d", "circ"]),
-    l_2drz= (dim in ["circ"]),
-    l_1dz = (dim =="1d" ),
-    l_getrho=True,
-    circ_m = (dim =="circ")*circ_m,
-    type_rz_depose=1 )
+em = initialize_em_solver( stencil, dim, 
+    npass_smooth, alpha_smooth, stride_smooth,
+    circ_m = (dim =="circ")*circ_m )
 registersolver(em)
 
 # Introduce the laser
