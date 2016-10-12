@@ -13,8 +13,8 @@ except ImportError:
     me = 0
 
 def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
-               theta_pol=0., source_z=0., gamma_boost=None,
-               laser_file=None, laser_file_energy=None ) :
+               theta_pol=0., source_z=0., zeta=0, beta=0, phi2=0,
+               gamma_boost=None, laser_file=None, laser_file_energy=None ):
     """
     Add a linearly-polarized, Gaussian laser pulse in the em object,
     by setting the correct laser_func, laser_emax, laser_source_z
@@ -57,9 +57,24 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
        The angle of polarization with respect to the x axis
        Default : 0 rad
 
-    source_z : float, optional
+    source_z : float (in meters), optional
        The position of the antenna that launches the laser
- 
+
+    zeta: float (in m.s), optional
+       *Used only if no laser_file is provided, i.e. for a Gaussian pulse*
+       Spatial chirp, at focus,
+       as defined in Akturk et al., Opt Express, vol 12, no 19 (2014)
+
+    beta: float (in s), optional
+       *Used only if no laser_file is provided, i.e. for a Gaussian pulse*
+       Angular dispersion, at focus,
+       as defined in Akturk et al., Opt Express, vol 12, no 19 (2014)
+
+    phi2: float (in s^2), optional
+       *Used only if no laser_file is provided, i.e. for a Gaussian pulse*
+       Temporal chirp, at focus,
+       as defined in Akturk et al., Opt Express, vol 12, no 19 (2014)
+       
     gamma_boost : float, optional
         When initializing the laser in a boosted frame, set the value of
         `gamma_boost` to the corresponding Lorentz factor. All the other
@@ -82,8 +97,9 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
 
     # Create a laser_profile object
     # Note that the laser_profile needs to be a callable instance of a class,
-    # i.e. an instance of a class with the __call__ method. This avoids the problem of the
-    # EM solver not being picklable if laser_func were an instance method, which is not picklable.
+    # i.e. an instance of a class with the __call__ method. This avoids the
+    # problem of the EM solver not being picklable if laser_func were an
+    # instance method, which is not picklable.
 
     # - Case of a Gaussian pulse
     if laser_file is None:
@@ -96,8 +112,12 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
             source_z, = boost.static_length([ source_z ])
         
         # Create a laser profile object to store these parameters
-        laser_profile = GaussianProfile( k0, w0, ctau, z0, zf,
+        if (beta == 0) and (zeta == 0) and (phi2 == 0):
+            laser_profile = GaussianProfile( k0, w0, ctau, z0, zf,
                                   source_z, a0, dim, boost )
+        else:
+            laser_profile = GaussianSTCProfile( k0, w0, ctau, z0, zf,
+                source_z, a0, zeta, beta, phi2, dim, boost )        
 
     # - Case of an experimental profile
     else:
@@ -280,5 +300,92 @@ class GaussianProfile( object ):
         profile =  long_profile * trans_profile * curvature_oscillations
         
         return( self.E0*profile )
+
+
+class GaussianSTCProfile( object ):
+    """Class that calculates a Gaussian laser pulse
+    with spatio-temporal correlations (STC)"""
+
+    def __init__( self, k0, w0, ctau, z0, zf, source_z, a0,
+                  zeta, beta, phi2, dim, boost ):
+
+        # Set a number of parameters for the laser      
+        E0 = a0*m_e*c**2*k0/e
+        zr = 0.5*k0*w0**2
+        # Set default focusing position
+        if zf is None: zf = z0
+
+        # If there is a boost, change the parameters
+        # (NB: source_z is given as already transformed by the boosted frame)
+        if boost is not None:
+            zr, zf = boost.static_length([ zr, zf ])
+            ctau, z0 = boost.copropag_length([ ctau, z0 ])
+            k0, E0 = boost.wavenumber([ k0, E0 ])
+        
+        # Store the parameters
+        self.k0 = k0
+        self.inv_zr = 1./zr
+        self.inv_w02 = 1./w0**2
+        self.inv_tau2 = c**2/ctau**2
+        self.zf = zf
+        self.z0 = z0
+        self.source_z = source_z
+        self.E0 = E0
+        self.beta = beta
+        self.zeta = zeta
+        self.phi2 = phi2
+        self.boost = boost
+
+        # Geometric coefficient (for the evolution of the amplitude)
+        # In 1D, there is no transverse components, therefore the geomtric
+        # coefficient shouldn't be included.
+        if  dim=="1d":
+            self.geom_coeff = 0.
+        elif dim=="2d":
+            self.geom_coeff = 0.5
+        elif dim in ["circ", "3d"]:
+            self.geom_coeff = 1.
+
+
+    def __call__( self, x, y, t ):
+        """
+        Return the transverse profile of the laser at the position
+        of the antenna
+
+        Parameters:
+        -----------
+        x: float or ndarray
+            First transverse direction in meters
+
+        y: float or ndarray
+            Second transverse direction in meters
+
+        t: float
+            Time in seconds
+        """
+        # Diffraction and stretching factor
+        z = self.source_z - self.zf
+        diffract_factor = 1 - 1j*z*self.inv_zr
+        stretch_factor = 1 + \
+          4*(self.zeta + self.beta*z)**2 * \
+            (self.inv_tau2*self.inv_w02) / diffract_factor \
+        + 2j*(self.phi2 - self.beta**2*self.k0*z) * self.inv_tau2
+        
+        # Calculate the argument of the complex exponential
+        # NB: Even when the source is moving (e.g. boosted frame), self.source_z
+        # is the *initial* position of the source; the fact that the source is
+        # moving is taken into account in em3dsolver.py, by multiplying
+        # top.time by (1-laser_source_v/c) before calling this function, so
+        # that c*t - self.source_z correspond to its *current* value
+        exp_argument = 1j * self.k0*( c*t - self.source_z ) \
+          - (y**2 + x**2) * self.inv_w02 / diffract_factor \
+          - 1./stretch_factor * self.inv_tau2 * \
+            ( t - (self.source_z - self.z0)/c - self.beta*self.k0*x \
+              - 2j*x*(self.zeta + self.beta*z) * self.inv_w02/diffract_factor )**2
+
+        # Get the profile
+        profile = np.exp( exp_argument ) / ( diffract_factor * stretch_factor**.5 )
+        
+        return( self.E0 * profile.real )
 
         
