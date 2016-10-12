@@ -2121,12 +2121,12 @@ hvyvzbar(0:nzwind,0:lenhist,0:nshist)  _real [1]
 hzmmntmax(0:lenhist) _real [m] # History of moments grid maximum in Z
 hzmmntmin(0:lenhist) _real [m] # History of moments grid minimum in Z
 hdzm(0:lenhist)      _real [m] # History of moments grid cell size
-lhlinechg logical /.true./   # Turns on history of line charge
+lhlinechg logical /.false./   # Turns on history of line charge
 ihlinechg integer /1/        # Multiplier for hlinechg memory size (autoset)
 hlinechg(0:nzzarr*ihlinechg,0:lenhist) _real [C/m]
             limited (0:nzzarr,0:jhist)
             +zhist           # Line charge density vs. space and time
-lhvzofz logical /.true./     # Turns on history of vz
+lhvzofz logical /.false./     # Turns on history of vz
 ihvzofz integer /1/          # Multiplier for hvzofz memory size (autoset)
 hvzofz(0:nzzarr*ihvzofz,0:lenhist)  _real [m/s]
             limited (0:nzzarr,0:jhist)
