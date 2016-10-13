@@ -30,3 +30,4 @@ n_stepped=0
 while n_stepped < N_steps:
     step(10)
     n_stepped = n_stepped + 10
+printtimers()
