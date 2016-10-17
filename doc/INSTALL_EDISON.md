@@ -21,7 +21,7 @@ then
    module swap PrgEnv-intel PrgEnv-gnu
    module load python/2.7-anaconda
    export PATH=$SCRATCH/warp_install/bin:$PATH
-   export PYTHONPATH=$SCRATCH/warp_install/lib/python 
+   export PYTHONPATH=$SCRATCH/warp_install/lib/python:$PYTHONPATH
 fi
 ```
 
