@@ -3547,7 +3547,7 @@ class EM3D(SubcycledPoissonSolver):
     #############################################################
 
     def pfex( self, l_children=1, guards=0, direction=None, m=None,
-              output=False, show=True, **kw) :
+              iz=w3d.nz/2, output=False, show=True, **kw) :
         """
         Plot the Ex field.
 
@@ -3619,7 +3619,7 @@ class EM3D(SubcycledPoissonSolver):
             if me==0:return(f[::-1])
 
     def pfey( self, l_children=1, guards=0, direction=None, m=None,
-                output=False, show=True, **kw) :
+                iz=w3d.nz/2, output=False, show=True, **kw) :
         """
         Plot the Ey field.
 
@@ -3691,7 +3691,7 @@ class EM3D(SubcycledPoissonSolver):
 
 
     def pfez( self, l_children=1, guards=0, direction=None, m=None,
-                output=False, show=True, **kw) :
+                iz=w3d.nz/2, output=False, show=True, **kw) :
         """
         Plot the Ez field.
 
@@ -3875,7 +3875,7 @@ class EM3D(SubcycledPoissonSolver):
 
 
     def pfbx( self, l_children=1, guards=0, direction=None, m=None,
-                            output=False, show=True, **kw) :
+                            iz=w3d.nz/2, output=False, show=True, **kw) :
         """
         Plot the Bx field.
 
@@ -3945,7 +3945,7 @@ class EM3D(SubcycledPoissonSolver):
 
 
     def pfby( self, l_children=1, guards=0, direction=None, m=None,
-                            output=False, show=True, **kw) :
+                            iz=w3d.nz/2, output=False, show=True, **kw) :
         """
         Plot the By field.
 
@@ -4015,7 +4015,7 @@ class EM3D(SubcycledPoissonSolver):
 
 
     def pfbz( self, l_children=1, guards=0, direction=None, m=None,
-          output=False, show=True, **kw) :
+          iz=w3d.nz/2, output=False, show=True, **kw) :
         """
         Plot the Bz field.
 
@@ -7032,6 +7032,12 @@ def pyinit_3dem_block(nx, ny, nz,
     f.Bx[...] = 0.
     f.By[...] = 0.
     f.Bz[...] = 0.
+    f.Exp[...] = 0.
+    f.Eyp[...] = 0.
+    f.Ezp[...] = 0.
+    f.Bxp[...] = 0.
+    f.Byp[...] = 0.
+    f.Bzp[...] = 0.
     f.Jxarray[...] = 0.
     f.Jyarray[...] = 0.
     f.Jzarray[...] = 0.
@@ -7044,6 +7050,17 @@ def pyinit_3dem_block(nx, ny, nz,
         f.Bx_circ[...] = 0.
         f.By_circ[...] = 0.
         f.Bz_circ[...] = 0.
+        f.Exp_circ[...] = 0.
+        f.Eyp_circ[...] = 0.
+        f.Ezp_circ[...] = 0.
+        f.Bxp_circ[...] = 0.
+        f.Byp_circ[...] = 0.
+        f.Bzp_circ[...] = 0.
+        f.Jx_circ[...] = 0.
+        f.Jy_circ[...] = 0.
+        f.Jz_circ[...] = 0.
+        f.Jarray_circ[...] = 0.
+        f.Rho_circ[...] = 0.
 
     nnx=em3d.nn
     nny=em3d.nn
