@@ -327,21 +327,14 @@ class GaussianSTCProfile( object ):
     """Class that calculates a Gaussian laser pulse
     with spatio-temporal correlations (STC)"""
 
-    def __init__( self, k0, w0, ctau, z0, zf, source_z, a0,
-                  zeta, beta, phi2, dim, boost ):
+    def __init__( self, k0, w0, ctau, z0, zf, source_z, source_v,
+                  a0, zeta, beta, phi2, dim, boost ):
 
         # Set a number of parameters for the laser      
         E0 = a0*m_e*c**2*k0/e
         zr = 0.5*k0*w0**2
         # Set default focusing position
         if zf is None: zf = z0
-
-        # If there is a boost, change the parameters
-        # (NB: source_z is given as already transformed by the boosted frame)
-        if boost is not None:
-            zr, zf = boost.static_length([ zr, zf ])
-            ctau, z0 = boost.copropag_length([ ctau, z0 ])
-            k0, E0 = boost.wavenumber([ k0, E0 ])
         
         # Store the parameters
         self.k0 = k0
@@ -351,6 +344,7 @@ class GaussianSTCProfile( object ):
         self.zf = zf
         self.z0 = z0
         self.source_z = source_z
+        self.v_antenna = source_v
         self.E0 = E0
         self.beta = beta
         self.zeta = zeta
@@ -368,7 +362,7 @@ class GaussianSTCProfile( object ):
             self.geom_coeff = 1.
 
 
-    def __call__( self, x, y, t ):
+    def __call__( self, x, y, t_modified ):
         """
         Return the transverse profile of the laser at the position
         of the antenna
@@ -381,11 +375,29 @@ class GaussianSTCProfile( object ):
         y: float or ndarray
             Second transverse direction in meters
 
-        t: float
-            Time in seconds
+        t_modified: float
+            Time in seconds, multiplied by (1-v_antenna/c)
+            This multiplication is done in em3dsolver.py, when
+            calling the present function.
         """
+        # Get the true time
+        # (The top.time has been multiplied by (1-v_antenna/c)
+        # in em3dsolver.py, before calling the present function)
+        t = t_modified/(1.-self.v_antenna/c)
+        # Get the position of the antenna at this time
+        z_source = self.source_z + self.v_antenna * t
+
+        # When running in the boosted frame, convert these position to
+        # the lab frame, so as to use the lab-frame formula of the laser
+        if self.boost is not None:
+            zlab_source = self.boost.gamma0*( z_source + self.boost.beta0*c*t )
+            tlab_source = self.boost.gamma0*( t + self.boost.beta0*z_source/c )
+            # Overwrite boosted frame values, within the scope of this function
+            z_source = zlab_source
+            t = tlab_source
+        
         # Diffraction and stretching factor
-        z = self.source_z - self.zf
+        z = z_source - self.zf
         diffract_factor = 1 - 1j*z*self.inv_zr
         stretch_factor = 1 + \
           4*(self.zeta + self.beta*z)**2 * \
@@ -393,20 +405,27 @@ class GaussianSTCProfile( object ):
         + 2j*(self.phi2 - self.beta**2*self.k0*z) * self.inv_tau2
         
         # Calculate the argument of the complex exponential
-        # NB: Even when the source is moving (e.g. boosted frame), self.source_z
-        # is the *initial* position of the source; the fact that the source is
-        # moving is taken into account in em3dsolver.py, by multiplying
-        # top.time by (1-laser_source_v/c) before calling this function, so
-        # that c*t - self.source_z correspond to its *current* value
-        exp_argument = 1j * self.k0*( c*t - self.source_z ) \
+        exp_argument = 1j * self.k0*( c*t - z_source ) \
           - (y**2 + x**2) * self.inv_w02 / diffract_factor \
           - 1./stretch_factor * self.inv_tau2 * \
-            ( t - (self.source_z - self.z0)/c - self.beta*self.k0*x \
-              - 2j*x*(self.zeta + self.beta*z) * self.inv_w02/diffract_factor )**2
+            ( t - (z_source - self.z0)/c - self.beta*self.k0*x \
+            - 2j*x*(self.zeta + self.beta*z)*self.inv_w02/diffract_factor )**2
 
         # Get the profile
-        profile = np.exp( exp_argument ) / ( diffract_factor * stretch_factor**.5 )
+        profile = np.exp(exp_argument) / \
+          ( diffract_factor**self.geom_coeff * stretch_factor**.5 )
+
+        # Boosted-frame: convert the laser amplitude
+        # These formula assume that the antenna is motionless in the lab frame
+        if self.boost is not None:
+            conversion_factor = 1./self.boost.gamma0
+            # The line below is to compensate the fact that the laser
+            # amplitude is multiplied by (1-v_antenna/c) in em3dsolver.py
+            conversion_factor *= 1./(1. - self.v_antenna/c)
+            E0 = conversion_factor * self.E0
+        else:
+            E0 = self.E0
         
-        return( self.E0 * profile.real )
+        return( E0 * profile.real )
 
         
