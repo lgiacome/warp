@@ -81,8 +81,12 @@ c injection.  The third part is for space-charge limited injection.
      &                           uzlab(:),ginvlab(:),tlab(:),dtmaps(:),zend(:),
      &                           tstart(:),tend(:),zbeam_maps(:),zbeamend_maps(:)
       if (lw3dtimesubs) substarttime = wtime()
+      call printentering("inject3d", 2)
 
-      if (inject <= 0 .and. tinject <= 0) return
+      if (inject <= 0 .and. tinject <= 0) then
+        call printexiting("inject3d@1", 2)
+        return
+      endif
 
 c     --- Check if tinject should be set equal to inject.
 c     --- tinject is a new variable that allows different injection algorithms
@@ -2746,6 +2750,7 @@ c        --- end of loop over species
       endif
 c     --- End of transverse injection
 
+      call printexiting("inject3d", 2)
 !$OMP MASTER
       if (lw3dtimesubs) timeinject3d = timeinject3d + wtime() - substarttime
 !$OMP END MASTER

@@ -73,6 +73,8 @@ reflect   integer /1/        # constant for particle reflection at boundaries
 
 *********** DebugFlags dump:
 debug logical /.false./ # When true, extensive debugging is done.
+tracelevel integer /0/ # Sets level of tracing output. Higher is more output.
+indentlevel integer /0/ # Identation level for trace
 
 *********** Timers dump parallel:
 starttime       real /0./ -dump # CPU start time (in seconds)
@@ -3343,6 +3345,8 @@ seteb_in_boosted_frame(n,ex(n):real,ey(n):real,ez(n):real,
                          uxf:real,uyf:real,uzf:real,gammaf:real) subroutine
        # computes E and B fields in Lorentz boosted frame
 nonzerorealarray(array:real, narray:integer) subroutine
+printentering(subname:string, level:integer) subroutine
+printexiting(subname:string, level:integer) subroutine
 
 %%%%%%% Decomposition:
 my_index integer # Processor number
