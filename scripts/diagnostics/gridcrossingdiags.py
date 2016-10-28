@@ -426,17 +426,17 @@ data will be preserved.
                 vznew = getvz(js=js,gather=0)
                 zold = getpid(js=js,id=self.zoldpid-1,gather=0)
 
-                iznew = int((znew - (zbeam + zmmin))/dz)
-                izold = int((zold - (zbeam + zmmin))/dz)
+                iznew = floor((znew - (zbeam + zmmin))/dz)
+                izold = floor((zold - (zbeam + zmmin))/dz)
 
                 icrossed = (iznew > izold)
 
-                izc = iznew[icrossed]
+                zc = iznew[icrossed]
                 xc = xnew[icrossed]
                 yc = ynew[icrossed]
                 rpc = rpnew[icrossed]
                 vzc = vznew[icrossed]
-                np = len(izc)
+                np = len(zc)
 
                 if top.wpid > 0:
                     weight = getpid(js=js,id=top.wpid-1,gather=0)
@@ -444,9 +444,7 @@ data will be preserved.
                 else:
                     ww = ones(np,'d')
 
-                zc = izc.astype('d')
-
-                np = len(izc)
+                np = len(zc)
                 vz = getvz(js=js,gather=0)[icrossed]
                 ke = 0.5*top.pgroup.sm[js]*vz**2
                 ww *= top.pgroup.sw[js]
@@ -1996,25 +1994,23 @@ be unreliable.
                 vznew = getvz(js=js,gather=0)
                 zold = getpid(js=js,id=zoldpid-1,gather=0)
 
-                iznew = int((znew - (zbeam + zmmin))/dz)
-                izold = int((zold - (zbeam + zmmin))/dz)
+                iznew = floor((znew - (zbeam + zmmin))/dz)
+                izold = floor((zold - (zbeam + zmmin))/dz)
 
                 icrossed = (iznew > izold)
 
-                izc = iznew[icrossed]
+                zc = iznew[icrossed]
                 xc = xnew[icrossed]
                 yc = ynew[icrossed]
                 rpc = rpnew[icrossed]
                 vzc = vznew[icrossed]
-                np = len(izc)
+                np = len(zc)
 
                 if top.wpid > 0:
                     weight = getpid(js=js,id=top.wpid-1,gather=0)
                     ww = weight[icrossed]
                 else:
                     ww = ones(np,'d')
-
-                zc = izc.astype('d')
 
             if nt == 1:
                 gcount = zeros_like(self._count[-1])
@@ -2063,7 +2059,7 @@ be unreliable.
                                     self._rprms[-1])
 
             if self.ldoradialdiag or self.ldoscintillator:
-                np = len(izc)
+                np = len(zc)
                 vz = getvz(js=js,gather=0)[icrossed]
                 ke = 0.5*top.pgroup.sm[js]*vz**2
                 ww *= top.pgroup.sw[js]
