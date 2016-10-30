@@ -52,7 +52,10 @@ def initialize_beam_fields( em, dim, beam, w3d, top,
         l_2drz= (dim in ["circ"]),
         l_1dz= (dim=="1d"),
         circ_m = (dim =="circ")*em.circ_m,
-        type_rz_depose=1 )
+        type_rz_depose=1,
+        nxguard=em.nxguard,
+        nyguard=em.nyguard,
+        nzguard=em.nzguard)
 #        l_setcowancoefs=True,
 #        l_correct_num_Cherenkov=True )
     

@@ -127,6 +127,7 @@ c  does the initial field solve, and sets up other arrays that are needed.
 c     integer(4):: fff
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
+      call printentering("w3dgen", 1)
 c     fff = for_set_fpe(14_4)
 
 c  Announce that we're starting up
@@ -500,6 +501,7 @@ c  Set up Eears of z
 
       call seteears()
 
+      call printexiting("w3dgen", 1)
 !$OMP MASTER
       if (lw3dtimesubs) timew3dgen = timew3dgen + wtime() - substarttime
 !$OMP END MASTER
@@ -525,6 +527,7 @@ c  the routine STEP3D to do the step.
       real(kind=8):: substarttime,wtime
       integer(ISZ):: indts
       if (lw3dtimesubs) substarttime = wtime()
+      call printentering("w3dexe", 1)
 
 c --- Announce that we're running
 
@@ -606,6 +609,7 @@ c        endif
 c     endif
 
 c  Continue to run.
+      call printexiting("w3dexe", 1)
 !$OMP MASTER
       if (lw3dtimesubs) timew3dexe = timew3dexe + wtime() - substarttime
 !$OMP END MASTER
@@ -616,6 +620,7 @@ c=============================================================================
       use Subtimersw3d
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
+      call printentering("w3dfin", 1)
 
 c  Finish up at end of RUN, or on receipt of FIN
 c  This routine is never called, at present; history plots are
@@ -650,6 +655,7 @@ c  release storage
       call gfree ("LatticeInternal")
       call gfree ("Z_arrays")
 
+      call printexiting("w3dfin", 1)
 !$OMP MASTER
       if (lw3dtimesubs) timew3dfin = timew3dfin + wtime() - substarttime
 !$OMP END MASTER
@@ -694,6 +700,7 @@ c     Assumes ioldsetup is initialized to zero by compiler; the following
 c     saves it between calls to this subroutine
       save ioldsetup
       if (lw3dtimesubs) substarttime = wtime()
+      call printentering("step3d", 1)
 
       if (l4symtry .and. l2symtry) then
         call kaboom("step3d: both l4symtry and l2symtry are set to true")
@@ -1004,6 +1011,8 @@ c  Finally, moment diagnostic printout and history storage
 
       if (caller == "w3dgen" .or. lspecial)
      &  call minidiag (it,time,lspecial)
+
+      call printexiting("step3d", 1)
 !$OMP MASTER
       if (lw3dtimesubs) timestep3d = timestep3d + wtime() - substarttime
 !$OMP END MASTER
@@ -1037,6 +1046,7 @@ c  B_self more than once.
       real(kind=8):: timetemp,wtime
       real(kind=8):: substarttime
       if (lw3dtimesubs) substarttime = wtime()
+      call printentering("exteb3d", 2)
 
       timetemp = wtime()
 
@@ -1085,6 +1095,7 @@ c     --- Accumulate time for applying the fields of the lattice
       latticetime = latticetime + (wtime() - timetemp)
 !$OMP END MASTER
 
+      call printexiting("exteb3d", 2)
 !$OMP MASTER
       if (lw3dtimesubs) timeexteb3d = timeexteb3d + wtime() - substarttime
 !$OMP END MASTER
@@ -1108,6 +1119,7 @@ c=============================================================================
       real(kind=8):: zs,wz
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
+      call printentering("othere3d", 2)
 
 c  Set the electric fields from external sources,
 c  inculding axial confining fields, and uniform focusing fields.
@@ -1170,6 +1182,7 @@ c     --- x- and y-magnetic fields
         enddo
       endif
 
+      call printexiting("othere3d", 2)
 !$OMP MASTER
       if (lw3dtimesubs) timeothere3d = timeothere3d + wtime() - substarttime
 !$OMP END MASTER
@@ -1622,6 +1635,7 @@ c     --- Create local pointers to the arrays in pgroup.
       real(kind=8):: substarttime,wtime
 
       if (lw3dtimesubs) substarttime = wtime()
+      call printentering("padvnc3d", 1)
 
       call setuppgroup(pgroup)
 
@@ -2425,6 +2439,7 @@ c         --- fullv or halfv step.
       endif
 c----------------------------------------------------------------------------
 
+      call printexiting("padvnc3d", 1)
 !$OMP MASTER
       if (lw3dtimesubs) timepadvnc3d = timepadvnc3d + wtime() - substarttime
 !$OMP END MASTER
@@ -10796,6 +10811,7 @@ c --- all of the particles, otherwise the specified particles are loaded.
       real(kind=8):: substarttime,subendtime,wtime
 c     --- This routine is always timed (data saved in lrtime)
       substarttime = wtime()
+      call printentering("loadrho3d", 2)
 
       if (lbeforelr) call callpythonfunc("beforeloadrho","controllers")
 
@@ -10991,6 +11007,7 @@ c     --- Do any loading that is needed for injection
 
       if (lafterloadrho) call callpythonfunc("afterloadrho","controllers")
 
+      call printexiting("loadrho3d", 2)
 !$OMP MASTER
       subendtime = wtime()
       lrtime = lrtime + subendtime - substarttime
@@ -11770,6 +11787,7 @@ c should also be made there.
       logical(ISZ):: lrz,lxz
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
+      call printentering("particleboundaries3d", 2)
 
 c     --- Make sure that the group is properly setup. This is needed
 c     --- for the paralel version, to ensure the pgroup.npid is
@@ -11834,6 +11852,7 @@ c       --- do it only if species was advanced on this time step
       if (lcallcontrollers .and. lafterscraper)
      &  call callpythonfunc("afterscraper","controllers")
 
+      call printexiting("particleboundaries3d", 2)
 !$OMP MASTER
       if (lw3dtimesubs) timeparticleboundaries3d = timeparticleboundaries3d + wtime() - substarttime
 !$OMP END MASTER
@@ -13120,9 +13139,13 @@ c         The loop is in bendfieldsol3d
       logical(ISZ):: linbendturnedoff
       if (lw3dtimesubs) substarttime = wtime()
       timetemp = wtime()
+      call printentering("fieldsol3d", 2)
 
 c     --- If no field solve, return
-      if ( fstype == -1) return
+      if ( fstype == -1) then
+        call printexiting("fieldsol3d@1", 2)
+        return
+      endif
 
       if (l4symtry .and. l2symtry) then
         call kaboom("fieldsol3d: both l4symtry and l2symtry are set to true")
@@ -13145,6 +13168,7 @@ c          --- turn back on the bends after the fieldsolve when computing in a b
            if (linbendturnedoff) then
              linbend=.true.
            end if
+           call printexiting("fieldsol3d@2", 2)
            return
         endif
         call callpythonfunc("fieldsolregistered","field_solvers.fieldsolver")
@@ -13159,6 +13183,7 @@ c       --- turn back on the bends after the fieldsolve when computing in a boos
         fstime = fstime + (wtime() - timetemp)
 !$OMP END MASTER
 
+        call printexiting("fieldsol3d@3", 2)
         return
       endif
 
@@ -13325,6 +13350,7 @@ c     --- turn back on the bends after the fieldsolve when computing in a booste
         linbend=.true.
       end if
 
+      call printexiting("fieldsol3d", 2)
 !$OMP MASTER
       if (lw3dtimesubs) timefieldsol3d = timefieldsol3d + wtime() - substarttime
       fstime = fstime + (wtime() - timetemp)

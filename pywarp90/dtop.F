@@ -4787,3 +4787,43 @@ c     --- then to all other processors.
       return
       end
 c=============================================================================
+      subroutine printentering(subname, level)
+      use DebugFlags
+      character(*):: subname
+      integer(ISZ):: level
+
+      character(15):: messageformat
+
+      if (tracelevel >= level) then
+        if (indentlevel == 0) then
+          write(*,"(T1,A,A)") "entering", subname
+        else
+          write(messageformat,"(A,I3,A)") "(T1,", indentlevel, "X,A,X,A)"
+          write(*,messageformat) "entering", subname
+        endif
+        indentlevel = indentlevel + 2
+      endif
+
+      return
+      end
+c=============================================================================
+      subroutine printexiting(subname, level)
+      use DebugFlags
+      character(*):: subname
+      integer(ISZ):: level
+
+      character(15):: messageformat
+
+      if (tracelevel >= level) then
+        indentlevel = indentlevel - 2
+        if (indentlevel == 0) then
+          write(*,"(T1,A,A)") "exiting", subname
+        else
+          write(messageformat,"(A,I3,A)") "(T1,", indentlevel, "X,A,X,A)"
+          write(*,messageformat) "exiting", subname
+        endif
+      endif
+
+      return
+      end
+c=============================================================================

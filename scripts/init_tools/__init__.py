@@ -8,3 +8,4 @@ from .beam_tools import initialize_beam_fields
 from .plasma_initialization import PlasmaInjector
 from .boost_tools import BoostConverter
 from .ions_initialization import initialize_ion_dict
+from .em_solver_initialization import initialize_em_solver

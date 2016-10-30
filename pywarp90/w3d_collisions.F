@@ -924,9 +924,11 @@ c=============================================================================
       subroutine compton_scatter_electrons(photon_energy, photon_density, photon_px, photon_py, photon_pz,
      &                                     nx, ny, nz, dx, dy, dz, xmmin, ymmin, zmmin, zgrid0, dt,
      &                                     boost_gamma, time, weightingmethod, anglethreshold,
-     &                                     electrongroup, electrons, photongroup, photons, tbirthpid)
+     &                                     electrongroup, electrons, photongroup, photons, tbirthpid, scattercountpid,
+     &                                     withgammaeffective)
       use Constant
       use ParticleGroupModule
+      use Particles,Only: wpid
       integer(ISZ):: nx, ny, nz
       real(kind=8):: photon_energy
       real(kind=8):: photon_density(0:nx,0:ny,0:nz)
@@ -942,7 +944,8 @@ c=============================================================================
       type(ParticleGroup):: photongroup
       integer(ISZ):: photons
       integer(ISZ):: electrons
-      integer(ISZ):: tbirthpid
+      integer(ISZ):: tbirthpid, scattercountpid
+      logical(ISZ):: withgammaeffective
 
 c zgrid0 is the location of the grid at time = 0
 
@@ -971,6 +974,8 @@ c zgrid0 is the location of the grid at time = 0
       real(kind=8):: uxhat, uyhat, uzhat, udotv, pdotv
       real(kind=8):: zgrid
       real(kind=8):: pdens, px, py, pz, pe, p_tot, p_perp
+      real(kind=8):: laser_a0
+      real(kind=8):: pi0, pz_effective, gamma_effective
       real(kind=8):: px_old, py_old, pz_old
       real(kind=8):: p_old, e_old, p_new, e_new
       real(kind=8):: pxtemp, pytemp, pztemp, ptemp
@@ -979,9 +984,10 @@ c zgrid0 is the location of the grid at time = 0
       real(kind=8):: psx, psy, psz
       real(kind=8):: wx, wy, wz
       real(kind=8):: cphi, sphi, ctheta, stheta
+      real(kind=8):: rrr
 
       integer(ISZ):: nscattered
-      real(kind=8), save:: fracscattered = 1.
+      integer(ISZ), save:: nnewphotonstotal = 10000
 
       if (electrongroup%nps(electrons) == 0) return
 
@@ -990,14 +996,13 @@ c zgrid0 is the location of the grid at time = 0
       e_radius = echarge**2/(4.0*pi*eps0*emass*clight**2)
       e_area = pi*e_radius**2
 
-      ! --- Make a overestimate of how many photons will be added, ~10% of electrons
-      nnewspace = 2.*fracscattered*electrongroup%nps(electrons)*electrongroup%sw(electrons)/photongroup%sw(photons) + 1
-
       ! --- Make some space to start with.
+      nnewspace = 2*nnewphotonstotal
       call chckpart(photongroup,photons,0,nnewspace)
 
       ! --- Loop over electrons
       nscattered = 0
+      nnewphotonstotal = 0
       do ie0=0, electrongroup%nps(electrons)-1
 
         ! --- Note that with handling the index this way, the correct
@@ -1014,19 +1019,6 @@ c zgrid0 is the location of the grid at time = 0
         uylab = electrongroup%uyp(ie)
         uzlab = boost_gamma*electrongroup%uzp(ie) + boost_uz/electrongroup%gaminv(ie)
         gamma_lab = sqrt(1. + (uxlab**2 + uylab**2 + uzlab**2)/clight**2)
-
-        ! --- Quantities needed for frame transformations into and out
-        ! --- the rest frame of the electron
-        gamma_frame = gamma_lab
-        uxframe = uxlab
-        uyframe = uylab
-        uzframe = uzlab
-        umag = sqrt(uxframe**2 + uyframe**2 + uzframe**2)
-        if (umag > 0.) then
-          uxhat = uxframe/umag
-          uyhat = uyframe/umag
-          uzhat = uzframe/umag
-        endif
 
         zgrid = zgrid0 - clight*tlab
         ix = int((xlab - xmmin)/dx)
@@ -1090,6 +1082,31 @@ c zgrid0 is the location of the grid at time = 0
         pylab = photon_energy/clight*(pytemp/ptemp)
         pzlab = photon_energy/clight*(pztemp/ptemp)
 
+        ! --- Quantities needed for frame transformations into and out
+        ! --- the rest frame of the electron
+        if (withgammaeffective) then
+          laser_a0 = sqrt(echarge**2*planck**2*pdens/(2.*pi**2*eps0*emass**2*clight**2*photon_energy))
+          pi0 = gamma_lab - uzlab/clight
+          pz_effective = uzlab/clight + laser_a0**2/(2.*pi0)
+          gamma_effective = sqrt(1. + pz_effective**2)
+          gamma_frame = gamma_effective
+          uxframe = uxlab
+          uyframe = uylab
+          uzframe = clight*pz_effective
+        else
+          gamma_frame = gamma_lab
+          uxframe = uxlab
+          uyframe = uylab
+          uzframe = uzlab
+        endif
+
+        umag = sqrt(uxframe**2 + uyframe**2 + uzframe**2)
+        if (umag > 0.) then
+          uxhat = uxframe/umag
+          uyhat = uyframe/umag
+          uzhat = uzframe/umag
+        endif
+
         ! --- Transform the photon into the electron rest frame
         if (umag > 0.) then
           pdotv = pxlab*uxhat + pylab*uyhat + pzlab*uzhat
@@ -1144,7 +1161,16 @@ c zgrid0 is the location of the grid at time = 0
 
         if (nnewphotons == 0) cycle
 
-        !call chckpart(photongroup,photons,0,nnewphotons)
+        nnewphotonstotal = nnewphotonstotal + nnewphotons
+
+        if (nnewphotonstotal > nnewspace) then
+          nnewspace = 1.5*nnewspace + nnewphotons
+          call chckpart(photongroup,photons,0,nnewspace)
+
+          ! --- Update the electron index in case the data was moved during chckpart
+          ie = ie0 + electrongroup%ins(electrons)
+
+        endif
 
         ! --- rotate photon to align with z axis
         p_perp = sqrt(px**2 + py**2)
@@ -1246,7 +1272,7 @@ c zgrid0 is the location of the grid at time = 0
           theta = atan2(sqrt(pxlab**2 + pylab**2), pzlab)
           if (theta > anglethreshold) cycle
 
-          ! --- Make sure there is enough space for the new photon
+          ! --- Add the new photon to the end of the array.
           ig = photongroup%ins(photons) + photongroup%nps(photons)
           photongroup%nps(photons) = photongroup%nps(photons) + 1
 
@@ -1310,13 +1336,15 @@ c zgrid0 is the location of the grid at time = 0
           electrongroup%uzp(ie) = uz
           electrongroup%gaminv(ie) = 1./sqrt(1. + (ux**2 + uy**2 + uz**2)/clight**2)
 
+          if (scattercountpid > 0) then
+            electrongroup%pid(ie,scattercountpid) = electrongroup%pid(ie,scattercountpid) + 1
+          endif
+
           nscattered = nscattered + 1
 
         endif
 
       enddo
-
-      fracscattered = 1.*nscattered/electrongroup%nps(electrons)
 
       end subroutine compton_scatter_electrons
 c=============================================================================
