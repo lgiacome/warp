@@ -538,7 +538,10 @@ class LabSnapshot:
         # Pack the different slices together
         # Reverse the order of the slices when stacking the array,
         # since the slices where registered for right to left
-        field_array = np.stack( self.buffered_slices[::-1], axis=-1 )
+        index  = np.array(np.shape( self.buffered_slices[::-1] ))
+        rolled_index = np.roll(index, -1)
+        field_array = np.dstack( self.buffered_slices[::-1] )
+        field_array = field_array.reshape( (rolled_index), order="F" )
 
         # Get the first and last index in z
         # (Following Python conventions, iz_min is inclusive,
