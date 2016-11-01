@@ -51,7 +51,8 @@ example of a typical submission script.
 #!/bin/bash -l
 #SBATCH --job-name=test_simulation
 #SBATCH --time=00:30:00
-#SBATCH -n 32
+#SBATCH -n 64
+#SBATCH -C haswell
 #SBATCH --partition=debug
 #SBATCH -e test_simulation.err
 #SBATCH -o test_simulation.out
@@ -68,8 +69,7 @@ cd $SLURM_SUBMIT_DIR
 cp ./* $mydir/.
 cd $mydir
 
-shifter cd test_simulation
-shifter mpirun -np 32 -launcher ssh python -i warp_script.py -p 2 1 16
+shifter mpirun -np 64 -launcher ssh python -i warp_script.py -p 4 1 16
 ```
 Note that the options `--image=docker:rlehe/warp:latest`, `--
 volume=<your$SCRATCH>:/home/warp_user/run` and `-launcher ssh` are essential
