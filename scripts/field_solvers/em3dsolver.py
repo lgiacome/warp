@@ -3343,6 +3343,9 @@ class EM3D(SubcycledPoissonSolver):
 
         # --- call beforeloadrho functions
         beforeloadrho.callfuncsinlist()
+        # --- call user-defined injection routines
+        userinjection.callfuncsinlist()
+
 #        self.loadsource()
         self.loadrho()
         self.loadj()
