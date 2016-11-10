@@ -1468,7 +1468,7 @@ else:
 
 # --- Try to import the GUI
 #try:
-#    from .GUI.WarpGUI import *
+#    from warp.GUI.WarpGUI import *
 #except:
 #    pass
 
