@@ -62,6 +62,7 @@ class EM3D(SubcycledPoissonSolver):
                       'sigmae':0.,'sigmab':0.,
                       'colecoefs':None,'l_setcowancoefs':True,
                       'pml_method':1,
+                      'vxgrid':0.,
                       'l_correct_num_Cherenkov':False,
                       'l_fieldcenterK':False, # if using staggered grid with node-centered gather (efetch=1); centers field by shifts in k-space rather than averaging in real space
                       'circ_m':0, 'l_laser_cart':0, 'type_rz_depose':0}
@@ -84,7 +85,6 @@ class EM3D(SubcycledPoissonSolver):
         self.xgrid=0.
         self.xgridcont=0.
         self.nxshifts=0
-        self.vxgrid=0.
         self.zgrid=top.zgrid
         self.nzshifts=0
         self.odd=0
@@ -2421,6 +2421,7 @@ class EM3D(SubcycledPoissonSolver):
         self.fields.xmax = self.incrementposition(self.fields.xmax,self.dx,n)
         self.block.xmin = self.incrementposition(self.block.xmin,self.dx,n)
         self.block.xmax = self.incrementposition(self.block.xmax,self.dx,n)
+        self.laser_xx = self.incrementposition(self.laser_xx,self.dx,n)
         self.nxshifts+=n
 
     def shift_cells_z(self,n):
