@@ -446,6 +446,8 @@ class Species(object):
         # --- property would always returns top.pgroup in that case.
         if pgroup is not None:
             self._pgroup = pgroup
+            if not pgroup.allocated('sm'):
+                pgroup.gchange()
         self.type=type
         self.add_group(js,charge=charge,mass=mass,charge_state=charge_state,weight=weight)
         self.charge=self.pgroup.sq[self.jslist[0]]
