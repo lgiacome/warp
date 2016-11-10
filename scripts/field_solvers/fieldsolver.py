@@ -1921,6 +1921,11 @@ def getdecomposedarray(arr,ix=None,iy=None,iz=None,bcast=1,local=0,
             if ny == 0: sss[1] = Ellipsis
             if nz == 0: sss[2] = Ellipsis
             result = arr[sss[0],sss[1],sss[2]]
+            if result.size == 0:
+                # --- if arr does not overlap at domain boundaries, then fetching data
+                # --- at the boundary will give a zero sized array on the processors
+                # --- that don't have the data.
+                result = None
         else:
             # --- Otherwise, use None
             result = None
