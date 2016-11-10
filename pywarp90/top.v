@@ -88,6 +88,8 @@ fstime          real /0./ # Time to do the field solve, including beforefs and
 lrtime          real /0./ # Time to load rho, including the before and after
                           # load rho controllers (in seconds)
 latticetime     real /0./ # Time to apply the fields from the lattice
+deposetime      real /0./ # Time to depose the fields rho and J (EM PIC)
+gathertime      real /0./ # Time to gather the fields E and B (EM PIC)
 dumptime        real /0./ # Time to do the data dumps, using the dump command
                           # (in seconds)
 temperaturestime real /0./ # Time to calculate the temperatures (in seconds)

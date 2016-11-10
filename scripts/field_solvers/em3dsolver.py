@@ -3339,10 +3339,14 @@ class EM3D(SubcycledPoissonSolver):
                 self.push_velocity_full(js)
                 self.push_positions(js)
 
+        inject3d(1, top.pgroup)
+        # --- call user-defined injection routines
+        userinjection.callfuncsinlist()
         particleboundaries3d(top.pgroup,-1,False)
 
         # --- call beforeloadrho functions
         beforeloadrho.callfuncsinlist()
+
 #        self.loadsource()
         self.loadrho()
         self.loadj()

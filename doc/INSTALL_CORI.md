@@ -1,11 +1,87 @@
 # Installing Warp with mpi4py on Cori
 
 This document describes how to install Warp on the Cori cluster.
+The installation can be done by compiling the sources (recommended).
+It can also be done by using Shifter (see the corresponding section).
+
+## Setting up the environnement
+
+Create a directory that will contain all the software related to Warp:
+```
+mkdir $SCRATCH/warp_install
+```
+NB: This directory is on the `$SCRATCH` directory, for fast reading
+access. Also, the `$SCRATCH` directory is specific to each cluster
+(it is a different folder for Hopper, Edison and Cori) and is thus
+well-adapted for system-specific installation, whereas the
+`$HOME` directory is shared for all the clusters.
+
+Then enter the following lines in the file `.bashrc.ext` that resides in the `$HOME` directory. (This automatically loads a few modules used by Warp, whenever a simulation is run.)
+```
+if [ "$NERSC_HOST" == "cori" ] 
+then
+   module swap PrgEnv-intel PrgEnv-gnu
+   module load python/2.7-anaconda
+   WARP=$SCRATCH/warp_install/
+   export PATH=$WARP/bin:$PATH
+   export PYTHONPATH=$WARP/lib/python:$PYTHONPATH
+fi
+```
+
+Then run `source .bashrc` in the `$HOME`directory (or alternatively
+log out of Cori, and then log in again).
+
+## Installing Forthon
+
+As explained on the Warp website, in order to install Forthon :
+
+- Type `git clone https://github.com/dpgrote/Forthon.git`
+- Then `cd` into the directory `Forthon` and run `python setup.py install --home=$WARP`
+
+## Installing Warp itself
+
+### In order to install warp with gfortran
+
+- Download the source by entering `git clone https://bitbucket.org/berkeleylab/warp.git`
+
+- Go to the `warp/pywarp90` directory and create a file called `Makefile.local.pympi`. Enter the following lines in this file :
+```
+FCOMP = -F gfortran --fcompexec ftn --fargs "-fPIC -O3" --cargs "-fPIC -O3"
+INSTALLOPTIONS = --home=$(SCRATCH)/warp_install/
+```
+  
+- Then, in the directory `warp/pywarp90`, enter `make pinstall`. The compilation then lasts for a few minutes.
+
+### In order to install Warp with the Intel compiler
+
+- Download the source by entering `git clone https://bitbucket.org/berkeleylab/warp.git`
+
+- Go to the `warp/pywarp90` directory and create a file called `Makefile.local.pympi`.
+If you want to compile for Haswell Architecture, enter the following lines in this file :
+
+```
+FCOMP = -F intel --fcompexec ftn --fargs "-fPIC -O3 -xCORE-AVX2" --cargs "-fPIC"
+INSTALLOPTIONS = --home=$(SCRATCH)/warp_install/
+```
+  
+For MIC architecture, such as Intel Xeon Phi KNL, replace `-xCORE-AVX2` by `-xMIC-AVX512`.
+This activates the use of AVX512 instructions for best performance on KNL.
+However, note that KNL supports previous Intel instructions and your code will 
+work even compiled for Haswell (Cori phase 1) or Ivy Bridge (Edison) architectures.
+
+```
+FCOMP = -F intel --fcompexec ftn --fargs "-fPIC -O3 -xMIC-AVX512" --cargs "-fPIC"
+INSTALLOPTIONS = --home=$(SCRATCH)/warp_install/
+```
+  
+- Be sure you are using the intel compiler: `module load PrgEnv-intel`  
+  
+- Then, in the directory `warp/pywarp90`, enter `make -f Makefile.Forthon.pympi install`. 
+The compilation then lasts for a few minutes.
 
 ## Using Shifter
 
-Because of difficulties with the compilation of Warp on Cori, it is
-currently advised to use
+You can also use Shifter
 [Shifter](http://www.nersc.gov/research-and-development/user-defined-images/)
 to run Warp on Cori. Shifter handles Linux container (similar to
 Docker), and allows to easily port codes from one
@@ -51,7 +127,8 @@ example of a typical submission script.
 #!/bin/bash -l
 #SBATCH --job-name=test_simulation
 #SBATCH --time=00:30:00
-#SBATCH -n 32
+#SBATCH -n 64
+#SBATCH -C haswell
 #SBATCH --partition=debug
 #SBATCH -e test_simulation.err
 #SBATCH -o test_simulation.out
@@ -68,8 +145,7 @@ cd $SLURM_SUBMIT_DIR
 cp ./* $mydir/.
 cd $mydir
 
-shifter cd test_simulation
-shifter mpirun -np 32 -launcher ssh python -i warp_script.py -p 2 1 16
+shifter mpirun -np 64 -launcher ssh python -i warp_script.py -p 4 1 16
 ```
 Note that the options `--image=docker:rlehe/warp:latest`, `--
 volume=<your$SCRATCH>:/home/warp_user/run` and `-launcher ssh` are essential

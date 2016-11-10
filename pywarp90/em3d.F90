@@ -2,6 +2,7 @@
 
 subroutine depose_j_n_1dz(jx,jy,jz,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
                           dt,dz,nz,nzguard,noz,l_particles_weight)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nz,nzguard,noz
    real(kind=8), dimension(-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -16,6 +17,9 @@ subroutine depose_j_n_1dz(jx,jy,jz,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
    real(kind=8), DIMENSION(-int(noz/2)-1:int((noz+1)/2)+1) :: sz, sz0, dsz
    integer(ISZ) :: ikxp0,ikxp,ip,diz,idz,k,izmin,izmax
    real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
 
       sz0=0.
       
@@ -182,12 +186,14 @@ subroutine depose_j_n_1dz(jx,jy,jz,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
         
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_j_n_1dz
 
 ! THIS SUBROUTINE IS NOT IN EM3D.v file 
 subroutine depose_j_serial_1d(jx,jy,jz,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
                                                  dt,dz,nz,l_particles_weight)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nz
    real(kind=8), dimension(-1:nz+1), intent(in out) :: jx,jy,jz
@@ -201,6 +207,9 @@ subroutine depose_j_serial_1d(jx,jy,jz,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
                    s1x,s2x,s1y,s2y,s1z,s2z,invvol,invdtdx,invdtdy,invdtdz
    real(kind=8), DIMENSION(-1:2) :: sx, sy, sz, sx0, sy0, sz0, dsx, dsy, dsz
    integer(ISZ) :: iixp0,ijxp0,ikxp0,iixp,ijxp,ikxp,ip,dix,diy,diz,idx,idy,idz,i,j,k
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
 
       sx0=0.;sy0=0.;sz0=0.
       
@@ -276,11 +285,13 @@ subroutine depose_j_serial_1d(jx,jy,jz,np,zp,uxp,uyp,uzp,gaminv,w,q,zmin, &
         
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_j_serial_1d
 
 subroutine depose_jxjy_esirkepov_linear_serial_2d(jx,jy,jz,np,xp,yp,xpold,ypold,uzp,gaminv,w,q, &
                                                      xmin,ymin,dt,dx,dy,nx,ny,l_particles_weight)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,ny
    real(kind=8), dimension(-1:nx+1,-1:ny+1), intent(in out) :: jx,jy,jz
@@ -292,6 +303,9 @@ subroutine depose_jxjy_esirkepov_linear_serial_2d(jx,jy,jz,np,xp,yp,xpold,ypold,
    real(kind=8) :: xold,yold,xmid,ymid,x,y,wq,wqx,wqy,tmp,vx,vy,vz,dts2dx,dts2dy,s1x,s2x,s1y,s2y,invsurf,invdtdx,invdtdy
    real(kind=8), DIMENSION(6) :: sx, sy, sx0, sy0, dsx, dsy
    integer(ISZ) :: iixp0,ijxp0,iixp,ijxp,ip,dix,diy,idx,idy
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
 
       dxi = 1./dx
       dyi = 1./dy
@@ -472,6 +486,7 @@ subroutine depose_jxjy_esirkepov_linear_serial_2d(jx,jy,jz,np,xp,yp,xpold,ypold,
       
     end do
     write(0,*) '*** sum j',sum(jx(:,:)),sum(jy(:,:)),sum(jz(:,:))
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_jxjy_esirkepov_linear_serial_2d
 
@@ -479,6 +494,7 @@ subroutine depose_jxjyjz_esirkepov_n_2d(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,
                                                  dt,dx,dz,nx,nz,nxguard,nzguard, &
                                                  nox,noz,l_particles_weight,l4symtry,l_2drz,type_rz_depose)
    use Constant, only: clight
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard,type_rz_depose
    real(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -498,6 +514,9 @@ subroutine depose_jxjyjz_esirkepov_n_2d(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,
    integer(ISZ) :: iixp0,ikxp0,iixp,ikxp,ip,dix,diz,idx,idz,i,k,ic,kc, &
                    ixmin, ixmax, izmin, izmax, icell, ncells, ndtodx, ndtodz, &
                    xl,xu,zl,zu
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
 
     ndtodx = int(clight*dt/dx)
     ndtodz = int(clight*dt/dz)
@@ -786,12 +805,14 @@ subroutine depose_jxjyjz_esirkepov_n_2d(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,
     
     deallocate(sdx,sdz,sx,sx0,dsx,sz,sz0,dsz)
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_jxjyjz_esirkepov_n_2d
 
 subroutine depose_jxjyjz_esirkepov_n_2d_circ(jx,jy,jz,jx_circ,jy_circ,jz_circ,circ_m,np,xp,yp,zp,uxp,uyp,uzp,gaminv, &
      w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz,l_particles_weight,type_rz_depose)
    use Constant, only: clight
+  use Timers, Only: deposetime
   implicit none
   integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard,circ_m,type_rz_depose
   real(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -814,6 +835,9 @@ subroutine depose_jxjyjz_esirkepov_n_2d_circ(jx,jy,jz,jx_circ,jy_circ,jz_circ,ci
        ixmin, ixmax, izmin, izmax, icell, ncells, m, ndtodx, ndtodz, &
                    xl,xu,zl,zu
   complex(kind=8) :: xymid,xymid0,xy,xy0,xyold,xyold0, im
+  real(kind=8):: starttime, wtime
+
+  starttime = wtime()
 
   im = cmplx(0.,1.)
 
@@ -1142,12 +1166,14 @@ subroutine depose_jxjyjz_esirkepov_n_2d_circ(jx,jy,jz,jx_circ,jy_circ,jz_circ,ci
 
   deallocate(sdx,sdz,sx,sx0,dsx,sz,sz0,dsz)
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_jxjyjz_esirkepov_n_2d_circ
 
 subroutine depose_jxjyjz_villasenor_n_2d(jx,jy,jz,np,xp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,zmin, &
                                                  dt,dx,dz,nx,nz,nxguard,nzguard, &
                                                  nox,noz,l_particles_weight,l4symtry)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -1166,6 +1192,9 @@ subroutine depose_jxjyjz_villasenor_n_2d(jx,jy,jz,np,xp,zp,uxp,uyp,uzp,gaminv,w,
    integer(ISZ) :: iixp0,ikxp0,iixp,ikxp,ip,dix,diz,idx,idz,i,k,ic,kc, interx, interz, jn2,ln2,jni,lni,&
                    ixmin, ixmax, izmin, izmax, icell, ncells,jn,ln,jn1,ln1,j,jtot,nloop
    logical(ISZ) :: doit
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
    
       dxi = 1./dx
       dzi = 1./dz
@@ -1311,12 +1340,14 @@ subroutine depose_jxjyjz_villasenor_n_2d(jx,jy,jz,np,xp,zp,uxp,uyp,uzp,gaminv,w,
       enddo  
     enddo  
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_jxjyjz_villasenor_n_2d
 
 ! THIS SUBROUTINE IS NOT IN EM3D.v file 
 subroutine depose_jxjyjz_esirkepov_linear_serialold(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) ::jx,jy,jz
@@ -1331,6 +1362,9 @@ subroutine depose_jxjyjz_esirkepov_linear_serialold(jx,jy,jz,np,xp,yp,zp,uxp,uyp
    real(kind=8), DIMENSION(-1:2) :: sx, sy, sz, sx0, sy0, sz0, dsx, dsy, dsz
    integer(ISZ) :: iixp0,ijxp0,ikxp0,iixp,ijxp,ikxp,ip,dix,diy,diz,idx,idy,idz,i,j,k, &
                    ixmin, ixmax, iymin, iymax, izmin, izmax
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
 
       sx0=0.;sy0=0.;sz0=0.
       sdz=0.
@@ -1452,6 +1486,7 @@ subroutine depose_jxjyjz_esirkepov_linear_serialold(jx,jy,jz,np,xp,yp,zp,uxp,uyp
 
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_jxjyjz_esirkepov_linear_serialold
 
@@ -1459,6 +1494,7 @@ end subroutine depose_jxjyjz_esirkepov_linear_serialold
 subroutine depose_jxjyjz_esirkepov_linear_serialnew(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard, &
                                                  l_particles_weight)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -1480,6 +1516,9 @@ subroutine depose_jxjyjz_esirkepov_linear_serialnew(jx,jy,jz,np,xp,yp,zp,uxp,uyp
    real(kind=8), DIMENSION(-1:2) :: sz, sz0, dsz
    integer(ISZ) :: iixp0,ijxp0,ikxp0,iixp,ijxp,ikxp,ip,dix,diy,diz,idx,idy,idz,i,j,k,ic,jc,kc, &
                    ixmin, ixmax, iymin, iymax, izmin, izmax, icell, ncells, ixmin2, ixmax2, iymin2, iymax2, izmin2, izmax2 
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
 
     sx0=0.;sy0=0.;sz0=0.
     sdz=0.
@@ -1651,12 +1690,14 @@ subroutine depose_jxjyjz_esirkepov_linear_serialnew(jx,jy,jz,np,xp,yp,zp,uxp,uyp
  
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_jxjyjz_esirkepov_linear_serialnew
 
 subroutine depose_jxjyjz_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q,xmin,ymin,zmin, &
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard, &
                                                  l_particles_weight)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -1678,6 +1719,9 @@ subroutine depose_jxjyjz_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uz
    real(kind=8), DIMENSION(-1:2) :: sz, sz0, dsz
    integer(ISZ) :: iixp0,ijxp0,ikxp0,iixp,ijxp,ikxp,ip,dix,diy,diz,idx,idy,idz,i,j,k,ic,jc,kc, &
                    ixmin, ixmax, iymin, iymax, izmin, izmax, icell, ncells 
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
 
     sx0=0.;sy0=0.;sz0=0.
     sdz=0.
@@ -1821,6 +1865,7 @@ subroutine depose_jxjyjz_esirkepov_linear_serial(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uz
  
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_jxjyjz_esirkepov_linear_serial
 
@@ -1829,6 +1874,7 @@ subroutine depose_jxjyjz_esirkepov_nnew(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard, &
                                                  nox,noy,noz,l_particles_weight,l4symtry)
 ! although it vectorizes better, this version is slower than the old one
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -1850,6 +1896,9 @@ subroutine depose_jxjyjz_esirkepov_nnew(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,
    real(kind=8), DIMENSION(-int(noz/2)-1:int((noz+1)/2)+1) :: sz, sz0, dsz
    integer(ISZ) :: iixp0,ijxp0,ikxp0,iixp,ijxp,ikxp,ip,dix,diy,diz,idx,idy,idz,i,j,k,ic,jc,kc, &
                    ixmin, ixmax, iymin, iymax, izmin, izmax, icell, ncells, ixmin2, ixmax2, iymin2, iymax2, izmin2, izmax2 
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
 
     sx0=0.;sy0=0.;sz0=0.
     sdz=0.
@@ -2151,6 +2200,7 @@ subroutine depose_jxjyjz_esirkepov_nnew(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,
  
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_jxjyjz_esirkepov_nnew
 
@@ -2158,6 +2208,7 @@ subroutine depose_jxjyjz_esirkepov_n(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q
                                                  dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard, &
                                                  nox,noy,noz,l_particles_weight,l4symtry)
    use Constant, only: clight
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: jx, jy, jz
@@ -2178,6 +2229,9 @@ subroutine depose_jxjyjz_esirkepov_n(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q
    integer(ISZ) :: iixp0,ijxp0,ikxp0,iixp,ijxp,ikxp,ip,dix,diy,diz,idx,idy,idz,i,j,k,ic,jc,kc, &
                    ixmin, ixmax, iymin, iymax, izmin, izmax, icell, ncells, ndtodx, ndtody, ndtodz, &
                    xl,xu,yl,yu,zl,zu
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
 
     ndtodx = int(clight*dt/dx)
     ndtody = int(clight*dt/dy)
@@ -2498,6 +2552,7 @@ subroutine depose_jxjyjz_esirkepov_n(jx,jy,jz,np,xp,yp,zp,uxp,uyp,uzp,gaminv,w,q
 
     deallocate(sdx,sdy,sdz,sx,sx0,dsx,sy,sy0,dsy,sz,sz0,dsz)
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_jxjyjz_esirkepov_n
 
@@ -2505,6 +2560,7 @@ subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,np,xp,yp,zp,
               m,xmin,ymin,zmin, dt,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight,l_relativ)
    ! mp is the the kinetic energy density
     use Constant
+  use Timers, Only: deposetime
   implicit none
    integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard,3), intent(in out) :: mp
@@ -2519,6 +2575,9 @@ subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,np,xp,yp,zp,
                    s1x,s2x,s1y,s2y,s1z,s2z,invvol,invdtdx,invdtdy,invdtdz
    real(kind=8), DIMENSION(-1:2) :: sx, sy, sz, sx0, sy0, sz0, dsx, dsy, dsz
    integer(ISZ) :: iixp0,ijxp0,ikxp0,iixp,ijxp,ikxp,ip,dix,diy,diz,idx,idy,idz,i,j,k
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
 
       sx0=0.;sy0=0.;sz0=0.
       sdz=0.
@@ -2650,6 +2709,7 @@ subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial(jx,jy,jz,mp,np,xp,yp,zp,
 
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_jxjyjz_pxpypz_esirkepov_linear_serial
 
@@ -2864,6 +2924,7 @@ end subroutine deposcor_jxjyjz_pxpypz_esirkepov_linear_serial
 
 subroutine depose_rho_linear_serial(rho,np,xp,yp,zp,w,q,xmin,ymin,zmin, &
             dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,l_particles_weight)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: rho
@@ -2874,6 +2935,9 @@ subroutine depose_rho_linear_serial(rho,np,xp,yp,zp,w,q,xmin,ymin,zmin, &
    real(kind=8) :: dxi,dyi,dzi,xint,yint,zint
    real(kind=8) :: x,y,z,wq,invvol,s1x,s2x,s1y,s2y,s1z,s2z
    integer(ISZ) :: j,k,l,ip,dix,diy,diz
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
    
       dxi = 1./dx
       dyi = 1./dy
@@ -2920,11 +2984,13 @@ subroutine depose_rho_linear_serial(rho,np,xp,yp,zp,w,q,xmin,ymin,zmin, &
       
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_rho_linear_serial
 
 subroutine depose_rho_n_2dxz(rho,np,xp,yp,zp,w,q,xmin,zmin,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
                         l_particles_weight,l4symtry,l_2drz, type_rz_depose)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard,type_rz_depose
    real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: rho
@@ -2939,6 +3005,9 @@ subroutine depose_rho_n_2dxz(rho,np,xp,yp,zp,w,q,xmin,zmin,dx,dz,nx,nz,nxguard,n
                    sz(-int(noz/2):int((noz+1)/2))
    real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
    integer(ISZ) :: j,l,ip,jj,ll,ixmin, ixmax, izmin, izmax
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
    
       dxi = 1./dx
       dzi = 1./dz
@@ -3052,11 +3121,13 @@ subroutine depose_rho_n_2dxz(rho,np,xp,yp,zp,w,q,xmin,zmin,dx,dz,nx,nz,nxguard,n
 
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_rho_n_2dxz
 
 subroutine depose_rho_n_2d_circ(rho,rho_circ,circ_m,np,xp,yp,zp,w,q,xmin,zmin,dx,dz,nx,nz, &
      nxguard,nzguard,nox,noz,l_particles_weight,type_rz_depose)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard,circ_m,type_rz_depose
    real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: rho
@@ -3073,6 +3144,9 @@ subroutine depose_rho_n_2d_circ(rho,rho_circ,circ_m,np,xp,yp,zp,w,q,xmin,zmin,dx
    real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
    integer(ISZ) :: j,l,m,ip,jj,ll,ixmin, ixmax, izmin, izmax
    complex(kind=8) :: xy,xy0
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
    
       dxi = 1./dx
       dzi = 1./dz
@@ -3197,11 +3271,13 @@ subroutine depose_rho_n_2d_circ(rho,rho_circ,circ_m,np,xp,yp,zp,w,q,xmin,zmin,dx
 
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_rho_n_2d_circ
 
 subroutine depose_rho_n(rho,np,xp,yp,zp,w,q,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,nox,noy,noz, &
                         l_particles_weight,l4symtry)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: rho
@@ -3217,6 +3293,9 @@ subroutine depose_rho_n(rho,np,xp,yp,zp,w,q,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz,nxg
                    sz(-int(noz/2):int((noz+1)/2))
    real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
    integer(ISZ) :: j,k,l,ip,jj,kk,ll,ixmin, ixmax, iymin, iymax, izmin, izmax
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
    
       dxi = 1./dx
       dyi = 1./dy
@@ -3348,11 +3427,13 @@ subroutine depose_rho_n(rho,np,xp,yp,zp,w,q,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz,nxg
 
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_rho_n
 
 subroutine depose_j_n_2dxz(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dto,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
                         l_particles_weight,l4symtry,l_deposit_nodal,nsubsteps,l_coefs_uniform)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard,nsubsteps
    real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -3368,6 +3449,9 @@ subroutine depose_j_n_2dxz(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dto,d
                    wcoefs(nsubsteps)
    real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
    integer(ISZ) :: j,l,ip,jj,ll,ixmin, ixmax, izmin, izmax, it
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
    
       dxi = 1./dx
       dzi = 1./dz
@@ -3504,11 +3588,13 @@ subroutine depose_j_n_2dxz(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dto,d
       end do
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_j_n_2dxz
 
 subroutine getf1dz_n(np,zp,ex,ey,ez,zmin,dz,nz,nzguard,noz,exg,eyg,ezg)
    
+ use Timers, Only: gathertime
  implicit none
       integer(ISZ) :: np,nz,nzguard,noz
       real(kind=8), dimension(np) :: zp,ex,ey,ez
@@ -3520,6 +3606,9 @@ subroutine getf1dz_n(np,zp,ex,ey,ez,zmin,dz,nz,nzguard,noz,exg,eyg,ezg)
       real(kind=8) :: zintsq,ozint,ozintsq
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dzi = 1./dz
 
@@ -3569,12 +3658,14 @@ subroutine getf1dz_n(np,zp,ex,ey,ez,zmin,dz,nz,nzguard,noz,exg,eyg,ezg)
 
      end do
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getf1dz_n
 
   subroutine gete1dz_n_energy_conserving(np,zp,ex,ey,ez,zmin,dz,nz,nzguard, &
                                        noz,exg,eyg,ezg,l_lower_order_in_v)
    
+   use Timers, Only: gathertime
    implicit none
      integer(ISZ) :: np,nz,noz,nzguard
       real(kind=8), dimension(np) :: zp,ex,ey,ez
@@ -3588,6 +3679,9 @@ subroutine getf1dz_n(np,zp,ex,ey,ez,zmin,dz,nz,nzguard,noz,exg,eyg,ezg)
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), dimension(:), allocatable :: sz0
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dzi = 1./dz
 
@@ -3697,12 +3791,14 @@ subroutine getf1dz_n(np,zp,ex,ey,ez,zmin,dz,nz,nzguard,noz,exg,eyg,ezg)
      end do
      deallocate(sz0)
      
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine gete1dz_n_energy_conserving
 
 subroutine getb1dz_n_energy_conserving(np,zp,bx,by,bz,zmin,dz,nz,nzguard, &
                                        noz,bxg,byg,bzg,l_lower_order_in_v)
    
+      use Timers, Only: gathertime
       implicit none
       integer(ISZ) :: np,nz,noz,nzguard
       real(kind=8), dimension(np) :: zp,bx,by,bz
@@ -3716,6 +3812,9 @@ subroutine getb1dz_n_energy_conserving(np,zp,bx,by,bz,zmin,dz,nz,nzguard, &
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), dimension(:), allocatable :: sz0
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dzi = 1./dz
 
@@ -3829,11 +3928,13 @@ subroutine getb1dz_n_energy_conserving(np,zp,bx,by,bz,zmin,dz,nz,nzguard, &
      end do
      deallocate(sz0)
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getb1dz_n_energy_conserving
 
  subroutine getf3d_linear(np,xp,yp,zp,ex,ey,ez,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard,exg,eyg,ezg)
    
+ use Timers, Only: gathertime
  implicit none
       integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
       real(kind=8), dimension(np) :: xp,yp,zp,ex,ey,ez
@@ -3842,6 +3943,9 @@ subroutine getb1dz_n_energy_conserving(np,zp,bx,by,bz,zmin,dz,nz,nzguard, &
       integer(ISZ) :: ip, j, k, l
       real(kind=8) :: dxi, dyi, dzi, x, y, z, xint, yint, zint, s1x, s2x, s1y, s2y, s1z, s2z
       real(kind=8) :: w1, w2, w3, w4, w5, w6, w7, w8
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dyi = 1./dy
@@ -3885,12 +3989,14 @@ subroutine getb1dz_n_energy_conserving(np,zp,bx,by,bz,zmin,dz,nz,nzguard, &
                        +w5*ezg(j+1,k+1,l  )+w6*ezg(j,k+1,l  )+w7*ezg(j+1,k,l  )+w8*ezg(j,k,l  )
      end do
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getf3d_linear
 
  subroutine getf3d_n(np,xp,yp,zp,ex,ey,ez,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz, &
                      nxguard,nyguard,nzguard,nox,noy,noz,exg,eyg,ezg,l4symtry)
    
+ use Timers, Only: gathertime
  implicit none
       integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard,nox,noy,noz
       real(kind=8), dimension(np) :: xp,yp,zp,ex,ey,ez
@@ -3905,6 +4011,9 @@ subroutine getb1dz_n_energy_conserving(np,zp,bx,by,bz,zmin,dz,nz,nzguard, &
       real(kind=8), DIMENSION(-int(noy/2):int((noy+1)/2)) :: sy
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dyi = 1./dy
@@ -4052,6 +4161,7 @@ subroutine getb1dz_n_energy_conserving(np,zp,bx,by,bz,zmin,dz,nz,nzguard, &
 
      end do
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getf3d_n
 
@@ -4139,6 +4249,7 @@ subroutine getb1dz_n_energy_conserving(np,zp,bx,by,bz,zmin,dz,nz,nzguard, &
 subroutine getf2dxz_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
                      nxguard,nyguard,nzguard,nox,noz,exg,eyg,ezg,l4symtry,l_2drz)
    
+ use Timers, Only: gathertime
  implicit none
       integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard,nox,noz
       real(kind=8), dimension(np) :: xp,yp,zp,ex,ey,ez
@@ -4152,6 +4263,9 @@ subroutine getf2dxz_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
       real(kind=8), DIMENSION(-int(nox/2):int((nox+1)/2)) :: sx
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dzi = 1./dz
@@ -4274,12 +4388,14 @@ subroutine getf2dxz_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
 
      end do
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getf2dxz_n
 
 subroutine getfs2dxz_n(np,xp,yp,zp,fs,xmin,zmin,dx,dz,nx,ny,nz, &
                      nxguard,nyguard,nzguard,nox,noz,fsg,l4symtry,l_2drz)
    
+ use Timers, Only: gathertime
  implicit none
       integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard,nox,noz
       real(kind=8), dimension(np) :: xp,yp,zp,fs
@@ -4293,6 +4409,9 @@ subroutine getfs2dxz_n(np,xp,yp,zp,fs,xmin,zmin,dx,dz,nx,ny,nz, &
       real(kind=8), DIMENSION(-int(nox/2):int((nox+1)/2)) :: sx
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dzi = 1./dz
@@ -4399,12 +4518,14 @@ subroutine getfs2dxz_n(np,xp,yp,zp,fs,xmin,zmin,dx,dz,nx,ny,nz, &
 
      end do
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getfs2dxz_n
 
 subroutine getf2drz_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
                      nxguard,nyguard,nzguard,nox,noz,exg,eyg,ezg,l4symtry,l_2drz)
    
+ use Timers, Only: gathertime
  implicit none
       integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard,nox,noz
       real(kind=8), dimension(np) :: xp,yp,zp,ex,ey,ez
@@ -4418,6 +4539,9 @@ subroutine getf2drz_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
       real(kind=8), DIMENSION(-int(nox/2):int((nox+1)/2)) :: sx
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dzi = 1./dz
@@ -4514,12 +4638,14 @@ subroutine getf2drz_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
 
      end do
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getf2drz_n
 
 subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
                      nxguard,nyguard,nzguard,nox,noz,exg,eyg,ezg,exg_circ,eyg_circ,ezg_circ,circ_m)
    
+ use Timers, Only: gathertime
  implicit none
       integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard,nox,noz,circ_m
       real(kind=8), dimension(np) :: xp,yp,zp,ex,ey,ez
@@ -4535,6 +4661,9 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
       complex(kind=8) :: xy,xy0
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dzi = 1./dz
@@ -4650,12 +4779,14 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
 
      end do
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getf2drz_circ_n
  
  subroutine gete3d_linear_energy_conserving(np,xp,yp,zp,ex,ey,ez,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz, &
                                             nxguard,nyguard,nzguard,exg,eyg,ezg)
    
+ use Timers, Only: gathertime
  implicit none
       integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
       real(kind=8), dimension(np) :: xp,yp,zp,ex,ey,ez
@@ -4663,6 +4794,9 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
       real(kind=8) :: xmin,ymin,zmin,dx,dy,dz
       integer(ISZ) :: ip, j, k, l
       real(kind=8) :: dxi, dyi, dzi, x, y, z, xint, yint, zint, s1x, s2x, s1y, s2y, s1z, s2z
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dyi = 1./dy
@@ -4706,12 +4840,14 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
                        
      end do
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine gete3d_linear_energy_conserving
 
  subroutine geteb3d_linear_energy_conserving(np,xp,yp,zp,ex,ey,ez,bx,by,bz,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz, &
                                             nxguard,nyguard,nzguard,exg,eyg,ezg,bxg,byg,bzg)
    
+ use Timers, Only: gathertime
  implicit none
       integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
       real(kind=8), dimension(np) :: xp,yp,zp,ex,ey,ez,bx,by,bz
@@ -4719,6 +4855,9 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
       real(kind=8) :: xmin,ymin,zmin,dx,dy,dz
       integer(ISZ) :: ip, j, k, l
       real(kind=8) :: dxi, dyi, dzi, x, y, z, xint, yint, zint, s1x, s2x, s1y, s2y, s1z, s2z
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dyi = 1./dy
@@ -4771,12 +4910,14 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
                        
      end do
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine geteb3d_linear_energy_conserving
 
   subroutine gete2dxz_n_energy_conserving(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,nz,nxguard,nzguard, &
                                        nox,noz,exg,eyg,ezg,l4symtry,l_2drz,l_lower_order_in_v)
    
+   use Timers, Only: gathertime
    implicit none
      integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
       real(kind=8), dimension(np) :: xp,yp,zp,ex,ey,ez
@@ -4791,6 +4932,9 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), dimension(:), allocatable :: sx0,sz0
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dzi = 1./dz
@@ -5020,12 +5164,14 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
      end do
      deallocate(sx0,sz0)
      
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine gete2dxz_n_energy_conserving
 
   subroutine gete3d_n_energy_conserving(np,xp,yp,zp,ex,ey,ez,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard, &
                                        nox,noy,noz,exg,eyg,ezg,l4symtry,l_lower_order_in_v)
    
+   use Timers, Only: gathertime
    implicit none
      integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
       real(kind=8), dimension(np) :: xp,yp,zp,ex,ey,ez
@@ -5041,6 +5187,9 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), dimension(:), allocatable :: sx0,sy0,sz0
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dyi = 1./dy
@@ -5326,12 +5475,14 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
      end do
      deallocate(sx0,sy0,sz0)
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine gete3d_n_energy_conserving
 
  subroutine getb3d_linear_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz, &
                                             nxguard,nyguard,nzguard,bxg,byg,bzg)
    
+ use Timers, Only: gathertime
  implicit none
       integer(ISZ) :: np,nx,ny,nz,nxguard,nyguard,nzguard
       real(kind=8), dimension(np) :: xp,yp,zp,bx,by,bz
@@ -5339,6 +5490,9 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
       real(kind=8) :: xmin,ymin,zmin,dx,dy,dz
       integer(ISZ) :: ip, j, k, l
       real(kind=8) :: dxi, dyi, dzi, x, y, z, xint, yint, zint, s1x, s2x, s1y, s2y, s1z, s2z
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dyi = 1./dy
@@ -5376,12 +5530,14 @@ subroutine getf2drz_circ_n(np,xp,yp,zp,ex,ey,ez,xmin,zmin,dx,dz,nx,ny,nz, &
                        
      end do
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getb3d_linear_energy_conserving
 
 subroutine getb2dxz_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,zmin,dx,dz,nx,nz,nxguard,nzguard, &
                                        nox,noz,bxg,byg,bzg,l4symtry,l_2drz,l_lower_order_in_v)
    
+      use Timers, Only: gathertime
       implicit none
       integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
       real(kind=8), dimension(np) :: xp,yp,zp,bx,by,bz
@@ -5397,6 +5553,9 @@ subroutine getb2dxz_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,zmin,dx,dz,nx,
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), dimension(:), allocatable :: sx0,sz0
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dzi = 1./dz
@@ -5629,12 +5788,14 @@ subroutine getb2dxz_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,zmin,dx,dz,nx,
      end do
      deallocate(sx0,sz0)
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getb2dxz_n_energy_conserving
 
 subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,dz,nx,ny,nz,nxguard,nyguard,nzguard, &
                                        nox,noy,noz,bxg,byg,bzg,l4symtry,l_lower_order_in_v)
    
+      use Timers, Only: gathertime
       implicit none
       integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
       real(kind=8), dimension(np) :: xp,yp,zp,bx,by,bz
@@ -5650,6 +5811,9 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
       real(kind=8), DIMENSION(-int(noz/2):int((noz+1)/2)) :: sz
       real(kind=8), dimension(:), allocatable :: sx0,sy0,sz0
       real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
+      real(kind=8):: starttime, wtime
+
+      starttime = wtime()
 
       dxi = 1./dx
       dyi = 1./dy
@@ -5942,6 +6106,7 @@ subroutine getb3d_n_energy_conserving(np,xp,yp,zp,bx,by,bz,xmin,ymin,zmin,dx,dy,
      end do
      deallocate(sx0,sz0)
 
+   gathertime = gathertime + (wtime() - starttime)
    return
  end subroutine getb3d_n_energy_conserving
 
@@ -6918,6 +7083,7 @@ subroutine addsubstractfields_nodal(child,child_coarse,parent,lc,ref,l_2dxz)
 
 subroutine depose_j_n_2dxz_spectral(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
                         l_particles_weight,l4symtry)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -6937,6 +7103,9 @@ subroutine depose_j_n_2dxz_spectral(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,z
    real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
    integer(ISZ) :: j,l,ip,jj,ll,jold,lold,ixmin, ixmax, izmin, izmax, istep, ndt,idt
    real(kind=8) :: dxp,dzp,x0,z0,x1,z1
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
       
       dxi = 1./dx
       dzi = 1./dz
@@ -7121,12 +7290,14 @@ subroutine depose_j_n_2dxz_spectral(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,z
       end do
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_j_n_2dxz_spectral
 
 ! THIS SUBROUTINE IS NOT IN EM3D.v file 
 subroutine depose_j_n_2dxz_direct(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
                         l_particles_weight,l4symtry)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: jx,jy,jz
@@ -7141,6 +7312,9 @@ subroutine depose_j_n_2dxz_direct(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmi
                    sz(-int(noz/2):int((noz+1)/2))
    real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
    integer(ISZ) :: j,l,ip,jj,ll,ixmin, ixmax, izmin, izmax, istep
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
    
       nox=nox-1
    
@@ -7247,11 +7421,13 @@ subroutine depose_j_n_2dxz_direct(jx,jy,jz,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmi
       end do
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_j_n_2dxz_direct
 
 subroutine depose_rhoold_n_2dxz(rhoold,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt,dx,dz,nx,nz,nxguard,nzguard,nox,noz, &
                         l_particles_weight,l4symtry)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,nz,nox,noz,nxguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,0:0,-nzguard:nz+nzguard), intent(in out) :: rhoold
@@ -7268,6 +7444,9 @@ subroutine depose_rhoold_n_2dxz(rhoold,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt
    real(kind=8), parameter :: onesixth=1./6.,twothird=2./3.
    integer(ISZ) :: j,l,ip,jj,ll,jold,lold,ixmin, ixmax, izmin, izmax, istep, ndt,idt
    real(kind=8) :: dxp,dzp,x0,z0,x1,z1
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
       
       dxi = 1./dx
       dzi = 1./dz
@@ -7395,12 +7574,14 @@ subroutine depose_rhoold_n_2dxz(rhoold,np,xp,zp,ux,uy,uz,gaminv,w,q,xmin,zmin,dt
       end do
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_rhoold_n_2dxz
 
 subroutine depose_rhoold_n_3d(rhoold,np,xp,yp,zp,ux,uy,uz,gaminv,w,q,xmin,ymin,zmin,dt,dx,dy,dz, &
                         nx,ny,nz,nxguard,nyguard,nzguard,nox,noy,noz, &
                         l_particles_weight,l4symtry)
+   use Timers, Only: deposetime
    implicit none
    integer(ISZ) :: np,nx,ny,nz,nox,noy,noz,nxguard,nyguard,nzguard
    real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard), intent(in out) :: rhoold
@@ -7420,6 +7601,9 @@ subroutine depose_rhoold_n_3d(rhoold,np,xp,yp,zp,ux,uy,uz,gaminv,w,q,xmin,ymin,z
    integer(ISZ) :: j,k,l,ip,jj,kk,ll,jold,kold,lold
    integer(ISZ) :: ixmin, ixmax, iymin, iymax, izmin, izmax, istep, ndt,idt
    real(kind=8) :: dxp,dyp,dzp,x0,y0,z0,x1,y1,z1
+   real(kind=8):: starttime, wtime
+
+   starttime = wtime()
       
       dxi = 1./dx
       dyi = 1./dy
@@ -7579,5 +7763,6 @@ subroutine depose_rhoold_n_3d(rhoold,np,xp,yp,zp,ux,uy,uz,gaminv,w,q,xmin,ymin,z
       end do
     end do
 
+  deposetime = deposetime + (wtime() - starttime)
   return
 end subroutine depose_rhoold_n_3d
