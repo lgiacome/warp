@@ -63,6 +63,8 @@ class EM3D(SubcycledPoissonSolver):
                       'colecoefs':None,'l_setcowancoefs':True,
                       'pml_method':1,
                       'vxgrid':0.,
+                      'vygrid':0.,
+                      'vzgrid':0.,
                       'l_correct_num_Cherenkov':False,
                       'l_fieldcenterK':False, # if using staggered grid with node-centered gather (efetch=1); centers field by shifts in k-space rather than averaging in real space
                       'circ_m':0, 'l_laser_cart':0, 'type_rz_depose':0}
@@ -82,8 +84,12 @@ class EM3D(SubcycledPoissonSolver):
 #    top.allspecl = true
         top.lcallfetchb = true
         top.lgridqnt = true
-        self.xgrid=0.
-        self.xgridcont=0.
+        self.x_grid=0.
+        self.x_gridcont=0.
+        self.y_grid=0.
+        self.y_gridcont=0.
+        self.z_grid=0.
+        self.z_gridcont=0.
         self.nxshifts=0
         self.zgrid=top.zgrid
         self.nzshifts=0
@@ -2334,52 +2340,11 @@ class EM3D(SubcycledPoissonSolver):
     def optimizeconvergence(self,resetpasses=1):
         pass
 
-    def move_window_fieldsold(self):
-        if self.refinement is None:
-            # --- move window in x
-            self.xgridcont+=self.vxgrid*top.dt
-            while (abs(self.xgrid-self.xgridcont)>=0.5*self.dx):
-                self.shift_cells_x(1)
-                dx = self.dx*sign(self.vxgrid)
-                w3d.xmmin+=dx
-                w3d.xmmax+=dx
-                w3d.xmminp+=dx
-                w3d.xmmaxp+=dx
-                w3d.xmminlocal+=dx
-                w3d.xmmaxlocal+=dx
-                w3d.xmminglobal+=dx
-                w3d.xmmaxglobal+=dx
-                top.xpmin+=dx
-                top.xpmax+=dx
-                top.xpminlocal+=dx
-                top.xpmaxlocal+=dx
-            # --- move window in z
-            if (abs(top.zgrid-self.zgrid)>=0.5*self.dz):
-                shift_em3dblock_ncells_z(self.block,1)
-                self.zgrid+=self.dz
-                self.nzshifts+=1
-        else:
-            # --- move window in x
-            fc = self.field_coarse
-            fc.vxgrid=self.vxgrid
-            fc.xgridcont+=fc.vxgrid*top.dt
-            while (abs(fc.xgrid-fc.xgridcont)>=0.5*fc.dx):
-                fc.shift_cells_x(1)
-                self.shift_cells_x(self.refinement[0])
-            # --- move window in z
-            if (abs(top.zgrid-fc.zgrid)>=0.5*fc.dz):
-                shift_em3dblock_ncells_z(fc.block,1)
-                shift_em3dblock_ncells_z(self.block,self.refinement[0])
-                fc.zgrid+=fc.dz
-                fc.nzshifts+=1
-                self.zgrid+=self.dz*self.refinement[2]
-                self.nzshifts+=self.refinement[2]
-
     def move_window_fields(self):
         # --- move window in x
-        self.xgridcont+=self.vxgrid*top.dt
-        while (abs(self.xgrid-self.xgridcont)>=0.5*self.dx):
-            self.shift_cells_x(int(sign(self.vxgrid)))
+        self.x_gridcont+=self.vxgrid*top.dt
+        while (abs(self.x_grid-self.x_gridcont)>=0.5*self.dx):
+            self.move_cells_x(int(sign(self.vxgrid)))
             n = sign(self.vxgrid)
             w3d.xmmin = self.incrementposition(w3d.xmmin,self.dx,n)
             w3d.xmmax = self.incrementposition(w3d.xmmax,self.dx,n)
@@ -2393,7 +2358,45 @@ class EM3D(SubcycledPoissonSolver):
             top.xpmax = self.incrementposition(top.xpmax,self.dx,n)
             top.xpminlocal = self.incrementposition(top.xpminlocal,self.dx,n)
             top.xpmaxlocal = self.incrementposition(top.xpmaxlocal,self.dx,n)
-        # --- move window in z
+
+        # --- move window in y
+        self.y_gridcont+=self.vygrid*top.dt
+        while (abs(self.y_grid-self.y_gridcont)>=0.5*self.dy):
+            self.move_cells_y(int(sign(self.vygrid)))
+            n = sign(self.vygrid)
+            w3d.ymmin = self.incrementposition(w3d.ymmin,self.dy,n)
+            w3d.ymmax = self.incrementposition(w3d.ymmax,self.dy,n)
+            w3d.ymminp = self.incrementposition(w3d.ymminp,self.dy,n)
+            w3d.ymmaxp = self.incrementposition(w3d.ymmaxp,self.dy,n)
+            w3d.ymminlocal = self.incrementposition(w3d.ymminlocal,self.dy,n)
+            w3d.ymmaxlocal = self.incrementposition(w3d.ymmaxlocal,self.dy,n)
+            w3d.ymminglobal = self.incrementposition(w3d.ymminglobal,self.dy,n)
+            w3d.ymmaxglobal = self.incrementposition(w3d.ymmaxglobal,self.dy,n)
+            top.ypmin = self.incrementposition(top.ypmin,self.dy,n)
+            top.ypmax = self.incrementposition(top.ypmax,self.dy,n)
+            top.ypminlocal = self.incrementposition(top.ypminlocal,self.dy,n)
+            top.ypmaxlocal = self.incrementposition(top.ypmaxlocal,self.dy,n)
+
+        # --- move window in z with vzgrid
+        self.z_gridcont+=self.vzgrid*top.dt
+        while (abs(self.z_grid-self.z_gridcont)>=0.5*self.dz):
+            self.move_cells_z(int(sign(self.vzgrid)))
+            n = sign(self.vzgrid)
+            w3d.zmmin = self.incrementposition(w3d.zmmin,self.dz,n)
+            w3d.zmmax = self.incrementposition(w3d.zmmax,self.dz,n)
+            w3d.zmminp = self.incrementposition(w3d.zmminp,self.dz,n)
+            w3d.zmmaxp = self.incrementposition(w3d.zmmaxp,self.dz,n)
+            w3d.zmminlocal = self.incrementposition(w3d.zmminlocal,self.dz,n)
+            w3d.zmmaxlocal = self.incrementposition(w3d.zmmaxlocal,self.dz,n)
+            w3d.zmminglobal = self.incrementposition(w3d.zmminglobal,self.dz,n)
+            w3d.zmmaxglobal = self.incrementposition(w3d.zmmaxglobal,self.dz,n)
+            top.zpmin = self.incrementposition(top.zpmin,self.dz,n)
+            top.zpmax = self.incrementposition(top.zpmax,self.dz,n)
+            top.zpminlocal = self.incrementposition(top.zpminlocal,self.dz,n)
+            top.zpmaxlocal = self.incrementposition(top.zpmaxlocal,self.dz,n)
+
+
+        # --- move window in z with zgrid
         if top.vbeamfrm > 0.:
             while ((top.zgrid-self.zgrid)>=0.5*self.dz):
                 self.shift_cells_z(1)
@@ -2410,9 +2413,9 @@ class EM3D(SubcycledPoissonSolver):
         wz = z - nz*dz
         return (nz + n)*dz + wz
 
-    def shift_cells_x(self,n):
+    def move_cells_x(self,n):
         shift_em3dblock_ncells_x(self.block,n)
-        self.xgrid = self.incrementposition(self.xgrid,self.dx,n)
+        self.x_grid = self.incrementposition(self.x_grid,self.dx,n)
         self.xmmin = self.incrementposition(self.xmmin,self.dx,n)
         self.xmmax = self.incrementposition(self.xmmax,self.dx,n)
         self.xmminlocal = self.incrementposition(self.xmminlocal,self.dx,n)
@@ -2423,6 +2426,33 @@ class EM3D(SubcycledPoissonSolver):
         self.block.xmax = self.incrementposition(self.block.xmax,self.dx,n)
         self.laser_xx = self.incrementposition(self.laser_xx,self.dx,n)
         self.nxshifts+=n
+
+    def move_cells_y(self,n):
+        shift_em3dblock_ncells_y(self.block,n)
+        self.y_grid = self.incrementposition(self.y_grid,self.dy,n)
+        self.ymmin = self.incrementposition(self.ymmin,self.dy,n)
+        self.ymmax = self.incrementposition(self.ymmax,self.dy,n)
+        self.ymminlocal = self.incrementposition(self.ymminlocal,self.dy,n)
+        self.ymmaxlocal = self.incrementposition(self.ymmaxlocal,self.dy,n)
+        self.fields.ymin = self.incrementposition(self.fields.ymin,self.dy,n)
+        self.fields.ymax = self.incrementposition(self.fields.ymax,self.dy,n)
+        self.block.ymin = self.incrementposition(self.block.ymin,self.dy,n)
+        self.block.ymax = self.incrementposition(self.block.ymax,self.dy,n)
+        self.laser_yy = self.incrementposition(self.laser_yy,self.dy,n)
+        self.nyshifts+=n
+
+    def move_cells_z(self,n):
+        shift_em3dblock_ncells_z(self.block,n)
+        self.z_grid = self.incrementposition(self.z_grid,self.dz,n)
+        self.zmmin = self.incrementposition(self.zmmin,self.dz,n)
+        self.zmmax = self.incrementposition(self.zmmax,self.dz,n)
+        self.zmminlocal = self.incrementposition(self.zmminlocal,self.dz,n)
+        self.zmmaxlocal = self.incrementposition(self.zmmaxlocal,self.dz,n)
+        self.fields.zmin = self.incrementposition(self.fields.zmin,self.dz,n)
+        self.fields.zmax = self.incrementposition(self.fields.zmax,self.dz,n)
+        self.block.zmin = self.incrementposition(self.block.zmin,self.dz,n)
+        self.block.zmax = self.incrementposition(self.block.zmax,self.dz,n)
+        self.nzshifts+=n
 
     def shift_cells_z(self,n):
         shift_em3dblock_ncells_z(self.block,n)
@@ -3324,7 +3354,6 @@ class EM3D(SubcycledPoissonSolver):
 
         top.zgrid+=top.vbeamfrm*top.dt
         top.zbeam=top.zgrid
-
         # --- gather fields from grid to particles
 #        w3d.pgroupfsapi = top.pgroup
 #        for js in range(top.pgroup.ns):
@@ -3341,8 +3370,10 @@ class EM3D(SubcycledPoissonSolver):
                 self.push_positions(js)
 
         inject3d(1, top.pgroup)
+
         # --- call user-defined injection routines
         userinjection.callfuncsinlist()
+
         particleboundaries3d(top.pgroup,-1,False)
 
         # --- call beforeloadrho functions
