@@ -18,7 +18,7 @@ If you do not have Anaconda installed, install it by typing:
 wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b
 ```
-and append the following lines at the end of your `.bashrc` file:
+and append the following line at the end of your `.bashrc` file:
 ```
 export PATH=$PATH:$HOME/miniconda2/bin/
 ```
