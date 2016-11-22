@@ -20,7 +20,7 @@ bash miniconda.sh -b
 ```
 and append the following line at the end of your `.bashrc` file:
 ```
-export PATH=$PATH:$HOME/miniconda2/bin/
+export PATH=$HOME/miniconda2/bin/:$PATH
 ```
 
 Open a new terminal and make sure that the default `python` is the Anaconda version. (Running `python` should print a message which starts with a line of the form `Python 2.7.10 |Anaconda 2.3.0`)
