@@ -81,6 +81,8 @@ class EM3DFFT(EM3D):
                      'l_pushf':s.l_pushf,\
                      'l_pushg':s.l_pushg,\
                      'l_getrho':s.l_getrho,\
+                     'V_galilean':s.V_galilean,\
+                     'V_pseudogalilean':s.V_pseudogalilean,\
                      'clight':clight}
 
             if s.ntsub is np.inf:
@@ -306,26 +308,48 @@ class EM3DFFT(EM3D):
                     l_particles_weight = false
                 else:
                     l_particles_weight = true
+                # --- computes position shift of grid in one time step with Galilean frame
+                dxgal = self.V_galilean[0]*top.dt
+                dygal = self.V_galilean[1]*top.dt
+                dzgal = self.V_galilean[2]*top.dt
                 if self.l_2dxz:
                     depose_rhoold_n_2dxz(self.fields.Rhoold_local,self.laser_nn,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             q*laser_ux,
-                                             q*laser_uy,
-                                             self.laser_source_v*ones(self.laser_nn),
-                                             self.laser_gi,
-                                             weights,
-                                             q,
-                                                        f.xmin,f.zmin+self.zgrid,
-                                                        top.dt,
-                                                        f.dx,f.dz,
-                                                        f.nx,f.nz,
-                                                        f.nxguard,f.nzguard,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_z,
-                                                        l_particles_weight,w3d.l4symtry)
+                                         self.laser_xx+q*laser_xdx,
+                                         self.laser_source_z*ones(self.laser_nn),
+                                         q*laser_ux,
+                                         q*laser_uy,
+                                         self.laser_source_v*ones(self.laser_nn),
+                                         self.laser_gi,
+                                         weights,
+                                         q,
+                                         f.xmin-dxgal,f.zmin+self.zgrid-dzgal,
+                                         top.dt,
+                                         f.dx,f.dz,
+                                         f.nx,f.nz,
+                                         f.nxguard,f.nzguard,
+                                         self.laser_depos_order_x,
+                                         self.laser_depos_order_z,
+                                         l_particles_weight,w3d.l4symtry)
                 else:
-                    raise Exception('Need to add depose_rhoold_n_3d')
+                    depose_rhoold_n_3d(  self.fields.Rhoold_local,self.laser_nn,
+                                         self.laser_xx+q*laser_xdx,
+                                         self.laser_yy+q*laser_ydy,
+                                         self.laser_source_z*ones(self.laser_nn),
+                                         q*laser_ux,
+                                         q*laser_uy,
+                                         self.laser_source_v*ones(self.laser_nn),
+                                         self.laser_gi,
+                                         weights,
+                                         q,
+                                         f.xmin-dxgal,f.ymin-dygal,f.zmin+self.zgrid-dzgal,
+                                         top.dt,
+                                         f.dx,f.dy,f.dz,
+                                         f.nx,f.ny,f.nz,
+                                         f.nxguard,f.nyguard,f.nzguard,
+                                         self.laser_depos_order_x,
+                                         self.laser_depos_order_y,
+                                         self.laser_depos_order_z,
+                                         l_particles_weight,w3d.l4symtry)
 
 ################################################################################
 # CHARGE/CURRENT DEPOSITION
@@ -367,11 +391,15 @@ class EM3DFFT(EM3D):
                 l_particles_weight = false
             else:
                 l_particles_weight = true
+            # --- computes position shift of grid in one time step with Galilean frame
+            dxgal = self.V_galilean[0]*top.dt
+            dygal = self.V_galilean[1]*top.dt
+            dzgal = self.V_galilean[2]*top.dt
             if self.l_2dxz:
                 depose_rhoold_n_2dxz(self.fields.Rhoold_local,n,
                                                     x,z,ux,uy,uz,
                                                     gaminv,wfact,q*w,
-                                                    f.xmin,f.zmin+self.zgrid,
+                                                    f.xmin-dxgal,f.zmin+self.zgrid-dzgal,
                                                     top.dt*top.pgroup.ndts[js],
                                                     f.dx,f.dz,
                                                     f.nx,f.nz,
@@ -380,7 +408,18 @@ class EM3DFFT(EM3D):
                                                     top.depos_order[2,js],
                                                     l_particles_weight,w3d.l4symtry)
             else:
-                raise Exception('Need to add depose_rhoold_n_3d')
+                depose_rhoold_n_3d(self.fields.Rhoold_local,n,
+                                                    x,y,z,ux,uy,uz,
+                                                    gaminv,wfact,q*w,
+                                                    f.xmin-dxgal,f.ymin-dygal,f.zmin+self.zgrid-dzgal,
+                                                    top.dt*top.pgroup.ndts[js],
+                                                    f.dx,f.dy,f.dz,
+                                                    f.nx,f.ny,f.nz,
+                                                    f.nxguard,f.nyguard,f.nzguard,
+                                                    top.depos_order[0,js],
+                                                    top.depos_order[1,js],
+                                                    top.depos_order[2,js],
+                                                    l_particles_weight,w3d.l4symtry)
 
     def depose_current_density(self,n,f,x,y,z,ux,uy,uz,gaminv,dt,wfact,zgrid,q,w,nox,noy,noz,l_particles_weight):
         if not self.spectral_current:
@@ -398,7 +437,8 @@ class EM3DFFT(EM3D):
             depose_j_n_2dxz_spectral(jx,jy,jz,n,
                                                             x,z,ux,uy,uz,
                                                             gaminv,wfact,q*w,
-                                                            f.xmin,f.zmin+self.zgrid,
+                                                            f.xmin-0.5*top.dt*self.V_galilean[0],
+                                                            f.zmin+self.zgrid-0.5*top.dt*self.V_galilean[2],
                                                             dt,
                                                             f.dx,f.dz,
                                                             f.nx,f.nz,
@@ -564,13 +604,16 @@ class EM3DFFT(EM3D):
         
         self.wrap_periodic_BC([f.Rho,f.Rhoold_local,f.Jx,f.Jy,f.Jz])
     
-
         if emK.nx>1:JxF = emK.rfftn(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]),plan=emK.planj_rfftn)
         if emK.ny>1:JyF = emK.rfftn(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]),plan=emK.planj_rfftn)
         if emK.nz>1:JzF = emK.rfftn(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]),plan=emK.planj_rfftn)
 
-        em.dRhoodtF = emK.rfftn(squeeze((f.Rho-f.Rhoold_local)[ixl:ixu,iyl:iyu,izl:izu]/top.dt),plan=emK.planj_rfftn)
-
+        if all(self.V_galilean==0.) and all(self.V_pseudogalilean==0.):
+            em.dRhoodtF = emK.rfftn(squeeze((f.Rho-f.Rhoold_local)[ixl:ixu,iyl:iyu,izl:izu]/top.dt),plan=emK.planj_rfftn)
+        else:    
+            em.RhoF = emK.rfftn(squeeze(f.Rho[ixl:ixu,iyl:iyu,izl:izu]),plan=emK.planj_rfftn)
+            em.RhooldF = emK.rfftn(squeeze(f.Rhoold_local[ixl:ixu,iyl:iyu,izl:izu]),plan=emK.planj_rfftn)
+        
         # --- get longitudinal J
         divJ = 0.
         if emK.nx>1:divJ += emK.kxmn*JxF
@@ -592,13 +635,21 @@ class EM3DFFT(EM3D):
         if emK.nz>1:
             Jzt = JzF-Jzl
 
-        if emK.nx>1:
-            Jxl = j*em.dRhoodtF*emK.kxpn/emK.kmag
-        if emK.ny>1:
-            Jyl = j*em.dRhoodtF*emK.kypn/emK.kmag
-        if emK.nz>1:
-            Jzl = j*em.dRhoodtF*emK.kzpn/emK.kmag
-
+        if all(self.V_galilean==0.) and all(self.V_pseudogalilean==0.):
+            if emK.nx>1:
+                Jxl = j*em.dRhoodtF*emK.kxpn/emK.kmag
+            if emK.ny>1:
+                Jyl = j*em.dRhoodtF*emK.kypn/emK.kmag
+            if emK.nz>1:
+                Jzl = j*em.dRhoodtF*emK.kzpn/emK.kmag
+        else:
+            if emK.nx>1:
+                Jxl = em.RhoF*emK.JxCorRhomult-em.RhooldF*emK.JxCorRhooldmult
+            if emK.ny>1:
+                Jyl = em.RhoF*emK.JyCorRhomult-em.RhooldF*emK.JyCorRhooldmult
+            if emK.nz>1:
+                Jzl = em.RhoF*emK.JzCorRhomult-em.RhooldF*emK.JzCorRhooldmult
+        
         if emK.nx>1:
             JxF = Jxt+Jxl
         if emK.ny>1:
@@ -619,76 +670,6 @@ class EM3DFFT(EM3D):
             Jz = emK.irfftn(JzF, np.asarray(np.shape(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))), plan=emK.planj_irfftn, field_out=squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]))
             Jz.resize(fields_shape)
             f.Jz[ixl:ixu,iyl:iyu,izl:izu] = Jz.real
-        
-    def getcurrent_spectralold(self):
-        if not self.spectral_current:return
-        j=1j      # imaginary number
-        emK = self.FSpace
-        f = self.fields
-        ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
-        fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
-
-        if self.bounds[0]==periodic:
-            ngx = self.nxguard
-        else:
-            ngx=0
-        if self.bounds[2]==periodic:
-            ngy = self.nyguard
-        else:
-            ngy=0
-        if self.bounds[4]==periodic:
-            ngz = self.nzguard
-        else:
-            ngz=0
-
-        self.wrap_periodic_BC([f.Jx,f.Jy,f.Jz])
-        
-        JxF = emK.fft(np.squeeze(f.Jx[ngx:-ngx-1,0,ngz:-ngz-1]),axis=0)
-        JzF = emK.fft(np.squeeze(f.Jz[ngx:-ngx-1,0,ngz:-ngz-1]),axis=1)
-            
-        if self.l_spectral_staggered:
-            JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx*exp(-j*emK.kx_unmod*self.dx/2))
-            JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz*exp(-j*emK.kz_unmod*self.dz/2))
-        else:
-            JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx)
-            JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz)
-        
-        # --- sets currents to zero at the Nyquist wavelength
-        if emK.nx>1:
-            dkx = 2*pi/(self.nxlocal+2*self.nxguard)
-            index_Nyquist = compress(abs(emK.kxunit*self.dx)>=pi-0.1*dkx,arange(self.nxlocal+2*self.nxguard))
-            JxF[index_Nyquist,...]=0.
-            
-        if emK.ny>1:
-            dky = 2*pi/(self.nylocal+2*self.nyguard)
-            index_Nyquist = compress(abs(emK.kyunit*self.dy)>=pi-0.1*dky,arange(self.nylocal+2*self.nyguard))
-            JyF[:,index_Nyquist,:]=0.
-            
-        if emK.nz>1:
-            dkz = 2*pi/(self.nzlocal+2*self.nzguard)
-            index_Nyquist = compress(abs(emK.kzunit*self.dz)>=pi-0.1*dkz,arange(self.nzlocal+2*self.nzguard))
-            JzF[...,index_Nyquist]=0.
-
-        # --- adjust average current values
-        if emK.nx>1:
-            Jxcs=ave(cumsum(f.Jx[ngx:-ngx-1,0,ngz:-ngz-1],0),0)
-            Jx=emK.ifft(JxF,axis=0).real
-            for i in range(shape(Jx)[1]):
-                Jx[:,i]-=Jxcs[i]*self.dx
-
-        if emK.nz>1:
-            Jzcs=ave(cumsum(f.Jz[ngx:-ngx-1,0,ngz:-ngz-1],1),1)
-            Jz=emK.ifft(JzF,axis=1).real
-            for i in range(shape(Jz)[0]):
-                Jz[i,:]-=Jzcs[i]*self.dz
-
-        f.Jx[ngx:-ngx-1,0,ngz:-ngz-1]=Jx
-        f.Jz[ngx:-ngx-1,0,ngz:-ngz-1]=Jz
-
-        self.JxF=JxF
-        self.JzF=JzF
-        
-        del Jx, Jz, Jxcs, Jzcs, JxF, JzF
 
     def smoothdensity(self):
         if all(self.npass_smooth==0):return
