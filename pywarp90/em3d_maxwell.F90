@@ -8380,11 +8380,22 @@ subroutine em3d_exchange_bndrho_x(fl,fu,ibuf)
 
         else
 #endif
+           ! periodic
+           
            nguardinu = yfu%nxguard
            nguardinl = yfl%nxguard
            yfu%Rho(-nguardinu:yfu%nxguard,:,:) = yfu%Rho(-nguardinu:yfu%nxguard,:,:) &
-                + yfl%Rho(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
+                                               + yfl%Rho(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
            yfl%Rho(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:) = yfu%Rho(-nguardinu:yfu%nxguard,:,:)
+
+           if (yfu%nxdrho>0) then
+               ! if Rhoold_local is allocated, then exchange corresponding data
+               yfu%Rhoold_local(-nguardinu:yfu%nxdrhoguard,:,:) = yfu%Rhoold_local(-nguardinu:yfu%nxdrhoguard,:,:) &
+                    + yfl%Rhoold_local(yfl%nx-nguardinl:yfl%nxdrho+yfl%nxdrhoguard,:,:)
+               yfl%Rhoold_local(yfl%nxdrho-nguardinl:yfl%nxdrho+yfl%nxdrhoguard,:,:) = &
+                      yfu%Rhoold_local(-nguardinu:yfu%nxdrhoguard,:,:)
+           end if
+
            if ( yfu%circ_m>0 ) then
               yfu%Rho_circ(-nguardinu:yfu%nxguard,:,:) = yfu%Rho_circ(-nguardinu:yfu%nxguard,:,:) &
                    + yfl%Rho_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
@@ -9516,11 +9527,20 @@ subroutine em3d_exchange_bndrho_y(fl,fu,ibuf)
 
         else
 #endif
+          ! periodic 
           nguardinu = yfu%nyguard
           nguardinl = yfl%nyguard
           yfu%Rho(:,-nguardinu:yfu%nyguard,:) = yfu%Rho(:,-nguardinu:yfu%nyguard,:)      &
-                                              + yfl%Rho(:,-nguardinl:yfl%nyguard,:)
-          yfl%Rho(:,-nguardinl:yfl%nyguard,:) = yfu%Rho(:,-nguardinu:yfu%nyguard,:)                                     
+                                              + yfl%Rho(:,yfl%ny-nguardinl:yfl%ny+yfl%nyguard,:)
+          yfl%Rho(:,yfl%ny-nguardinl:yfl%ny+yfl%nyguard,:) = yfu%Rho(:,-nguardinu:yfu%nyguard,:)                                     
+
+           if (yfu%nxdrho>0) then
+              ! if Rhoold_local is allocated, then exchange corresponding data
+              yfu%Rhoold_local(:,-nguardinu:yfu%nyguard,:) = yfu%Rhoold_local(:,-nguardinu:yfu%nyguard,:)      &
+                                                  + yfl%Rhoold_local(:,yfl%ny-nguardinl:yfl%ny+yfl%nyguard,:)
+              yfl%Rhoold_local(:,yfl%ny-nguardinl:yfl%ny+yfl%nyguard,:) = yfu%Rhoold_local(:,-nguardinu:yfu%nyguard,:)                                     
+           end if
+
 #ifdef MPIPARALLEL
         end if
 #endif
@@ -11025,12 +11045,21 @@ subroutine em3d_exchange_bndrho_z(fl,fu,ibuf)
 
         else
 #endif
+           ! periodic BC
+           
            nguardinl = yfl%nzguard
            nguardinu = yfu%nzguard
 
            yfu%Rho(:,:,-nguardinu:yfu%nzguard) = yfu%Rho(:,:,-nguardinu:yfu%nzguard) &
                 + yfl%Rho(:,:,yfl%nz-nguardinl:yfl%nz+yfu%nzguard)
            yfl%Rho(:,:,yfl%nz-nguardinl:yfl%nz+yfu%nzguard) = yfu%Rho(:,:,-nguardinu:yfu%nzguard)
+
+           if (yfu%nzdrho>0) then
+               ! if Rhoold_local is allocated, then exchange corresponding data
+               yfu%Rhoold_local(:,:,-nguardinu:yfu%nzdrhoguard) = yfu%Rhoold_local(:,:,-nguardinu:yfu%nzdrhoguard) &
+                    + yfl%Rhoold_local(:,:,yfl%nz-nguardinl:yfl%nz+yfu%nzdrhoguard)
+               yfl%Rhoold_local(:,:,yfl%nz-nguardinl:yfl%nz+yfu%nzdrhoguard) = yfu%Rhoold_local(:,:,-nguardinu:yfu%nzdrhoguard)
+           end if
 
            if (yfu%circ_m > 0) then
               yfu%Rho_circ(:,-nguardinu:yfu%nzguard,:) = yfu%Rho_circ(:,-nguardinu:yfu%nzguard,:) &
