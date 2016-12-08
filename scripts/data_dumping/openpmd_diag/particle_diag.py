@@ -52,7 +52,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         particle_data : a list of strings, optional
             A list indicating which particle data should be written.
             The list can contain any of the following strings:
-            "position", "momentum", "weighting", "E", "B"
+            "position", "momentum", "E", "B", "id", "weighting"
 
         select : dict, optional
             Either None or a dictionary of rules
@@ -69,7 +69,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         lparallel_output : boolean
             Switch to set output mode (parallel or gathering)
             If "True" : Parallel output
-            
+
         sub_sample : integer
             If "None" : all particles are dumped
             If not None: every sub_sample particle is dumped
@@ -81,8 +81,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         self.particle_data = particle_data
         self.species_dict = species
         self.select = select
-        self.sub_sample = sub_sample 
-         
+        self.sub_sample = sub_sample
+        self.ssnpid = top.ssnpid
         # Correct the bounds in momenta (since the momenta in Warp
         # are not unitless, but have the units of a velocity)
         for momentum in ['ux', 'uy', 'uz']:
@@ -287,9 +287,17 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                         species_grp[particle_var], particle_var )
 
             # Scalar quantity
-            elif particle_var == "weighting" :
+            elif particle_var in "weighting" :
                 quantity = "w"
                 quantity_path = "weighting"
+                self.write_dataset( species_grp, species, quantity_path,
+                                    quantity, n_rank, N, select_array )
+                if this_rank_writes :
+                    self.setup_openpmd_species_record(
+                        species_grp[particle_var], particle_var )
+            elif particle_var in "id" :
+                quantity = "id"
+                quantity_path = "id"
                 self.write_dataset( species_grp, species, quantity_path,
                                     quantity, n_rank, N, select_array )
                 if this_rank_writes :
@@ -335,9 +343,9 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                         quantity_array < self.select[quantity][1],
                         select_array )
         if self.sub_sample is not None:
-            subsamp_array = np.zeros(npart, dtype='bool') 
+            subsamp_array = np.zeros(npart, dtype='bool')
             subsamp_array[::self.sub_sample]=1
-            # Subsample particle array 
+            # Subsample particle array
             select_array=np.logical_and(subsamp_array,select_array)
         return( select_array )
 
@@ -401,7 +409,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                     elif particle_var == "weighting":
                         dset = species_grp.create_dataset(
                             particle_var, (0,), maxshape=(None,), dtype='f')
-                        self.setup_openpmd_species_component( dset )    
+                        self.setup_openpmd_species_component( dset )
                         self.setup_openpmd_species_record( dset, particle_var )
 
                     # Unknown field
@@ -550,5 +558,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             quantity_array = species.getbz(gather=False)
         elif quantity == "w" :
             quantity_array = species.getweights(gather=False)
+        elif quantity == "id":
+            quantity_array = species.getpid(id=self.ssnpid-1,gather=False)
+            print(np.shape(quantity_array))
 
         return( quantity_array )
