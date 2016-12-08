@@ -144,7 +144,7 @@ c only responsible for sending out the source is owns.
       integer(MPIISZ):: dims,nlocal(-1:2),starts(-1:2),sizes(-1:2)
       integer(MPIISZ):: sendtype,recvtype
       integer(MPIISZ):: itemp,ineighbor,nn
-      integer(MPIISZ):: mpi_comm
+      integer(MPIISZ):: mpi_comm_mpiisz
       integer(MPIISZ):: mpierror
       integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE)
       integer(MPIISZ):: w
@@ -221,9 +221,9 @@ c       --- Skip the non-domain-decomposed axis.
         if (npz == 1 .and. axis == 2) cycle
 
         ii = ppdecomp%iprocgrid
-        if (axis == 0) mpi_comm = ppdecomp%mpi_comm_x
-        if (axis == 1) mpi_comm = ppdecomp%mpi_comm_y
-        if (axis == 2) mpi_comm = ppdecomp%mpi_comm_z
+        if (axis == 0) mpi_comm_mpiisz = ppdecomp%mpi_comm_x
+        if (axis == 1) mpi_comm_mpiisz = ppdecomp%mpi_comm_y
+        if (axis == 2) mpi_comm_mpiisz = ppdecomp%mpi_comm_z
 
 c       --- Only copy the sourcep that will actually be sent.
 c       sourcepsend = sourcep
@@ -268,7 +268,7 @@ c       --- (iproc/ineighbor) even, and the second send odd.
                 call MPI_TYPE_COMMIT(sendtype,mpierror)
                 nn = 1
                 call MPI_SEND(sourcepsend,nn,sendtype,
-     &                        itemp,messid,mpi_comm,mpierror)
+     &                        itemp,messid,mpi_comm_mpiisz,mpierror)
                 call MPI_TYPE_FREE(sendtype,mpierror)
               endif
             enddo
@@ -290,7 +290,7 @@ c         --- Gather up the data sent to this processor.
               call MPI_TYPE_COMMIT(recvtype,mpierror)
               nn = 1
               call MPI_RECV(sourceprecv,nn,recvtype,
-     &                      itemp,messid,mpi_comm,mpistatus,mpierror)
+     &                      itemp,messid,mpi_comm_mpiisz,mpistatus,mpierror)
               call MPI_TYPE_FREE(recvtype,mpierror)
               i1 = starts(0:2) - nguards
               i2 = i1 + sizes(0:2) - 1
@@ -316,7 +316,7 @@ c         --- Gather up the data sent to this processor.
                 call MPI_TYPE_COMMIT(sendtype,mpierror)
                 nn = 1
                 call MPI_SEND(sourcepsend,nn,sendtype,
-     &                        itemp,messid,mpi_comm,mpierror)
+     &                        itemp,messid,mpi_comm_mpiisz,mpierror)
                 call MPI_TYPE_FREE(sendtype,mpierror)
               endif
             enddo
@@ -339,7 +339,7 @@ c=============================================================================
       subroutine makesourceperiodic_slave_work(axis,source,nc,
      &                                         nxlocal,nylocal,nzlocal,
      &                                         nxguardrho,nyguardrho,nzguardrho,
-     &                                         nprocs,iproc,mpi_comm)
+     &                                         nprocs,iproc,mpi_communicator)
       use Subtimersw3d
       use mpi
       integer(ISZ):: axis,nc,nxlocal,nylocal,nzlocal
@@ -347,7 +347,7 @@ c=============================================================================
       real(kind=8):: source(0:nc-1,-nxguardrho:nxlocal+nxguardrho,
      &                             -nyguardrho:nylocal+nyguardrho,
      &                             -nzguardrho:nzlocal+nzguardrho)
-      integer(ISZ):: nprocs,iproc,mpi_comm
+      integer(ISZ):: nprocs,iproc,mpi_communicator
 
 c  Sets the slices on the exterior of source for periodicity
 c  sets slice at -1 equal to the slice at nzlocal-1
@@ -367,7 +367,7 @@ c  Only first and last processors do anything.
       real(kind=8):: substarttime,wtime
       if (lw3dtimesubs) substarttime = wtime()
 
-      mpi_comm_mpiisz = mpi_comm
+      mpi_comm_mpiisz = mpi_communicator
       dims = 4
       nlocal = (/nc,1+nxlocal+2*nxguardrho,
      &              1+nylocal+2*nyguardrho,
