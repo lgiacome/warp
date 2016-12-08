@@ -6,7 +6,7 @@ use Parallel
 use mpi
 INTEGER(MPIISZ) :: ierr, length, temp
 CHARACTER( LEN = MPI_MAX_ERROR_STRING ) :: message
-INTEGER(MPIISZ) :: mpi_status(mpi_status_size),mpirequests(1000),mpireqpnt=0
+INTEGER(MPIISZ) :: mpirequests(1000),mpireqpnt=0
 INTEGER(MPIISZ) :: comm_world_mpiisz
 type mpibuffertype
   integer(MPIISZ) :: pack_pos=0
