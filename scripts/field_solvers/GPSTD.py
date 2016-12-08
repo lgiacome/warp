@@ -1558,13 +1558,11 @@ class PSATD_Maxwell(GPSTD):
                          self.kxmn,self.kymn,self.kzmn,dt,cdt)
         else:
             if np.any(self.V_galilean<>0.):
-                print "top new"
                 self.mymat = self.getmaxwellmat_galilean(self.kxpn,self.kypn,self.kzpn,\
                              self.kxmn,self.kymn,self.kzmn,dt,cdt,self.V_galilean)
             if np.any(self.V_pseudogalilean<>0.):
                 self.mymat = self.getmaxwellmat_pseudogalilean(self.kxpn,self.kypn,self.kzpn,\
                              self.kxmn,self.kymn,self.kzmn,dt,cdt,self.V_pseudogalilean)
-                print "top new"
 
     def getmaxwellmat(self,kxpn,kypn,kzpn,kxmn,kymn,kzmn,dt,cdt):
 
