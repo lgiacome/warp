@@ -1759,10 +1759,6 @@ class PSATD_Maxwell(GPSTD):
         self.T=T
         self.CT = CT
         self.ST = ST
-        self.w_gui=w
-        self.C_gui=C
-        self.S_gui=S
-        self.dt_gui=dt
 
         mymat = GPSTD_Matrix(self.fields)
         if self.l_pushg:
@@ -1907,10 +1903,6 @@ class PSATD_Maxwell(GPSTD):
         self.So1mT = So1mT
         self.onemCo1mT = onemCo1mT
         self.kV=kV
-        self.w_gui=w
-        self.C_gui=C
-        self.S_gui=S
-        self.dt_gui=dt
         self.T=T
         self.CT = CT
         self.ST = ST
