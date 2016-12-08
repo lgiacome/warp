@@ -67,6 +67,8 @@ class EM3D(SubcycledPoissonSolver):
                       'vzgrid':0.,
                       'l_correct_num_Cherenkov':False,
                       'l_fieldcenterK':False, # if using staggered grid with node-centered gather (efetch=1); centers field by shifts in k-space rather than averaging in real space
+                      'V_galilean':array([0.,0.,0.]),
+                      'V_pseudogalilean':array([0.,0.,0.]),
                       'circ_m':0, 'l_laser_cart':0, 'type_rz_depose':0}
 
     def __init__(self,**kw):
@@ -141,7 +143,7 @@ class EM3D(SubcycledPoissonSolver):
                 self.l_deposit_nodal=True
             else:
                 l_deposit_nodal=False
-                
+
         # --- Impose type_rz_depose = 0 if not in circ mode
         if self.l_2drz == False :
             self.type_rz_depose = 0
@@ -1627,7 +1629,8 @@ class EM3D(SubcycledPoissonSolver):
                             depose_jxjyjz_esirkepov_n_2d(jx,jy,jz,n,
                                                 x,y,z,ux,uy,uz,
                                                 gaminv,wfact,q*w,
-                                                f.xmin,f.zmin+self.zgrid,
+                                                f.xmin-0.5*top.dt*self.V_galilean[0],
+                                                f.zmin+self.zgrid-0.5*top.dt*self.V_galilean[2],
                                                 dt,
                                                 f.dx,f.dz,
                                                 f.nx,f.nz,
@@ -1643,7 +1646,8 @@ class EM3D(SubcycledPoissonSolver):
                                                     self.circ_m,n,
                                                     x,y,z,ux,uy,uz,
                                                     gaminv,wfact,q*w,
-                                                    f.xmin,f.zmin+self.zgrid,
+                                                    f.xmin-0.5*top.dt*self.V_galilean[0],
+                                                    f.zmin+self.zgrid-0.5*top.dt*self.V_galilean[2],
                                                     dt,
                                                     f.dx,f.dz,
                                                     f.nx,f.nz,
@@ -1655,7 +1659,8 @@ class EM3D(SubcycledPoissonSolver):
                     else:
                         depose_j_n_2dxz(jx,jy,jz,n,x,z,ux,uy,uz,
                                         gaminv,wfact,q*w,
-                                        f.xmin,f.zmin+self.zgrid,
+                                        f.xmin-0.5*top.dt*self.V_galilean[0],
+                                        f.zmin+self.zgrid-0.5*top.dt*self.V_galilean[2],
                                         dt,
                                         f.dx,f.dz,
                                         f.nx,f.nz,
@@ -1680,7 +1685,9 @@ class EM3D(SubcycledPoissonSolver):
                     depose_jxjyjz_esirkepov_n(self.fields.Jx,self.fields.Jy,self.fields.Jz,n,
                                                       x,y,z,ux,uy,uz,
                                                       gaminv,wfact,q*w,
-                                                      f.xmin,f.ymin,f.zmin+self.zgrid,
+                                                      f.xmin-0.5*top.dt*self.V_galilean[0],
+                                                      f.ymin-0.5*top.dt*self.V_galilean[1],
+                                                      f.zmin+self.zgrid-0.5*top.dt*self.V_galilean[2],
                                                       dt,
                                                       f.dx,f.dy,f.dz,
                                                       f.nx,f.ny,f.nz,
@@ -1814,7 +1821,7 @@ class EM3D(SubcycledPoissonSolver):
 #        # -- add laser if laser_mode==2
 #        if self.laser_mode==2:self.add_laser(self.block.core.yf)
         if self.l_nodalgrid:self.Jyee2node3d()
-        # --- apply boundary conditions 
+        # --- apply boundary conditions
         self.applysourceboundaryconditions()
         # --- exchange guard cells data across domains
         self.exchange_bc(self.block)
@@ -1857,7 +1864,7 @@ class EM3D(SubcycledPoissonSolver):
             em3d_exchange_rho(block)
         if self.refinement is not None:
             self.exchange_bc(self.field_coarse.block)
-    
+
     def applysourceboundaryconditions(self):
         # --- apply boundary condition on current
         self.apply_current_bc(self.block)
@@ -2397,6 +2404,14 @@ class EM3D(SubcycledPoissonSolver):
 
 
         # --- move window in z with zgrid
+        if top.vbeamfrm==0.:
+            top.zgridprv=top.zgrid
+            top.zgrid=self.V_galilean[2]*(top.time+top.dt)
+            top.zbeam=top.zgrid
+            top.zgridndts[...]=top.zgrid
+            self.zgrid=top.zgrid
+        elif self.V_galilean[2]<>0.:
+            self.zgrid=top.zgrid
         if top.vbeamfrm > 0.:
             while ((top.zgrid-self.zgrid)>=0.5*self.dz):
                 self.shift_cells_z(1)
@@ -6210,11 +6225,11 @@ class EM3D(SubcycledPoissonSolver):
 
         - If no arguments are passed, this uses an electrostatic and
         magnetostatic solver, using *all* particles as the source
-        
+
         - If *either* relat_species *or* relat_pgroup and relat_jslist
         are passed, this uses a relativistic Poisson solver, using *only*
         the designated relativistic particles as the source
-        
+
         Parameter
         ---------
         relat_species: a Species object
@@ -6246,7 +6261,7 @@ class EM3D(SubcycledPoissonSolver):
                 '/`relat_jslist` were passed. Please use one or the other.')
             relat_pgroup = relat_species.pgroup
             relat_jslist = relat_species.jslist
-        
+
         # --- Calculate the static fields.
         top.grid_overlap = 2
         if self.solvergeom == w3d.XYZgeom:
@@ -6784,7 +6799,7 @@ class EM3D(SubcycledPoissonSolver):
         toreturn['bx']=f.bx
         toreturn['by']=f.by
         toreturn['bz']=f.bz
-        
+
         if self.l_pushf:toreturn['f']=f.f
         if self.l_pushg:toreturn['g']=f.g
         if self.l_getrho:toreturn['rho']=f.rho
@@ -6805,7 +6820,7 @@ class EM3D(SubcycledPoissonSolver):
         myfields['jz']=self.gatherjz()
         if self.l_pushf: myfields['f']=self.gatherf()
         if self.l_pushg: myfields['g']=self.gatherg()
-        if self.l_getrho: 
+        if self.l_getrho:
             myfields['rho']=self.gatherrho()
             myfields['rhoold']=self.gatherrhoold()
         flist = ['ex','ey','ez','bx','by','bz','jx','jy','jz']

@@ -426,6 +426,7 @@ END subroutine assign_coefs
 
 subroutine move_bnd(b)
   use Parallel, Only: comm_world
+  use mpi
   implicit none
 
   INTEGER :: j, k, jf, kf, jb, kb,jk,jk1,i,ntop,kmin,kmax
@@ -433,7 +434,6 @@ subroutine move_bnd(b)
   real(kind=8):: bzrecv(b%nbndy,2),bztosend(b%nbndy,2)
 
 #ifdef MPIPARALLEL
-  include "mpif.h"
   integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE),mpierror,comm_world_mpiisz
   integer(MPIISZ):: mpirequest
   integer(MPIISZ):: w
