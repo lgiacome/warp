@@ -75,7 +75,6 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         self.fieldtypes = fieldtypes
 
         # Determine the dimensions (Cartesian or cylindrical)
-        print("HELLO DIM",self.em.l_1dz,self.em.l_2dxz,self.em.l_2drz)
         if self.em.l_2drz is True:
             self.dim = "circ"
         elif self.em.l_1dz is True:

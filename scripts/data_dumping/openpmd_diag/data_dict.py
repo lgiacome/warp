@@ -51,7 +51,7 @@ weighting_power_dict = {
     "charge": 1.,
     "mass": 1.,
     "weighting": 1.,
-    "id": 1.,
+    "id": 0.,
     "position": 0.,
     "positionOffset": 0.,
     "momentum": 1.,
