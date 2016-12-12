@@ -412,6 +412,14 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                         self.setup_openpmd_species_component( dset )
                         self.setup_openpmd_species_record( dset, particle_var )
 
+                    # Scalar quantity
+                    elif particle_var == "id":
+                        dset = species_grp.create_dataset(
+                            particle_var, (0,), maxshape=(None,), dtype='uint64')
+                        self.setup_openpmd_species_component( dset )
+                        self.setup_openpmd_species_record( dset, particle_var )
+
+
                     # Unknown field
                     else:
                         raise ValueError(
@@ -560,6 +568,5 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             quantity_array = species.getweights(gather=False)
         elif quantity == "id":
             quantity_array = species.getpid(id=self.ssnpid-1,gather=False)
-            print(np.shape(quantity_array))
 
         return( quantity_array )
