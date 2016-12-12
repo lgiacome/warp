@@ -1379,17 +1379,17 @@ class GPSTD_Maxwell(GPSTD):
 
         j=1j
         c=self.clight
-        Vz = V_galilean[2]
+        V0  = np.sqrt(V_galilean[0]*V_galilean[0]+V_galilean[1]*V_galilean[1]+V_galilean[2]*V_galilean[2])
+        w=self.k*c
+        kV=self.kx_unmod*V_galilean[0]+self.ky_unmod*V_galilean[1]+self.kz_unmod*V_galilean[2]
+        T=np.exp(j*kV*dt)
+        T2=np.exp(j*kV*dt/2)
 
-        print 'HHEELLOO'
+        Theta=np.exp(j*kV*self.dt)
+        coef = -j*self.divsetorig(j*kV,1.-Theta,-1./self.dt)
 
-        kzV=self.kz_unmod*Vz
-        T=np.exp(j*kzV*dt)
-        T2=np.exp(j*kzV*dt/2)
-
-        Theta=np.exp(j*kzV*self.dt)
-        coef = -j*self.divsetorig(j*kzV,1.-Theta,-1./self.dt)
-        coef[1:,0] = j/self.dt
+        is_singular=(w!=0) & (kV==0)
+        coef[is_singular] = j/self.dt
         self.cr=coef.copy()
         self.cro=coef.copy()*Theta
         coef /= self.kmag
@@ -1412,7 +1412,7 @@ class GPSTD_Maxwell(GPSTD):
             matpushrho = GPSTD_Matrix(self.fields)
 #            matpushrho.add_op('rho',{'rho':T,'jx':-axm/c,'jy':-aym/c,'jz':-azm/c})
 #            matpushrho.add_op('rho',{'rho':T,'drho':1./self.ntsub})
-            alpha = 0.5*j*kzV*dt
+            alpha = 0.5*j*kV*dt
             matpushrho.add_op('rho',{'rho':(1.+alpha)/(1.-alpha),'drho':1./(self.ntsub*(1.-alpha))})
             matpushdrho = GPSTD_Matrix(self.fields)
             matpushdrho.add_op('drho',{'drho':T})
@@ -1447,7 +1447,7 @@ class GPSTD_Maxwell(GPSTD):
 
         mymat_init = GPSTD_Matrix(self.fields)
         if l_matpushj:
-            shift_init = np.exp((-0.5+0*0.5/self.ntsub)*j*kzV*self.dt)
+            shift_init = np.exp((-0.5+0*0.5/self.ntsub)*j*kV*self.dt)
         else:
             shift_init = 1.
         mymat_init.add_op('jx',{'jx':shift_init})
@@ -1456,10 +1456,9 @@ class GPSTD_Maxwell(GPSTD):
         if self.l_pushf:
             mymat_init.add_op('rho',{'rhoold':1.})
             if l_matpushj:
-                mymat_init.add_op('drho',{'rhonew':np.exp(-j*kzV*self.dt),'rhoold':-1.})
+                mymat_init.add_op('drho',{'rhonew':np.exp(-j*kV*self.dt),'rhoold':-1.})
             else:
-                mymat_init.add_op('drho',{'rhonew':np.exp(-j*kzV*self.dt),'rhoold':-1.})
-#                mymat_init.add_op('drho',{'rhonew':np.exp(-0.5*j*kzV*self.dt),'rhoold':np.exp(0.5*j*kzV*self.dt)})
+                mymat_init.add_op('drho',{'rhonew':np.exp(-j*kV*self.dt),'rhoold':-1.})
 
         matpushj = GPSTD_Matrix(self.fields)
         matpushj.add_op('jx',{'jx':T})
@@ -1654,39 +1653,35 @@ class PSATD_Maxwell(GPSTD):
     def getmaxwellmat_galilean(self,kxpn,kypn,kzpn,kxmn,kymn,kzmn,dt,cdt,V_galilean=np.array([0.,0.,0.])):
 
         j = 1j
-        Vz = V_galilean[2]
+        V0 = np.linalg.norm(V_galilean)
         c=self.clight
         C=self.coswdt
         S=self.sinwdt
-        kzV=self.kz_unmod*Vz
-        Theta=T=np.exp(j*kzV*dt)
+        kV=self.kx_unmod*V_galilean[0]+self.ky_unmod*V_galilean[1]+self.kz_unmod*V_galilean[2]
+        Theta=T=np.exp(j*kV*dt)
         CT = C*Theta
         ST = S*Theta
         w = self.k*c
-        kzVow = self.divsetorig(kzV,self.kmag*c,Vz/c)
-        So1mT = self.divsetorig(S,1.-T,c/Vz)
+        kVow = self.divsetorig(kV,self.kmag*c,V0/c)
+        So1mT = self.divsetorig(S,1.-T,j*c/V0)
         onemCo1mT = self.divsetorig(1.-C,1.-T,0.)
 
-        denom = (w*w-kzV*kzV)
+        denom = (w*w-kV*kV)
         self.denom=denom
 
-        X1 = self.divsetorig(1.-CT+j*kzVow*ST, denom, dt**2*0.5)
-        X2 = self.divsetorig(1.+j*kzVow*T*So1mT+kzVow**2*T*onemCo1mT, denom, dt**2/6)
-        X3 = T*self.divsetorig(C+j*kzVow*T*So1mT+kzVow**2*onemCo1mT, denom, -dt**2/3)
+        X1 = self.divsetorig(1.-CT+j*kVow*ST, denom, dt**2*0.5)
+        X2 = self.divsetorig(1.+j*kVow*T*So1mT+kVow**2*T*onemCo1mT, denom, dt**2/6)
+        X3 = T*self.divsetorig(C+j*kVow*T*So1mT+kVow**2*onemCo1mT, denom, -dt**2/3)
 
-        if len(self.dims)==3:
-            X2[1:,:,0] = (1.-S[1:,:,0]/(w[1:,:,0]*dt))/w[1:,:,0]**2
-            X2[:,1:,0] = (1.-S[:,1:,0]/(w[:,1:,0]*dt))/w[:,1:,0]**2
-            X3[1:,:,0] = T[1:,:,0]*(C[1:,:,0]-S[1:,:,0]/(w[1:,:,0]*dt))/w[1:,:,0]**2
-            X3[:,1:,0] = T[:,1:,0]*(C[:,1:,0]-S[:,1:,0]/(w[:,1:,0]*dt))/w[:,1:,0]**2
-        else:
-            X2[1:,0] = (1.-S[1:,0]/(w[1:,0]*dt))/w[1:,0]**2
-            X3[1:,0] = T[1:,0]*(C[1:,0]-S[1:,0]/(w[1:,0]*dt))/w[1:,0]**2
+        #Apply a special limit when kV=0 but w!=0
+        is_singular=(w!=0) & (kV==0)
+        X2[is_singular]=(1.-S[is_singular]/(w[is_singular]*dt))/w[is_singular]**2
+        X3[is_singular] = T[is_singular]*(C[is_singular]-S[is_singular]/(w[is_singular]*dt))/w[is_singular]**2
 
         Soverk = self.divsetorig(S,self.kmag,self.dt*self.clight)
         Jmult = 1./(self.kmag*self.clight*self.eps0)
 
-        EJmult = -self.divsetorig(ST,self.kmag*self.clight*self.eps0,dt/self.eps0)+j*X1*kzV/self.eps0
+        EJmult = -self.divsetorig(ST,self.kmag*self.clight*self.eps0,dt/self.eps0)+j*X1*kV/self.eps0
 
         ERhomult = -j*c**2*X2*self.k/self.eps0
         ERhooldmult = j*c**2*X3*self.k/self.eps0
@@ -1696,12 +1691,10 @@ class PSATD_Maxwell(GPSTD):
         FJmult = j*(C-1.)*Jmult
         FRhomult = (C-1.)/(dt*self.kmag**2*self.clight*self.eps0)
 
-        coef = -j*self.divsetorig(j*kzV,1.-T,-1./dt)
-        if len(self.dims)==3:
-            coef[1:,:,0] = j/dt
-            coef[:,1:,0] = j/dt
-        else:
-            coef[1:,0] = j/dt
+        coef = -j*self.divsetorig(j*kV,1.-T,-1./dt)
+        coef[is_singular]=j/dt
+        self.CDcoef = coef.copy()*np.exp(0.5*j*kV*dt)
+
         self.cr=coef.copy()
         self.cro=coef.copy()*T
         coef /= self.kmag
@@ -1759,10 +1752,10 @@ class PSATD_Maxwell(GPSTD):
         self.X1=X1
         self.X2=X2
         self.X3=X3
-        self.kzVow = kzVow
+        self.kVow = kVow
         self.So1mT = So1mT
         self.onemCo1mT = onemCo1mT
-        self.kzV=kzV
+        self.kV=kV
         self.T=T
         self.CT = CT
         self.ST = ST
@@ -1804,42 +1797,38 @@ class PSATD_Maxwell(GPSTD):
     def getmaxwellmat_pseudogalilean(self,kxpn,kypn,kzpn,kxmn,kymn,kzmn,dt,cdt,V_galilean=np.array([0.,0.,0.])):
 
         j = 1j
-        Vz = V_galilean[2]
+        V0 = np.sqrt(V_galilean[0]*V_galilean[0]+V_galilean[1]*V_galilean[1]+V_galilean[2]*V_galilean[2])
         c=self.clight
         C=self.coswdt
         S=self.sinwdt
-        kzV=self.kz_unmod*Vz
-        Theta=T=np.exp(j*kzV*dt)
-        invT = np.exp(-j*kzV*dt)
+        kV=self.kx_unmod*V_galilean[0]+self.ky_unmod*V_galilean[1]+self.kz_unmod*V_galilean[2]
+        Theta=T=np.exp(j*kV*dt)
+        invT = np.exp(-j*kV*dt)
         CT = C*Theta
         ST = S*Theta
         w = self.k*c
-        kzVow = self.divsetorig(kzV,self.kmag*c,Vz/c)
-        So1mT = self.divsetorig(S,1.-T,c/Vz)
+        kVow = self.divsetorig(kV,self.kmag*c,V0/c)
+        So1mT = self.divsetorig(S,1.-T,j*c/V0)
         onemCo1mT = self.divsetorig(1.-C,1.-T,0.)
 
-        denom = (w*w-kzV*kzV)
+        denom = (w*w-kV*kV)
         self.denom=denom
 
-        X1 = self.divsetorig(1.-CT+j*kzVow*ST, denom, dt**2*0.5)
-        X2 = self.divsetorig(1.+j*kzVow*T*So1mT+kzVow**2*T*onemCo1mT, denom, dt**2/6)
-        X3 = self.divsetorig(C+j*kzVow*T*So1mT+kzVow**2*onemCo1mT, denom, -dt**2/3)
+        X1 = self.divsetorig(1.-CT+j*kVow*ST, denom, dt**2*0.5)
+        X2 = self.divsetorig(1.+j*kVow*T*So1mT+kVow**2*T*onemCo1mT, denom, dt**2/6)
+        X3 = self.divsetorig(C+j*kVow*T*So1mT+kVow**2*onemCo1mT, denom, -dt**2/3)
 
-        if len(self.dims)==3:
-            X2[1:,:,0] = (1.-S[1:,:,0]/(w[1:,:,0]*dt))/w[1:,:,0]**2
-            X2[:,1:,0] = (1.-S[:,1:,0]/(w[:,1:,0]*dt))/w[:,1:,0]**2
-            X3[1:,:,0] = (C[1:,:,0]-S[1:,:,0]/(w[1:,:,0]*dt))/w[1:,:,0]**2
-            X3[:,1:,0] = (C[:,1:,0]-S[:,1:,0]/(w[:,1:,0]*dt))/w[:,1:,0]**2
-        else:
-            X2[1:,0] = (1.-S[1:,0]/(w[1:,0]*dt))/w[1:,0]**2
-            X3[1:,0] = (C[1:,0]-S[1:,0]/(w[1:,0]*dt))/w[1:,0]**2
+        #Apply a special limit when kV=0 but w!=0
+        is_singular=(w!=0.) & (kV==0.)
+        X2[is_singular]=(1.-S[is_singular]/(w[is_singular]*dt))/w[is_singular]**2
+        X3[is_singular] = (C[is_singular]-S[is_singular]/(w[is_singular]*dt))/w[is_singular]**2
 
-        X1 *= np.exp(-0.5*j*kzV*dt)
+        X1 *= np.exp(-0.5*j*kV*dt)
 
         Soverk = self.divsetorig(S,self.kmag,self.dt*self.clight)
         Jmult = 1./(self.kmag*self.clight*self.eps0)
 
-        EJmult = -np.exp(-0.5*j*kzV*dt)*self.divsetorig(ST,self.kmag*self.clight*self.eps0,dt/self.eps0)+j*X1*kzV/self.eps0
+        EJmult = -np.exp(-0.5*j*kV*dt)*self.divsetorig(ST,self.kmag*self.clight*self.eps0,dt/self.eps0)+j*X1*kV/self.eps0
 
         ERhomult = -j*c**2*X2*self.k/self.eps0
         ERhooldmult = j*c**2*X3*self.k/self.eps0
@@ -1849,24 +1838,19 @@ class PSATD_Maxwell(GPSTD):
         FJmult = j*(C-1.)*Jmult
         FRhomult = (C-1.)/(dt*self.kmag**2*self.clight*self.eps0)
 
-        coef = self.divsetorig(j*kzV*dt,T-1.,1.)
-        if len(self.dims)==3:
-            coef[1:,:,0] = 1.
-            coef[:,1:,0] = 1.
-        else:
-            coef[1:,0] = 1.
+        coef = self.divsetorig(j*kV*dt,T-1.,1.)
+        coef[is_singular]=1.
 
-        self.CDcoef = coef.copy()*np.exp(0.5*j*kzV*dt)
-
+        self.CDcoef = coef.copy()*np.exp(0.5*j*kV*dt)
         coef *= j/(dt*self.kmag)
 
-        self.JxCorRhomult = coef*self.kxpn*np.exp(0.5*j*kzV*dt)
-        self.JyCorRhomult = coef*self.kypn*np.exp(0.5*j*kzV*dt)
-        self.JzCorRhomult = coef*self.kzpn*np.exp(0.5*j*kzV*dt)
+        self.JxCorRhomult = coef*self.kxpn*np.exp(0.5*j*kV*dt)
+        self.JyCorRhomult = coef*self.kypn*np.exp(0.5*j*kV*dt)
+        self.JzCorRhomult = coef*self.kzpn*np.exp(0.5*j*kV*dt)
 
-        self.JxCorRhooldmult = coef*self.kxpn*np.exp(0.5*j*kzV*dt)
-        self.JyCorRhooldmult = coef*self.kypn*np.exp(0.5*j*kzV*dt)
-        self.JzCorRhooldmult = coef*self.kzpn*np.exp(0.5*j*kzV*dt)
+        self.JxCorRhooldmult = coef*self.kxpn*np.exp(0.5*j*kV*dt)
+        self.JyCorRhooldmult = coef*self.kypn*np.exp(0.5*j*kV*dt)
+        self.JzCorRhooldmult = coef*self.kzpn*np.exp(0.5*j*kV*dt)
 
         if len(self.dims)==1:
             FRhomult[0] = -0.5*self.dt*self.clight/self.eps0
@@ -1914,10 +1898,10 @@ class PSATD_Maxwell(GPSTD):
         self.X1=X1
         self.X2=X2
         self.X3=X3
-        self.kzVow = kzVow
+        self.kVow = kVow
         self.So1mT = So1mT
         self.onemCo1mT = onemCo1mT
-        self.kzV=kzV
+        self.kV=kV
         self.T=T
         self.CT = CT
         self.ST = ST
