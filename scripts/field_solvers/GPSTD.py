@@ -1459,7 +1459,6 @@ class GPSTD_Maxwell(GPSTD):
                 mymat_init.add_op('drho',{'rhonew':np.exp(-j*kV*self.dt),'rhoold':-1.})
             else:
                 mymat_init.add_op('drho',{'rhonew':np.exp(-j*kV*self.dt),'rhoold':-1.})
-#                mymat_init.add_op('drho',{'rhonew':np.exp(-0.5*j*kV*self.dt),'rhoold':np.exp(0.5*j*kV*self.dt)})
 
         matpushj = GPSTD_Matrix(self.fields)
         matpushj.add_op('jx',{'jx':T})
@@ -1695,6 +1694,7 @@ class PSATD_Maxwell(GPSTD):
         coef = -j*self.divsetorig(j*kV,1.-T,-1./dt)
         coef[is_singular]=j/dt
         self.CDcoef = coef.copy()*np.exp(0.5*j*kV*dt)
+
         self.cr=coef.copy()
         self.cro=coef.copy()*T
         coef /= self.kmag
@@ -1842,7 +1842,6 @@ class PSATD_Maxwell(GPSTD):
         coef[is_singular]=1.
 
         self.CDcoef = coef.copy()*np.exp(0.5*j*kV*dt)
-
         coef *= j/(dt*self.kmag)
 
         self.JxCorRhomult = coef*self.kxpn*np.exp(0.5*j*kV*dt)
