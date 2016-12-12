@@ -22,6 +22,7 @@ if [ "$NERSC_HOST" == "cori" ]
 then
    module swap PrgEnv-intel PrgEnv-gnu
    module load python/2.7-anaconda
+   module load h5py-parallel
    WARP=$SCRATCH/warp_install/
    export PATH=$WARP/bin:$PATH
    export PYTHONPATH=$WARP/lib/python:$PYTHONPATH
