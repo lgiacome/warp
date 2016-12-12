@@ -2,7 +2,7 @@
 import numpy as np
 import math
 import copy
-import os 
+import os
 
 try:
     # Try to import fortran wrapper of FFTW
@@ -67,7 +67,7 @@ def multmat(matrix1,matrix2,matcompress=None):
         Second argument.
     matcompress : 2-D matrix list for compression
         Optional third argument
-        
+
     Returns
     -------
     output : 2-D matrix list
@@ -109,7 +109,7 @@ def exp_by_squaring_matrixlist(x, n, matcompress=None):
     if n == 1:return x
     y = np.identity(len(x)).tolist()
     while n > 1:
-      if float(n/2)==float(n)/2: # if n is even then 
+      if float(n/2)==float(n)/2: # if n is even then
         x = multmat(x,x,matcompress=matcompress)
         n /= 2
       else:
@@ -160,7 +160,7 @@ def FD_weights_hvincenti(p,l_staggered=False):
             logdenom = math.log(factorial(p/2.+l))+math.log(factorial(p/2.-l))+math.log(l)
         c[i] = (-1.)**(l+1)*np.exp(lognumer-logdenom)
     return c
-    
+
 class Fourier_Space():
 
     __flaginputs__ = {'nx':1,'ny':1,'nz':1,
@@ -169,8 +169,8 @@ class Fourier_Space():
                       'dt':1.,'dx':1.,'dy':1.,'dz':1.,
                       'l_staggered':False,
                       'l_staggered_a_la_brendan':False,
-                      'bc_periodic':[0,0,0], 
-                      'l_fftw': l_fftw_fort, 
+                      'bc_periodic':[0,0,0],
+                      'l_fftw': l_fftw_fort,
                       'nthreads': None}
 
     def __init__(self,**kw):
@@ -182,10 +182,10 @@ class Fourier_Space():
             pass
 
         self.processdefaultsfromdict(Fourier_Space.__flaginputs__,kw)
-        
-        
-        
-        # Dimensions of real space arrays 
+
+
+
+        # Dimensions of real space arrays
         nx = self.nx
         ny = self.ny
         nz = self.nz
@@ -202,18 +202,18 @@ class Fourier_Space():
             dims_r2c+=[ny]
         if nz>1:
             dims_r2c+=[nz]
-            
-        # Dimensions of Fourier space arrays      
-        if (len(dims_r2c)==3): 
+
+        # Dimensions of Fourier space arrays
+        if (len(dims_r2c)==3):
             nxf = nx//2+1
             nyf = ny
             nzf = nz
-        elif (len(dims_r2c) ==2): 
-            if (nx>1): 
+        elif (len(dims_r2c) ==2):
+            if (nx>1):
                 nxf=nx//2+1
                 nyf=ny
                 nzf=nz
-            else: 
+            else:
                 nxf=nx
                 nyf=ny//2
                 nzf=nz
@@ -223,8 +223,8 @@ class Fourier_Space():
         if nyf>1:
             dims+=[nyf]
         if nzf>1:
-            dims+=[nzf]        
-        
+            dims+=[nzf]
+
         # --- sets kx, ky, kz, k
         if nx>1:
             self.kxn = np.ones(dims)
@@ -272,7 +272,7 @@ class Fourier_Space():
                     ycoefs+=w[i]*2*np.sin(kyunit*(yi*i+1)*self.dy/yi)
 
                 kyunit_mod*=ycoefs/np.where(kyunit==0.,1.,kyunit*self.dy)
-          
+
         if nz>1:
             self.kzn = np.ones(dims)
             self.kz_unmod = np.ones(dims)
@@ -310,7 +310,7 @@ class Fourier_Space():
                 for j in range(nyf):
                     self.kzn[i,j,:] *= kzunit_mod
                     self.kz_unmod[i,j,:] *= kzunit
-            
+
             self.kx=self.kxn.copy()
             self.ky=self.kyn.copy()
             self.kz=self.kzn.copy()
@@ -464,53 +464,53 @@ class Fourier_Space():
                     self.kxp = self.kx
                     self.kym = self.ky
                     self.kyp = self.ky
-        # compute FFTW plans if FFTW loaded 
-        if (self.l_fftw): 
-            if self.nthreads is None: 
-                self.nthreads=int(os.getenv('OMP_NUM_THREADS',1))    
-        # Init plans 
+        # compute FFTW plans if FFTW loaded
+        if (self.l_fftw):
+            if self.nthreads is None:
+                self.nthreads=int(os.getenv('OMP_NUM_THREADS',1))
+        # Init plans
         self.plan_rfftn={}
-        self.plan_irfftn={} 
+        self.plan_irfftn={}
         self.planj_rfftn=None
         self.planj_irfftn=None
-            
-    def create_plan_rfftn(self, dims): 
-        if self.l_fftw: 
+
+    def create_plan_rfftn(self, dims):
+        if self.l_fftw:
             return fftpy.compute_plan_rfftn(dims,nthreads=self.nthreads, plan_opt=fst.fftw_measure)
-        else: 
+        else:
             return None
-            
-    def create_plan_irfftn(self, dims): 
-        if self.l_fftw: 
-            return fftpy.compute_plan_irfftn(dims,nthreads=self.nthreads, plan_opt=fst.fftw_measure)  
-        else: 
-            return None            
-            
-    def fftn(self, a, field_out=None, plan=None): 
-        if (self.l_fftw): 
+
+    def create_plan_irfftn(self, dims):
+        if self.l_fftw:
+            return fftpy.compute_plan_irfftn(dims,nthreads=self.nthreads, plan_opt=fst.fftw_measure)
+        else:
+            return None
+
+    def fftn(self, a, field_out=None, plan=None):
+        if (self.l_fftw):
             return fftpy.fftn(a,plan=plan,nthreads=self.nthreads, field_out=field_out)
-        else: 
+        else:
             return np.fft.fftn(a)
 
-    def rfftn(self, a, field_out=None, plan =None): 
-        if (self.l_fftw): 
+    def rfftn(self, a, field_out=None, plan =None):
+        if (self.l_fftw):
             return fftpy.rfftn(a,plan=plan,nthreads=self.nthreads, field_out=field_out)
-        else: 
+        else:
             axes = np.arange(0,a.ndim)
             last_axe = axes[-1]
             axes[-1] = axes[0]
             axes[0]  = last_axe
             return np.fft.rfftn(a, axes=axes)
-            
-    def ifftn(self, a, field_out=None, plan=None): 
-        if (self.l_fftw): 
+
+    def ifftn(self, a, field_out=None, plan=None):
+        if (self.l_fftw):
             return fftpy.ifftn(a,plan=plan,nthreads=self.nthreads, field_out=field_out)
-        else: 
+        else:
             return np.fft.ifftn(a)
-    def irfftn(self, a, dims, field_out=None, plan=None): 
-        if (self.l_fftw): 
+    def irfftn(self, a, dims, field_out=None, plan=None):
+        if (self.l_fftw):
             return fftpy.irfftn(a,dims, plan=plan,nthreads=self.nthreads, field_out=field_out)
-        else: 
+        else:
             axes = np.arange(0,a.ndim)
             last_axe = axes[-1]
             axes[-1] = axes[0]
@@ -520,28 +520,28 @@ class Fourier_Space():
             rdims[-1]=dims[0]
             return np.fft.irfftn(a, axes=axes, s=rdims)
 
-    def fft(self, a, axis=0): 
-        if (self.l_fftw): 
+    def fft(self, a, axis=0):
+        if (self.l_fftw):
             return fftpy.fft(a, axis=axis,nthreads=self.nthreads)
-        else: 
+        else:
             return np.fft.fft(a, axis=axis)
 
-    def ifft(self, a, axis=0): 
-        if (self.l_fftw): 
+    def ifft(self, a, axis=0):
+        if (self.l_fftw):
             return fftpy.ifft(a, axis=axis,nthreads=self.nthreads)
-        else: 
+        else:
             return np.fft.ifft(a, axis=axis)
-        
-    def fftfreq(self, a): 
-        if (self.l_fftw): 
+
+    def fftfreq(self, a):
+        if (self.l_fftw):
             return fftpy.fftfreq(a)
-        else: 
+        else:
             return np.fft.fftfreq(a)
 
-    def rfftfreq(self, a): 
-        if (self.l_fftw): 
+    def rfftfreq(self, a):
+        if (self.l_fftw):
             return fftpy.rfftfreq(a)
-        else: 
+        else:
             return np.fft.rfftfreq(a)
 
     def processdefaultsfromdict(self,dict,kw):
@@ -549,7 +549,7 @@ class Fourier_Space():
             if name not in self.__dict__:
                 self.__dict__[name] = kw.get(name,defvalue)
             if name in kw: del kw[name]
-    
+
     def get_ius(self):
         if self.bc_periodic[0]:
             ixl = self.nxguard
@@ -633,7 +633,7 @@ class GPSTD(Fourier_Space):
 
     def add_fields(self,f,l_source=False):
         self.fields.update(f)
-        
+
         for k in f.keys():
             self.LSource[k] = l_source
 
@@ -645,7 +645,7 @@ class GPSTD(Fourier_Space):
 
     def add_Ffilter(self,Fname,Ffilter):
         self.Ffilters[Fname]=Ffilter
-    
+
     def add_Sfilter(self,Sname,Sfilter):
         self.Sfilters[Sname]=Sfilter
 
@@ -662,18 +662,18 @@ class GPSTD(Fourier_Space):
 
     def get_fields(self):
         ixl,ixu,iyl,iyu,izl,izu = self.get_ius()
-        if (self.plan_irfftn=={}): 
+        if (self.plan_irfftn=={}):
             for k in self.fields.keys():
-                    self.plan_irfftn[k] = self.create_plan_irfftn(np.asarray(self.fields_shape))  
+                    self.plan_irfftn[k] = self.create_plan_irfftn(np.asarray(self.fields_shape))
         for k in self.fields.keys():
-            if not self.LSource[k]:       
-                shapek = np.asarray(np.shape(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu])))        
+            if not self.LSource[k]:
+                shapek = np.asarray(np.shape(np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu])))
                 f = self.irfftn(self.Ffields[k], shapek, field_out=np.squeeze(self.fields[k][ixl:ixu,iyl:iyu,izl:izu]), plan=self.plan_irfftn[k])
                 f.resize(self.fields_shape)
                 self.fields[k][ixl:ixu,iyl:iyu,izl:izu] = f.real
-        
+
     def push_fields(self):
-                
+
         self.get_Ffields()
 
         # --- filter sources before push
@@ -692,14 +692,14 @@ class GPSTD(Fourier_Space):
         updated_fields = {}
         for k in self.Ffields.keys():
             updated_fields[k] = False
-        
+
         # --- fields update
         # --- multiply vector 'fields' by matrix 'mymat', returning result in 'fields'
         for i in range(n):
             # --- get key of field of rank i
             ki = self.fields_name[i]
             # --- cycle to next item if current field is a source
-            if self.LSource[ki]:continue 
+            if self.LSource[ki]:continue
 
             # --- update diagonal first
             # --- if matrix value is 1., do nothing
@@ -762,7 +762,7 @@ class GPSTD(Fourier_Space):
                     f[...,:ngz]=f[...,-2*ngz-1:-ngz-1]
 
         del updated_fields
-        
+
     def getm(self,a='ex',b='ex'):
         o=self.fields_order
         m=self.mymat
@@ -832,19 +832,19 @@ class GPSTD_Maxwell_PML(GPSTD):
             self.add_fields({"fx":syf.fx, \
                              "fy":syf.fy, \
                              "fz":syf.fz})
-            
+
         if self.l_pushg:
             self.add_fields({"gx":syf.gx, \
                              "gy":syf.gy, \
                              "gz":syf.gz})
-        
+
         self.get_Ffields()
 
         m0 = 0.
         m1 = 1.
         dt=self.dt/self.ntsub
         cdt=dt*self.clight
-            
+
         if self.nx>1:
             axm = j*dt*self.clight*self.kxm
             axp = j*dt*self.clight*self.kxp
@@ -862,7 +862,7 @@ class GPSTD_Maxwell_PML(GPSTD):
             azp = j*dt*self.clight*self.kzp
         else:
             azm = azp = 0.
-            
+
         if self.nx>1:
             axp0 = 0.5/self.ntsub
             axm0 = 0.65/self.ntsub
@@ -886,7 +886,7 @@ class GPSTD_Maxwell_PML(GPSTD):
                             0.5*self.dx,0.5*self.dy,0.5*self.dz,l_matref=1)
 
         matcompress = getmatcompress(self.mymatref)
-        
+
         self.mymatref = exp_by_squaring_matrixlist(self.mymatref, self.ntsub, matcompress=matcompress)
 
         self.mymat = self.getmaxwellmat_pml(axp,ayp,azp,axm,aym,azm,dt,cdt,m0,m1,\
@@ -1070,12 +1070,12 @@ class PSATD_Maxwell_PML(GPSTD):
             self.add_fields({"fx":syf.fx, \
                              "fy":syf.fy, \
                              "fz":syf.fz})
-            
+
         if self.l_pushg:
             self.add_fields({"gx":syf.gx, \
                              "gy":syf.gy, \
                              "gz":syf.gz})
-        
+
         self.get_Ffields()
 
         m0 = 0.
@@ -1084,7 +1084,7 @@ class PSATD_Maxwell_PML(GPSTD):
         cdt=dt*self.clight
         C=self.coswdt
         S=self.sinwdt
-            
+
         if self.nx>1:
             axm = j*S*self.kxmn
             axp = j*S*self.kxpn
@@ -1224,7 +1224,7 @@ class GPSTD_Maxwell(GPSTD):
         GPSTD.__init__(self,kwdict=kw)
 
         j = 1j
-        
+
         self.add_fields({"bx":yf.Bx,"by":yf.By,"bz":yf.Bz, \
                          "ex":yf.Ex,"ey":yf.Ey,"ez":yf.Ez})
         self.add_fields({"rho":yf.Rho},True)
@@ -1241,14 +1241,14 @@ class GPSTD_Maxwell(GPSTD):
         self.add_fields({"rho":yf.Rho},True)
         self.add_fields({"drho":yf.Rhoold},True)
         self.add_fields({"jx":yf.Jx,"jy":yf.Jy,"jz":yf.Jz},True)
-        
+
         self.get_Ffields()
 
         m0 = 0.
         m1 = 1.
         dt=self.dt/self.ntsub
         cdt=dt*self.clight
-            
+
         if self.nx>1:
             axm = j*dt*self.clight*self.kxm
             axp = j*dt*self.clight*self.kxp
@@ -1266,7 +1266,7 @@ class GPSTD_Maxwell(GPSTD):
             azp = j*dt*self.clight*self.kzp
         else:
             azm = azp = 0.
-            
+
         if self.nx>1:
             axp0 = 0.5/self.ntsub
             axm0 = 0.65/self.ntsub
@@ -1380,7 +1380,7 @@ class GPSTD_Maxwell(GPSTD):
         j=1j
         c=self.clight
         Vz = V_galilean[2]
-        
+
         print 'HHEELLOO'
 
         kzV=self.kz_unmod*Vz
@@ -1407,7 +1407,7 @@ class GPSTD_Maxwell(GPSTD):
         axm = axm
         aym = aym
         azm = azm
-        
+
         if self.l_pushf:
             matpushrho = GPSTD_Matrix(self.fields)
 #            matpushrho.add_op('rho',{'rho':T,'jx':-axm/c,'jy':-aym/c,'jz':-azm/c})
@@ -1460,7 +1460,7 @@ class GPSTD_Maxwell(GPSTD):
             else:
                 mymat_init.add_op('drho',{'rhonew':np.exp(-j*kzV*self.dt),'rhoold':-1.})
 #                mymat_init.add_op('drho',{'rhonew':np.exp(-0.5*j*kzV*self.dt),'rhoold':np.exp(0.5*j*kzV*self.dt)})
-            
+
         matpushj = GPSTD_Matrix(self.fields)
         matpushj.add_op('jx',{'jx':T})
         matpushj.add_op('jy',{'jy':T})
@@ -1480,8 +1480,8 @@ class GPSTD_Maxwell(GPSTD):
         if l_matpushj:mymat = multmat(mymat,matpushj.mat,matcompress=matcompress)
 
         mymat = exp_by_squaring_matrixlist(mymat, self.ntsub, matcompress=matcompress)
-        
-        self.mymat = multmat(mymat_init.mat,mymat)    
+
+        self.mymat = multmat(mymat_init.mat,mymat)
 
         if l_matref:
             self.matpushb=matpushb
@@ -1530,7 +1530,7 @@ class PSATD_Maxwell(GPSTD):
         GPSTD.__init__(self,kwdict=kw)
 
         j = 1j
-        
+
         self.add_fields({"bx":yf.Bx,"by":yf.By,"bz":yf.Bz, \
                          "ex":yf.Ex,"ey":yf.Ey,"ez":yf.Ez})
         if self.l_pushf:
@@ -1540,7 +1540,7 @@ class PSATD_Maxwell(GPSTD):
         self.add_fields({"rhoold":yf.Rhoold},True)
         self.add_fields({"rhonew":yf.Rho},True)
         self.add_fields({"jx":yf.Jx,"jy":yf.Jy,"jz":yf.Jz},True)
-        
+
         self.get_Ffields()
 
         m0 = 0.
@@ -1552,7 +1552,7 @@ class PSATD_Maxwell(GPSTD):
         self.sinwdt=np.sin(self.wdt)
         C=self.coswdt
         S=self.sinwdt
-            
+
         if np.all(self.V_galilean==0.) and np.all(self.V_pseudogalilean==0.):
             self.mymat = self.getmaxwellmat(self.kxpn,self.kypn,self.kzpn,\
                          self.kxmn,self.kymn,self.kzmn,dt,cdt)
@@ -1575,7 +1575,7 @@ class PSATD_Maxwell(GPSTD):
         Jmult = 1./(self.kmag*self.clight*self.eps0)
 
         EJmult = -self.divsetorig(S,self.kmag*self.clight*self.eps0,self.dt/self.eps0)
-        
+
         ERhomult = j*(-EJmult/dt-1./self.eps0)/self.kmag
         ERhooldmult = j*(C/self.eps0+EJmult/dt) /self.kmag
 
@@ -1583,7 +1583,7 @@ class PSATD_Maxwell(GPSTD):
 
         FJmult = j*(C-1.)*Jmult
         FRhomult = self.divsetorig(C-1.,dt*self.kmag**2*self.clight*self.eps0,-0.5*self.dt*self.clight/self.eps0)
-        
+
         if self.nx>1:
             axm = j*S*self.kxmn
             axp = j*S*self.kxpn
@@ -1645,12 +1645,12 @@ class PSATD_Maxwell(GPSTD):
                                     'jx': kxmn*FJmult,'jy': kymn*FJmult,'jz': kzmn*FJmult, \
                                     'rhonew':FRhomult,\
                                     'rhoold':-FRhomult - Soverk/self.eps0})
-            
+
         if self.l_pushg:
             mymat.add_op('g',{'g':C,'bx':axp*c,'by':ayp*c,'bz':azp*c})
 
         return mymat.mat
-        
+
     def getmaxwellmat_galilean(self,kxpn,kypn,kzpn,kxmn,kymn,kzmn,dt,cdt,V_galilean=np.array([0.,0.,0.])):
 
         j = 1j
@@ -1669,11 +1669,11 @@ class PSATD_Maxwell(GPSTD):
 
         denom = (w*w-kzV*kzV)
         self.denom=denom
-        
+
         X1 = self.divsetorig(1.-CT+j*kzVow*ST, denom, dt**2*0.5)
         X2 = self.divsetorig(1.+j*kzVow*T*So1mT+kzVow**2*T*onemCo1mT, denom, dt**2/6)
         X3 = T*self.divsetorig(C+j*kzVow*T*So1mT+kzVow**2*onemCo1mT, denom, -dt**2/3)
-        
+
         if len(self.dims)==3:
             X2[1:,:,0] = (1.-S[1:,:,0]/(w[1:,:,0]*dt))/w[1:,:,0]**2
             X2[:,1:,0] = (1.-S[:,1:,0]/(w[:,1:,0]*dt))/w[:,1:,0]**2
@@ -1682,7 +1682,7 @@ class PSATD_Maxwell(GPSTD):
         else:
             X2[1:,0] = (1.-S[1:,0]/(w[1:,0]*dt))/w[1:,0]**2
             X3[1:,0] = T[1:,0]*(C[1:,0]-S[1:,0]/(w[1:,0]*dt))/w[1:,0]**2
- 
+
         Soverk = self.divsetorig(S,self.kmag,self.dt*self.clight)
         Jmult = 1./(self.kmag*self.clight*self.eps0)
 
@@ -1695,7 +1695,7 @@ class PSATD_Maxwell(GPSTD):
 
         FJmult = j*(C-1.)*Jmult
         FRhomult = (C-1.)/(dt*self.kmag**2*self.clight*self.eps0)
-        
+
         coef = -j*self.divsetorig(j*kzV,1.-T,-1./dt)
         if len(self.dims)==3:
             coef[1:,:,0] = j/dt
@@ -1712,14 +1712,14 @@ class PSATD_Maxwell(GPSTD):
         self.JxCorRhooldmult = coef*self.kxpn*T
         self.JyCorRhooldmult = coef*self.kypn*T
         self.JzCorRhooldmult = coef*self.kzpn*T
-        
+
         if len(self.dims)==1:
             FRhomult[0] = -0.5*self.dt*self.clight/self.eps0
         if len(self.dims)==2:
             FRhomult[0,0] = -0.5*self.dt*self.clight/self.eps0
         if len(self.dims)==3:
             FRhomult[0,0,0] = -0.5*self.dt*self.clight/self.eps0
-        
+
         if self.nx>1:
             axm = j*ST*self.kxmn
             axp = j*ST*self.kxpn
@@ -1793,14 +1793,14 @@ class PSATD_Maxwell(GPSTD):
                                     'jx': kxmn*FJmult,'jy': kymn*FJmult,'jz': kzmn*FJmult, \
                                     'rhonew':FRhomult,\
                                     'rhoold':-FRhomult - Soverk/self.eps0})
-            
+
         if self.l_pushg:
             print 'l_pushg not yet implemented in PSATD Galilean'
             raise
             mymat.add_op('g',{'g':CT,'bx':axp*c,'by':ayp*c,'bz':azp*c})
 
         return mymat.mat
-                
+
     def getmaxwellmat_pseudogalilean(self,kxpn,kypn,kzpn,kxmn,kymn,kzmn,dt,cdt,V_galilean=np.array([0.,0.,0.])):
 
         j = 1j
@@ -1820,11 +1820,11 @@ class PSATD_Maxwell(GPSTD):
 
         denom = (w*w-kzV*kzV)
         self.denom=denom
-        
+
         X1 = self.divsetorig(1.-CT+j*kzVow*ST, denom, dt**2*0.5)
         X2 = self.divsetorig(1.+j*kzVow*T*So1mT+kzVow**2*T*onemCo1mT, denom, dt**2/6)
         X3 = self.divsetorig(C+j*kzVow*T*So1mT+kzVow**2*onemCo1mT, denom, -dt**2/3)
-        
+
         if len(self.dims)==3:
             X2[1:,:,0] = (1.-S[1:,:,0]/(w[1:,:,0]*dt))/w[1:,:,0]**2
             X2[:,1:,0] = (1.-S[:,1:,0]/(w[:,1:,0]*dt))/w[:,1:,0]**2
@@ -1833,9 +1833,9 @@ class PSATD_Maxwell(GPSTD):
         else:
             X2[1:,0] = (1.-S[1:,0]/(w[1:,0]*dt))/w[1:,0]**2
             X3[1:,0] = (C[1:,0]-S[1:,0]/(w[1:,0]*dt))/w[1:,0]**2
- 
+
         X1 *= np.exp(-0.5*j*kzV*dt)
-        
+
         Soverk = self.divsetorig(S,self.kmag,self.dt*self.clight)
         Jmult = 1./(self.kmag*self.clight*self.eps0)
 
@@ -1848,7 +1848,7 @@ class PSATD_Maxwell(GPSTD):
 
         FJmult = j*(C-1.)*Jmult
         FRhomult = (C-1.)/(dt*self.kmag**2*self.clight*self.eps0)
-        
+
         coef = self.divsetorig(j*kzV*dt,T-1.,1.)
         if len(self.dims)==3:
             coef[1:,:,0] = 1.
@@ -1857,7 +1857,7 @@ class PSATD_Maxwell(GPSTD):
             coef[1:,0] = 1.
 
         self.CDcoef = coef.copy()*np.exp(0.5*j*kzV*dt)
-        
+
         coef *= j/(dt*self.kmag)
 
         self.JxCorRhomult = coef*self.kxpn*np.exp(0.5*j*kzV*dt)
@@ -1867,7 +1867,7 @@ class PSATD_Maxwell(GPSTD):
         self.JxCorRhooldmult = coef*self.kxpn*np.exp(0.5*j*kzV*dt)
         self.JyCorRhooldmult = coef*self.kypn*np.exp(0.5*j*kzV*dt)
         self.JzCorRhooldmult = coef*self.kzpn*np.exp(0.5*j*kzV*dt)
-        
+
         if len(self.dims)==1:
             FRhomult[0] = -0.5*self.dt*self.clight/self.eps0
         if len(self.dims)==2:
@@ -1948,7 +1948,7 @@ class PSATD_Maxwell(GPSTD):
                                     'jx': kxmn*FJmult,'jy': kymn*FJmult,'jz': kzmn*FJmult, \
                                     'rhonew':FRhomult,\
                                     'rhoold':-FRhomult - Soverk/self.eps0})
-            
+
         if self.l_pushg:
             mymat.add_op('g',{'g':C,'bx':axp*c,'by':ayp*c,'bz':azp*c})
 
@@ -1959,4 +1959,3 @@ class PSATD_Maxwell(GPSTD):
         self.push_fields()
 
         return
-
