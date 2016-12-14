@@ -69,7 +69,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         lparallel_output : boolean
             Switch to set output mode (parallel or gathering)
             If "True" : Parallel output
-            
+
         sub_sample : integer
             If "None" : all particles are dumped
             If not None: every sub_sample particle is dumped
@@ -81,8 +81,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         self.particle_data = particle_data
         self.species_dict = species
         self.select = select
-        self.sub_sample = sub_sample 
-         
+        self.sub_sample = sub_sample
+
         # Correct the bounds in momenta (since the momenta in Warp
         # are not unitless, but have the units of a velocity)
         for momentum in ['ux', 'uy', 'uz']:
@@ -335,9 +335,9 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                         quantity_array < self.select[quantity][1],
                         select_array )
         if self.sub_sample is not None:
-            subsamp_array = np.zeros(npart, dtype='bool') 
+            subsamp_array = np.zeros(npart, dtype='bool')
             subsamp_array[::self.sub_sample]=1
-            # Subsample particle array 
+            # Subsample particle array
             select_array=np.logical_and(subsamp_array,select_array)
         return( select_array )
 
@@ -401,7 +401,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                     elif particle_var == "weighting":
                         dset = species_grp.create_dataset(
                             particle_var, (0,), maxshape=(None,), dtype='f8')
-                        self.setup_openpmd_species_component( dset )    
+                        self.setup_openpmd_species_component( dset )
                         self.setup_openpmd_species_record( dset, particle_var )
 
                     # Unknown field
