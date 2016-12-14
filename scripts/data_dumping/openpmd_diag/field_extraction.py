@@ -375,6 +375,7 @@ def get_cart1d_dataset( em, quantity, lgather, iz_slice=None,
             F=F[start[2]::sub_sampling[2]]
     return( F )
 
+
 def get_global_indices(ifull,nfull,sub_samplingp):
     """
     Get new grid subdomain start indices and sizes with subsampling

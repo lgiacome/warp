@@ -3683,7 +3683,7 @@ END subroutine relaxbndxzwguard
 !      call remark(trim(o_line))
     end if
 
-    if(ir>0) call MPI_WAITALL(ir,mpi_req(1),mpistatus(1,1),mpierror)
+    if(ir>0) call MPI_WAITALL(ir,mpi_req,mpistatus,mpierror)
 
     IF(izrbnd<0) then
       f(izf::2,nz+2) = ftmpu
@@ -3801,7 +3801,7 @@ END subroutine relaxbndxzwguard
    end if
 
 !    call parallelbarrier()
-    if(ir>0 .and. l_mpi_barriers) call MPI_WAITALL(ir,mpi_req(1),mpistatus(1,1),mpierror)
+    if(ir>0 .and. l_mpi_barriers) call MPI_WAITALL(ir,mpi_req,mpistatus,mpierror)
     IF(izrbnd<0) then
       rho(:,nz+1) = rho(:,nz+1) + fu(:)
       deallocate(fu)
@@ -3864,7 +3864,7 @@ END subroutine relaxbndxzwguard
 !      call remark(trim(o_line))
     END if
 
-    if(ir>0 .and. l_mpi_barriers) call MPI_WAITALL(ir,mpi_req(1),mpistatus(1,1),mpierror)
+    if(ir>0 .and. l_mpi_barriers) call MPI_WAITALL(ir,mpi_req,mpistatus,mpierror)
 
      IF(MOD(my_index/bndcurrent%nworkpproc,2)==0) then
        f(:,nz/2+2:nz+1) = fu(:,nz/2+2:nz+1)
@@ -8203,7 +8203,7 @@ end do
  call abort()
 endif
 
-if(l_mpi_barriers) call MPI_WAITALL(0_4,mpirequest,mpistatus(1),mpierror)
+!if(l_mpi_barriers) call MPI_WAITALL(0_4,mpirequest,mpistatus,mpierror)
 
 !write(o_line,*) my_index,'Exit get_rho_from_rhop'
 !call remark(trim(o_line))
@@ -8340,7 +8340,7 @@ end do
  call abort()
 endif
 
-if(l_mpi_barriers) call MPI_WAITALL(0_4,mpirequest,mpistatus(1),mpierror)
+!if(l_mpi_barriers) call MPI_WAITALL(0_4,mpirequest,mpistatus,mpierror)
 
 !write(o_line,*) my_index,'Exit get_phip_from_phi'
 !call remark(trim(o_line))
