@@ -82,7 +82,6 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         self.species_dict = species
         self.select = select
         self.sub_sample = sub_sample
-        self.ssnpid = top.ssnpid
         # Correct the bounds in momenta (since the momenta in Warp
         # are not unitless, but have the units of a velocity)
         for momentum in ['ux', 'uy', 'uz']:
@@ -287,7 +286,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                         species_grp[particle_var], particle_var )
 
             # Scalar quantity
-            elif particle_var in "weighting" :
+            elif particle_var=="weighting" :
                 quantity = "w"
                 quantity_path = "weighting"
                 self.write_dataset( species_grp, species, quantity_path,
@@ -295,7 +294,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 if this_rank_writes :
                     self.setup_openpmd_species_record(
                         species_grp[particle_var], particle_var )
-            elif particle_var in "id" :
+            elif particle_var=="id" :
                 quantity = "id"
                 quantity_path = "id"
                 self.write_dataset( species_grp, species, quantity_path,
@@ -567,6 +566,6 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         elif quantity == "w" :
             quantity_array = species.getweights(gather=False)
         elif quantity == "id":
-            quantity_array = species.getpid(id=self.ssnpid-1,gather=False)
+            quantity_array = species.getpid(id=self.top.ssnpid-1,gather=False)
 
         return( quantity_array )
