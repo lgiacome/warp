@@ -566,6 +566,9 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         elif quantity == "w" :
             quantity_array = species.getweights(gather=False)
         elif quantity == "id":
-            quantity_array = species.getpid(id=self.top.ssnpid-1,gather=False)
+            # The ssnid is stored in Warp as a float. Thus, it needs
+            # to be converted to the nearest integer (rint)
+            quantity_array = np.rint( species.getssn(gather=False) )
+            quantity_array = quantity_array.astype('uint64')
 
         return( quantity_array )

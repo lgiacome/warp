@@ -277,6 +277,7 @@ if use_beam:
                                    beam_nz, dim, circ_m )
     beam = Species(type=Electron, weight=beam_weight, name='beam')
 # Set the numerical parameters only now: they affect the newly created species
+top.ssnpid = nextpid()
 set_numerics( depos_order, efetch, particle_pusher, dim)
 
 # Setup the field solver object
