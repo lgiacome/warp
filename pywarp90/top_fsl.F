@@ -1468,6 +1468,9 @@ c=============================================================================
      &                                  fgrid,localpbounds)
       use Subtimerstop
       use Parallel
+#ifdef MPIPARALLEL
+      use mpi
+#endif
       integer(ISZ):: nvx,nvz,nx,nz,nxguard,nzguard
       real(kind=8):: fgrid(-1:nvx+1,-1:nvz+1,-nxguard:nx+1,-nzguard:nz+1)
       integer(ISZ):: localpbounds(0:5)
@@ -1483,8 +1486,7 @@ c Each is only responsible for sending out the source is owns.
       integer(MPIISZ):: iplower,ipupper,iparity
       integer(MPIISZ):: lowertype,uppertype
       integer(MPIISZ):: nn
-      include "mpif.h"
-      integer(MPIISZ):: mpi_comm
+      integer(MPIISZ):: mpi_comm_mpiisz
       integer(MPIISZ):: mpierror
       integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE)
       integer(MPIISZ):: messid = 63
@@ -1514,7 +1516,7 @@ c Each is only responsible for sending out the source is owns.
      &                              uppertype,mpierror)
       call MPI_TYPE_COMMIT(uppertype,mpierror)
 
-      mpi_comm = ppdecomp%mpi_comm_z
+      mpi_comm_mpiisz = ppdecomp%mpi_comm_z
 
       iplower = ppdecomp%iprocgrid(2) - 1
       ipupper = ppdecomp%iprocgrid(2) + 1
@@ -1529,18 +1531,18 @@ c Each is only responsible for sending out the source is owns.
         if (mod(ppdecomp%iprocgrid(2),2) == iparity .and. iplower >= 0) then
           nn = 1
           call MPI_SEND(fgrid,nn,lowertype,
-     &                  iplower,messid,mpi_comm,mpierror)
+     &                  iplower,messid,mpi_comm_mpiisz,mpierror)
           call MPI_RECV(fgrid,nn,lowertype,
-     &                  iplower,messid,mpi_comm,mpistatus,mpierror)
+     &                  iplower,messid,mpi_comm_mpiisz,mpistatus,mpierror)
         elseif (mod(ppdecomp%iprocgrid(2),2) == 1-iparity .and. 
      &          ipupper < ppdecomp%nprocgrid(2)) then
           nn = (3+nvx)*(3+nvz)*(2+nxguard+nx)*(2+nzguard)
           call MPI_RECV(fgridrecv,nn,MPI_DOUBLE_PRECISION,
-     &                  ipupper,messid,mpi_comm,mpistatus,mpierror)
+     &                  ipupper,messid,mpi_comm_mpiisz,mpistatus,mpierror)
           fgrid(:,:,:,nz-nzguard:nz+1) = fgrid(:,:,:,nz-nzguard:nz+1)+fgridrecv
           nn = 1
           call MPI_SEND(fgrid,nn,uppertype,
-     &                  ipupper,messid,mpi_comm,mpierror)
+     &                  ipupper,messid,mpi_comm_mpiisz,mpierror)
         endif
       enddo
 

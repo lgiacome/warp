@@ -5,6 +5,7 @@
 module mod_field
 #ifdef MPIPARALLEL
 use Parallel
+use mpi
 #endif
 use EM2D_FIELDtypemodule
 USE mod_bnd
@@ -41,7 +42,6 @@ real(kind=8), ALLOCATABLE, DIMENSION(:,:) :: Exapr, Eyapr
 TYPE(EM2D_FIELDtype) :: f
 
 #ifdef MPIPARALLEL
-include "mpif.h"
 integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE),mpierror,comm_world_mpiisz
 integer(MPIISZ):: mpirequest
 integer(MPIISZ):: w
@@ -203,6 +203,7 @@ end if
 end subroutine champ_b
 
 subroutine champ_f(f,dt)
+use mpi
 implicit none
 
 INTEGER :: j, k
@@ -211,7 +212,6 @@ real(kind=8) :: dtsdx,dtsdy,dtsepsi
 TYPE(EM2D_FIELDtype) :: f
 
 #ifdef MPIPARALLEL
-include "mpif.h"
 integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE),mpierror
 integer(MPIISZ):: mpirequest
 integer(MPIISZ):: w
@@ -233,6 +233,7 @@ end subroutine champ_f
 
 subroutine champ_e(f,dt)
 use Parallel, Only: comm_world
+use mpi
 implicit none
 
 TYPE(EM2D_FIELDtype) :: f
@@ -241,7 +242,6 @@ real(kind=8) :: dt,dtsdx,dtsdy,mudt,xlaser,w
 real(kind=8), ALLOCATABLE, DIMENSION(:,:) :: Bzapr
 
 #ifdef MPIPARALLEL
-include "mpif.h"
 integer(MPIISZ):: mpistatus(MPI_STATUS_SIZE),mpierror,comm_world_mpiisz
 integer(MPIISZ):: mpirequest
 !integer(MPIISZ):: w

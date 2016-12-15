@@ -1064,6 +1064,152 @@ The same options as for :py:func:`selectparticles` apply."""
                    (ave(yy*yp) - ave(yy)*ave(yp))**2)
             return 4.*sqrt(tye)
 
+    def epsng(self,js=0,tc=None,wt=None,tp=None,z=None):
+        """Get the normalized G emittance of the saved particles. The same options as for :py:func:`selectparticles` apply."""
+        if self.getn(js,tc,wt,tp) == 0:
+            return 0.
+        else:
+            epsnx = self.epsnx(js,tc,wt,tp,z)
+            epsny = self.epsny(js,tc,wt,tp,z)
+            xx = self.getx(js,tc,wt,tp,z)
+            vx = self.getvx(js,tc,wt,tp,z)
+            yy = self.gety(js,tc,wt,tp,z)
+            vy = self.getvy(js,tc,wt,tp,z)
+            delxy = ave(xx*yy) - ave(xx)*ave(yy)
+            delxvy = ave(xx*vy) - ave(xx)*ave(vy)
+            delyvx = ave(vx*yy) - ave(vx)*ave(yy)
+            delvxvy = ave(vx*vy) - ave(vx)*ave(vy)
+            tg = 0.5*(epsnx**2 + epsny**2) + 16*(delxy*delvxvy - delxvy*delyvx)/top.clight**2
+            return sqrt(tg)
+
+    def epsg(self,js=0,tc=None,wt=None,tp=None,z=None):
+        """Get the unnormalized G emittance of the saved particles. The same options as for :py:func:`selectparticles` apply."""
+        if self.getn(js,tc,wt,tp) == 0:
+            return 0.
+        else:
+            epsx = self.epsx(js,tc,wt,tp,z)
+            epsy = self.epsy(js,tc,wt,tp,z)
+            xx = self.getx(js,tc,wt,tp,z)
+            xp = self.getvx(js,tc,wt,tp,z)/self.getvz(js,tc,wt,tp,z)
+            yy = self.gety(js,tc,wt,tp,z)
+            yp = self.getvy(js,tc,wt,tp,z)/self.getvz(js,tc,wt,tp,z)
+            delxy = ave(xx*yy) - ave(xx)*ave(yy)
+            delxyp = ave(xx*yp) - ave(xx)*ave(yp)
+            delyxp = ave(xp*yy) - ave(xp)*ave(yy)
+            delxpyp = ave(xp*yp) - ave(xp)*ave(yp)
+            tg = 0.5*(epsx**2 + epsy**2) + 16*(delxy*delxpyp - delxyp*delyxp)
+            return sqrt(tg)
+
+    def epsnh(self,js=0,tc=None,wt=None,tp=None,z=None):
+        """Get the normalized H emittance of the saved particles. The same options as for :py:func:`selectparticles` apply."""
+        if self.getn(js,tc,wt,tp) == 0:
+            return 0.
+        else:
+            epsnx = self.epsnx(js,tc,wt,tp,z)
+            epsny = self.epsny(js,tc,wt,tp,z)
+            xx = self.getx(js,tc,wt,tp,z)
+            vx = self.getvx(js,tc,wt,tp,z)
+            yy = self.gety(js,tc,wt,tp,z)
+            vy = self.getvy(js,tc,wt,tp,z)
+            delxsq = ave(xx*xx) - ave(xx)**2
+            delysq = ave(yy*yy) - ave(yy)**2
+            delvxsq = ave(vx*vx) - ave(vx)**2
+            delvysq = ave(vy*vy) - ave(vy)**2
+            delxvx = ave(xx*vx) - ave(xx)*ave(vx)
+            delyvy = ave(yy*vy) - ave(yy)*ave(vy)
+            delxy = ave(xx*yy) - ave(xx)*ave(yy)
+            delxvy = ave(xx*vy) - ave(xx)*ave(vy)
+            delyvx = ave(vx*yy) - ave(vx)*ave(yy)
+            delvxvy = ave(vx*vy) - ave(vx)*ave(vy)
+
+            th = (epsnx**2*epsny**2 +
+                  256*((delxy*delvxvy)**2 + (delxvy*delyvx)**2 -
+                  delxsq*delysq*(delvxvy)**2 - delxsq*delvysq*(delyvx)**2 -
+                  delvxsq*delysq*(delxvy)**2 - delvxsq*delvysq*(delxy)**2 -
+                  2*delxy*delxvy*delyvx*delvxvy + 2*delxvx*delvysq*delxy*delyvx -
+                  2*delxvx*delyvy*delxy*delvxvy - 2*delxvx*delyvy*delxvy*delyvx +
+                  2*delvxsq*delyvy*delxy*delxvy + 2*delxsq*delyvy*delyvx*delvxvy +
+                  2*delxvx*delysq*delvxvy*delxvy)/top.clight**4)
+
+            return sqrt(sqrt(max(0.,th)))
+
+    def epsh(self,js=0,tc=None,wt=None,tp=None,z=None):
+        """Get the unnormalized H emittance of the saved particles. The same options as for :py:func:`selectparticles` apply."""
+        if self.getn(js,tc,wt,tp) == 0:
+            return 0.
+        else:
+            epsx = self.epsx(js,tc,wt,tp,z)
+            epsy = self.epsy(js,tc,wt,tp,z)
+            xx = self.getx(js,tc,wt,tp,z)
+            xp = self.getxp(js,tc,wt,tp,z)/self.getvz(js,tc,wt,tp,z)
+            yy = self.gety(js,tc,wt,tp,z)
+            yp = self.getyp(js,tc,wt,tp,z)/self.getvz(js,tc,wt,tp,z)
+            delxsq = ave(xx*xx) - ave(xx)**2
+            delysq = ave(yy*yy) - ave(yy)**2
+            delxpsq = ave(xp*xp) - ave(xp)**2
+            delypsq = ave(yp*yp) - ave(yp)**2
+            delxxp = ave(xx*xp) - ave(xx)*ave(xp)
+            delyyp = ave(yy*yp) - ave(yy)*ave(yp)
+            delxy = ave(xx*yy) - ave(xx)*ave(yy)
+            delxyp = ave(xx*yp) - ave(xx)*ave(yp)
+            delyxp = ave(xp*yy) - ave(xp)*ave(yy)
+            delxpyp = ave(xp*yp) - ave(xp)*ave(yp)
+
+            th = (epsx**2*epsy**2 +
+                  256*((delxy*delxpyp)**2 + (delxyp*delyxp)**2 -
+                  delxsq*delysq*(delxpyp)**2 - delxsq*delypsq*(delyxp)**2 -
+                  delxpsq*delysq*(delxyp)**2 - delxpsq*delypsq*(delxy)**2 -
+                  2*delxy*delxyp*delyxp*delxpyp + 2*delxxp*delypsq*delxy*delyxp -
+                  2*delxxp*delyyp*delxy*delxpyp - 2*delxxp*delyyp*delxyp*delyxp +
+                  2*delxpsq*delyyp*delxy*delxyp + 2*delxsq*delyyp*delyxp*delxpyp +
+                  2*delxxp*delysq*delxpyp*delxyp))
+
+            return sqrt(sqrt(max(0.,th)))
+
+    def epsnr(self,js=0,tc=None,wt=None,tp=None,z=None):
+        """Get the normalized R emittance of the saved particles. The same options as for :py:func:`selectparticles` apply."""
+        if self.getn(js,tc,wt,tp) == 0:
+            return 0.
+        else:
+            xx = self.getx(js,tc,wt,tp,z)
+            vx = self.getvx(js,tc,wt,tp,z)
+            yy = self.gety(js,tc,wt,tp,z)
+            vy = self.getvy(js,tc,wt,tp,z)
+            delxsq = ave(xx*xx) - ave(xx)**2
+            delysq = ave(yy*yy) - ave(yy)**2
+            delvxsq = ave(vx*vx) - ave(vx)**2
+            delvysq = ave(vy*vy) - ave(vy)**2
+            delxvx = ave(xx*vx) - ave(xx)*ave(vx)
+            delyvy = ave(yy*vy) - ave(yy)*ave(vy)
+            delxvy = ave(xx*vy) - ave(xx)*ave(vy)
+            delyvx = ave(vx*yy) - ave(vx)*ave(yy)
+
+            tr = 4.*((delxsq + delysq)*(delvxsq + delvysq) - (delxvx + delyvy)**2 - (delxvy - delyvx)**2)
+
+            return sqrt(max(0.,tr))/top.clight
+
+    def epsr(self,js=0,tc=None,wt=None,tp=None,z=None):
+        """Get the unnormalized R emittance of the saved particles. The same options as for :py:func:`selectparticles` apply."""
+        if self.getn(js,tc,wt,tp) == 0:
+            return 0.
+        else:
+            xx = self.getx(js,tc,wt,tp,z)
+            xp = self.getvx(js,tc,wt,tp,z)/self.getvz(js,tc,wt,tp,z)
+            yy = self.gety(js,tc,wt,tp,z)
+            yp = self.getvy(js,tc,wt,tp,z)/self.getvz(js,tc,wt,tp,z)
+            delxsq = ave(xx*xx) - ave(xx)**2
+            delysq = ave(yy*yy) - ave(yy)**2
+            delxpsq = ave(xp*xp) - ave(xp)**2
+            delypsq = ave(yp*yp) - ave(yp)**2
+            delxxp = ave(xx*xp) - ave(xx)*ave(xp)
+            delyyp = ave(yy*yp) - ave(yy)*ave(yp)
+            delxyp = ave(xx*yp) - ave(xx)*ave(yp)
+            delyxp = ave(xp*yy) - ave(xp)*ave(yy)
+
+            tr = 4.*((delxsq + delysq)*(delxpsq + delypsq) - (delxxp + delyyp)**2 - (delxyp - delyxp)**2)
+
+            return sqrt(max(0.,tr))
+
     #getx.__doc__ += selectparticles.__doc__
     #getns.__doc__ += selectparticles.__doc__
     #gett.__doc__ += selectparticles.__doc__
