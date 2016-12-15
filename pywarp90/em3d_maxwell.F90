@@ -1732,7 +1732,7 @@ case( 3 ) ! Lehe stencil on B push (Note: Yee stencil on E push)
         f%nxbs,f%nybs,f%nzbs, &
         f%l_1dz,f%l_2dxz,f%l_2drz)
   if (f%circ_m>0) &
-    call push_em3d_bvec_circ(f%ex_circ,f%ey_circ,f%ez_circ, &
+    call push_em3d_lehebvec_circ(f%ex_circ,f%ey_circ,f%ez_circ, &
                            f%bx_circ,f%by_circ,f%bz_circ, &
                            dtsdx,dtsdz,f%dx,f%dz,f%xmin,f%zmin, &
                            f%nx,f%nz, f%nxguard,f%nzguard,f%circ_m)
@@ -2073,6 +2073,87 @@ complex(kind=8) :: i=(0.,1.)
   end do
 return
 end subroutine push_em3d_bvec_circ
+
+
+subroutine push_em3d_lehebvec_circ(ex,ey,ez,bx,by,bz,dtsdx,dtsdz,dx,dz, &
+                          xmin,zmin,nx,nz,nxguard,nzguard,circ_m)
+use EM3D_kyee
+integer :: nx,nz,nxguard,nzguard,circ_m
+complex(kind=8), intent(IN OUT), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard,circ_m) :: ex,ey,ez,bx,by,bz
+real(kind=8), intent(IN) :: dtsdx,dtsdz,xmin,zmin,dx,dz
+integer(ISZ) :: j,l,m
+real(kind=8) :: rd, ru, r, dt
+complex(kind=8) :: i=(0.,1.)
+
+  dt = dtsdx*dx
+  do m = 1, circ_m
+
+     ! advance Bx
+     do l = 0, nz-1
+        do j = 0,nx
+           if (j==0 .and. xmin==0) then
+              ! On axis
+              if (.not. m == 1) then
+                 ! Br should remain 0 on axis, for modes different than m=1,
+                 ! but the bulk equation does not necessarily ensure this.
+                 Bx(j,l,m) = 0.
+              else
+                 ! For the mode m = 1, the bulk equation diverges on axis
+                 ! (due to the 1/r terms). The following expressions regularize
+                 ! these divergences by assuming, on axis :
+                 ! Ez/r = 0/r + dEz/dr
+                 Bx(j,l,m) = Bx(j,l,m) &
+                    + alphay*i*m*dt*Ez(j+1,l,m)/dx &
+                    + betayz*i*m*dt*Ez(j+1,l+1,m)/dx &
+                    + betayz*i*m*dt*Ez(j+1,l-1,m)/dx &
+                    + alphaz*dtsdz * (Ey(j,  l+1,m) - Ey(j,l,m)) &
+                    + deltaz*dtsdz * (Ey(j,  l+2,m) - Ey(j,l-1,m))
+              endif
+           else
+              ! Equations in the bulk of the grid
+              r = xmin+j*dx
+              Bx(j,l,m) = Bx(j,l,m) &
+                  + alphay*i*m*dt*Ez(j,l,m)/r &
+                  + betayz*i*m*dt*Ez(j,l+1,m)/r &
+                  + betayz*i*m*dt*Ez(j,l-1,m)/r &
+                  + alphaz*dtsdz * (Ey(j,  l+1,m) - Ey(j,l,m)) &
+                  + deltaz*dtsdz * (Ey(j,  l+2,m) - Ey(j,l-1,m))
+           endif
+        end do
+     end do
+
+     ! advance Btheta
+     do l = 0, nz-1
+        do j = 0, nx-1
+           By(j,l,m) = By(j,l,m) &
+                + alphax*dtsdx * (Ez(j+1,l  ,m) - Ez(j,l,m)) &
+                + betaxz*dtsdx * (Ez(j+1,l+1,m) - Ez(j,l+1,m)) &
+                + betaxz*dtsdx * (Ez(j+1,l-1,m) - Ez(j,l-1,m)) &
+                - alphaz*dtsdz * (Ex(j,l+1,m) - Ex(j,l,m)) &
+                - deltaz*dtsdz * (Ex(j,l+2,m) - Ex(j,l-1,m))
+        end do
+     end do
+
+     ! advance Bz
+     do l = 0, nz
+        do j = 0, nx-1
+           r  = xmin+j*dx+0.5*dx
+           ru = 1.+0.5/(xmin/dx+j+0.5)
+           rd = 1.-0.5/(xmin/dx+j+0.5)
+           Bz(j,l,m) = Bz(j,l,m) &
+                - alphax*dtsdx * (ru*Ey(j+1,l,m) - rd*Ey(j,l,m)) &
+                - betaxz*dtsdx * (ru*Ey(j+1,l+1,m) - rd*Ey(j,l+1,m)) &
+                - betaxz*dtsdx * (ru*Ey(j+1,l-1,m) - rd*Ey(j,l-1,m)) &
+                - alphay*i*m*dt*Ex(j,l,m)/r &
+                - betayz*i*m*dt*Ex(j,l+1,m)/r &
+                - betayz*i*m*dt*Ex(j,l-1,m)/r
+        end do
+     end do
+
+  end do
+return
+end subroutine push_em3d_lehebvec_circ
+
 
 subroutine push_em3d_kyeebvec(ex,ey,ez,bx,by,bz,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxguard,nyguard,nzguard,l_2dxz)
 use EM3D_kyee
