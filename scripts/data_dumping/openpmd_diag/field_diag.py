@@ -165,7 +165,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         self.create_file_empty_meshes( fullpath, self.top.it,
                 self.top.time, self.nz, zmin, self.dz, self.top.dt )
 
-        # Open the file again, and get the field path
+        # Open the file again (possibly in parallel), and get the field path
         f = self.open_file( fullpath, parallel_open=self.lparallel_output )
         # (f is None if this processor does not participate in writing data)
         if f is not None:
