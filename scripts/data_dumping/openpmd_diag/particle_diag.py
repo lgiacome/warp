@@ -200,7 +200,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 # In MPI mode: gather and broadcast an array containing
                 # the number of particles on each process
                 selected_nlocals_dict[species_name] = mpiallgather( n )
-                selected_nglobal_dict[species_name] = sum(n_rank)
+                selected_nglobal_dict[species_name] = \
+                    sum(selected_nlocals_dict[species_name])
             else:
                 # Single-proc output
                 selected_nlocals_dict[species_name] = None
