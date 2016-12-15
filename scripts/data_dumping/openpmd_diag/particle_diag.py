@@ -367,8 +367,9 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         dt: float (seconds)
             The timestep of the simulation
         """
-        # Create the file
-        f = self.open_file( fullpath )
+        # Create the file (only the first proc creates the file,
+        # since this is only for the purpose of writing the metadata)
+        f = self.open_file( fullpath, parallel_open=False )
 
         # Setup the different layers of the openPMD file
         # (f is None if this processor does not participate is writing data)
