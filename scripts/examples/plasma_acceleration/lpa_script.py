@@ -321,7 +321,8 @@ if write_fields == 1:
     installafterstep( diag1.write )
 if write_particles == 1:
     diag2 = ParticleDiagnostic( period=diag_period, top=top, w3d=w3d,
-            species={ species.name : species for species in listofallspecies }, 
+            species={species.name : species for species in listofallspecies}, 
+            particle_data={"position","momentum","weighting","id"},
             comm_world=comm_world, lparallel_output=parallel_output )
     installafterstep( diag2.write )
 
