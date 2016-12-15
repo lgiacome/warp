@@ -107,8 +107,6 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         elif self.dim == "3d":
             global_indices = np.zeros([2,3], dtype = np.int)
 
-
-
         # In the z direction
         # Indices within [global_indices[0,-1],global_indices[1,-1][ are dumped
         global_indices[0,-1] = istartz[top.iprocgrid[2]]
@@ -215,6 +213,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             dset = field_grp[path]
         else:
             dset = None
+
         # Circ case
         if self.dim == "circ":
             self.write_circ_dataset( dset, quantity )
@@ -377,7 +376,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
                 if fieldtype == "rho":
                     # Setup the dataset
                     dset = field_grp.require_dataset(
-                        "rho", data_shape, dtype='f')
+                        "rho", data_shape, dtype='f8')
                     self.setup_openpmd_mesh_component( dset, "rho" )
                     # Setup the record to which it belongs
                     self.setup_openpmd_mesh_record( dset, "rho", dz, zmin )
@@ -389,7 +388,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
                         quantity = "%s%s" %(fieldtype, coord)
                         path = "%s/%s" %(fieldtype, coord)
                         dset = field_grp.require_dataset(
-                            path, data_shape, dtype='f')
+                            path, data_shape, dtype='f8')
                         self.setup_openpmd_mesh_component( dset, quantity )
                     # Setup the record to which they belong
                     self.setup_openpmd_mesh_record(

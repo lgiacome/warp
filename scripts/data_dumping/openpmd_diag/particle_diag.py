@@ -399,7 +399,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                         quantity_grp = f.require_group(quantity_path)
                         for coord in ["x","y","z"]:
                             dset = quantity_grp.create_dataset(
-                                coord, (0,), maxshape=(None,), dtype='f')
+                                coord, (0,), maxshape=(None,), dtype='f8')
                             self.setup_openpmd_species_component( dset )
                         self.setup_openpmd_species_record( quantity_grp,
                                                            particle_var)
@@ -407,7 +407,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                     # Scalar quantity
                     elif particle_var == "weighting":
                         dset = species_grp.create_dataset(
-                            particle_var, (0,), maxshape=(None,), dtype='f')
+                            particle_var, (0,), maxshape=(None,), dtype='f8')
                         self.setup_openpmd_species_component( dset )
                         self.setup_openpmd_species_record( dset, particle_var )
 
@@ -463,7 +463,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
         if self.lparallel_output == True or self.rank == 0 :
             datashape = (N, )
-            dset = species_grp.require_dataset( path, datashape, dtype='f')
+            dset = species_grp.require_dataset( path, datashape, dtype='f8')
             self.setup_openpmd_species_component( dset)
         else :
             dset = None

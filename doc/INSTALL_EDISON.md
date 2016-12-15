@@ -20,6 +20,7 @@ if [ "$NERSC_HOST" == "edison" ]
 then
    module swap PrgEnv-intel PrgEnv-gnu
    module load python/2.7-anaconda
+   module load h5py-parallel
    export PATH=$SCRATCH/warp_install/bin:$PATH
    export PYTHONPATH=$SCRATCH/warp_install/lib/python:$PYTHONPATH
 fi
