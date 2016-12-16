@@ -335,7 +335,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         """
         # Open the file without parallel I/O in this implementation
         f = self.open_file( snapshot.filename, parallel_open=False )
-
         field_path = "/data/%d/fields/" %snapshot.iteration
         field_grp = f[field_path]
 
