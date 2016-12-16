@@ -52,7 +52,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         particle_data : a list of strings, optional
             A list indicating which particle data should be written.
             The list can contain any of the following strings:
-            "position", "momentum", "weighting", "E", "B"
+            "position", "momentum", "E", "B", "id", "weighting"
 
         select : dict, optional
             Either None or a dictionary of rules
@@ -82,7 +82,6 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         self.species_dict = species
         self.select = select
         self.sub_sample = sub_sample
-
         # Correct the bounds in momenta (since the momenta in Warp
         # are not unitless, but have the units of a velocity)
         for momentum in ['ux', 'uy', 'uz']:
@@ -287,9 +286,17 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                         species_grp[particle_var], particle_var )
 
             # Scalar quantity
-            elif particle_var == "weighting" :
+            elif particle_var=="weighting" :
                 quantity = "w"
                 quantity_path = "weighting"
+                self.write_dataset( species_grp, species, quantity_path,
+                                    quantity, n_rank, N, select_array )
+                if this_rank_writes :
+                    self.setup_openpmd_species_record(
+                        species_grp[particle_var], particle_var )
+            elif particle_var=="id" :
+                quantity = "id"
+                quantity_path = "id"
                 self.write_dataset( species_grp, species, quantity_path,
                                     quantity, n_rank, N, select_array )
                 if this_rank_writes :
@@ -403,6 +410,14 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                             particle_var, (0,), maxshape=(None,), dtype='f8')
                         self.setup_openpmd_species_component( dset )
                         self.setup_openpmd_species_record( dset, particle_var )
+
+                    # Scalar quantity
+                    elif particle_var == "id":
+                        dset = species_grp.create_dataset(
+                            particle_var, (0,), maxshape=(None,), dtype='uint64')
+                        self.setup_openpmd_species_component( dset )
+                        self.setup_openpmd_species_record( dset, particle_var )
+
 
                     # Unknown field
                     else:
@@ -550,5 +565,10 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             quantity_array = species.getbz(gather=False)
         elif quantity == "w" :
             quantity_array = species.getweights(gather=False)
+        elif quantity == "id":
+            # The ssnid is stored in Warp as a float. Thus, it needs
+            # to be converted to the nearest integer (rint)
+            quantity_array = np.rint( species.getssn(gather=False) )
+            quantity_array = quantity_array.astype('uint64')
 
         return( quantity_array )
