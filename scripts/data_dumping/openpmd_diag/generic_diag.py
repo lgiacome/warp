@@ -37,19 +37,19 @@ class OpenPMDDiagnostic(object) :
 
         w3d : the object representing the `w3d` package in Warp
             Contains the dimensions of the grid.
-        
+
         comm_world : a communicator object
             Either an mpi4py or a pyMPI object, or None (single-proc)
 
         lparallel_output : boolean, optional
             Switch to set output mode (parallel or gathering)
             If "True" : Parallel output
-            
+
         write_dir : string, optional
             The POSIX path to the directory where the results are
             to be written. If none is provided, this will be the path
             of the current working directory
-        """    
+        """
         # Get the rank of this processor
         if comm_world is not None :
             self.rank = comm_world.rank
@@ -64,7 +64,7 @@ class OpenPMDDiagnostic(object) :
         self.lparallel_output = lparallel_output
         if (self.comm_world is None) or (self.comm_world.size==1):
             self.lparallel_output = False
-        
+
         # Get the directory in which to write the data
         if write_dir is None :
             self.write_dir = os.path.join( os.getcwd(), 'diags' )
@@ -107,7 +107,7 @@ class OpenPMDDiagnostic(object) :
             f = None
 
         return(f)
-            
+
     def write( self ) :
         """
         Check if the data should be written at this iteration
@@ -116,17 +116,17 @@ class OpenPMDDiagnostic(object) :
         The variable top.it should be defined in the Python
         environment, and should represent the total number of
         timesteps in the simulation.
-        """        
+        """
         # Check if the fields should be written at this iteration
         if self.top.it % self.period == 0 :
 
             # Write the hdf5 file if needed
             self.write_hdf5( self.top.it )
-        
+
     def create_dir( self, dir_path, remove_existing=False ) :
         """
         Check whether the directory exists, and if not create it.
-    
+
         Parameter
         ---------
         dir_path : string
@@ -135,10 +135,10 @@ class OpenPMDDiagnostic(object) :
         """
         # The following operations are done only by the first processor.
         if self.rank == 0 :
-            
+
             # Get the full path
             full_path = os.path.join( self.write_dir, dir_path )
-        
+
             # Check wether it exists, and create it if needed
             if os.path.exists(full_path) and remove_existing==True:
                 shutil.rmtree(full_path)
@@ -151,7 +151,7 @@ class OpenPMDDiagnostic(object) :
     def setup_openpmd_file( self, f, iteration, time, dt ) :
         """
         Sets the attributes of the hdf5 file, that comply with OpenPMD
-    
+
         Parameter
         ---------
         f : an h5py.File object
@@ -166,7 +166,7 @@ class OpenPMDDiagnostic(object) :
             The timestep of the simulation
         """
         # Set the attributes of the HDF5 file
-    
+
         # General attributes
         f.attrs["openPMD"] = np.string_("1.0.0")
         f.attrs["openPMDextension"] = np.uint32(1)
@@ -186,30 +186,28 @@ class OpenPMDDiagnostic(object) :
         bp.attrs["time"] = time
         bp.attrs["dt"] = dt
         bp.attrs["timeUnitSI"] = 1.
-        
+
     def setup_openpmd_record( self, dset, quantity ) :
         """
         Sets the attributes of a record, that comply with OpenPMD
-    
+
         Parameter
         ---------
         dset : an h5py.Dataset or h5py.Group object
-        
+
         quantity : string
            The name of the record considered
         """
         dset.attrs["unitDimension"] = unit_dimension_dict[quantity]
         # timeOffset is set to zero (approximation)
-        dset.attrs["timeOffset"] = 0.        
-        
+        dset.attrs["timeOffset"] = 0.
+
     def setup_openpmd_component( self, dset ) :
         """
         Sets the attributes of a component, that comply with OpenPMD
-    
+
         Parameter
         ---------
         dset : an h5py.Dataset or h5py.Group object
         """
         dset.attrs["unitSI"] = 1.
-
-    
