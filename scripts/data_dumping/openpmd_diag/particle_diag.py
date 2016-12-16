@@ -181,73 +181,67 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         iteration : int
              The current iteration number of the simulation.
         """
-        # Create the file
-        filename = "data%08d.h5" %iteration
-        fullpath = os.path.join( self.write_dir, "hdf5", filename )
-
-        # In gathering mode, only the first proc creates the file.
-        if self.lparallel_output == False and self.rank == 0 :
-            # Create the filename and open hdf5 file
-            f = h5py.File( fullpath, mode="a" )
-            self.setup_openpmd_file( f, self.top.it,
-                                     self.top.time, self.top.dt )
-            this_rank_writes = True
-        # In parallel mode (lparallel_output=True), all proc create the file
-        elif self.lparallel_output == True :
-            # Create the filename and open hdf5 file
-            f = h5py.File( fullpath, mode="a", driver='mpio',
-                           comm=self.comm_world)
-            self.setup_openpmd_file( f, self.top.it,
-                                     self.top.time, self.top.dt )
-            this_rank_writes = True
-        else:
-            f = None
-            this_rank_writes = False
-
-        # Loop over the different species and
-        # particle quantities that should be written
-        for species_name in self.species_dict :
-
-            # Check if the species exists
-            species = self.species_dict[species_name]
-            if species is None :
-                # If not, immediately go to the next species_name
-                continue
-
+        # Before opening the file, select the particles that
+        # need to be written for each species
+        # (This allows to know the number of particles to be written,
+        # which is needed when setting up the file)
+        select_array_dict = {}
+        selected_nlocals_dict = {}
+        selected_nglobal_dict = {}
+        # Loop over the different species, select the particles and fill
+        # select_array_dict, selected_nlocals_dict, selected_nglobal_dict
+        for species_name in self.species_dict:
             # Select the particles that will be written
-            select_array = self.apply_selection( species )
+            species = self.species_dict[species_name]
+            select_array_dict[species_name] = self.apply_selection( species )
             # Get their total number
-            n = select_array.sum()
+            n = select_array_dict[species_name].sum()
             if self.comm_world is not None :
                 # In MPI mode: gather and broadcast an array containing
                 # the number of particles on each process
-                n_rank = mpiallgather( n )
-                N = sum(n_rank)
+                selected_nlocals_dict[species_name] = mpiallgather( n )
+                selected_nglobal_dict[species_name] = \
+                    sum(selected_nlocals_dict[species_name])
             else:
                 # Single-proc output
-                n_rank = None
-                N = n
+                selected_nlocals_dict[species_name] = None
+                selected_nglobal_dict[species_name] = n
 
-            # Setup the species group
-            if this_rank_writes :
-                species_path = "/data/%d/particles/%s" %(iteration,
-                                                         species_name)
-                # Create and setup the h5py.Group species_grp
-                species_grp = f.require_group( species_path )
-                self.setup_openpmd_species_group( species_grp, species, N )
+        # Find the file name
+        filename = "data%08d.h5" %iteration
+        fullpath = os.path.join( self.write_dir, "hdf5", filename )
+
+        # Create the file and setup its attributes
+        self.create_file_empty_particles( fullpath, self.top.it,
+                    self.top.time, self.top.dt, selected_nglobal_dict )
+
+        # Open the file again (possibly in parallel)
+        f = self.open_file( fullpath, parallel_open=self.lparallel_output )
+        # (f is None if this processor does not participate in writing data)
+
+        # Loop over the different species and write the requested quantities
+        for species_name in self.species_dict :
+
+            # Get the HDF5 species group
+            if f is not None:
+                species_path = "/data/%d/particles/%s"%(iteration,species_name)
+                species_grp = f[species_path]
             else:
                 species_grp = None
 
+            # Get the relevant species object and selection array
+            species = self.species_dict[species_name]
+            select_array = select_array_dict[species_name]
+            n_rank = selected_nlocals_dict[species_name]
+
             # Write the datasets for each particle datatype
-            self.write_particles( species_grp, species,
-                         n_rank, N, select_array, this_rank_writes )
+            self.write_particles( species_grp, species, n_rank, select_array )
 
         # Close the file
-        if self.lparallel_output == True or self.rank == 0 :
+        if f is not None:
             f.close()
 
-    def write_particles( self, species_grp, species,
-                         n_rank, N, select_array, this_rank_writes ) :
+    def write_particles( self, species_grp, species, n_rank, select_array ):
         """
         Write all the particle data sets for one given species
 
@@ -260,16 +254,10 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         n_rank: an array with dtype = int of size = n_procs
             Contains the local number of particles for each process
 
-        N : int
-            Contains the global number of particles
-
         select_array : 1darray of bool
             An array of the same shape as that particle array
             containing True for the particles that satify all
             the rules of self.select
-
-        this_rank_writes : bool
-            Determines whether the present rank contributes in writing the data
         """
         for particle_var in self.particle_data :
 
@@ -280,28 +268,19 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                                         coord)
                     quantity_path = "%s/%s" %(particle_var, coord)
                     self.write_dataset( species_grp, species, quantity_path,
-                                        quantity, n_rank, N, select_array )
-                if this_rank_writes :
-                    self.setup_openpmd_species_record(
-                        species_grp[particle_var], particle_var )
+                                        quantity, n_rank, select_array )
 
-            # Scalar quantity
+            # Scalar quantities
             elif particle_var=="weighting" :
                 quantity = "w"
                 quantity_path = "weighting"
                 self.write_dataset( species_grp, species, quantity_path,
-                                    quantity, n_rank, N, select_array )
-                if this_rank_writes :
-                    self.setup_openpmd_species_record(
-                        species_grp[particle_var], particle_var )
+                                    quantity, n_rank, select_array )
             elif particle_var=="id" :
                 quantity = "id"
                 quantity_path = "id"
                 self.write_dataset( species_grp, species, quantity_path,
-                                    quantity, n_rank, N, select_array )
-                if this_rank_writes :
-                    self.setup_openpmd_species_record(
-                        species_grp[particle_var], particle_var )
+                                    quantity, n_rank, select_array )
 
             else :
                 raise ValueError("Invalid string in %s of species"
@@ -349,7 +328,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         return( select_array )
 
     def create_file_empty_particles( self, fullpath, iteration,
-                                   time, dt ):
+                                   time, dt, select_nglobal_dict=None ):
         """
         Create an openPMD file with empty meshes and setup all its attributes
 
@@ -366,17 +345,24 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
         dt: float (seconds)
             The timestep of the simulation
+
+        select_nglobal_dict: dictionary or None
+            A dictionary whose keys are strings with the names of the
+            species, and whose values are integers representing the global
+            number of particles (across all MPI proc) that have been selected
+            (according to the rules of self.select)
+            If `select_nglobal_dict` is None, then the datasets are considered
+            appendable, instead of having a fixed size.
         """
-        # Create the file
-        f = self.open_file( fullpath )
+        # Create the file (only the first proc creates the file,
+        # since this is only for the purpose of writing the metadata)
+        f = self.open_file( fullpath, parallel_open=False )
 
         # Setup the different layers of the openPMD file
         # (f is None if this processor does not participate is writing data)
-
         if f is not None:
 
             # Setup the attributes of the top level of the file
-
             self.setup_openpmd_file( f, iteration, time, dt )
             # Setup the meshes group (contains all the particles)
             particle_path = "/data/%d/particles/" %iteration
@@ -388,6 +374,12 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 species_grp = f.require_group( species_path )
                 self.setup_openpmd_species_group( species_grp, species )
 
+                # Check the shape of the array
+                if select_nglobal_dict is not None:
+                    N = select_nglobal_dict[species_name]
+                else:
+                    N = None
+
                 # Loop over the different quantities that should be written
                 # and setup the corresponding datasets
                 for particle_var in self.particle_data:
@@ -398,26 +390,33 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                         quantity_path=species_path+ "%s/" %particle_var
                         quantity_grp = f.require_group(quantity_path)
                         for coord in ["x","y","z"]:
-                            dset = quantity_grp.create_dataset(
-                                coord, (0,), maxshape=(None,), dtype='f8')
+                            # Create the dataset (fixed size or appendable)
+                            if N is not None:
+                                dset = quantity_grp.create_dataset(
+                                    coord, (N,), dtype='f8')
+                            else:
+                                dset = quantity_grp.create_dataset(
+                                    coord, (0,), maxshape=(None,), dtype='f8')
                             self.setup_openpmd_species_component( dset )
                         self.setup_openpmd_species_record( quantity_grp,
                                                            particle_var)
 
                     # Scalar quantity
-                    elif particle_var == "weighting":
-                        dset = species_grp.create_dataset(
-                            particle_var, (0,), maxshape=(None,), dtype='f8')
+                    elif particle_var in ["weighting", "id"]:
+                        # Choose the type of the output
+                        if particle_var == "id":
+                            dtype = 'uint64'
+                        else:
+                            dtype = 'f8'
+                        # Create the dataset (fixed size or appendable)
+                        if N is not None:
+                            dset = species_grp.create_dataset(
+                                particle_var, (N,), dtype=dtype )
+                        else:
+                            dset = species_grp.create_dataset( particle_var,
+                                (0,), maxshape=(None,), dtype=dtype)
                         self.setup_openpmd_species_component( dset )
                         self.setup_openpmd_species_record( dset, particle_var )
-
-                    # Scalar quantity
-                    elif particle_var == "id":
-                        dset = species_grp.create_dataset(
-                            particle_var, (0,), maxshape=(None,), dtype='uint64')
-                        self.setup_openpmd_species_component( dset )
-                        self.setup_openpmd_species_record( dset, particle_var )
-
 
                     # Unknown field
                     else:
@@ -428,7 +427,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             f.close()
 
     def write_dataset( self, species_grp, species, path, quantity,
-                       n_rank, N, select_array ) :
+                       n_rank, select_array ) :
         """
         Write a given dataset
 
@@ -451,22 +450,14 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         n_rank: an array with dtype = int of size = n_procs
             Contains the local number of particles for each process
 
-        N : int
-            Contains the global number of particles
-
         select_array : 1darray of bool
             An array of the same shape as that particle array
             containing True for the particles that satify all
             the rules of self.select
         """
-        # Create the dataset and setup its attributes
-
-        if self.lparallel_output == True or self.rank == 0 :
-            datashape = (N, )
-            dset = species_grp.require_dataset( path, datashape, dtype='f8')
-            self.setup_openpmd_species_component( dset)
-        else :
-            dset = None
+        # Get the dataset and setup its attributes
+        if species_grp is not None:
+            dset = species_grp[path]
 
         # Fill the dataset with the quantity
         # (Single-proc operation, when using gathering)

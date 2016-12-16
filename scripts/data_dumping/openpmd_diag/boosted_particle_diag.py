@@ -248,10 +248,9 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             and the integer index in the particle_array
         """
         # Open the file without parallel I/O in this implementation
-
-        f = self.open_file(snapshot.filename)
+        f = self.open_file( snapshot.filename, parallel_open=False )
         particle_path = "/data/%d/particles/%s" %(snapshot.iteration,
-            species_name)
+                                                    species_name)
         species_grp = f[particle_path]
 
         # Loop over the different quantities that should be written
@@ -262,29 +261,22 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                     quantity= coord
                     path = "%s/%s" %(particle_var, quantity)
                     data = particle_array[ p2i[ quantity ] ]
-                    self.write_boosted_dataset(species_grp, path, data,
-                        quantity)
-                self.setup_openpmd_species_record(species_grp[particle_var],
-                    particle_var)
+                    self.write_boosted_dataset(
+                            species_grp, path, data, quantity)
 
             elif particle_var == "momentum":
                 for coord in ["x","y","z"]:
                     quantity= "u%s" %coord
                     path = "%s/%s" %(particle_var,coord)
                     data = particle_array[ p2i[ quantity ] ]
-                    self.write_boosted_dataset( species_grp, path, data,
-                        quantity)
-                self.setup_openpmd_species_record(species_grp[particle_var],
-                    particle_var)
+                    self.write_boosted_dataset(
+                            species_grp, path, data, quantity)
 
             elif particle_var == "weighting":
                quantity= "w"
                path = 'weighting'
                data = particle_array[ p2i[ quantity ] ]
-               self.write_boosted_dataset(species_grp, path, data,
-                    quantity)
-               self.setup_openpmd_species_record(species_grp[particle_var],
-                    particle_var)
+               self.write_boosted_dataset(species_grp, path, data, quantity)
 
         # Close the file
         f.close()

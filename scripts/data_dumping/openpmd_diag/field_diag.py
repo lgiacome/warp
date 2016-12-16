@@ -165,8 +165,8 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         self.create_file_empty_meshes( fullpath, self.top.it,
                 self.top.time, self.nz, zmin, self.dz, self.top.dt )
 
-        # Open the file again, and get the field path
-        f = self.open_file( fullpath )
+        # Open the file again (possibly in parallel), and get the field path
+        f = self.open_file( fullpath, parallel_open=self.lparallel_output )
         # (f is None if this processor does not participate in writing data)
         if f is not None:
             field_path = "/data/%d/fields/" %iteration
@@ -353,8 +353,9 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         elif self.dim == "3d":
             data_shape = ( self.nx+1, self.ny+1, Nz+1 )
 
-        # Create the file
-        f = self.open_file( fullpath )
+        # Create the file (only the first proc creates the file,
+        # since this is only for the purpose of writing the metadata)
+        f = self.open_file( fullpath, parallel_open=False )
 
         # Setup the different layers of the openPMD file
         # (f is None if this processor does not participate is writing data)

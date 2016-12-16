@@ -11,8 +11,6 @@ Remaining questions:
 - Should one use the IO collectives when only a few proc modify a given file?
 - Should we just have the proc writing directly to the file ?
   Should we gather on the first proc ?
-- Is it better to write all the attributes of the openPMD file
-  with only one proc ?
 """
 import os
 import numpy as np
@@ -336,8 +334,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             and the integer index in the field_array
         """
         # Open the file without parallel I/O in this implementation
-        f = self.open_file( snapshot.filename )
-
+        f = self.open_file( snapshot.filename, parallel_open=False )
         field_path = "/data/%d/fields/" %snapshot.iteration
         field_grp = f[field_path]
 
