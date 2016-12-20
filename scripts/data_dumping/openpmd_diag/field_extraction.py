@@ -319,6 +319,63 @@ def get_cart2d_dataset( em, quantity, lgather, iz_slice=None,
             F=F[start[0]::sub_sampling[0]]
     return( F )
 
+def get_cart1d_dataset( em, quantity, lgather, iz_slice=None,
+        sub_sampling=[1,1,1], start=[0,0,0], transverse_centered=False ):
+    """
+    Get a given quantity in 1D Cartesian coordinates
+
+    Parameters
+    ----------
+    See the docstring of the function get_dataset
+
+    Returns
+    -------
+    An array of reals whose format is close to the final openPMD layout.
+
+    When there is no slicing (iz_slice is None), the returned array is of shape
+    ( Nz+1)
+    When there is slicing (iz_slice is an integer), the shape is
+    ( 1)
+
+    In the above Nz is either em.nzlocal (if lgather is False) or the global
+    em.nz (if lgather is True).
+    """
+    # Extract either a slice or the full array
+
+    # Treat the fields E, B, rho in a more systematic way
+    if quantity in ['Ex', 'Ey', 'Ez', 'Bx', 'By', 'Bz', \
+                        'Jx', 'Jy', 'Jz', 'rho' ]:
+        # Get the field name in Warp
+        field_name = cart_dict_quantity[quantity]
+        # Extract the data
+        if iz_slice is None:
+            F = getattr( em.fields, field_name )[0,0,:]
+        else:
+            F = getattr( em.fields, field_name )[0,0,em.nzguard+iz_slice]
+    else:
+        raise ValueError('Unknown quantity: %s' %quantity)
+
+    # In the z direction
+    if iz_slice is None:
+        nzg = em.nzguard
+        F = F[ nzg: -nzg ]
+
+    # Gather array if lgather = True
+    # (Mutli-proc operations using gather)
+    # Only done in non-parallel case
+    if lgather is True:
+        if iz_slice is not None:
+            raise ValueError('Incompatible parameters in '
+                'get_cart2d_dataset: lgather=True and iz_slice not None')
+        F = em.gatherarray( F )
+
+    # Subsample field
+    if (F is not None):
+        if (iz_slice is None):
+            F=F[start[2]::sub_sampling[2]]
+    return( F )
+
+
 def get_global_indices(ifull,nfull,sub_samplingp):
     """
     Get new grid subdomain start indices and sizes with subsampling
