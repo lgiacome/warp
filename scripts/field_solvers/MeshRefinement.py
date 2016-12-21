@@ -3193,43 +3193,43 @@ class EMMRBlock(MeshRefinement,EM3D):
         for child in self.children:
             child.addsubstractfieldfromparent()
 
-    def move_window_fields(self):
-        if top.it%self.novercycle != 0:return
-        # --- move window in x
-        self.xgridcont+=self.vxgrid*top.dt/self.ntsub
-        while (abs(self.xgrid-self.xgridcont)>=0.5*self.dx):
-            self.shift_cells_x(int(sign(self.vxgrid)))
-            dx = self.dx*sign(self.vxgrid)
-            w3d.xmmin+=dx
-            w3d.xmmax+=dx
-            w3d.xmminp+=dx
-            w3d.xmmaxp+=dx
-            w3d.xmminlocal+=dx
-            w3d.xmmaxlocal+=dx
-            w3d.xmminglobal+=dx
-            w3d.xmmaxglobal+=dx
-            top.xpmin+=dx
-            top.xpmax+=dx
-            top.xpminlocal+=dx
-            top.xpmaxlocal+=dx
-        # --- move window in z
-        if (abs(top.zgrid-self.zgrid)>=0.5*self.dz):
-            self.shift_cells_z(1)
-
-    def shift_cells_x(self,n):
-        self.__class__.__bases__[1].shift_cells_x(self,n)
+    def move_cells_x(self,n):
+        self.__class__.__bases__[1].move_cells_x(self,n)
         if self.refinement is not None:
-            self.__class__.__bases__[1].shift_cells_x(self.field_coarse,n/self.refinement[0])
+            self.__class__.__bases__[1].move_cells_x(self.field_coarse,n/self.refinement[0])
         dx = self.dx*n
         self.mins[0]+=dx
         self.maxs[0]+=dx
         for child in self.children:
-            child.shift_cells_x(n*child.refinement[0])
+            child.move_cells_x(n*child.refinement[0])
+
+    def move_cells_y(self,n):
+        self.__class__.__bases__[1].move_cells_y(self,n)
+        if self.refinement is not None:
+            self.__class__.__bases__[1].move_cells_y(self.field_coarse,n/self.refinement[1])
+        dy = self.dy*n
+        self.mins[1]+=dy
+        self.maxs[1]+=dy
+        for child in self.children:
+            child.move_cells_y(n*child.refinement[1])
+
+    def move_cells_z(self,n):
+        self.__class__.__bases__[1].move_cells_z(self,n)
+        if self.refinement is not None:
+            self.__class__.__bases__[1].move_cells_z(self.field_coarse,n/self.refinement[2])
+        dz = self.dz*n
+        self.mins[2]+=dz
+        self.maxs[2]+=dz
+        for child in self.children:
+            child.move_cells_z(n*child.refinement[2])
 
     def shift_cells_z(self,n):
         self.__class__.__bases__[1].shift_cells_z(self,n)
         if self.refinement is not None:
             self.__class__.__bases__[1].shift_cells_z(self.field_coarse,n/self.refinement[2])
+        dz = self.dz*n
+        self.mins[2]+=dz
+        self.maxs[2]+=dz
         for child in self.children:
             child.shift_cells_z(n*child.refinement[2])
 
