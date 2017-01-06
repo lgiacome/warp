@@ -21,7 +21,7 @@ to use some of them, you have to pass them explicitly to the command `runjob` (s
 +mpiwrapper-mpich3-gcc.legacy
 +mpiwrapper-xl.legacy
 # User defined environment variables
-PATH+=/home/vincenti/scalable-python/installdir/bin/
+PATH+=$HOME/scalable-python/installdir/bin/
 @default
 ```
 
@@ -42,10 +42,8 @@ export CCSHARED=-fPIC
 export CFLAGS='-I/soft/libraries/alcf/20130312/xl/ZLIB/include'
 export LDFLAGS='-L/soft/libraries/alcf/20130312/xl/ZLIB/lib'
 export LINKFORSHARED='-Wl,--allow-multiple-definition -Xlinker -export-dynamic -dynamic'
-export MPI_LINKFORSHARED='-Xlinker -export-dynamic -dynamic’
-./configure --prefix=$HOME/scalable-python/installdir --with-zlib --enable-mpi --disable-ipv6
-| tee mira-conf
-2>&1
+export MPI_LINKFORSHARED='-Xlinker -export-dynamic -dynamic'
+./configure --prefix=$HOME/scalable-python/installdir --with-zlib --enable-mpi --disable-ipv6 | tee mira-conf 2>&1
 make 2>&1 | tee mira-make
 make mpi 2>&1 | tee mira-make-mpi
 make install 2>&1 | tee mira-inst
@@ -237,29 +235,6 @@ ${PYTHON} setup.py install  2>&1 | tee six.log.mira
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 package in site-packages
 
-## Install pkgconfig
-
-- In your `$HOME` directory download the pkgconfig package by typing the following command:
-`wget --no-check-certificate
-https://pypi.python.org/packages/9d/ba/80910bbed2b4e646a6adab4474d2e506744c260c7002a0e6b41ef8750d8d/pkgconfig-1.2.2.tar.gz#md5=81a8f6ef3371831d081e03db39e09683`,
-
-- Untar/zip the .tar.gz archive by typing: `tar -xzvf pkgconfig-1.2.2.tar.gz` and `cd pkgconfig-1.2.2/`
-- create a file `install_mira` with those lines:
-
-```
-#!/bin/bash
-export CC=powerpc64-bgq-linux-gcc
-export MPICC=mpicc
-export PYTHONHOME=$HOME/scalable-python/installdir/
-export PYTHON=${PYTHONHOME}/bin/python
-buildir=build
-
-rm -rf ${builddir}
-${PYTHON} setup.py install  2>&1 | tee pkgconfig.log.mira
-```
-- Finally type `chmod 700 install_mira; ./install_mira` to install the python
-package in site-packages
-
 ## Install nose
 
 - In your `$HOME` directory download the nose package by typing the following command:
@@ -302,6 +277,29 @@ buildir=build
 
 rm -rf ${builddir}
 ${PYTHON} setup.py install  2>&1 | tee cython.log.mira
+```
+- Finally type `chmod 700 install_mira; ./install_mira` to install the python
+package in site-packages
+
+## Install pkgconfig
+
+- In your `$HOME` directory download the pkgconfig package by typing the following command:
+`wget --no-check-certificate
+https://pypi.python.org/packages/9d/ba/80910bbed2b4e646a6adab4474d2e506744c260c7002a0e6b41ef8750d8d/pkgconfig-1.2.2.tar.gz#md5=81a8f6ef3371831d081e03db39e09683`,
+
+- Untar/zip the .tar.gz archive by typing: `tar -xzvf pkgconfig-1.2.2.tar.gz` and `cd pkgconfig-1.2.2/`
+- create a file `install_mira` with those lines:
+
+```
+#!/bin/bash
+export CC=powerpc64-bgq-linux-gcc
+export MPICC=mpicc
+export PYTHONHOME=$HOME/scalable-python/installdir/
+export PYTHON=${PYTHONHOME}/bin/python
+buildir=build
+
+rm -rf ${builddir}
+${PYTHON} setup.py install  2>&1 | tee pkgconfig.log.mira
 ```
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 package in site-packages
