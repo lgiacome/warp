@@ -483,6 +483,18 @@ ${PYTHON} setup.py install
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 package in site-packages
 
+
+## Install fftw_for_py module 
+
+This is not compulsory but highly recommended for improved performances of the pseudo-spectral solver. 
+
+- in your `$HOME` directory, clone the fftw_for_py repo (ask for prior bitbucket access). 
+
+- Follow instructions on `README.md` file of the fftw_for_py bitbucket repo for INSTALL 
+on MIRA. 
+
+Add your fftw_for_py directory to your PYTHONPATH in the `.soft` env file `PYTHONPATH+=$HOME/fftw_for_py`. 
+
 ## Installing Warp itself
 
 - In your `$HOME` directory :`git clone https://bitbucket.org/berkeleylab/warp.git`
