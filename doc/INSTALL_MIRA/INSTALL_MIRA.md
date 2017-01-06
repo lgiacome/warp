@@ -43,7 +43,7 @@ export CFLAGS='-I/soft/libraries/alcf/20130312/xl/ZLIB/include'
 export LDFLAGS='-L/soft/libraries/alcf/20130312/xl/ZLIB/lib'
 export LINKFORSHARED='-Wl,--allow-multiple-definition -Xlinker -export-dynamic -dynamic'
 export MPI_LINKFORSHARED='-Xlinker -export-dynamic -dynamic'
-./configure --prefix=$HOME/scalable-python/installdir --with-zlib --enable-mpi --disable-ipv6 | tee mira-conf 2>&1
+./configure --prefix=$HOME/scalable-python/installdir --with-zlib --enable-mpi --disable-ipv6 2>&1 | tee mira-conf
 make 2>&1 | tee mira-make
 make mpi 2>&1 | tee mira-make-mpi
 make install 2>&1 | tee mira-inst
@@ -56,8 +56,7 @@ scalable interpreter.
 
 - In your `$HOME` directory download the setuptools package by typing the following command:
 `wget --no-check-certificate
-https://pypi.python.org/packages/f7/94/eee867605a99ac113c4108534ad7c292ed48bf1d06dfe7b
-63daa51e49987/setuptools-28.0.0.tar.gz#md5=9b23df90e1510c7353a5cf07873dcd22`,
+https://pypi.python.org/packages/f7/94/eee867605a99ac113c4108534ad7c292ed48bf1d06dfe7b63daa51e49987/setuptools-28.0.0.tar.gz#md5=9b23df90e1510c7353a5cf07873dcd22`,
 
 - Untar/zip the .tar.gz archive by typing: `tar -xzvf setuptools-28.0.0.tar.gz` and `cd setuptools-28.0.0/`
 - create a file `install_mira` with those lines:
@@ -79,8 +78,7 @@ package in site-packages
 
 - In your `$HOME` directory download the argparse package by typing the following command:
 `wget --no-check-certificate
-https://pypi.python.org/packages/18/dd/e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af979
-49c5aacddf0f/argparse-1.4.0.tar.gz#md5=08062d2ceb6596fcbc5a7e725b53746f`,
+https://pypi.python.org/packages/18/dd/e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/argparse-1.4.0.tar.gz#md5=08062d2ceb6596fcbc5a7e725b53746f`,
 
 - Untar/zip the .tar.gz archive by typing: `tar -xzvf argparse-1.4.0.tar.gz` and `cd argparse-1.4.0/`
 - create a file `install_mira` with those lines:
@@ -101,16 +99,16 @@ package in site-packages
 
 ## Compiling the HDF5 parallel library
 
-A parallel ans "shared" build of the HDF5 library is required to further build h5py-parallel. 
-As there is no shared build of HDF5 currently available on MIRA/CETUS/VESTA at ALCF, you 
-are required to re-compile HDF5  yourself. This is a long process that necessitates the 
-completion of the following steps: 
+A parallel ans "shared" build of the HDF5 library is required to further build h5py-parallel.
+As there is no shared build of HDF5 currently available on MIRA/CETUS/VESTA at ALCF, you
+are required to re-compile HDF5  yourself. This is a long process that necessitates the
+completion of the following steps:
 
 - Donwload ans untar last version of HDF5 in your `$HOME` directory by typing : `wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.tar`
 
-- Copy files `configure-hdf5`, `do-configure-hdf5`, `do-make-hdf5`, `do-make-final-hdf5` from the `INSTALL_MIRA` directory to your `hdf5-1.10.0-patch1` directory, 
+- Copy files `configure-hdf5`, `do-configure-hdf5`, `do-make-hdf5`, `do-make-final-hdf5` from the `INSTALL_MIRA` directory to your `hdf5-1.10.0-patch1` directory,
 
-- Edit files `do-configure-hdf5`, `do-make-hdf5`, `do-make-final-hdf5` and modify the second line by adding your email to '-M' option and your allocation to the -A option. This will be required 
+- Edit files `do-configure-hdf5`, `do-make-hdf5`, `do-make-final-hdf5` and modify the second line by adding your email to '-M' option and your allocation to the -A option. This will be required
 by the job scheduling system (e.g if you are a user of the PICSSAR INCITE project, use "-A PICSSAR_INCITE").
 
 - Configure HDF5 lib by typing: `qsub do-configure-hdf5`
@@ -119,7 +117,7 @@ by the job scheduling system (e.g if you are a user of the PICSSAR INCITE projec
 
 - Finalize install by typing: `qsub do-make-final-hdf5`  
 
-If all the steps completed normally, the HDF5 library will be available in your `$HOME/parallel-hdf5-lib`. 
+If all the steps completed normally, the HDF5 library will be available in your `$HOME/parallel-hdf5-lib`.
 
 ## Install the numpy python module
 
@@ -163,8 +161,7 @@ export PYTHONHOME=$HOME/scalable-python/installdir/
 export PYTHON=${PYTHONHOME}/bin/python
 buildir=build
 rm -rf ${builddir}
-${PYTHON} setup.py install
-2>&1 | tee forthon.log.mira
+${PYTHON} setup.py install 2>&1 | tee forthon.log.mira
 ```
 
 - NB: for the moment, before installing Forthon, you need to comment the following lines in `setup.py`
@@ -190,8 +187,7 @@ package in site-packages
 
 - In your `$HOME` directory download the mpi4py package by typing the following command:
 `wget --no-check-certificate
-https://pypi.python.org/packages/ee/b8/f443e1de0b6495479fc73c5863b7b5272a4ece5122e3589
-db6cd3bb57eeb/mpi4py-2.0.0.tar.gz#md5=4f7d8126d7367c239fd67615680990e3`,
+https://pypi.python.org/packages/ee/b8/f443e1de0b6495479fc73c5863b7b5272a4ece5122e3589db6cd3bb57eeb/mpi4py-2.0.0.tar.gz#md5=4f7d8126d7367c239fd67615680990e3`,
 
 - Untar/zip the .tar.gz archive by typing: `tar -xzvf mpi4py-2.0.0.tar.gz` and `cd mpi4py-2.0.0/`
 - create a file `install_mira` with those lines:
@@ -288,8 +284,8 @@ package in site-packages
 https://pypi.python.org/packages/9d/ba/80910bbed2b4e646a6adab4474d2e506744c260c7002a0e6b41ef8750d8d/pkgconfig-1.2.2.tar.gz#md5=81a8f6ef3371831d081e03db39e09683`,
 
 - Untar/zip the .tar.gz archive by typing: `tar -xzvf pkgconfig-1.2.2.tar.gz` and `cd pkgconfig-1.2.2/`
-- create a file `install_mira` with those lines:
 
+- create a file `install_mira` with those lines:
 ```
 #!/bin/bash
 export CC=powerpc64-bgq-linux-gcc
@@ -311,8 +307,8 @@ package in site-packages
 https://pypi.python.org/packages/c3/2c/63275fab26a0fd8cadafca71a3623e4d0f0ee8ed7124a5bb128853d178a7/pbr-1.10.0.tar.gz#md5=8e4968c587268f030e38329feb9c8f17`,
 
 - Untar/zip the .tar.gz archive by typing: `tar -xzvf pbr-1.10.0.tar.gz` and `cd pbr-1.10.0/`
-- create a file `install_mira` with those lines:
 
+- create a file `install_mira` with those lines:
 ```
 #!/bin/bash
 export CC=powerpc64-bgq-linux-gcc
@@ -326,7 +322,6 @@ ${PYTHON} setup.py install  2>&1 | tee pbr.mira.log
 ```
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 package in site-packages
-
 
 ## Install traceback2
 
@@ -398,7 +393,7 @@ ${PYTHON} setup.py install  2>&1 | tee linecache2.log.mira
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 package in site-packages
 
-## Install python-dateutil 
+## Install python-dateutil
 
 - In your `$HOME` directory download the pbr package by typing the following command:
 `wget --no-check-certificate
@@ -421,7 +416,7 @@ ${PYTHON} setup.py install  2>&1 | tee linecache2.log.mira
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 
 
-## Install scipy 
+## Install scipy
 
 - In your `$HOME` directory download the pbr package by typing the following command:
 `wget --no-check-certificate
@@ -482,16 +477,16 @@ ${PYTHON} setup.py install
 package in site-packages
 
 
-## Install fftw_for_py module 
+## Install fftw_for_py module
 
-This is not compulsory but highly recommended for improved performances of the pseudo-spectral solver. 
+This is not compulsory but highly recommended for improved performances of the pseudo-spectral solver.
 
-- in your `$HOME` directory, clone the fftw_for_py repo (ask for prior bitbucket access). 
+- in your `$HOME` directory, clone the fftw_for_py repo (ask for prior bitbucket access).
 
-- Follow instructions on `README.md` file of the fftw_for_py bitbucket repo for INSTALL 
-on MIRA. 
+- Follow instructions on `README.md` file of the fftw_for_py bitbucket repo for INSTALL
+on MIRA.
 
-Add your fftw_for_py directory to your PYTHONPATH in the `.soft` env file `PYTHONPATH+=$HOME/fftw_for_py`. 
+Add your fftw_for_py directory to your PYTHONPATH in the `.soft` env file `PYTHONPATH+=$HOME/fftw_for_py`.
 
 ## Installing Warp itself
 

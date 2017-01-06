@@ -2351,57 +2351,20 @@ class EM3D(SubcycledPoissonSolver):
         # --- move window in x
         self.x_gridcont+=self.vxgrid*top.dt
         while (abs(self.x_grid-self.x_gridcont)>=0.5*self.dx):
-            self.move_cells_x(int(sign(self.vxgrid)))
-            n = sign(self.vxgrid)
-            w3d.xmmin = self.incrementposition(w3d.xmmin,self.dx,n)
-            w3d.xmmax = self.incrementposition(w3d.xmmax,self.dx,n)
-            w3d.xmminp = self.incrementposition(w3d.xmminp,self.dx,n)
-            w3d.xmmaxp = self.incrementposition(w3d.xmmaxp,self.dx,n)
-            w3d.xmminlocal = self.incrementposition(w3d.xmminlocal,self.dx,n)
-            w3d.xmmaxlocal = self.incrementposition(w3d.xmmaxlocal,self.dx,n)
-            w3d.xmminglobal = self.incrementposition(w3d.xmminglobal,self.dx,n)
-            w3d.xmmaxglobal = self.incrementposition(w3d.xmmaxglobal,self.dx,n)
-            top.xpmin = self.incrementposition(top.xpmin,self.dx,n)
-            top.xpmax = self.incrementposition(top.xpmax,self.dx,n)
-            top.xpminlocal = self.incrementposition(top.xpminlocal,self.dx,n)
-            top.xpmaxlocal = self.incrementposition(top.xpmaxlocal,self.dx,n)
+            nxmove = int(sign(self.vxgrid))
+            self.move_cells_x(nxmove)
 
         # --- move window in y
         self.y_gridcont+=self.vygrid*top.dt
         while (abs(self.y_grid-self.y_gridcont)>=0.5*self.dy):
-            self.move_cells_y(int(sign(self.vygrid)))
-            n = sign(self.vygrid)
-            w3d.ymmin = self.incrementposition(w3d.ymmin,self.dy,n)
-            w3d.ymmax = self.incrementposition(w3d.ymmax,self.dy,n)
-            w3d.ymminp = self.incrementposition(w3d.ymminp,self.dy,n)
-            w3d.ymmaxp = self.incrementposition(w3d.ymmaxp,self.dy,n)
-            w3d.ymminlocal = self.incrementposition(w3d.ymminlocal,self.dy,n)
-            w3d.ymmaxlocal = self.incrementposition(w3d.ymmaxlocal,self.dy,n)
-            w3d.ymminglobal = self.incrementposition(w3d.ymminglobal,self.dy,n)
-            w3d.ymmaxglobal = self.incrementposition(w3d.ymmaxglobal,self.dy,n)
-            top.ypmin = self.incrementposition(top.ypmin,self.dy,n)
-            top.ypmax = self.incrementposition(top.ypmax,self.dy,n)
-            top.ypminlocal = self.incrementposition(top.ypminlocal,self.dy,n)
-            top.ypmaxlocal = self.incrementposition(top.ypmaxlocal,self.dy,n)
+            nymove = int(sign(self.vygrid))
+            self.move_cells_y(nymove)
 
         # --- move window in z with vzgrid
         self.z_gridcont+=self.vzgrid*top.dt
         while (abs(self.z_grid-self.z_gridcont)>=0.5*self.dz):
-            self.move_cells_z(int(sign(self.vzgrid)))
-            n = sign(self.vzgrid)
-            w3d.zmmin = self.incrementposition(w3d.zmmin,self.dz,n)
-            w3d.zmmax = self.incrementposition(w3d.zmmax,self.dz,n)
-            w3d.zmminp = self.incrementposition(w3d.zmminp,self.dz,n)
-            w3d.zmmaxp = self.incrementposition(w3d.zmmaxp,self.dz,n)
-            w3d.zmminlocal = self.incrementposition(w3d.zmminlocal,self.dz,n)
-            w3d.zmmaxlocal = self.incrementposition(w3d.zmmaxlocal,self.dz,n)
-            w3d.zmminglobal = self.incrementposition(w3d.zmminglobal,self.dz,n)
-            w3d.zmmaxglobal = self.incrementposition(w3d.zmmaxglobal,self.dz,n)
-            top.zpmin = self.incrementposition(top.zpmin,self.dz,n)
-            top.zpmax = self.incrementposition(top.zpmax,self.dz,n)
-            top.zpminlocal = self.incrementposition(top.zpminlocal,self.dz,n)
-            top.zpmaxlocal = self.incrementposition(top.zpmaxlocal,self.dz,n)
-
+            nzmove = int(sign(self.vzgrid))
+            self.move_cells_z(nzmove)
 
         # --- move window in z with zgrid
         if top.vbeamfrm==0.:
@@ -2430,44 +2393,90 @@ class EM3D(SubcycledPoissonSolver):
 
     def move_cells_x(self,n):
         shift_em3dblock_ncells_x(self.block,n)
-        self.x_grid = self.incrementposition(self.x_grid,self.dx,n)
-        self.xmmin = self.incrementposition(self.xmmin,self.dx,n)
-        self.xmmax = self.incrementposition(self.xmmax,self.dx,n)
-        self.xmminlocal = self.incrementposition(self.xmminlocal,self.dx,n)
-        self.xmmaxlocal = self.incrementposition(self.xmmaxlocal,self.dx,n)
-        self.fields.xmin = self.incrementposition(self.fields.xmin,self.dx,n)
-        self.fields.xmax = self.incrementposition(self.fields.xmax,self.dx,n)
-        self.block.xmin = self.incrementposition(self.block.xmin,self.dx,n)
-        self.block.xmax = self.incrementposition(self.block.xmax,self.dx,n)
-        self.laser_xx = self.incrementposition(self.laser_xx,self.dx,n)
+        listtoshift = [self.x_grid,
+                       self.xmmin,
+                       self.xmmax,
+                       self.xmminlocal,
+                       self.xmmaxlocal,
+                       self.fields.xmin,
+                       self.fields.xmax, 
+                       self.block.xmin, 
+                       self.block.xmax,
+                       self.laser_xx,
+                       w3d.xmmin, 
+                       w3d.xmmax, 
+                       w3d.xmminp,
+                       w3d.xmmaxp,
+                       w3d.xmminlocal,
+                       w3d.xmmaxlocal,
+                       w3d.xmminglobal,
+                       w3d.xmmaxglobal,
+                       top.xpmin,
+                       top.xpmax,
+                       top.xpminlocal,
+                       top.xpmaxlocal]
+        for xtoshift in listtoshift:
+            xtoshift = self.incrementposition(xtoshift,self.dx,n)
+
         self.nxshifts+=n
 
     def move_cells_y(self,n):
         shift_em3dblock_ncells_y(self.block,n)
-        self.y_grid = self.incrementposition(self.y_grid,self.dy,n)
-        self.ymmin = self.incrementposition(self.ymmin,self.dy,n)
-        self.ymmax = self.incrementposition(self.ymmax,self.dy,n)
-        self.ymminlocal = self.incrementposition(self.ymminlocal,self.dy,n)
-        self.ymmaxlocal = self.incrementposition(self.ymmaxlocal,self.dy,n)
-        self.fields.ymin = self.incrementposition(self.fields.ymin,self.dy,n)
-        self.fields.ymax = self.incrementposition(self.fields.ymax,self.dy,n)
-        self.block.ymin = self.incrementposition(self.block.ymin,self.dy,n)
-        self.block.ymax = self.incrementposition(self.block.ymax,self.dy,n)
-        self.laser_yy = self.incrementposition(self.laser_yy,self.dy,n)
+        listtoshift = [self.y_grid,
+                       self.ymmin,
+                       self.ymmax,
+                       self.ymminlocal,
+                       self.ymmaxlocal,
+                       self.fields.ymin,
+                       self.fields.ymax, 
+                       self.block.ymin, 
+                       self.block.ymax,
+                       self.laser_yy,
+                       w3d.ymmin, 
+                       w3d.ymmax, 
+                       w3d.ymminp,
+                       w3d.ymmaxp,
+                       w3d.ymminlocal,
+                       w3d.ymmaxlocal,
+                       w3d.ymminglobal,
+                       w3d.ymmaxglobal,
+                       top.ypmin,
+                       top.ypmax,
+                       top.ypminlocal,
+                       top.ypmaxlocal]
+        for ytoshift in listtoshift:
+            ytoshift = self.incrementposition(ytoshift,self.dy,n)
+
         self.nyshifts+=n
 
     def move_cells_z(self,n):
         shift_em3dblock_ncells_z(self.block,n)
-        self.z_grid = self.incrementposition(self.z_grid,self.dz,n)
-        self.zmmin = self.incrementposition(self.zmmin,self.dz,n)
-        self.zmmax = self.incrementposition(self.zmmax,self.dz,n)
-        self.zmminlocal = self.incrementposition(self.zmminlocal,self.dz,n)
-        self.zmmaxlocal = self.incrementposition(self.zmmaxlocal,self.dz,n)
-        self.fields.zmin = self.incrementposition(self.fields.zmin,self.dz,n)
-        self.fields.zmax = self.incrementposition(self.fields.zmax,self.dz,n)
-        self.block.zmin = self.incrementposition(self.block.zmin,self.dz,n)
-        self.block.zmax = self.incrementposition(self.block.zmax,self.dz,n)
+        listtoshift = [self.z_grid,
+                       self.zmmin,
+                       self.zmmax,
+                       self.zmminlocal,
+                       self.zmmaxlocal,
+                       self.fields.zmin,
+                       self.fields.zmax, 
+                       self.block.zmin, 
+                       self.block.zmax,
+                       w3d.zmmin, 
+                       w3d.zmmax, 
+                       w3d.zmminp,
+                       w3d.zmmaxp,
+                       w3d.zmminlocal,
+                       w3d.zmmaxlocal,
+                       w3d.zmminglobal,
+                       w3d.zmmaxglobal,
+                       top.zpmin,
+                       top.zpmax,
+                       top.zpminlocal,
+                       top.zpmaxlocal]
+        for ztoshift in listtoshift:
+            ztoshift = self.incrementposition(ztoshift,self.dz,n)
+
         self.nzshifts+=n
+
 
     def shift_cells_z(self,n):
         shift_em3dblock_ncells_z(self.block,n)
