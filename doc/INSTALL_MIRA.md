@@ -21,7 +21,7 @@ to use some of them, you have to pass them explicitly to the command `runjob` (s
 +mpiwrapper-mpich3-gcc.legacy
 +mpiwrapper-xl.legacy
 # User defined environment variables
-PATH+=/home/vincenti/scalable-python/installdir/bin/
+PATH+=$HOME/scalable-python/installdir/bin/
 @default
 ```
 
@@ -42,10 +42,8 @@ export CCSHARED=-fPIC
 export CFLAGS='-I/soft/libraries/alcf/20130312/xl/ZLIB/include'
 export LDFLAGS='-L/soft/libraries/alcf/20130312/xl/ZLIB/lib'
 export LINKFORSHARED='-Wl,--allow-multiple-definition -Xlinker -export-dynamic -dynamic'
-export MPI_LINKFORSHARED='-Xlinker -export-dynamic -dynamic’
-./configure --prefix=$HOME/scalable-python/installdir --with-zlib --enable-mpi --disable-ipv6
-| tee mira-conf
-2>&1
+export MPI_LINKFORSHARED='-Xlinker -export-dynamic -dynamic'
+./configure --prefix=$HOME/scalable-python/installdir --with-zlib --enable-mpi --disable-ipv6 2>&1 | tee mira-conf
 make 2>&1 | tee mira-make
 make mpi 2>&1 | tee mira-make-mpi
 make install 2>&1 | tee mira-inst
@@ -58,8 +56,7 @@ scalable interpreter.
 
 - In your `$HOME` directory download the setuptools package by typing the following command:
 `wget --no-check-certificate
-https://pypi.python.org/packages/f7/94/eee867605a99ac113c4108534ad7c292ed48bf1d06dfe7b
-63daa51e49987/setuptools-28.0.0.tar.gz#md5=9b23df90e1510c7353a5cf07873dcd22`,
+https://pypi.python.org/packages/f7/94/eee867605a99ac113c4108534ad7c292ed48bf1d06dfe7b63daa51e49987/setuptools-28.0.0.tar.gz#md5=9b23df90e1510c7353a5cf07873dcd22`,
 
 - Untar/zip the .tar.gz archive by typing: `tar -xzvf setuptools-28.0.0.tar.gz` and `cd setuptools-28.0.0/`
 - create a file `install_mira` with those lines:
@@ -81,8 +78,7 @@ package in site-packages
 
 - In your `$HOME` directory download the argparse package by typing the following command:
 `wget --no-check-certificate
-https://pypi.python.org/packages/18/dd/e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af979
-49c5aacddf0f/argparse-1.4.0.tar.gz#md5=08062d2ceb6596fcbc5a7e725b53746f`,
+https://pypi.python.org/packages/18/dd/e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/argparse-1.4.0.tar.gz#md5=08062d2ceb6596fcbc5a7e725b53746f`,
 
 - Untar/zip the .tar.gz archive by typing: `tar -xzvf argparse-1.4.0.tar.gz` and `cd argparse-1.4.0/`
 - create a file `install_mira` with those lines:
@@ -143,8 +139,7 @@ export PYTHONHOME=$HOME/scalable-python/installdir/
 export PYTHON=${PYTHONHOME}/bin/python
 buildir=build
 rm -rf ${builddir}
-${PYTHON} setup.py install
-2>&1 | tee forthon.log.mira
+${PYTHON} setup.py install 2>&1 | tee forthon.log.mira
 ```
 
 - NB: for the moment, before installing Forthon, you need to comment the following lines in `setup.py`
@@ -170,8 +165,7 @@ package in site-packages
 
 - In your `$HOME` directory download the mpi4py package by typing the following command:
 `wget --no-check-certificate
-https://pypi.python.org/packages/ee/b8/f443e1de0b6495479fc73c5863b7b5272a4ece5122e3589
-db6cd3bb57eeb/mpi4py-2.0.0.tar.gz#md5=4f7d8126d7367c239fd67615680990e3`,
+https://pypi.python.org/packages/ee/b8/f443e1de0b6495479fc73c5863b7b5272a4ece5122e3589db6cd3bb57eeb/mpi4py-2.0.0.tar.gz#md5=4f7d8126d7367c239fd67615680990e3`,
 
 - Untar/zip the .tar.gz archive by typing: `tar -xzvf mpi4py-2.0.0.tar.gz` and `cd mpi4py-2.0.0/`
 - create a file `install_mira` with those lines:
@@ -215,29 +209,6 @@ ${PYTHON} setup.py install  2>&1 | tee six.log.mira
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 package in site-packages
 
-## Install pkgconfig
-
-- In your `$HOME` directory download the pkgconfig package by typing the following command:
-`wget --no-check-certificate
-https://pypi.python.org/packages/9d/ba/80910bbed2b4e646a6adab4474d2e506744c260c7002a0e6b41ef8750d8d/pkgconfig-1.2.2.tar.gz#md5=81a8f6ef3371831d081e03db39e09683`,
-
-- Untar/zip the .tar.gz archive by typing: `tar -xzvf pkgconfig-1.2.2.tar.gz` and `cd pkgconfig-1.2.2/`
-- create a file `install_mira` with those lines:
-
-```
-#!/bin/bash
-export CC=powerpc64-bgq-linux-gcc
-export MPICC=mpicc
-export PYTHONHOME=$HOME/scalable-python/installdir/
-export PYTHON=${PYTHONHOME}/bin/python
-buildir=build
-
-rm -rf ${builddir}
-${PYTHON} setup.py install  2>&1 | tee pkgconfig.log.mira
-```
-- Finally type `chmod 700 install_mira; ./install_mira` to install the python
-package in site-packages
-
 ## Install nose
 
 - In your `$HOME` directory download the nose package by typing the following command:
@@ -257,6 +228,29 @@ buildir=build
 
 rm -rf ${builddir}
 ${PYTHON} setup.py install  2>&1 | tee nose.log.mira
+```
+- Finally type `chmod 700 install_mira; ./install_mira` to install the python
+package in site-packages
+
+## Install pkgconfig
+
+- In your `$HOME` directory download the pkgconfig package by typing the following command:
+`wget --no-check-certificate
+https://pypi.python.org/packages/9d/ba/80910bbed2b4e646a6adab4474d2e506744c260c7002a0e6b41ef8750d8d/pkgconfig-1.2.2.tar.gz#md5=81a8f6ef3371831d081e03db39e09683`,
+
+- Untar/zip the .tar.gz archive by typing: `tar -xzvf pkgconfig-1.2.2.tar.gz` and `cd pkgconfig-1.2.2/`
+- create a file `install_mira` with those lines:
+
+```
+#!/bin/bash
+export CC=powerpc64-bgq-linux-gcc
+export MPICC=mpicc
+export PYTHONHOME=$HOME/scalable-python/installdir/
+export PYTHON=${PYTHONHOME}/bin/python
+buildir=build
+
+rm -rf ${builddir}
+${PYTHON} setup.py install  2>&1 | tee pkgconfig.log.mira
 ```
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 package in site-packages
