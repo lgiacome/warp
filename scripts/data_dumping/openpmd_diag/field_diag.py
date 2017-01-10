@@ -5,7 +5,8 @@ import os
 import numpy as np
 from generic_diag import OpenPMDDiagnostic
 from field_extraction import get_circ_dataset, \
-     get_cart3d_dataset, get_cart2d_dataset, get_global_indices
+     get_cart3d_dataset, get_cart2d_dataset, get_cart1d_dataset, \
+     get_global_indices
 
 # Import a number of useful dictionaries
 from data_dict import field_boundary_dict, particle_boundary_dict, \
@@ -21,8 +22,8 @@ class FieldDiagnostic(OpenPMDDiagnostic):
     `write` method.
     """
 
-    def __init__(self, period, em, top, w3d, comm_world=None, 
-                 fieldtypes=["rho", "E", "B", "J"], 
+    def __init__(self, period, em, top, w3d, comm_world=None,
+                 fieldtypes=["rho", "E", "B", "J"],
                  sub_sampling=[1,1,1], write_dir=None, lparallel_output=False):
         """
         Initialize the field diagnostic.
@@ -33,7 +34,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             The period of the diagnostics, in number of timesteps.
             (i.e. the diagnostics are written whenever the number
             of iterations is divisible by `period`)
-            
+
         em: an EM3D object (as defined in em3dsolver)
             Contains the fields data and the different methods to extract it
 
@@ -45,17 +46,17 @@ class FieldDiagnostic(OpenPMDDiagnostic):
 
         comm_world: a communicator object
             Either an mpi4py or a pyMPI object, or None (single-proc)
-            
+
         fieldtypes: a list of strings, optional
             The strings are either "rho", "E", "B" or "J"
             and indicate which field should be written.
             Default: all fields are written
-            
-        sub_sampling: a list of integers, optional 
-            contains subsampling periods of grid quantities along 
+
+        sub_sampling: a list of integers, optional
+            contains subsampling periods of grid quantities along
             each direction x, y, z. Default is 1,1,1 (i.e all points)
             N.B: THIS DOES NOT WORK WITH BOOSTED FRAME
-                        
+
         write_dir: string, optional
             The POSIX path to the directory where the results are
             to be written. If none is provided, this will be the path
@@ -76,6 +77,8 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Determine the dimensions (Cartesian or cylindrical)
         if self.em.l_2drz is True:
             self.dim = "circ"
+        elif self.em.l_1dz is True:
+            self.dim = "1d"
         elif self.em.l_2dxz is True:
             self.dim = "2d"
         else:
@@ -86,9 +89,9 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             self.coords = ['r', 't', 'z']
         else:
             self.coords = ['x', 'y', 'z']
-            
-        # Compute global indices of the domain 
-        # With subsampling periods sub_sampling[0,1,2] in x, y, z 
+
+        # Compute global indices of the domain
+        # With subsampling periods sub_sampling[0,1,2] in x, y, z
         istartx, ixsub, nxsub = get_global_indices(top.fsdecomp.ix,
                                     top.fsdecomp.nx, sub_sampling[0])
         istarty, iysub, nysub = get_global_indices(top.fsdecomp.iy,
@@ -97,50 +100,53 @@ class FieldDiagnostic(OpenPMDDiagnostic):
                                     top.fsdecomp.nz, sub_sampling[2])
 
         # Determine the global indices of the local domain
-        if (self.dim == "2d") or (self.dim=="circ"):
+        if (self.dim == "1d"):
+            global_indices = np.zeros([2,1],dtype=np.int)
+        elif (self.dim == "2d") or (self.dim=="circ"):
             global_indices = np.zeros([2,2], dtype = np.int)
         elif self.dim == "3d":
             global_indices = np.zeros([2,3], dtype = np.int)
-            
-        # In the x direction 
-        # Indices within [global_indices[0,0],global_indices[1,0][ are dumped  
-        global_indices[0,0] = istartx[top.iprocgrid[0]]
-        global_indices[1,0] = global_indices[0,0] + nxsub[top.iprocgrid[0]] + 1
-        
+
+        # In the z direction
+        # Indices within [global_indices[0,-1],global_indices[1,-1][ are dumped
+        global_indices[0,-1] = istartz[top.iprocgrid[2]]
+        global_indices[1,-1] = global_indices[0,-1] + \
+          nzsub[top.iprocgrid[2]]+1
+
+        # In the x direction
+        # Indices within [global_indices[0,0],global_indices[1,0][ are dumped
+        if self.dim in ["2d","3d"]:
+            global_indices[0,0] = istartx[top.iprocgrid[0]]
+            global_indices[1,0] = global_indices[0,0] + nxsub[top.iprocgrid[0]] + 1
+
         # In the y direction
         # Indices within [global_indices[0,1],global_indices[1,1][ are dumped
         if self.dim == "3d":
             global_indices[0,1] = istarty[top.iprocgrid[1]]
             global_indices[1,1] = global_indices[0,1] + \
               nysub[top.iprocgrid[1]] + 1
-            
-        # In the z direction
-        # Indices within [global_indices[0,-1],global_indices[1,-1][ are dumped
-        global_indices[0,-1] = istartz[top.iprocgrid[2]]
-        global_indices[1,-1] = global_indices[0,-1] + \
-          nzsub[top.iprocgrid[2]]+1
-        
-        # Set FieldDiagnostic attributes for dumping 
+
+        # Set FieldDiagnostic attributes for dumping
         self.global_indices = global_indices
-        
+
         # Dumped data array dimensions in x,y,z
         self.nx = ((em.nx)-(em.nx)%sub_sampling[0])/sub_sampling[0]
         self.ny = ((em.ny)-(em.ny)%sub_sampling[1])/sub_sampling[1]
         self.nz = ((em.nz)-(em.nz)%sub_sampling[2])/sub_sampling[2]
-        
-        # Mesh cell sizes of dumped grid arrays 
+
+        # Mesh cell sizes of dumped grid arrays
         self.dx = em.dx*sub_sampling[0]
         self.dy = em.dy*sub_sampling[1]
         self.dz = em.dz*sub_sampling[2]
-        
-        # Start indices of data to be dumped in non-sampled grid array in x,y,z 
+
+        # Start indices of data to be dumped in non-sampled grid array in x,y,z
         self.start=[istartx[top.iprocgrid[0]]-top.fsdecomp.ix[top.iprocgrid[0]],
                     istarty[top.iprocgrid[1]]-top.fsdecomp.iy[top.iprocgrid[1]],
                     istartz[top.iprocgrid[2]]-top.fsdecomp.iz[top.iprocgrid[2]]]
-        # Subsampling period 
+        # Subsampling period
         self.sub_sampling=sub_sampling
 
-    
+
     def write_hdf5( self, iteration ):
         """
         Write an HDF5 file that complies with the OpenPMD standard
@@ -153,14 +159,14 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Find the file name
         filename = "data%08d.h5" %iteration
         fullpath = os.path.join( self.write_dir, "hdf5", filename )
-        
+
         # Create the file and setup its attributes
         zmin = self.top.zgrid + self.w3d.zmmin
         self.create_file_empty_meshes( fullpath, self.top.it,
                 self.top.time, self.nz, zmin, self.dz, self.top.dt )
 
-        # Open the file again, and get the field path
-        f = self.open_file( fullpath )
+        # Open the file again (possibly in parallel), and get the field path
+        f = self.open_file( fullpath, parallel_open=self.lparallel_output )
         # (f is None if this processor does not participate in writing data)
         if f is not None:
             field_path = "/data/%d/fields/" %iteration
@@ -181,7 +187,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
                     self.write_dataset( field_grp, path, quantity )
 
         # Close the file
-        if f is not None:   
+        if f is not None:
             f.close()
 
     # Writing methods
@@ -189,12 +195,12 @@ class FieldDiagnostic(OpenPMDDiagnostic):
     def write_dataset( self, field_grp, path, quantity ):
         """
         Write a given dataset
-    
+
         Parameters
         ----------
         field_grp: an h5py.Group object
             The group that corresponds to the path indicated in meshesPath
-        
+
         path: string
             The relative path where to write the dataset, in field_grp
 
@@ -207,10 +213,13 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             dset = field_grp[path]
         else:
             dset = None
-        
+
         # Circ case
         if self.dim == "circ":
             self.write_circ_dataset( dset, quantity )
+        # 1D cartesian
+        elif self.dim == "1d":
+            self.write_cart1d_dataset( dset, quantity )
         # 2D Cartesian case
         elif self.dim == "2d":
             self.write_cart2d_dataset( dset, quantity )
@@ -236,10 +245,32 @@ class FieldDiagnostic(OpenPMDDiagnostic):
                 dset[ :, indices[0,0]:indices[1,0],
                         indices[0,1]:indices[1,1] ] = F
 
+
+
+
+    def write_cart1d_dataset( self, dset, quantity ):
+        """
+        Write a 1D dataset in Cartesian coordinates
+        """
+        # Fill the dataset with these quantities
+        # Gathering mode
+        if self.lparallel_output == False:
+            F = get_cart1d_dataset( self.em, quantity, lgather=True,
+                    sub_sampling=self.sub_sampling, start=self.start )
+            if self.rank == 0:
+    	        dset[:] = F
+        # Parallel mode
+        else:
+            F = get_cart1d_dataset( self.em, quantity, lgather=False,
+                    sub_sampling=self.sub_sampling, start=self.start )
+            indices = self.global_indices
+            with dset.collective:
+                dset[ indices[0,0]:indices[1,0]] = F
+
     def write_cart2d_dataset( self, dset, quantity ):
         """
         Write a dataset in Cartesian coordinates
-        """            
+        """
         # Fill the dataset with these quantities
         # Gathering mode
         if self.lparallel_output == False:
@@ -259,7 +290,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
     def write_cart3d_dataset( self, dset, quantity ):
         """
         Write a dataset in Cartesian coordinates
-        """            
+        """
         # Fill the dataset with these quantities
         # Gathering mode
         if self.lparallel_output == False:
@@ -276,7 +307,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
                 dset[ indices[0,0]:indices[1,0],
                     indices[0,1]:indices[1,1],
                     indices[0,2]:indices[1,2] ] = F
-        
+
     # OpenPMD setup methods
     # ---------------------
 
@@ -301,7 +332,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
 
         zmin: float (meters)
             The position of the left end of the box
-            
+
         dz: float (meters)
             The resolution in z of this diagnostic
 
@@ -312,6 +343,9 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Circ case
         if self.dim == "circ":
             data_shape = ( 2*self.em.circ_m+1, self.nx+1, Nz+1 )
+        # 1D case
+        elif self.dim == "1d":
+            data_shape = ( Nz+1, )
         # 2D case
         elif self.dim == "2d":
             data_shape = ( self.nx+1, Nz+1 )
@@ -319,9 +353,10 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         elif self.dim == "3d":
             data_shape = ( self.nx+1, self.ny+1, Nz+1 )
 
-        # Create the file
-        f = self.open_file( fullpath )
-            
+        # Create the file (only the first proc creates the file,
+        # since this is only for the purpose of writing the metadata)
+        f = self.open_file( fullpath, parallel_open=False )
+
         # Setup the different layers of the openPMD file
         # (f is None if this processor does not participate is writing data)
         if f is not None:
@@ -333,7 +368,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             field_path = "/data/%d/fields/" %iteration
             field_grp = f.require_group(field_path)
             self.setup_openpmd_meshes_group(field_grp)
-         
+
             # Loop over the different quantities that should be written
             # and setup the corresponding datasets
             for fieldtype in self.fieldtypes:
@@ -342,7 +377,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
                 if fieldtype == "rho":
                     # Setup the dataset
                     dset = field_grp.require_dataset(
-                        "rho", data_shape, dtype='f')
+                        "rho", data_shape, dtype='f8')
                     self.setup_openpmd_mesh_component( dset, "rho" )
                     # Setup the record to which it belongs
                     self.setup_openpmd_mesh_record( dset, "rho", dz, zmin )
@@ -354,10 +389,10 @@ class FieldDiagnostic(OpenPMDDiagnostic):
                         quantity = "%s%s" %(fieldtype, coord)
                         path = "%s/%s" %(fieldtype, coord)
                         dset = field_grp.require_dataset(
-                            path, data_shape, dtype='f')
+                            path, data_shape, dtype='f8')
                         self.setup_openpmd_mesh_component( dset, quantity )
                     # Setup the record to which they belong
-                    self.setup_openpmd_mesh_record( 
+                    self.setup_openpmd_mesh_record(
                         field_grp[fieldtype], fieldtype, dz, zmin )
 
                 # Unknown field
@@ -371,7 +406,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
     def setup_openpmd_meshes_group( self, dset ):
         """
         Set the attributes that are specific to the mesh path
-        
+
         Parameter
         ---------
         dset: an h5py.Group object that contains all the mesh quantities
@@ -379,8 +414,16 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         # Field Solver
         dset.attrs["fieldSolver"] = field_solver_dict[ self.em.stencil ]
         # Field and particle boundary
+        # - 1D and Circ
+        if self.em.l_1dz:
+            dset.attrs["fieldBoundary"] = np.array([
+                field_boundary_dict[ self.w3d.bound0 ],
+                field_boundary_dict[ self.w3d.boundnz ] ])
+            dset.attrs["particleBoundary"] = np.array([
+                particle_boundary_dict[ self.top.pbound0 ],
+                particle_boundary_dict[ self.top.pboundnz ] ])
         # - 2D and Circ
-        if self.em.l_2dxz:
+        elif self.em.l_2dxz:
             dset.attrs["fieldBoundary"] = np.array([
                 field_boundary_dict[ self.w3d.boundxy ],
                 field_boundary_dict[ self.w3d.boundxy ],
@@ -422,7 +465,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
     def setup_openpmd_mesh_record( self, dset, quantity, dz, zmin ):
         """
         Sets the attributes that are specific to a mesh record
-        
+
         Parameter
         ---------
         dset: an h5py.Dataset or h5py.Group object
@@ -438,7 +481,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         """
         # Generic record attributes
         self.setup_openpmd_record( dset, quantity )
-        
+
         # Geometry parameters
         # - thetaMode
         if self.dim == "circ":
@@ -448,6 +491,12 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             dset.attrs['gridSpacing'] = np.array([ self.dx, dz ])
             dset.attrs['axisLabels'] = np.array([ 'r', 'z' ])
             dset.attrs["gridGlobalOffset"] = np.array([self.w3d.xmmin, zmin])
+        # - 1D Cartesian
+        elif self.dim == "1d":
+            dset.attrs['geometry'] = np.string_("cartesian")
+            dset.attrs['gridSpacing'] = np.array([ dz ])
+            dset.attrs['axisLabels'] = np.array([ 'z' ])
+            dset.attrs["gridGlobalOffset"] = np.array([zmin])
         # - 2D Cartesian
         elif self.dim == "2d":
             dset.attrs['geometry'] = np.string_("cartesian")
@@ -469,11 +518,11 @@ class FieldDiagnostic(OpenPMDDiagnostic):
     def setup_openpmd_mesh_component( self, dset, quantity ):
         """
         Set up the attributes of a mesh component
-    
+
         Parameter
         ---------
         dset: an h5py.Dataset
-        
+
         quantity: string
             The field that is being written
         """
@@ -481,16 +530,19 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         self.setup_openpmd_component( dset )
 
         # Field positions
-        if (self.em.l_2dxz==True) :
+        if (self.em.l_1dz==True):
+            positions = np.array([0.])
+        elif (self.em.l_2dxz==True) :
             positions = np.array([0., 0.])
         else:
             positions = np.array([0.,0.,0.])
-        # Along x
-        positions[0] = x_offset_dict[ quantity ]
-        # Along y (3D Cartesian only)
-        if (self.em.l_2dxz==False) :
-            positions[1] = y_offset_dict[quantity]
         # Along z
         positions[-1] = z_offset_dict[ quantity ]
-            
+        # Along x (2D xz and 3D xyz cartesian only)
+        if (self.em.l_1dz==False) :
+            positions[0] = x_offset_dict[ quantity ]
+        # Along y (3D xyz Cartesian only)
+        if (self.em.l_2dxz==False) :
+            positions[1] = y_offset_dict[quantity]
+
         dset.attrs['position'] = positions

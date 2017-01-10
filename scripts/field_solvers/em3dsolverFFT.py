@@ -9,7 +9,6 @@ class EM3DFFT(EM3D):
                       'spectral_current':0, # flag for deposition that generalizes Esirkepov in k-space for any order 
                       'current_cor':1,  # flag for correction current to verify Gauss' Law (not needed if spectral_current=1; more local than Boris correction on fields)
                       'boris_cor':0, # flag for correction of fields verify Gauss' Law (i.e. Boris correction; not needed if spectral_current=1 or spectral_current=1)
-                      'l_staggered_a_la_brendan':False,
                       'spectral_mix':0.,'Jmult':False,
                       'l_spectral_staggered':False,
                       'sigmab_x':0.,'sigmab_y':0.,'sigmab_z':0.}
@@ -65,7 +64,6 @@ class EM3DFFT(EM3D):
         if self.spectral:
             
             kwGPSTD = {'l_staggered':s.l_spectral_staggered,\
-                     'l_staggered_a_la_brendan':s.l_staggered_a_la_brendan, \
                      'spectral':s.spectral,\
                      'norderx':s.norderx,\
                      'nordery':s.nordery,\
@@ -112,7 +110,6 @@ class EM3DFFT(EM3D):
             self.FSpace = self.GPSTDMaxwell
         else:
             kwFS = {'l_staggered':s.l_spectral_staggered,\
-                     'l_staggered_a_la_brendan':s.l_staggered_a_la_brendan, \
                      'spectral':s.spectral,\
                      'norderx':s.norderx,\
                      'nordery':s.nordery,\
@@ -671,6 +668,75 @@ class EM3DFFT(EM3D):
             Jz.resize(fields_shape)
             f.Jz[ixl:ixu,iyl:iyu,izl:izu] = Jz.real
 
+    def getcurrent_spectral(self):
+        if not self.spectral_current:return
+        j=1j      # imaginary number
+        emK = self.FSpace
+        f = self.fields
+        ixl,ixu,iyl,iyu,izl,izu = emK.get_ius()
+        fields_shape = [ixu-ixl,iyu-iyl,izu-izl]
+
+        self.wrap_periodic_BC([f.Jx,f.Jy,f.Jz])
+        
+        if emK.nx>1:JxF = emK.fft(squeeze(f.Jx[ixl:ixu,iyl:iyu,izl:izu]),axis=0)
+#        if emK.ny>1:JyF = emK.fft(squeeze(f.Jy[ixl:ixu,iyl:iyu,izl:izu]))
+        if emK.nz>1:JzF = emK.fft(squeeze(f.Jz[ixl:ixu,iyl:iyu,izl:izu]),axis=1)
+
+        if self.l_spectral_staggered:
+            JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx*exp(-j*emK.kx_unmod*self.dx/2))
+            JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz*exp(-j*emK.kz_unmod*self.dz/2))
+        else:
+            JxF = 1j*JxF/where(emK.kx==0.,1j,emK.kx)
+            JzF = 1j*JzF/where(emK.kz==0.,1j,emK.kz)
+
+        if any(self.V_pseudogalilean<>0.):
+            JxF*=emK.CDcoef
+#            JyF*=emK.CDcoef
+            JzF*=emK.CDcoef
+        
+        # --- sets currents to zero at the Nyquist wavelength
+        if emK.nx>1:
+            dkx = 2*pi/(self.nxlocal+2*self.nxguard)
+            index_Nyquist = compress(abs(emK.kxunit*self.dx)>=pi-0.1*dkx,arange(self.nxlocal+2*self.nxguard))
+            JxF[index_Nyquist,...]=0.
+            
+        if emK.ny>1:
+            dky = 2*pi/(self.nylocal+2*self.nyguard)
+            index_Nyquist = compress(abs(emK.kyunit*self.dy)>=pi-0.1*dky,arange(self.nylocal+2*self.nyguard))
+            JyF[:,index_Nyquist,:]=0.
+            
+        if emK.nz>1:
+            dkz = 2*pi/(self.nzlocal+2*self.nzguard)
+            index_Nyquist = compress(abs(emK.kzunit*self.dz)>=pi-0.1*dkz,arange(self.nzlocal+2*self.nzguard))
+            JzF[...,index_Nyquist]=0.
+
+        # --- adjust average current values
+        if emK.nx>1:
+            Jxcs=ave(cumsum(f.Jx[ixl:ixu,iyl:iyu,izl:izu],0),0)
+            Jx = emK.ifft(JxF,axis=0)
+            Jx.resize(fields_shape)
+            Jx=Jx.real
+            for i in range(shape(Jx)[1]):
+                Jx[:,i]-=Jxcs[i]*self.dx
+
+        if emK.nz>1:
+            Jzcs=ave(cumsum(f.Jz[ixl:ixu,iyl:iyu,izl:izu],1),1)
+            Jz = emK.ifft(JzF,axis=1)
+            Jz.resize(fields_shape)
+            Jz=Jz.real
+            for i in range(shape(Jz)[0]):
+                Jz[i,:]-=Jzcs[i]*self.dz
+
+        if emK.nx>1:
+            f.Jx[ixl:ixu,iyl:iyu,izl:izu]=Jx
+        if emK.nz>1:
+            f.Jz[ixl:ixu,iyl:iyu,izl:izu]=Jz
+
+#        self.JxF=JxF
+#        self.JzF=JzF
+        
+        del Jx, Jz, Jxcs, Jzcs, JxF, JzF
+
     def smoothdensity(self):
         if all(self.npass_smooth==0):return
         EM3D.smoothdensity(self)
@@ -708,6 +774,9 @@ class EM3DFFT(EM3D):
             Jyee2node3d(self.block.core.yf)
             if self.refinement is not None:
                 self.__class__.__bases__[1].Jyee2node3d(self.field_coarse)
+
+        if self.spectral and not self.l_nodalgrid and self.l_deposit_nodal:
+            self.Jnode2yeeK()
 
     def apply_KFilter(self,F,KFilter):
         emK = self.FSpace
