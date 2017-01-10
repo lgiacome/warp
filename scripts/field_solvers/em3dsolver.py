@@ -2391,7 +2391,7 @@ class EM3D(SubcycledPoissonSolver):
 
     def push_galilean(self, coord):
         # move the boundaries of the box along the coord axis
-        # in case of galilean frame
+        # in case of galilean frame along the coordinate coord
         #coord = 'x', 'y', 'z'
         listtoshift = [(self,'%s_grid' %(coord) ),
                        (self,'%smmin'  %(coord) ),
@@ -2414,10 +2414,14 @@ class EM3D(SubcycledPoissonSolver):
                        (top,'%spmax'%(coord) ),
                        (top,'%spminlocal'%(coord) ),
                        (top,'%spmaxlocal'%(coord) )]
+                       
+        # The variable self.laser_zz does not exist yet
         if coord in ['x', 'y']:
             listtoshift += [ (self,'laser_%s%s' %(coord,coord)) ]
 
         for (coord_object,coord_attribute) in listtoshift:
+            # loop equivalent to coord_object.coord_attribute+=self.V_galilean[..]*top.dt
+            # for each tupple in listtoshift
             coordtoshift =getattr(coord_object,coord_attribute)
             if   coord=='x': coordtoshift += self.V_galilean[0]*top.dt
             elif coord=='y': coordtoshift += self.V_galilean[1]*top.dt
@@ -2426,9 +2430,9 @@ class EM3D(SubcycledPoissonSolver):
 
     def move_cells(self,n, coord):
         # move the boundaries of the box along the coord axis
-        # in case of moving window
+        # in case of moving window along the coordinate coord.
         #coord = 'x', 'y', 'z'
-        print coord
+
         if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
         elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
         elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
@@ -2454,6 +2458,8 @@ class EM3D(SubcycledPoissonSolver):
                        (top,'%spmax'%(coord) ),
                        (top,'%spminlocal'%(coord) ),
                        (top,'%spmaxlocal'%(coord) )]
+
+        # The variable self.laser_zz does not exist yet
         if coord in ['x', 'y']:
             listtoshift += [ (self,'laser_%s%s' %(coord,coord)) ]
 
@@ -2462,6 +2468,8 @@ class EM3D(SubcycledPoissonSolver):
         elif coord=='z': increment=self.dz
 
         for (coord_object,coord_attribute) in listtoshift:
+            # loop equivalent to self.incrementposition(coord_object.coord_attribute, increment, n)
+            # for each tupple in listtoshift
             coordtoshift=getattr(coord_object,coord_attribute)
             setattr(coord_object,coord_attribute,self.incrementposition(coordtoshift,increment,n))
 
