@@ -92,9 +92,7 @@ class EM3D(SubcycledPoissonSolver):
         self.y_gridcont=0.
         self.z_grid=0.
         self.z_gridcont=0.
-        self.nxshifts=0
         self.zgrid=top.zgrid
-        self.nzshifts=0
         self.odd=0
         # --- Save input parameters
 #    self.processdefaultsfrompackage(EM3D.__w3dinputs__,w3d,kw)
@@ -2349,31 +2347,31 @@ class EM3D(SubcycledPoissonSolver):
 
     def move_window_fields(self):
         # --- move window in x
-        self.x_gridcont+=self.vxgrid*top.dt
+        self.x_gridcont+=self.V_galilean[0]*top.dt+self.vxgrid*top.dt
+        self.push_galilean('x')
         while (abs(self.x_grid-self.x_gridcont)>=0.5*self.dx):
             nxmove = int(sign(self.vxgrid))
-            self.move_cells_x(nxmove)
+            self.move_cells(nxmove,'x')
 
         # --- move window in y
-        self.y_gridcont+=self.vygrid*top.dt
+        self.y_gridcont+=self.V_galilean[1]*top.dt+self.vygrid*top.dt
+        self.push_galilean('y')
         while (abs(self.y_grid-self.y_gridcont)>=0.5*self.dy):
             nymove = int(sign(self.vygrid))
-            self.move_cells_y(nymove)
+            self.move_cells(nymove,'y')
 
         # --- move window in z with vzgrid
-        self.z_gridcont+=self.vzgrid*top.dt
+        self.z_gridcont+=self.V_galilean[2]*top.dt+self.vzgrid*top.dt
+        self.push_galilean('z')
         while (abs(self.z_grid-self.z_gridcont)>=0.5*self.dz):
             nzmove = int(sign(self.vzgrid))
-            self.move_cells_z(nzmove)
+            self.move_cells(nzmove,'z')
 
         # --- move window in z with zgrid
         if top.vbeamfrm==0.:
             top.zgridprv=top.zgrid
-            top.zgrid=self.V_galilean[2]*(top.time+top.dt)
             top.zbeam=top.zgrid
             top.zgridndts[...]=top.zgrid
-            self.zgrid=top.zgrid
-        elif self.V_galilean[2]<>0.:
             self.zgrid=top.zgrid
         if top.vbeamfrm > 0.:
             while ((top.zgrid-self.zgrid)>=0.5*self.dz):
@@ -2391,97 +2389,93 @@ class EM3D(SubcycledPoissonSolver):
         wz = z - nz*dz
         return (nz + n)*dz + wz
 
-    def move_cells_x(self,n):
-        shift_em3dblock_ncells_x(self.block,n)
-        listtoshift = [(self,'x_grid'),
-                       (self,'xmmin'),
-                       (self,'xmmax'),
-                       (self,'xmminlocal'),
-                       (self,'xmmaxlocal'),
-                       (self.fields,'xmin'),
-                       (self.fields,'xmax'), 
-                       (self.block,'xmin'), 
-                       (self.block,'xmax'),
-                       (self,'laser_xx'),
-                       (w3d,'xmmin'), 
-                       (w3d,'xmmax'), 
-                       (w3d,'xmminp'),
-                       (w3d,'xmmaxp'),
-                       (w3d,'xmminlocal'),
-                       (w3d,'xmmaxlocal'),
-                       (w3d,'xmminglobal'),
-                       (w3d,'xmmaxglobal'),
-                       (top,'xpmin'),
-                       (top,'xpmax'),
-                       (top,'xpminlocal'),
-                       (top,'xpmaxlocal')]
-        for (x_object,x_attribute) in listtoshift:
-            xtoshift=getattr(x_object,x_attribute)
-            setattr(x_object,x_attribute,self.incrementposition(xtoshift,self.dx,n))
-        self.nxshifts+=n
+    def push_galilean(self, coord):
+        # move the boundaries of the box along the coord axis
+        # in case of galilean frame along the coordinate coord
+        #coord = 'x', 'y', 'z'
+        listtoshift = [(self,'%s_grid' %(coord) ),
+                       (self,'%smmin'  %(coord) ),
+                       (self,'%smmax' %(coord) ),
+                       (self,'%smminlocal'%(coord) ),
+                       (self,'%smmaxlocal'%(coord) ),
+                       (self.fields,'%smin'%(coord) ),
+                       (self.fields,'%smax'%(coord) ),
+                       (self.block,'%smin'%(coord) ),
+                       (self.block,'%smax'%(coord) ),
+                       (w3d,'%smmin'%(coord) ),
+                       (w3d,'%smmax'%(coord) ),
+                       (w3d,'%smminp'%(coord) ),
+                       (w3d,'%smmaxp'%(coord) ),
+                       (w3d,'%smminlocal'%(coord) ),
+                       (w3d,'%smmaxlocal'%(coord) ),
+                       (w3d,'%smminglobal'%(coord) ),
+                       (w3d,'%smmaxglobal'%(coord) ),
+                       (top,'%spmin'%(coord) ),
+                       (top,'%spmax'%(coord) ),
+                       (top,'%spminlocal'%(coord) ),
+                       (top,'%spmaxlocal'%(coord) )]
+                       
+        # The variable self.laser_zz does not exist yet
+        if coord in ['x', 'y']:
+            listtoshift += [ (self,'laser_%s%s' %(coord,coord)) ]
 
-    def move_cells_y(self,n):
-        shift_em3dblock_ncells_y(self.block,n)
-        listtoshift = [(self,'y_grid'),
-                       (self,'ymmin'),
-                       (self,'ymmax'),
-                       (self,'ymminlocal'),
-                       (self,'ymmaxlocal'),
-                       (self.fields,'ymin'),
-                       (self.fields,'ymax'), 
-                       (self.block,'ymin'), 
-                       (self.block,'ymax'),
-                       (self,'laser_yy'),
-                       (w3d,'ymmin'), 
-                       (w3d,'ymmax'), 
-                       (w3d,'ymminp'),
-                       (w3d,'ymmaxp'),
-                       (w3d,'ymminlocal'),
-                       (w3d,'ymmaxlocal'),
-                       (w3d,'ymminglobal'),
-                       (w3d,'ymmaxglobal'),
-                       (top,'ypmin'),
-                       (top,'ypmax'),
-                       (top,'ypminlocal'),
-                       (top,'ypmaxlocal')]
-        for (y_object,y_attribute) in listtoshift:
-            ytoshift=getattr(y_object,y_attribute)
-            setattr(y_object,y_attribute,self.incrementposition(ytoshift,self.dy,n))
-        self.nyshifts+=n
+        for (coord_object,coord_attribute) in listtoshift:
+            # loop equivalent to coord_object.coord_attribute+=self.V_galilean[..]*top.dt
+            # for each tupple in listtoshift
+            coordtoshift =getattr(coord_object,coord_attribute)
+            if   coord=='x': coordtoshift += self.V_galilean[0]*top.dt
+            elif coord=='y': coordtoshift += self.V_galilean[1]*top.dt
+            elif coord=='z': coordtoshift += self.V_galilean[2]*top.dt
+            setattr(coord_object,coord_attribute,coordtoshift)
 
-    def move_cells_z(self,n):
-        shift_em3dblock_ncells_z(self.block,n)
-        listtoshift = [(self,'z_grid'),
-                       (self,'zmmin'),
-                       (self,'zmmax'),
-                       (self,'zmminlocal'),
-                       (self,'zmmaxlocal'),
-                       (self.fields,'zmin'),
-                       (self.fields,'zmax'), 
-                       (self.block,'zmin'), 
-                       (self.block,'zmax'),
-                       (self,'laser_zz'),
-                       (w3d,'zmmin'), 
-                       (w3d,'zmmax'), 
-                       (w3d,'zmminp'),
-                       (w3d,'zmmaxp'),
-                       (w3d,'zmminlocal'),
-                       (w3d,'zmmaxlocal'),
-                       (w3d,'zmminglobal'),
-                       (w3d,'zmmaxglobal'),
-                       (top,'zpmin'),
-                       (top,'zpmax'),
-                       (top,'zpminlocal'),
-                       (top,'zpmaxlocal')]
-        for (z_object,z_attribute) in listtoshift:
-            ztoshift=getattr(z_object,z_attribute)
-            setattr(z_object,z_attribute,self.incrementposition(ztoshift,self.dz,n))
-        self.nzshifts+=n
+    def move_cells(self,n, coord):
+        # move the boundaries of the box along the coord axis
+        # in case of moving window along the coordinate coord.
+        #coord = 'x', 'y', 'z'
+
+        if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
+        elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
+        elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
+
+        listtoshift = [(self,'%s_grid' %(coord) ),
+                       (self,'%smmin'  %(coord) ),
+                       (self,'%smmax' %(coord) ),
+                       (self,'%smminlocal'%(coord) ),
+                       (self,'%smmaxlocal'%(coord) ),
+                       (self.fields,'%smin'%(coord) ),
+                       (self.fields,'%smax'%(coord) ),
+                       (self.block,'%smin'%(coord) ),
+                       (self.block,'%smax'%(coord) ),
+                       (w3d,'%smmin'%(coord) ),
+                       (w3d,'%smmax'%(coord) ),
+                       (w3d,'%smminp'%(coord) ),
+                       (w3d,'%smmaxp'%(coord) ),
+                       (w3d,'%smminlocal'%(coord) ),
+                       (w3d,'%smmaxlocal'%(coord) ),
+                       (w3d,'%smminglobal'%(coord) ),
+                       (w3d,'%smmaxglobal'%(coord) ),
+                       (top,'%spmin'%(coord) ),
+                       (top,'%spmax'%(coord) ),
+                       (top,'%spminlocal'%(coord) ),
+                       (top,'%spmaxlocal'%(coord) )]
+
+        # The variable self.laser_zz does not exist yet
+        if coord in ['x', 'y']:
+            listtoshift += [ (self,'laser_%s%s' %(coord,coord)) ]
+
+        if   coord=='x': increment=self.dx
+        elif coord=='y': increment=self.dy
+        elif coord=='z': increment=self.dz
+
+        for (coord_object,coord_attribute) in listtoshift:
+            # loop equivalent to self.incrementposition(coord_object.coord_attribute, increment, n)
+            # for each tupple in listtoshift
+            coordtoshift=getattr(coord_object,coord_attribute)
+            setattr(coord_object,coord_attribute,self.incrementposition(coordtoshift,increment,n))
 
     def shift_cells_z(self,n):
         shift_em3dblock_ncells_z(self.block,n)
         self.zgrid = self.incrementposition(self.zgrid,self.dz,n)
-        self.nzshifts+=n
 
     def solve2ndhalf(self):
         self.allocatedataarrays()
