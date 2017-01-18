@@ -20,7 +20,7 @@ class OpenPMDDiagnostic(object) :
     to both FieldDiagnostic and ParticleDiagnostic
     """
 
-    def __init__(self, period, top, w3d, comm_world,
+    def __init__(self, period, top, w3d, comm_world, itmin=0, itmax=np.inf,
                  lparallel_output=False, write_dir=None ) :
         """
         General setup of the diagnostic
@@ -40,6 +40,8 @@ class OpenPMDDiagnostic(object) :
 
         comm_world : a communicator object
             Either an mpi4py or a pyMPI object, or None (single-proc)
+        itmin      : min iteration from which output dumps are enabled
+        itmax      : max iteration after which output dumps are disabled
 
         lparallel_output : boolean, optional
             Switch to set output mode (parallel or gathering)
@@ -57,6 +59,8 @@ class OpenPMDDiagnostic(object) :
             self.rank = 0
 
         # Register the arguments
+        self.itmin=itmin
+        self.itmax=itmax
         self.top = top
         self.w3d = w3d
         self.period = period
@@ -122,7 +126,9 @@ class OpenPMDDiagnostic(object) :
         timesteps in the simulation.
         """
         # Check if the fields should be written at this iteration
-        if self.top.it % self.period == 0 :
+
+        if ((self.top.it % self.period == 0) and (self.top.it>self.itmin) \
+        and (self.top.it<self.itmax)):
 
             # Write the hdf5 file if needed
             self.write_hdf5( self.top.it )
