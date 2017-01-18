@@ -573,6 +573,11 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             dict_keys_val["y"]=species.gety(gather=False)
         if "z" in quantity :
             dict_keys_val["z"]=species.getz(gather=False)
+        if "id" in quantity:
+            # The ssnid is stored in Warp as a float. Thus, it needs
+            # to be converted to the nearest integer (rint)
+            dict_keys_val["id"] = \
+            (np.rint( species.getssn(gather=False) )).astype('uint64')
 
         string_to_exec=" "+quantity
         for keys in dict_keys_val.keys():
