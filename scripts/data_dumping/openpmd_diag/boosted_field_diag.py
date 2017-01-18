@@ -11,8 +11,6 @@ Remaining questions:
 - Should one use the IO collectives when only a few proc modify a given file?
 - Should we just have the proc writing directly to the file ?
   Should we gather on the first proc ?
-- Is it better to write all the attributes of the openPMD file
-  with only one proc ?
 """
 import os
 import numpy as np
@@ -25,7 +23,7 @@ from parallel import gather
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
-    Class that writes the fields *in the lab frame*, from 
+    Class that writes the fields *in the lab frame*, from
     a simulation in the boosted frame
 
     Usage
@@ -41,7 +39,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
         within a virtual moving window defined by zmin_lab, zmax_lab, v_lab.
-                 
+
         Parameters
         ----------
         zmin_lab, zmax_lab: floats (meters)
@@ -64,7 +62,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         z_subsampling: int
             A factor which is applied on the resolution of the lab frame
             reconstruction.
-            
+
         See the documentation of FieldDiagnostic for the other parameters
         """
         # Do not leave write_dir as None, as this may conflict with
@@ -100,7 +98,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             dz_lab = dz_lab * z_subsampling
             Nz = Nz / z_subsampling
         self.inv_dz_lab = 1./dz_lab
-        
+
         # Create the list of LabSnapshot objects
         self.snapshots = []
         # Record the time it takes
@@ -139,13 +137,13 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         Should be registered with installafterstep in Warp
         """
-        # At each timestep, store a slices of the fields in memory buffers 
+        # At each timestep, store a slices of the fields in memory buffers
         self.store_snapshot_slices()
 
-        # Every self.period, write the buffered slices to disk 
+        # Every self.period, write the buffered slices to disk
         if self.top.it % self.period == 0:
             self.flush_to_disk()
-        
+
     def store_snapshot_slices( self ):
         """
         Store slices of the fields in the memory buffers of the
@@ -211,7 +209,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 global_field_array = field_array
                 global_iz_min = iz_min
                 global_iz_max = iz_max
-                
+
             else:
                 # Parallel simulation
 
@@ -296,7 +294,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             # Longitudinal indices within the array global_array
             s_min = iz_min_list[ i_proc ] - global_iz_min
             s_max = iz_max_list[ i_proc ] - global_iz_min
-            
+
             # Copy the arrays to the proper position
             if self.dim == "2d":
                 global_array[ :, ix_min:ix_max, s_min:s_max ] \
@@ -312,7 +310,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         return( global_array, global_iz_min, global_iz_max )
 
 
-    def write_slices( self, field_array, iz_min, iz_max, snapshot, f2i ): 
+    def write_slices( self, field_array, iz_min, iz_max, snapshot, f2i ):
         """
         For one given snapshot, write the slices of the
         different fields to an openPMD file
@@ -336,11 +334,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             and the integer index in the field_array
         """
         # Open the file without parallel I/O in this implementation
-        f = self.open_file( snapshot.filename )
-        
+        f = self.open_file( snapshot.filename, parallel_open=False )
         field_path = "/data/%d/fields/" %snapshot.iteration
         field_grp = f[field_path]
-        
+
         # Loop over the different quantities that should be written
         for fieldtype in self.fieldtypes:
             # Scalar field
@@ -372,7 +369,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         data: array of reals
             An array containing the slices for one given field
-            
+
         path: string
             The path of the dataset to write within field_grp
 
@@ -397,7 +394,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             elif self.dim == "circ":
                 # The first index corresponds to the azimuthal mode
                 dset[ :, indices[0,0]:indices[1,0], iz_min:iz_max ] = data
-           
+
         else:
             if self.dim == "2d":
                 dset[ :, iz_min:iz_max ] = data
@@ -414,13 +411,13 @@ class LabSnapshot:
     """
     def __init__(self, t_lab, zmin_lab, zmax_lab, write_dir, i, rank):
         """
-        Initialize a LabSnapshot 
+        Initialize a LabSnapshot
 
         Parameters
         ----------
         t_lab: float (seconds)
             Time of this snapshot *in the lab frame*
-            
+
         zmin_lab, zmax_lab: floats
             Longitudinal limits of this snapshot
 
@@ -521,7 +518,7 @@ class LabSnapshot:
         # Return None if the slices are empty
         if len(self.buffer_z_indices) == 0:
             return( None, None, None )
-        
+
         # Check that the indices of the slices are contiguous
         # (This should be a consequence of the transformation implemented
         # in update_current_output_positions, and of the calculation
@@ -555,7 +552,7 @@ class LabSnapshot:
         iz_max = self.buffer_z_indices[0] + 1
 
         return( field_array, iz_min, iz_max )
-        
+
 class SliceHandler:
     """
     Class that extracts, Lorentz-transforms and writes slices of the fields
@@ -585,7 +582,7 @@ class SliceHandler:
                 'By':4, 'Bz':5, 'Jx':6, 'Jy':7, 'Jz':8, 'rho':9}
         elif dim=="circ":
             self.field_to_index = {'Er':0, 'Et':1, 'Ez':2, 'Br':3,
-                'Bt':4, 'Bz':5, 'Jr':6, 'Jt':7, 'Jz':8, 'rho':9}            
+                'Bt':4, 'Bz':5, 'Jr':6, 'Jt':7, 'Jz':8, 'rho':9}
 
     def extract_slice( self, em, z_boost, zmin_boost ):
         """
@@ -603,7 +600,7 @@ class SliceHandler:
         zmin_boost: float (meters)
             Position of the left end of physical part of the local subdomain
             (i.e. excludes guard cells)
-        
+
         Returns
         -------
         An array of reals that packs together the slices of the
@@ -628,7 +625,7 @@ class SliceHandler:
         # Perform the Lorentz transformation of the fields *from
         # the boosted frame to the lab frame*
         self.transform_fields_to_lab_frame( slice_array )
-            
+
         return( slice_array )
 
     def extract_slice_boosted_frame( self, em, z_boost, zmin_boost ):
@@ -667,7 +664,7 @@ class SliceHandler:
 
         # Shortcut for the correspondance between field and integer index
         f2i = self.field_to_index
-        
+
         # Loop through the fields, and extract the proper slice for each field
         for quantity in self.field_to_index.keys():
             # Here typical values for `quantity` are e.g. 'Er', 'Bx', 'rho'
@@ -711,7 +708,7 @@ class SliceHandler:
         - for rho and Jz:
         $\rho_{lab} = \gamma(\rho + \beta J_{z}/c)$
         $J_{z,lab} = \gamma(J_z + c\beta \rho)$
-            
+
         Parameter
         ---------
         fields: array of floats
@@ -728,14 +725,14 @@ class SliceHandler:
         # Shortcut to give the correspondance between field name
         # (e.g. 'Ex', 'rho') and integer index in the array
         f2i = self.field_to_index
-        
+
         # Lorentz transformations
         # For E and B
         # (NB: Ez and Bz are unchanged by the Lorentz transform)
         if self.dim in ["2d", "3d"]:
             # Use temporary arrays when changing Ex and By in place
             ex_lab = gamma*( fields[f2i['Ex']] + cbeta * fields[f2i['By']] )
-            by_lab = gamma*( fields[f2i['By']] + beta_c * fields[f2i['Ex']] ) 
+            by_lab = gamma*( fields[f2i['By']] + beta_c * fields[f2i['Ex']] )
             fields[ f2i['Ex'], ... ] = ex_lab
             fields[ f2i['By'], ... ] = by_lab
             # Use temporary arrays when changing Ey and Bx in place
@@ -746,12 +743,12 @@ class SliceHandler:
         elif self.dim=="circ":
             # Use temporary arrays when changing Er and Bt in place
             er_lab = gamma*( fields[f2i['Er']] + cbeta * fields[f2i['Bt']] )
-            bt_lab = gamma*( fields[f2i['Bt']] + beta_c * fields[f2i['Er']] ) 
+            bt_lab = gamma*( fields[f2i['Bt']] + beta_c * fields[f2i['Er']] )
             fields[ f2i['Er'], ... ] = er_lab
             fields[ f2i['Bt'], ... ] = bt_lab
             # Use temporary arrays when changing Et and Br in place
             et_lab = gamma*( fields[f2i['Et']] - cbeta * fields[f2i['Br']] )
-            br_lab = gamma*( fields[f2i['Br']] - beta_c * fields[f2i['Et']] ) 
+            br_lab = gamma*( fields[f2i['Br']] - beta_c * fields[f2i['Et']] )
             fields[ f2i['Et'], ... ] = et_lab
             fields[ f2i['Br'], ... ] = br_lab
         # For rho and J

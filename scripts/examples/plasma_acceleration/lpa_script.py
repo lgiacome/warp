@@ -277,6 +277,7 @@ if use_beam:
                                    beam_nz, dim, circ_m )
     beam = Species(type=Electron, weight=beam_weight, name='beam')
 # Set the numerical parameters only now: they affect the newly created species
+top.ssnpid = nextpid()
 set_numerics( depos_order, efetch, particle_pusher, dim)
 
 # Setup the field solver object
@@ -321,7 +322,8 @@ if write_fields == 1:
     installafterstep( diag1.write )
 if write_particles == 1:
     diag2 = ParticleDiagnostic( period=diag_period, top=top, w3d=w3d,
-            species={ species.name : species for species in listofallspecies }, 
+            species={species.name : species for species in listofallspecies}, 
+            particle_data={"position","momentum","weighting","id"},
             comm_world=comm_world, lparallel_output=parallel_output )
     installafterstep( diag2.write )
 

@@ -43,11 +43,11 @@ contains
                    lsigmaz(-sf%nzguard:sf%nz+sf%nzguard), lsigmaz_next(-sf%nzguard:sf%nz+sf%nzguard)
     integer(ISZ) :: j,which,jmin
     real(kind=8) :: dt
-    
+
     if (bnd_cond==pml_user) return
-    
-    jmin = 1 ! number of cells after which to start absorbing 
-    
+
+    jmin = 1 ! number of cells after which to start absorbing
+
     sf%afx = 1.
     sf%agx = 1.
     sf%afy = 1.
@@ -89,9 +89,9 @@ contains
       sf%bmgz = -0.5*sf%clight*dt/sf%dz
       sf%dt = 0.5*dt
     end if
-    
+
     if (bnd_cond==0) return
-    
+
     if (sf%lsx/=0) then
       sigmax=0.
       sigmax_next=0.
@@ -270,9 +270,9 @@ contains
       end select
     end if
 
-    return 
+    return
   end subroutine set_bndcoeffsem3d
-    
+
 
 !************* SUBROUTINE assign_coefs  ********
 
@@ -313,7 +313,7 @@ REAL(kind=8) :: sigma_local, sigmab, sigmab_next, tp, tpp, tm, tmm, g, gp, gm
         bm =  -bp
       else
         s  =  EXP(-sigma_local*dt)
-        
+
       end if
     case (apml_exponential)
       sigmab = coef_sigmab*sigma
@@ -390,13 +390,13 @@ end module mod_emfield3d
                              l_nodalgrid, pml_method)
     use mod_emfield3d
     TYPE(EM3D_SPLITYEEFIELDtype) :: sf
-    INTEGER(ISZ), INTENT(IN) :: nx, ny, nz, nxguard, nyguard, nzguard, nnx, nny, nnz, lsx, lsy, lsz, pml_method, &     
+    INTEGER(ISZ), INTENT(IN) :: nx, ny, nz, nxguard, nyguard, nzguard, nnx, nny, nnz, lsx, lsy, lsz, pml_method, &
                                 norderx,nordery,norderz
     REAL(kind=8), INTENT(IN) :: dt, dx, dy, dz, clight, smaxx, smaxy, smaxz, sdeltax, sdeltay, sdeltaz, xmin, ymin, zmin, &
                                 xcoefs(norderx/2),ycoefs(nordery/2),zcoefs(norderz/2)
     integer(ISZ) :: j
     logical(ISZ) :: l_1dz, l_2dxz, l_2drz, l_nodalgrid
-    
+
     sf%pml_method = pml_method
     sf%l_nodalgrid = l_nodalgrid
     sf%nx = nx
@@ -465,9 +465,9 @@ end module mod_emfield3d
     sf%ycoefs = ycoefs
     sf%zcoefs = zcoefs
 
-    return 
+    return
   end subroutine init_splitfield
-    
+
 subroutine push_em3d_e(f,dt)
 use mod_emfield3d
 implicit none
@@ -508,7 +508,7 @@ case(0,1,3) ! Yee stencil on the E push
    ! Cole-Karkkainen stencil on the B push in case 1
    ! Lehe stencil on the B push in case 3)
  if (f%sigmae==0.) then
-  if(f%nconds>0 .and. .not. f%l_macroscopic) then 
+  if(f%nconds>0 .and. .not. f%l_macroscopic) then
       call push_em3d_evec_cond(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%Jx,f%Jy,f%Jz, &
                        mudt,dtsdx,dtsdy,dtsdz, &
                        f%nx,f%ny,f%nz, &
@@ -557,7 +557,7 @@ case(2)  ! Cole-Karkkainen stencil on the E push (Note : Yee stencil on the B pu
   call push_em3d_kyeevec(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%Jx,f%Jy,f%Jz, &
                          mudt,dtsdx,dtsdy,dtsdz, &
                          f%nx,f%ny,f%nz, &
-                         f%nxguard,f%nyguard,f%nzguard,f%E_inz_pos,f%Ex_inz,f%Ey_inz,f%l_2dxz,f%zmin,f%dz)
+                         f%nxguard,f%nyguard,f%nzguard,f%l_2dxz,f%zmin,f%dz)
 
 end select
 
@@ -574,7 +574,6 @@ real(kind=8), intent(IN) :: mudt,dtsdx,dtsdy,dtsdz,xmin,zmin,dx,dy,dz,clight
 integer(ISZ) :: j,k,l
 logical(ISZ) :: l_1dz,l_2dxz,l_2drz
 real(kind=8) :: w,zlaser,rd,ru
-!real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard) :: Ez_inz
 
 ! --- NOTE: if l_2drz is TRUE, then l_2dxz is TRUE
 if (.not. l_2dxz) then ! --- 3D XYZ
@@ -600,7 +599,7 @@ if (.not. l_2dxz) then ! --- 3D XYZ
    end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = -nzs, nz+nzs-1
    do k = -nys, ny+nys
     do j = -nxs, nx+nxs
@@ -629,7 +628,7 @@ else ! --- now 1D Z, 2D XZ or RZ
                             - mudt  * Jy(j,k,l)
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = -nzs, nz+nzs-1
       Ez(j,k,l) = Ez(j,k,l) - mudt  * Jz(j,k,l)
   end do
@@ -654,7 +653,7 @@ else ! --- now 1D Z, 2D XZ or RZ
     end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = -nzs, nz+nzs-1
     do j = -nxs, nx+nxs
       Ez(j,k,l) = Ez(j,k,l) + dtsdx * (By(j,k,l) - By(j-1,k  ,l)) &
@@ -689,7 +688,7 @@ else ! --- now 1D Z, 2D XZ or RZ
     end if
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = -nzs, nz+nzs-1
     do j = -nxs, nx+nxs
      if (j/=0) then
@@ -729,7 +728,6 @@ real(kind=8), intent(IN) :: mudt,dtsdx(norderx/2),dtsdy(nordery/2),dtsdz(norderz
 integer(ISZ) :: i,j,k,l,ist
 logical(ISZ) :: l_1dz,l_2dxz,l_2drz,l_nodalgrid
 real(kind=8) :: w,zlaser,rd,ru
-!real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard) :: Ez_inz
 
 if (l_nodalgrid) then
   ist = 0
@@ -748,7 +746,7 @@ if (.not. l_2dxz) then ! --- 3D XYZ
         Ex(j,k,l) = Ex(j,k,l) + dtsdy(i) * (Bz(j,k+i-ist,l)   - Bz(j,k-i,l  ))
       end do
       do i = 1, norderz/2
-        Ex(j,k,l) = Ex(j,k,l) - dtsdz(i) * (By(j,k,l+i-ist)   - By(j,k  ,l-i)) 
+        Ex(j,k,l) = Ex(j,k,l) - dtsdz(i) * (By(j,k,l+i-ist)   - By(j,k  ,l-i))
       end do
     end do
    end do
@@ -769,7 +767,7 @@ if (.not. l_2dxz) then ! --- 3D XYZ
    end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = -nzs, nz+nzs-ist
    do k = -nys, ny+nys
     do j = -nxs, nx+nxs
@@ -802,11 +800,11 @@ else ! --- now 1D Z, 2D XZ or RZ
   do l = -nzs, nz+nzs
       Ey(j,k,l) = Ey(j,k,l) - mudt  * Jy(j,k,l)
       do i = 1, norderz/2
-        Ey(j,k,l) = Ey(j,k,l) + dtsdz(i) * (Bx(j,k,l+i-ist)   - Bx(j,k,l-i)) 
+        Ey(j,k,l) = Ey(j,k,l) + dtsdz(i) * (Bx(j,k,l+i-ist)   - Bx(j,k,l-i))
       end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = -nzs, nz+nzs-1
       Ez(j,k,l) = Ez(j,k,l) - mudt  * Jz(j,k,l)
   end do
@@ -819,7 +817,7 @@ else ! --- now 1D Z, 2D XZ or RZ
     do j = -nxs, nx+nxs-ist
       Ex(j,k,l) = Ex(j,k,l) - mudt  * Jx(j,k,l)
       do i = 1, norderz/2
-        Ex(j,k,l) = Ex(j,k,l) - dtsdz(i) * (By(j,k,l+i-ist)   - By(j,k  ,l-i)) 
+        Ex(j,k,l) = Ex(j,k,l) - dtsdz(i) * (By(j,k,l+i-ist)   - By(j,k  ,l-i))
       end do
     end do
   end do
@@ -829,15 +827,15 @@ else ! --- now 1D Z, 2D XZ or RZ
     do j = -nxs, nx+nxs
       Ey(j,k,l) = Ey(j,k,l) - mudt  * Jy(j,k,l)
       do i = 1, norderx/2
-        Ey(j,k,l) = Ey(j,k,l) - dtsdx(i) * (Bz(j+i-ist,k,l)   - Bz(j-i,k,l)) 
+        Ey(j,k,l) = Ey(j,k,l) - dtsdx(i) * (Bz(j+i-ist,k,l)   - Bz(j-i,k,l))
       end do
-      do i = 1, norderz/2 
-        Ey(j,k,l) = Ey(j,k,l) + dtsdz(i) * (Bx(j,k,l+i-ist)   - Bx(j,k,l-i)) 
+      do i = 1, norderz/2
+        Ey(j,k,l) = Ey(j,k,l) + dtsdz(i) * (Bx(j,k,l+i-ist)   - Bx(j,k,l-i))
       end do
     end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = -nzs, nz+nzs-ist
     do j = -nxs, nx+nxs
       Ez(j,k,l) = Ez(j,k,l) - mudt  * Jz(j,k,l)
@@ -872,7 +870,7 @@ else ! --- now 1D Z, 2D XZ or RZ
         Ey(j,k,l) = Ey(j,k,l) - dtsdx(1) * (Bz(j,k,l) - Bz(j-1,k,l)) &
                               - mudt  * Jy(j,k,l)
         do i = 1, norderz/2
-           Ey(j,k,l) = Ey(j,k,l) + dtsdz(i) * (Bx(j,k,l+i-ist) - Bx(j,k,l-i)) 
+           Ey(j,k,l) = Ey(j,k,l) + dtsdz(i) * (Bx(j,k,l+i-ist) - Bx(j,k,l-i))
         end do
       end if
     end do
@@ -886,7 +884,7 @@ else ! --- now 1D Z, 2D XZ or RZ
     end if
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = -nzs, nz+nzs-1
     do j = -nxs, nx+nxs
      if (j/=0) then
@@ -969,8 +967,8 @@ complex(kind=8) :: i=(0.,1.)
            endif
         end do
      end do
-     
-     ! advance Ez 
+
+     ! advance Ez
      do l = 0, nz-1
         do j = 0, nx
            if ( j==0 .and. xmin==0 ) then
@@ -1030,7 +1028,7 @@ if (.not. l_2dxz) then ! --- 3D XYZ
    end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
    do k = 0, ny
     do j = 0, nx
@@ -1066,7 +1064,7 @@ else ! --- now 2D XZ or RZ
     end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
     do j = 0, nx
       if (.not.incond(j,k,l) .or. .not.incond(j,k,l+1)) &
@@ -1102,7 +1100,7 @@ else ! --- now 2D XZ or RZ
                           - mudt  * Jy(j,k,l)
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
     do j = 1, nx
       ru = 1.+0.5/(xmin/dx+j)
@@ -1373,13 +1371,13 @@ end subroutine push_em3d_evec_macroscopic_work_r
 subroutine push_em3d_evec_macroscopic(ex,ey,ez,bx,by,bz,Jx,Jy,Jz,mu0dt0,dt0sdx,dt0sdy,dt0sdz,nx,ny,nz, &
                           nxguard,nyguard,nzguard,l_2dxz,l_2drz,xmin,zmin,dx,dz, &
                           sigmax,sigmay,sigmaz,epsix,epsiy,epsiz,mux,muy,muz,sigma_method)
-! Integration over one time-step of Maxwell's macroscopic equations, using second-order leapfrop on Yee grid.                        
-! d (eps0*epsr*E)/dt + sigma*E = curl (B/mu0*mur) - J                   
+! Integration over one time-step of Maxwell's macroscopic equations, using second-order leapfrop on Yee grid.
+! d (eps0*epsr*E)/dt + sigma*E = curl (B/mu0*mur) - J
 
 ! The macroscopic coefficients are the relative quantities and are collocated with the electric fields on the Yee grid:
-!   -  sigmax, epsix and mux are collocated with Ex,                           
-!   -  sigmay, epsiy and muy are collocated with Ey,                           
-!   -  sigmaz, epsiz and muz are collocated with Ez.        
+!   -  sigmax, epsix and mux are collocated with Ex,
+!   -  sigmay, epsiy and muy are collocated with Ey,
+!   -  sigmaz, epsiz and muz are collocated with Ez.
 
 integer(ISZ) :: nx,ny,nz,nxguard,nyguard,nzguard
 real(kind=8), intent(IN OUT), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: ex,ey,ez
@@ -1404,7 +1402,7 @@ if (.not. l_2dxz) then ! --- 3D XYZ
   call push_em3d_evec_macroscopic_work(Ey,Bz,Bx,Jy,mu0dt0,dt0sdz,dt0sdx,nx,ny,nz,nxguard,nyguard,nzguard, &
                                        sigmay,epsiy,muy,0,0,0,nx,ny-1,nz,0,0,1,1,0,0,sigma_method)
 
-  ! advance Ez 
+  ! advance Ez
   call push_em3d_evec_macroscopic_work(Ez,Bx,By,Jz,mu0dt0,dt0sdx,dt0sdy,nx,ny,nz,nxguard,nyguard,nzguard, &
                                        sigmaz,epsiz,muz,0,0,0,nx,ny,nz-1,1,0,0,0,1,0,sigma_method)
 
@@ -1420,7 +1418,7 @@ else ! --- now 2D XZ or RZ
   call push_em3d_evec_macroscopic_work(Ey,Bz,Bx,Jy(:,:,:),mu0dt0,dt0sdz,dt0sdx,nx,ny,nz,nxguard,nyguard,nzguard, &
                                        sigmay,epsiy,muy,0,0,0,nx,0,nz,0,0,1,1,0,0,sigma_method)
 
-  ! advance Ez 
+  ! advance Ez
   call push_em3d_evec_macroscopic_work(Ez,Bx,By,Jz(:,:,:),mu0dt0,dt0sdx,0.,nx,ny,nz,nxguard,nyguard,nzguard, &
                                        sigmaz,epsiz,muz,0,0,0,nx,0,nz-1,1,0,0,0,0,0,sigma_method)
 
@@ -1439,7 +1437,7 @@ else ! --- now 2D XZ or RZ
                                          sigmay,epsiy,muy,0,0,0,0,0,nz,0,0,1,1,0,0,sigma_method)
   endif
 
-  ! advance Ez 
+  ! advance Ez
   ! A special method is used to properly handle the 1/r drBz/dr term
   call push_em3d_evec_macroscopic_work_r(Ez,By,Jz(:,:,:),mu0dt0,dt0sdx,nx,ny,nz,nxguard,nyguard,nzguard,xmin,dx, &
                                          sigmaz,epsiz,muz,sigma_method)
@@ -1450,18 +1448,17 @@ return
 end subroutine push_em3d_evec_macroscopic
 
 subroutine push_em3d_kyeevec(ex,ey,ez,bx,by,bz,Jx,Jy,Jz,mudt,dtsdx,dtsdy,dtsdz, &
-                             nx,ny,nz,nxguard,nyguard,nzguard,e_inz_pos,Ex_inz,Ey_inz,l_2dxz,zmin,dz)
+                             nx,ny,nz,nxguard,nyguard,nzguard,l_2dxz,zmin,dz)
 use EM3D_kyee
 implicit none
 integer :: nx,ny,nz,nxguard,nyguard,nzguard
-real(kind=8), intent(IN) :: E_inz_pos,zmin,dz
+real(kind=8), intent(IN) :: zmin,dz
 real(kind=8), intent(IN OUT), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: ex,ey,ez,bx,by,bz
 real(kind=8), intent(IN), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: Jx, Jy, Jz
-real(kind=8), intent(IN), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard) :: Ex_inz,Ey_inz
 logical(ISZ) :: l_2dxz
 
 INTEGER :: j, k, l
-real(kind=8) :: dtsdx,dtsdy,dtsdz,mudt,E_inz_angle,zlaser,w
+real(kind=8) :: dtsdx,dtsdy,dtsdz,mudt,zlaser,w
 
 if (.not.l_2dxz) then
   ! advance Ex
@@ -1519,7 +1516,7 @@ if (.not.l_2dxz) then
                                 - gammax*dtsdx * (Bz(j,k+1,l+1) - Bz(j-1,k+1,l+1) &
                                                +  Bz(j,k-1,l+1) - Bz(j-1,k-1,l+1) &
                                                +  Bz(j,k+1,l-1) - Bz(j-1,k+1,l-1) &
-                                               +  Bz(j,k-1,l-1) - Bz(j-1,k-1,l-1)) &                              
+                                               +  Bz(j,k-1,l-1) - Bz(j-1,k-1,l-1)) &
                                 + alphaz*dtsdz * (Bx(j  ,k  ,l) - Bx(j  ,k  ,l-1)) &
                                 + betazx *dtsdz * (Bx(j+1,k  ,l) - Bx(j+1,k  ,l-1) &
                                                +  Bx(j-1,k  ,l) - Bx(j-1,k  ,l-1)) &
@@ -1550,7 +1547,7 @@ if (.not.l_2dxz) then
    end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
    do k = 0, ny
     do j = 0, nx
@@ -1619,11 +1616,11 @@ else
                                         - 0.5*    betaxz *mudt * (Jy(j,k  ,l+1) &
                                                       +  Jy(j,k  ,l-1)) &
                                         - 0.5*    betazx *mudt * (Jy(j+1,k  ,l) &
-                                                      +  Jy(j-1,k  ,l)) 
+                                                      +  Jy(j-1,k  ,l))
     end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
     do j = 0, nx
       Ez(j,k,l) = Ez(j,k,l) + alphax*dtsdx * (By(j,k  ,l  ) - By(j-1,k  ,l  )) &
@@ -1631,7 +1628,7 @@ else
                                                  +  By(j,k  ,l-1) - By(j-1,k  ,l-1)) &
                                 - alphax*mudt * Jz(j,k,l) &
                                         -     betaxz *mudt * (Jz(j,k  ,l+1) &
-                                                      +  Jz(j,k  ,l-1))  
+                                                      +  Jz(j,k  ,l-1))
     end do
   end do
 
@@ -1673,7 +1670,7 @@ end if
 
 select case (f%stencil)
    ! Choose the kind of stencil that is used for the B push
-   
+
 case( 0, 2 ) ! Standard Yee stencil on B push
   ! (Note: Cole-Karkkainen stencil on E push in case 2)
   if (f%sigmab==0.) then
@@ -1725,9 +1722,17 @@ case( 1 ) ! Cole-Karkkainen stencil on B push (Note: Yee stencil on E push)
 case( 3 ) ! Lehe stencil on B push (Note: Yee stencil on E push)
    call push_em3d_lehebvec(f%ex,f%ey,f%ez,f%bx,f%by,f%bz, &
         dtsdx,dtsdy,dtsdz, &
+        f%dx,f%dy,f%dz, &
+        f%xmin,f%ymin,f%zmin, &
         f%nx,f%ny,f%nz, &
-        f%nxguard,f%nyguard,f%nzguard,f%l_2dxz)
-   
+        f%nxguard,f%nyguard,f%nzguard, &
+        f%nxbs,f%nybs,f%nzbs, &
+        f%l_1dz,f%l_2dxz,f%l_2drz)
+  if (f%circ_m>0) &
+    call push_em3d_lehebvec_circ(f%ex_circ,f%ey_circ,f%ez_circ, &
+                           f%bx_circ,f%by_circ,f%bz_circ, &
+                           dtsdx,dtsdz,f%dx,f%dz,f%xmin,f%zmin, &
+                           f%nx,f%nz, f%nxguard,f%nzguard,f%circ_m)
 end select
 
 if (f%theta_damp/=0.) then
@@ -1765,13 +1770,13 @@ if (.not.l_2dxz) then
   do l = -nzs, nz+nzs-1
    do k = -nys, ny+nys
     do j = -nxs, nx+nxs-1
-      By(j,k,l) = By(j,k,l) + dtsdx * (Ez(j+1,k,l  ) - Ez(j,k,l)) &  
-                            - dtsdz * (Ex(j  ,k,l+1) - Ex(j,k,l)) 
+      By(j,k,l) = By(j,k,l) + dtsdx * (Ez(j+1,k,l  ) - Ez(j,k,l)) &
+                            - dtsdz * (Ex(j  ,k,l+1) - Ex(j,k,l))
     end do
    end do
   end do
 
-  ! advance Bz 
+  ! advance Bz
   do l = -nzs, nz+nzs
    do k = -nys, ny+nys-1
     do j = -nxs, nx+nxs-1
@@ -1792,7 +1797,7 @@ else
 
   ! advance By
   do l = -nzs, nz+nzs-1
-      By(j,k,l) = By(j,k,l) - dtsdz * (Ex(j  ,k,l+1) - Ex(j,k,l)) 
+      By(j,k,l) = By(j,k,l) - dtsdz * (Ex(j  ,k,l+1) - Ex(j,k,l))
   end do
 
  else if (.not. l_2drz) then
@@ -1807,15 +1812,15 @@ else
   ! advance By
   do l = -nzs, nz+nzs-1
     do j = -nxs, nx+nxs-1
-      By(j,k,l) = By(j,k,l) + dtsdx * (Ez(j+1,k,l  ) - Ez(j,k,l)) &  
-                            - dtsdz * (Ex(j  ,k,l+1) - Ex(j,k,l)) 
+      By(j,k,l) = By(j,k,l) + dtsdx * (Ez(j+1,k,l  ) - Ez(j,k,l)) &
+                            - dtsdz * (Ex(j  ,k,l+1) - Ex(j,k,l))
     end do
   end do
 
-  ! advance Bz 
+  ! advance Bz
   do l = -nzs, nz+nzs
     do j = -nxs, nx+nxs-1
-      Bz(j,k,l) = Bz(j,k,l) - dtsdx * (Ey(j+1,k,l) - Ey(j,k,l)) 
+      Bz(j,k,l) = Bz(j,k,l) - dtsdx * (Ey(j+1,k,l) - Ey(j,k,l))
     end do
   end do
 
@@ -1832,17 +1837,17 @@ else
   ! advance Btheta
   do l = -nzs, nz+nzs-1
     do j = -nxs, nx+nxs-1
-      By(j,k,l) = By(j,k,l) + dtsdx * (Ez(j+1,k,l  ) - Ez(j,k,l)) &  
-                            - dtsdz * (Ex(j  ,k,l+1) - Ex(j,k,l)) 
+      By(j,k,l) = By(j,k,l) + dtsdx * (Ez(j+1,k,l  ) - Ez(j,k,l)) &
+                            - dtsdz * (Ex(j  ,k,l+1) - Ex(j,k,l))
     end do
   end do
 
-  ! advance Bz 
+  ! advance Bz
   do l = -nzs, nz+nzs
     do j = -nxs, nx+nxs-1
       ru = 1.+0.5/(xmin/dx+j+0.5)
       rd = 1.-0.5/(xmin/dx+j+0.5)
-      Bz(j,k,l) = Bz(j,k,l) - dtsdx * (ru*Ey(j+1,k,l) - rd*Ey(j,k,l)) 
+      Bz(j,k,l) = Bz(j,k,l) - dtsdx * (ru*Ey(j+1,k,l) - rd*Ey(j,k,l))
     end do
    end do
 
@@ -1890,16 +1895,16 @@ if (.not.l_2dxz) then
    do k = -nys, ny+nys
     do j = -nxs, nx+nxs-ist
       do i = 1, norderx/2
-        By(j,k,l) = By(j,k,l) + dtsdx(i) * (Ez(j+i,k,l  ) - Ez(j-i+ist,k,l)) 
+        By(j,k,l) = By(j,k,l) + dtsdx(i) * (Ez(j+i,k,l  ) - Ez(j-i+ist,k,l))
       end do
       do i = 1, norderz/2
-        By(j,k,l) = By(j,k,l) - dtsdz(i) * (Ex(j  ,k,l+i) - Ex(j,k,l-i+ist)) 
+        By(j,k,l) = By(j,k,l) - dtsdz(i) * (Ex(j  ,k,l+i) - Ex(j,k,l-i+ist))
       end do
     end do
    end do
   end do
 
-  ! advance Bz 
+  ! advance Bz
   do l = -nzs, nz+nzs
    do k = -nys, ny+nys-ist
     do j = -nxs, nx+nxs-ist
@@ -1927,7 +1932,7 @@ else
   ! advance By
   do l = -nzs, nz+nzs-ist
     do i = 1, norderz/2
-      By(j,k,l) = By(j,k,l) - dtsdz(i) * (Ex(j  ,k,l+i) - Ex(j,k,l-i+ist)) 
+      By(j,k,l) = By(j,k,l) - dtsdz(i) * (Ex(j  ,k,l+i) - Ex(j,k,l-i+ist))
     end do
   end do
 
@@ -1946,19 +1951,19 @@ else
   do l = -nzs, nz+nzs-ist
     do j = -nxs, nx+nxs-ist
       do i = 1, norderx/2
-        By(j,k,l) = By(j,k,l) + dtsdx(i) * (Ez(j+i,k,l  ) - Ez(j-i+ist,k,l))  
+        By(j,k,l) = By(j,k,l) + dtsdx(i) * (Ez(j+i,k,l  ) - Ez(j-i+ist,k,l))
       end do
       do i = 1, norderz/2
-        By(j,k,l) = By(j,k,l) - dtsdz(i) * (Ex(j  ,k,l+i) - Ex(j,k,l-i+ist)) 
+        By(j,k,l) = By(j,k,l) - dtsdz(i) * (Ex(j  ,k,l+i) - Ex(j,k,l-i+ist))
       end do
     end do
   end do
 
-  ! advance Bz 
+  ! advance Bz
   do l = -nzs, nz+nzs
     do j = -nxs, nx+nxs-ist
       do i = 1, norderx/2
-        Bz(j,k,l) = Bz(j,k,l) - dtsdx(i) * (Ey(j+i,k,l) - Ey(j-i+ist,k,l)) 
+        Bz(j,k,l) = Bz(j,k,l) - dtsdx(i) * (Ey(j+i,k,l) - Ey(j-i+ist,k,l))
       end do
     end do
   end do
@@ -1983,19 +1988,19 @@ else
   ! advance Btheta
   do l = -nzs, nz+nzs-ist
     do j = -nxs, nx+nxs-1
-      By(j,k,l) = By(j,k,l) + dtsdx(1) * (Ez(j+1,k,l  ) - Ez(j,k,l))   
+      By(j,k,l) = By(j,k,l) + dtsdx(1) * (Ez(j+1,k,l  ) - Ez(j,k,l))
       do i = 1, norderz/2
-        By(j,k,l) = By(j,k,l) - dtsdz(i) * (Ex(j  ,k,l+i) - Ex(j,k,l-i+ist)) 
+        By(j,k,l) = By(j,k,l) - dtsdz(i) * (Ex(j  ,k,l+i) - Ex(j,k,l-i+ist))
       end do
     end do
   end do
 
-  ! advance Bz 
+  ! advance Bz
   do l = -nzs, nz+nzs
     do j = -nxs, nx+nxs-1
       ru = 1.+0.5/(xmin/dx+j+0.5)
       rd = 1.-0.5/(xmin/dx+j+0.5)
-      Bz(j,k,l) = Bz(j,k,l) - dtsdx(1) * (ru*Ey(j+1,k,l) - rd*Ey(j,k,l)) 
+      Bz(j,k,l) = Bz(j,k,l) - dtsdx(1) * (ru*Ey(j+1,k,l) - rd*Ey(j,k,l))
     end do
    end do
 
@@ -2046,12 +2051,12 @@ complex(kind=8) :: i=(0.,1.)
      ! advance Btheta
      do l = 0, nz-1
         do j = 0, nx-1
-           By(j,l,m) = By(j,l,m) + dtsdx * (Ez(j+1,l  ,m) - Ez(j,l,m)) &  
-                - dtsdz * (Ex(j,l+1,m) - Ex(j,l,m)) 
+           By(j,l,m) = By(j,l,m) + dtsdx * (Ez(j+1,l  ,m) - Ez(j,l,m)) &
+                - dtsdz * (Ex(j,l+1,m) - Ex(j,l,m))
         end do
      end do
 
-     ! advance Bz 
+     ! advance Bz
      do l = 0, nz
         do j = 0, nx-1
            r  = xmin+j*dx+0.5*dx
@@ -2061,10 +2066,91 @@ complex(kind=8) :: i=(0.,1.)
                 - i*m*dt*Ex(j,l,m)/r
         end do
      end do
-     
+
   end do
 return
 end subroutine push_em3d_bvec_circ
+
+
+subroutine push_em3d_lehebvec_circ(ex,ey,ez,bx,by,bz,dtsdx,dtsdz,dx,dz, &
+                          xmin,zmin,nx,nz,nxguard,nzguard,circ_m)
+use EM3D_kyee
+integer :: nx,nz,nxguard,nzguard,circ_m
+complex(kind=8), intent(IN OUT), dimension(-nxguard:nx+nxguard,-nzguard:nz+nzguard,circ_m) :: ex,ey,ez,bx,by,bz
+real(kind=8), intent(IN) :: dtsdx,dtsdz,xmin,zmin,dx,dz
+integer(ISZ) :: j,l,m
+real(kind=8) :: rd, ru, r, dt
+complex(kind=8) :: i=(0.,1.)
+
+  dt = dtsdx*dx
+  do m = 1, circ_m
+
+     ! advance Bx
+     do l = 0, nz-1
+        do j = 0,nx
+           if (j==0 .and. xmin==0) then
+              ! On axis
+              if (.not. m == 1) then
+                 ! Br should remain 0 on axis, for modes different than m=1,
+                 ! but the bulk equation does not necessarily ensure this.
+                 Bx(j,l,m) = 0.
+              else
+                 ! For the mode m = 1, the bulk equation diverges on axis
+                 ! (due to the 1/r terms). The following expressions regularize
+                 ! these divergences by assuming, on axis :
+                 ! Ez/r = 0/r + dEz/dr
+                 Bx(j,l,m) = Bx(j,l,m) &
+                    + alphay*i*m*dt*Ez(j+1,l,m)/dx &
+                    + betayz*i*m*dt*Ez(j+1,l+1,m)/dx &
+                    + betayz*i*m*dt*Ez(j+1,l-1,m)/dx &
+                    + alphaz*dtsdz * (Ey(j,  l+1,m) - Ey(j,l,m)) &
+                    + deltaz*dtsdz * (Ey(j,  l+2,m) - Ey(j,l-1,m))
+              endif
+           else
+              ! Equations in the bulk of the grid
+              r = xmin+j*dx
+              Bx(j,l,m) = Bx(j,l,m) &
+                  + alphay*i*m*dt*Ez(j,l,m)/r &
+                  + betayz*i*m*dt*Ez(j,l+1,m)/r &
+                  + betayz*i*m*dt*Ez(j,l-1,m)/r &
+                  + alphaz*dtsdz * (Ey(j,  l+1,m) - Ey(j,l,m)) &
+                  + deltaz*dtsdz * (Ey(j,  l+2,m) - Ey(j,l-1,m))
+           endif
+        end do
+     end do
+
+     ! advance Btheta
+     do l = 0, nz-1
+        do j = 0, nx-1
+           By(j,l,m) = By(j,l,m) &
+                + alphax*dtsdx * (Ez(j+1,l  ,m) - Ez(j,l,m)) &
+                + betaxz*dtsdx * (Ez(j+1,l+1,m) - Ez(j,l+1,m)) &
+                + betaxz*dtsdx * (Ez(j+1,l-1,m) - Ez(j,l-1,m)) &
+                - alphaz*dtsdz * (Ex(j,l+1,m) - Ex(j,l,m)) &
+                - deltaz*dtsdz * (Ex(j,l+2,m) - Ex(j,l-1,m))
+        end do
+     end do
+
+     ! advance Bz
+     do l = 0, nz
+        do j = 0, nx-1
+           r  = xmin+j*dx+0.5*dx
+           ru = 1.+0.5/(xmin/dx+j+0.5)
+           rd = 1.-0.5/(xmin/dx+j+0.5)
+           Bz(j,l,m) = Bz(j,l,m) &
+                - alphax*dtsdx * (ru*Ey(j+1,l,m) - rd*Ey(j,l,m)) &
+                - betaxz*dtsdx * (ru*Ey(j+1,l+1,m) - rd*Ey(j,l+1,m)) &
+                - betaxz*dtsdx * (ru*Ey(j+1,l-1,m) - rd*Ey(j,l-1,m)) &
+                - alphay*i*m*dt*Ex(j,l,m)/r &
+                - betayz*i*m*dt*Ex(j,l+1,m)/r &
+                - betayz*i*m*dt*Ex(j,l-1,m)/r
+        end do
+     end do
+
+  end do
+return
+end subroutine push_em3d_lehebvec_circ
+
 
 subroutine push_em3d_kyeebvec(ex,ey,ez,bx,by,bz,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxguard,nyguard,nzguard,l_2dxz)
 use EM3D_kyee
@@ -2098,7 +2184,7 @@ if (.not.l_2dxz) then
                             + gammaz*dtsdz * (Ey(j+1,k+1,l+1) - Ey(j+1,k+1,l  ) &
                                            +  Ey(j-1,k+1,l+1) - Ey(j-1,k+1,l  ) &
                                            +  Ey(j+1,k-1,l+1) - Ey(j+1,k-1,l  ) &
-                                           +  Ey(j-1,k-1,l+1) - Ey(j-1,k-1,l  )) 
+                                           +  Ey(j-1,k-1,l+1) - Ey(j-1,k-1,l  ))
     end do
    end do
   end do
@@ -2107,7 +2193,7 @@ if (.not.l_2dxz) then
   do l = 0, nz-1
    do k = 0, ny
     do j = 0, nx-1
-      By(j,k,l) = By(j,k,l) + alphax*dtsdx * (Ez(j+1,k  ,l  ) - Ez(j  ,k  ,l  )) &  
+      By(j,k,l) = By(j,k,l) + alphax*dtsdx * (Ez(j+1,k  ,l  ) - Ez(j  ,k  ,l  )) &
                             + betaxy*dtsdx * (Ez(j+1,k+1,l  ) - Ez(j  ,k+1,l  ) &
                                            +  Ez(j+1,k-1,l  ) - Ez(j  ,k-1,l  )) &
                             + betaxz*dtsdx * (Ez(j+1,k  ,l+1) - Ez(j  ,k  ,l+1) &
@@ -2124,12 +2210,12 @@ if (.not.l_2dxz) then
                             - gammaz*dtsdz * (Ex(j+1,k+1,l+1) - Ex(j+1,k+1,l  ) &
                                            +  Ex(j-1,k+1,l+1) - Ex(j-1,k+1,l  ) &
                                            +  Ex(j+1,k-1,l+1) - Ex(j+1,k-1,l  ) &
-                                           +  Ex(j-1,k-1,l+1) - Ex(j-1,k-1,l  )) 
+                                           +  Ex(j-1,k-1,l+1) - Ex(j-1,k-1,l  ))
     end do
    end do
   end do
 
-  ! advance Bz 
+  ! advance Bz
   do l = 0, nz
    do k = 0, ny-1
     do j = 0, nx-1
@@ -2150,7 +2236,7 @@ if (.not.l_2dxz) then
                             + gammay*dtsdy * (Ex(j+1,k+1,l+1) - Ex(j+1,k  ,l+1) &
                                            +  Ex(j-1,k+1,l+1) - Ex(j-1,k  ,l+1) &
                                            +  Ex(j+1,k+1,l-1) - Ex(j+1,k  ,l-1) &
-                                           +  Ex(j-1,k+1,l-1) - Ex(j-1,k  ,l-1)) 
+                                           +  Ex(j-1,k+1,l-1) - Ex(j-1,k  ,l-1))
     end do
    end do
   end do
@@ -2163,28 +2249,28 @@ else
     do j = 0, nx
       Bx(j,k,l) = Bx(j,k,l) +    alphaz*dtsdz * (Ey(j  ,k  ,l+1) - Ey(j  ,k  ,l  )) &
                             +    betazx*dtsdz * (Ey(j+1,k  ,l+1) - Ey(j+1,k  ,l  ) &
-                                              +  Ey(j-1,k  ,l+1) - Ey(j-1,k  ,l  )) 
+                                              +  Ey(j-1,k  ,l+1) - Ey(j-1,k  ,l  ))
     end do
   end do
 
   ! advance By
   do l = 0, nz-1
     do j = 0, nx-1
-      By(j,k,l) = By(j,k,l) +    alphax*dtsdx * (Ez(j+1,k  ,l  ) - Ez(j  ,k  ,l  )) &  
+      By(j,k,l) = By(j,k,l) +    alphax*dtsdx * (Ez(j+1,k  ,l  ) - Ez(j  ,k  ,l  )) &
                             +    betaxz*dtsdx * (Ez(j+1,k  ,l+1) - Ez(j  ,k  ,l+1) &
                                               +  Ez(j+1,k  ,l-1) - Ez(j  ,k  ,l-1)) &
                             -    alphaz*dtsdz * (Ex(j  ,k  ,l+1) - Ex(j  ,k  ,l  )) &
                             -    betazx*dtsdz * (Ex(j+1,k  ,l+1) - Ex(j+1,k  ,l  ) &
-                                              +  Ex(j-1,k  ,l+1) - Ex(j-1,k  ,l  )) 
+                                              +  Ex(j-1,k  ,l+1) - Ex(j-1,k  ,l  ))
     end do
   end do
 
-  ! advance Bz 
+  ! advance Bz
   do l = 0, nz
     do j = 0, nx-1
       Bz(j,k,l) = Bz(j,k,l) -    alphax*dtsdx * (Ey(j+1,k  ,l  ) - Ey(j  ,k  ,l  )) &
                             -    betaxz*dtsdx * (Ey(j+1,k  ,l+1) - Ey(j  ,k  ,l+1) &
-                                              +  Ey(j+1,k  ,l-1) - Ey(j  ,k  ,l-1)) 
+                                              +  Ey(j+1,k  ,l-1) - Ey(j  ,k  ,l-1))
     end do
   end do
 
@@ -2193,16 +2279,20 @@ end if
 return
 end subroutine push_em3d_kyeebvec
 
-subroutine push_em3d_lehebvec(ex,ey,ez,bx,by,bz,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxguard,nyguard,nzguard,l_2dxz)
+subroutine push_em3d_lehebvec(ex,ey,ez,bx,by,bz,dtsdx,dtsdy,dtsdz,&
+  dx,dy,dz,xmin,ymin,zmin,nx,ny,nz,&
+  nxguard,nyguard,nzguard,nxs,nys,nzs,l_1dz,l_2dxz,l_2drz)
   use EM3D_kyee
   implicit none
-  integer :: nx,ny,nz,nxguard,nyguard,nzguard
+  integer :: nx,ny,nz,nxguard,nyguard,nzguard,nxs,nys,nzs
   real(kind=8), intent(IN OUT), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: ex,ey,ez,bx,by,bz
-  real(kind=8), intent(IN) :: dtsdx,dtsdy,dtsdz
+  real(kind=8), intent(IN) :: dtsdx,dtsdy,dtsdz,xmin,ymin,zmin,dx,dy,dz
   integer(ISZ) :: j,k,l
-  logical(ISZ) :: l_2dxz
+  logical(ISZ) :: l_1dz,l_2dxz,l_2drz
+  real(kind=8) :: rd, ru
 
   if (.not.l_2dxz) then
+     ! 3D Cartesian
 
      ! advance Bx
      do l = 0, nz-1
@@ -2229,7 +2319,7 @@ subroutine push_em3d_lehebvec(ex,ey,ez,bx,by,bz,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxgua
         do k = 0, ny
            do j = 0, nx-1
               By(j,k,l) = By(j,k,l) &
-                   + alphax*dtsdx * (Ez(j+1,k  ,l  ) - Ez(j  ,k  ,l  )) &  
+                   + alphax*dtsdx * (Ez(j+1,k  ,l  ) - Ez(j  ,k  ,l  )) &
                    + betaxy*dtsdx * (Ez(j+1,k+1,l  ) - Ez(j  ,k+1,l  ) &
                    +  Ez(j+1,k-1,l  ) - Ez(j  ,k-1,l  )) &
                    + betaxz*dtsdx * (Ez(j+1,k  ,l+1) - Ez(j  ,k  ,l+1) &
@@ -2239,12 +2329,12 @@ subroutine push_em3d_lehebvec(ex,ey,ez,bx,by,bz,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxgua
                    +  Ex(j-1,k  ,l+1) - Ex(j-1,k  ,l  )) &
                    - betazy*dtsdz * (Ex(j  ,k+1,l+1) - Ex(j  ,k+1,l  ) &
                    +  Ex(j  ,k-1,l+1) - Ex(j  ,k-1,l  )) &
-                   - deltaz*dtsdz * (Ex(j  ,k  ,l+2) - Ex(j  ,k  ,l-1)) 
+                   - deltaz*dtsdz * (Ex(j  ,k  ,l+2) - Ex(j  ,k  ,l-1))
            end do
         end do
      end do
 
-     ! advance Bz 
+     ! advance Bz
      do l = 0, nz
         do k = 0, ny-1
            do j = 0, nx-1
@@ -2258,12 +2348,13 @@ subroutine push_em3d_lehebvec(ex,ey,ez,bx,by,bz,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxgua
                    + betayx*dtsdy * (Ex(j+1,k+1,l  ) - Ex(j+1,k  ,l  ) &
                    +  Ex(j-1,k+1,l  ) - Ex(j-1,k  ,l  )) &
                    + betayz*dtsdy * (Ex(j  ,k+1,l+1) - Ex(j  ,k  ,l+1) &
-                   +  Ex(j  ,k+1,l-1) - Ex(j  ,k  ,l-1)) 
+                   +  Ex(j  ,k+1,l-1) - Ex(j  ,k  ,l-1))
            end do
         end do
      end do
 
-  else
+  else if (.not. l_2drz) then
+     ! 2D Cartesian
 
      k=0
      ! advance Bx
@@ -2280,23 +2371,60 @@ subroutine push_em3d_lehebvec(ex,ey,ez,bx,by,bz,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxgua
      ! advance By
      do l = 0, nz-1
         do j = 0, nx-1
-           By(j,k,l) = By(j,k,l) +    alphax*dtsdx * (Ez(j+1,k  ,l  ) - Ez(j  ,k  ,l  )) &  
+           By(j,k,l) = By(j,k,l) +    alphax*dtsdx * (Ez(j+1,k  ,l  ) - Ez(j  ,k  ,l  )) &
                 +    betaxz*dtsdx * (Ez(j+1,k  ,l+1) - Ez(j  ,k  ,l+1) &
                 +  Ez(j+1,k  ,l-1) - Ez(j  ,k  ,l-1)) &
                 -    alphaz*dtsdz * (Ex(j  ,k  ,l+1) - Ex(j  ,k  ,l  )) &
                 -    betazx*dtsdz * (Ex(j+1,k  ,l+1) - Ex(j+1,k  ,l  ) &
                 +  Ex(j-1,k  ,l+1) - Ex(j-1,k  ,l  )) &
-                -    deltaz*dtsdz * (Ex(j  ,k  ,l+2) - Ex(j  ,k  ,l-1)) 
+                -    deltaz*dtsdz * (Ex(j  ,k  ,l+2) - Ex(j  ,k  ,l-1))
         end do
      end do
 
-     ! advance Bz 
+     ! advance Bz
      do l = 0, nz
         do j = 0, nx-1
            Bz(j,k,l) = Bz(j,k,l) -    alphax*dtsdx * (Ey(j+1,k  ,l  ) - Ey(j  ,k  ,l  )) &
                 -    betaxz*dtsdx * (Ey(j+1,k  ,l+1) - Ey(j  ,k  ,l+1) &
-                +  Ey(j+1,k  ,l-1) - Ey(j  ,k  ,l-1)) 
+                +  Ey(j+1,k  ,l-1) - Ey(j  ,k  ,l-1))
         end do
+     end do
+
+  else if (l_2drz) then
+    ! Cylindrical (only mode 0 here)
+
+    k=0
+    ! advance Br
+    do l = -nzs, nz+nzs-1
+      do j = -nxs, nx+nxs
+        Bx(j,k,l) = Bx(j,k,l) &
+            + alphaz*dtsdz * (Ey(j,k,  l+1) - Ey(j,k,l)) &
+            + deltaz*dtsdz * (Ey(j,k,  l+2) - Ey(j,k,l-1))
+      end do
+    end do
+
+    ! advance Btheta
+    do l = -nzs, nz+nzs-1
+      do j = -nxs, nx+nxs-1
+        By(j,k,l) = By(j,k,l) &
+            + alphax*dtsdx * (Ez(j+1,k,l  ) - Ez(j,k,l)) &
+            + betaxz*dtsdx * (Ez(j+1,k,l+1) - Ez(j,k,l+1)) &
+            + betaxz*dtsdx * (Ez(j+1,k,l-1) - Ez(j,k,l-1)) &
+            - alphaz*dtsdz * (Ex(j  ,k,l+1) - Ex(j,k,l)) &
+            - deltaz*dtsdz * (Ex(j  ,k,l+2) - Ex(j,k,l-1))
+      end do
+    end do
+
+    ! advance Bz
+    do l = -nzs, nz+nzs
+      do j = -nxs, nx+nxs-1
+        ru = 1.+0.5/(xmin/dx+j+0.5)
+        rd = 1.-0.5/(xmin/dx+j+0.5)
+        Bz(j,k,l) = Bz(j,k,l) &
+            - alphax*dtsdx * (ru*Ey(j+1,k,l) - rd*Ey(j,k,l)) &
+            - betaxz*dtsdx * (ru*Ey(j+1,k,l+1) - rd*Ey(j,k,l+1)) &
+            - betaxz*dtsdx * (ru*Ey(j+1,k,l-1) - rd*Ey(j,k,l-1))
+      end do
      end do
 
   end if
@@ -2326,7 +2454,7 @@ select case (f%stencil)
      ! (Second step of the propagative Poisson correction)
 
 case( 0,1 ) ! Yee stencil
- if(f%nconds>0) then 
+ if(f%nconds>0) then
   call push_em3d_fvec_cond(f%ex,f%ey,f%ez,f%f, f%rho, &
                       dtsepsi,dtsdx,dtsdy,dtsdz, &
                       f%dx,f%dy,f%dz, &
@@ -2362,7 +2490,7 @@ case( 3 ) ! Lehe stencil (since the B push uses Lehe stencil,
           dtsdx,dtsdy,dtsdz, &
           f%nx,f%ny,f%nz, &
           f%nxguard,f%nyguard,f%nzguard,f%l_2dxz)
-  
+
 end select
 
 end subroutine push_em3d_f
@@ -2419,7 +2547,7 @@ else
                + dtsdz * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) &
                - dtsepsi * Rho(j,k,l)
        end if
-       
+
     end do
  end do
 end if
@@ -2507,7 +2635,7 @@ else
   do l = 0, nz
     j = 0
     if (xmin==0.) then
-      if (.not.incond(j,k,l)) & 
+      if (.not.incond(j,k,l)) &
         F(j,k,l) = F(j,k,l) + 4.*dtsdx * Ex(j,k,l) &
                             + dtsdz * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) &
                             - dtsepsi * Rho(j,k,l)
@@ -2522,7 +2650,7 @@ else
     do j = 1, nx
       ru = 1.+0.5/(xmin/dx+j)
       rd = 1.-0.5/(xmin/dx+j)
-      if (.not.incond(j,k,l)) & 
+      if (.not.incond(j,k,l)) &
         F(j,k,l) = F(j,k,l) + dtsdx * (ru*Ex(j,k,l) - rd*Ex(j-1,k  ,l  )) &
                             + dtsdz * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) &
                             - dtsepsi * Rho(j,k,l)
@@ -2553,7 +2681,7 @@ if (l_nodalgrid) then
         do j = 0, nx
           dive(j,k,l) = dive(j,k,l) + dxi * (Ex(j+1,k  ,l  ) - Ex(j-1,k  ,l  )) &
                                     + dyi * (Ey(j  ,k+1,l  ) - Ey(j  ,k-1,l  )) &
-                                    + dzi * (Ez(j  ,k  ,l+1) - Ez(j  ,k  ,l-1)) 
+                                    + dzi * (Ez(j  ,k  ,l+1) - Ez(j  ,k  ,l-1))
         end do
        end do
       end do
@@ -2565,7 +2693,7 @@ if (l_nodalgrid) then
       do l = 0, nz
         do j = 0, nx
           dive(j,k,l) = dive(j,k,l) + dxi * (Ex(j+1,k  ,l  ) - Ex(j-1,k  ,l  )) &
-                                    + dzi * (Ez(j  ,k  ,l+1) - Ez(j  ,k  ,l-1)) 
+                                    + dzi * (Ez(j  ,k  ,l+1) - Ez(j  ,k  ,l-1))
         end do
       end do
      else
@@ -2575,18 +2703,18 @@ if (l_nodalgrid) then
         j = 0
         if (xmin==0.) then
           dive(j,k,l) = dive(j,k,l) + 4.*dxi * Ex(j,k,l) &
-                                    + dzi * (Ez(j  ,k  ,l+1) - Ez(j  ,k  ,l-1)) 
+                                    + dzi * (Ez(j  ,k  ,l+1) - Ez(j  ,k  ,l-1))
         else
           ru = 1.+1./(xmin/dx)
           rd = 1.-1./(xmin/dx)
           dive(j,k,l) = dive(j,k,l) + dxi * (ru*Ex(j+1,k  ,l  ) - rd*Ex(j-1,k  ,l  )) &
-                                    + dzi *    (Ez(j  ,k  ,l+1) -    Ez(j  ,k  ,l-1)) 
+                                    + dzi *    (Ez(j  ,k  ,l+1) -    Ez(j  ,k  ,l-1))
         end if
         do j = 1, nx
           ru = 1.+1./(xmin/dx+j)
           rd = 1.-1./(xmin/dx+j)
           dive(j,k,l) = dive(j,k,l) + dxi * (ru*Ex(j+1,k  ,l  ) - rd*Ex(j-1,k  ,l  )) &
-                                    + dzi * (   Ez(j  ,k  ,l+1) -    Ez(j  ,k  ,l-1)) 
+                                    + dzi * (   Ez(j  ,k  ,l+1) -    Ez(j  ,k  ,l-1))
         end do
       end do
      end if
@@ -2602,7 +2730,7 @@ else
         do j = 0, nx
           dive(j,k,l) = dive(j,k,l) + dxi * (Ex(j,k,l) - Ex(j-1,k  ,l  )) &
                                     + dyi * (Ey(j,k,l) - Ey(j  ,k-1,l  )) &
-                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1))
         end do
        end do
       end do
@@ -2614,7 +2742,7 @@ else
       do l = 0, nz
         do j = 0, nx
           dive(j,k,l) = dive(j,k,l) + dxi * (Ex(j,k,l) - Ex(j-1,k  ,l  )) &
-                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1))
         end do
       end do
      else
@@ -2624,18 +2752,18 @@ else
         j = 0
         if (xmin==0.) then
           dive(j,k,l) = dive(j,k,l) + 4.*dxi * Ex(j,k,l) &
-                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1))
         else
           ru = 1.+0.5/(xmin/dx)
           rd = 1.-0.5/(xmin/dx)
           dive(j,k,l) = dive(j,k,l) + dxi * (ru*Ex(j,k,l) - rd*Ex(j-1,k  ,l  )) &
-                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1))
         end if
         do j = 1, nx
           ru = 1.+0.5/(xmin/dx+j)
           rd = 1.-0.5/(xmin/dx+j)
           dive(j,k,l) = dive(j,k,l) + dxi * (ru*Ex(j,k,l) - rd*Ex(j-1,k  ,l  )) &
-                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1)) 
+                                    + dzi * (Ez(j,k,l) - Ez(j  ,k  ,l-1))
         end do
       end do
      end if
@@ -2741,7 +2869,7 @@ dtsdy = f%clight*dt/f%dy
 dtsdz = f%clight*dt/f%dz
 
 if (f%stencil==0 .or. f%stencil==2) then
-  if(f%nconds>0) then 
+  if(f%nconds>0) then
     call push_em3d_efvec_cond(f%ex,f%ey,f%ez,f%f, &
                       dtsdx,dtsdy,dtsdz, &
                       f%nx,f%ny,f%nz, &
@@ -2781,7 +2909,7 @@ if (.not.l_2dxz) then
   do l = 0, nz
    do k = 0, ny
     do j = 0, nx-1
-      Ex(j,k,l) = Ex(j,k,l) + dtsdx * (F(j+1,k,l) - F(j,k,l)) 
+      Ex(j,k,l) = Ex(j,k,l) + dtsdx * (F(j+1,k,l) - F(j,k,l))
     end do
    end do
   end do
@@ -2795,11 +2923,11 @@ if (.not.l_2dxz) then
    end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
    do k = 0, ny
     do j = 0, nx
-      Ez(j,k,l) = Ez(j,k,l) + dtsdz * (F(j,k,l+1) - F(j,k,l)) 
+      Ez(j,k,l) = Ez(j,k,l) + dtsdz * (F(j,k,l+1) - F(j,k,l))
     end do
    end do
   end do
@@ -2810,14 +2938,14 @@ else
   ! advance Ex
   do l = 0, nz
     do j = 0, nx-1
-      Ex(j,k,l) = Ex(j,k,l) + dtsdx * (F(j+1,k,l) - F(j,k,l)) 
+      Ex(j,k,l) = Ex(j,k,l) + dtsdx * (F(j+1,k,l) - F(j,k,l))
     end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
     do j = 0, nx
-      Ez(j,k,l) = Ez(j,k,l) + dtsdz * (F(j,k,l+1) - F(j,k,l)) 
+      Ez(j,k,l) = Ez(j,k,l) + dtsdz * (F(j,k,l+1) - F(j,k,l))
     end do
   end do
 
@@ -2844,7 +2972,7 @@ real(kind=8) :: dt,r
      ! advance Ex
      do l = 0, nz
         do j = 0, nx-1
-           Ex(j,l,m) = Ex(j,l,m) + dtsdx * (F(j+1,l,m) - F(j,l,m)) 
+           Ex(j,l,m) = Ex(j,l,m) + dtsdx * (F(j+1,l,m) - F(j,l,m))
         end do
      end do
 
@@ -2865,10 +2993,10 @@ real(kind=8) :: dt,r
         end do
      end do
 
-     ! advance Ez 
+     ! advance Ez
      do l = 0, nz-1
         do j = 0, nx
-           Ez(j,l,m) = Ez(j,l,m) + dtsdz * (F(j,l+1,m) - F(j,l,m)) 
+           Ez(j,l,m) = Ez(j,l,m) + dtsdz * (F(j,l+1,m) - F(j,l,m))
         end do
      end do
 
@@ -2892,7 +3020,7 @@ if (.not.l_2dxz) then
    do k = 0, ny
     do j = 0, nx-1
       if (.not.incond(j,k,l) .or. .not.incond(j+1,k,l)) &
-      Ex(j,k,l) = Ex(j,k,l) + dtsdx * (F(j+1,k,l) - F(j,k,l)) 
+      Ex(j,k,l) = Ex(j,k,l) + dtsdx * (F(j+1,k,l) - F(j,k,l))
     end do
    end do
   end do
@@ -2907,12 +3035,12 @@ if (.not.l_2dxz) then
    end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
    do k = 0, ny
     do j = 0, nx
       if (.not.incond(j,k,l) .or. .not.incond(j,k,l+1)) &
-      Ez(j,k,l) = Ez(j,k,l) + dtsdz * (F(j,k,l+1) - F(j,k,l)) 
+      Ez(j,k,l) = Ez(j,k,l) + dtsdz * (F(j,k,l+1) - F(j,k,l))
     end do
    end do
   end do
@@ -2924,15 +3052,15 @@ else
   do l = 0, nz
     do j = 0, nx-1
       if (.not.incond(j,k,l) .or. .not.incond(j+1,k,l)) &
-      Ex(j,k,l) = Ex(j,k,l) + dtsdx * (F(j+1,k,l) - F(j,k,l)) 
+      Ex(j,k,l) = Ex(j,k,l) + dtsdx * (F(j+1,k,l) - F(j,k,l))
     end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
     do j = 0, nx
       if (.not.incond(j,k,l) .or. .not.incond(j,k,l+1)) &
-      Ez(j,k,l) = Ez(j,k,l) + dtsdz * (F(j,k,l+1) - F(j,k,l)) 
+      Ez(j,k,l) = Ez(j,k,l) + dtsdz * (F(j,k,l+1) - F(j,k,l))
     end do
   end do
 
@@ -2963,7 +3091,7 @@ if (.not.l_2dxz) then
                             + gammax*dtsdx * (F(j+1,k+1,l+1) - F(j  ,k+1,l+1) &
                                            +  F(j+1,k-1,l+1) - F(j  ,k-1,l+1) &
                                            +  F(j+1,k+1,l-1) - F(j  ,k+1,l-1) &
-                                           +  F(j+1,k-1,l-1) - F(j  ,k-1,l-1)) 
+                                           +  F(j+1,k-1,l-1) - F(j  ,k-1,l-1))
     end do
    end do
   end do
@@ -2980,12 +3108,12 @@ if (.not.l_2dxz) then
                             + gammay*dtsdy * (F(j+1,k+1,l+1) - F(j+1,k  ,l+1) &
                                            +  F(j-1,k+1,l+1) - F(j-1,k  ,l+1) &
                                            +  F(j+1,k+1,l-1) - F(j+1,k  ,l-1) &
-                                           +  F(j-1,k+1,l-1) - F(j-1,k  ,l-1)) 
+                                           +  F(j-1,k+1,l-1) - F(j-1,k  ,l-1))
     end do
    end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
    do k = 0, ny
     do j = 0, nx
@@ -2997,7 +3125,7 @@ if (.not.l_2dxz) then
                             + gammaz*dtsdz * (F(j+1,k+1,l+1) - F(j+1,k+1,l  ) &
                                            +  F(j-1,k+1,l+1) - F(j-1,k+1,l  ) &
                                            +  F(j+1,k-1,l+1) - F(j+1,k-1,l  ) &
-                                           +  F(j-1,k-1,l+1) - F(j-1,k-1,l  )) 
+                                           +  F(j-1,k-1,l+1) - F(j-1,k-1,l  ))
     end do
    end do
   end do
@@ -3010,11 +3138,11 @@ else
     do j = 0, nx-1
       Ex(j,k,l) = Ex(j,k,l) + alphax*dtsdx * (F(j+1,k  ,l  ) - F(j  ,k  ,l  )) &
                             + betaxz*dtsdx * (F(j+1,k  ,l+1) - F(j  ,k  ,l+1) &
-                                           +  F(j+1,k  ,l-1) - F(j  ,k  ,l-1))  
+                                           +  F(j+1,k  ,l-1) - F(j  ,k  ,l-1))
     end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, nz-1
     do j = 0, nx
       Ez(j,k,l) = Ez(j,k,l) + alphaz*dtsdz * (F(j  ,k  ,l+1) - F(j  ,k  ,l  )) &
@@ -3047,7 +3175,7 @@ subroutine push_em3d_leheefvec(ex,ey,ez,f,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxguard,nyg
                    + betaxy*dtsdx * (F(j+1,k+1,l  ) - F(j  ,k+1,l  ) &
                    +  F(j+1,k-1,l  ) - F(j  ,k-1,l  )) &
                    + betaxz*dtsdx * (F(j+1,k  ,l+1) - F(j  ,k  ,l+1) &
-                   +  F(j+1,k  ,l-1) - F(j  ,k  ,l-1)) 
+                   +  F(j+1,k  ,l-1) - F(j  ,k  ,l-1))
            end do
         end do
      end do
@@ -3061,12 +3189,12 @@ subroutine push_em3d_leheefvec(ex,ey,ez,f,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxguard,nyg
                    + betayx*dtsdy * (F(j+1,k+1,l  ) - F(j+1,k  ,l  ) &
                    +  F(j-1,k+1,l  ) - F(j-1,k  ,l  )) &
                    + betayz*dtsdy * (F(j  ,k+1,l+1) - F(j  ,k  ,l+1) &
-                   +  F(j  ,k+1,l-1) - F(j  ,k  ,l-1)) 
+                   +  F(j  ,k+1,l-1) - F(j  ,k  ,l-1))
            end do
         end do
      end do
 
-     ! advance Ez 
+     ! advance Ez
      do l = 0, nz-1
         do k = 0, ny
            do j = 0, nx
@@ -3076,7 +3204,7 @@ subroutine push_em3d_leheefvec(ex,ey,ez,f,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxguard,nyg
                    +  F(j-1,k  ,l+1) - F(j-1,k  ,l  )) &
                    + betazy*dtsdz * (F(j  ,k+1,l+1) - F(j  ,k+1,l  ) &
                    +  F(j  ,k-1,l+1) - F(j  ,k-1,l  )) &
-                   + deltaz*dtsdz * (F(j  ,k  ,l+2) - F(j  ,k  ,l-1)) 
+                   + deltaz*dtsdz * (F(j  ,k  ,l+2) - F(j  ,k  ,l-1))
            end do
         end do
      end do
@@ -3090,18 +3218,18 @@ subroutine push_em3d_leheefvec(ex,ey,ez,f,dtsdx,dtsdy,dtsdz,nx,ny,nz,nxguard,nyg
            Ex(j,k,l) = Ex(j,k,l) &
                 + alphax*dtsdx * (F(j+1,k  ,l  ) - F(j  ,k  ,l  )) &
                 + betaxz*dtsdx * (F(j+1,k  ,l+1) - F(j  ,k  ,l+1) &
-                +  F(j+1,k  ,l-1) - F(j  ,k  ,l-1))  
+                +  F(j+1,k  ,l-1) - F(j  ,k  ,l-1))
         end do
      end do
 
-     ! advance Ez 
+     ! advance Ez
      do l = 0, nz-1
         do j = 0, nx
            Ez(j,k,l) = Ez(j,k,l) &
                 + alphaz*dtsdz * (F(j  ,k  ,l+1) - F(j  ,k  ,l  )) &
                 + betazx*dtsdz * (F(j+1,k  ,l+1) - F(j+1,k  ,l  ) &
                 +  F(j-1,k  ,l+1) - F(j-1,k  ,l  )) &
-                + deltaz*dtsdz * (F(j  ,k  ,l+2) - F(j  ,k  ,l-1)) 
+                + deltaz*dtsdz * (F(j  ,k  ,l+2) - F(j  ,k  ,l-1))
         end do
      end do
 
@@ -3129,7 +3257,7 @@ dtsdz = f%clight*dt/f%dz
     do j = 0, f%nx
       f%Phi(j,k,l) = f%Phi(j,k,l) - dtsdx * (f%Ax(j,k,l) - f%Ax(j-1,k  ,l  )) &
                                   - dtsdy * (f%Ay(j,k,l) - f%Ay(j  ,k-1,l  )) &
-                                  - dtsdz * (f%Az(j,k,l) - f%Az(j  ,k  ,l-1)) 
+                                  - dtsdz * (f%Az(j,k,l) - f%Az(j  ,k  ,l-1))
     end do
    end do
   end do
@@ -3168,7 +3296,7 @@ real(kind=8) :: dtsdx,dtsdy,dtsdz,mudt
    end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, f%nz-1
    do k = 0, f%ny
     do j = 0, f%nx
@@ -3211,7 +3339,7 @@ INTEGER :: j, k, l,which
                              sf%bmfx,sf%bmfy,sf%bmfz,sf%l_1dz,sf%l_2dxz,sf%l_2drz,sf%l_nodalgrid, &
                              sf%xmin,sf%ymin,sf%zmin,sf%dx,sf%dy,sf%dz)
    end if
-   if (sf%nconds>0) then 
+   if (sf%nconds>0) then
        call push_em3d_splite_setcond(sf%nx,sf%ny,sf%nz,sf%nxcond,sf%nycond,sf%nzcond,sf%nxguard,sf%nyguard,sf%nzguard, &
                                      sf%exx,sf%exy,sf%exz,sf%eyx,sf%eyy,sf%eyz,sf%ezx,sf%ezy,sf%ezz,sf%incond,sf%l_2dxz,sf%l_2drz, &
                                      sf%xmin,sf%ymin,sf%zmin,sf%dx,sf%dy,sf%dz)
@@ -3220,7 +3348,7 @@ INTEGER :: j, k, l,which
     write(0,*) 'splite extended pml not implemented'
     stop
   end if
-  
+
   return
 end subroutine push_em3d_splite
 
@@ -3372,7 +3500,7 @@ else
   if (xmin==0.) then
     do l = 0, nz-1
       j = 0
-      ezx(j,k,l) = afx(j)*ezx(j,k,l) + 4*bpfx(j)*(byx(j,k,l)+byz(j,k,l))  
+      ezx(j,k,l) = afx(j)*ezx(j,k,l) + 4*bpfx(j)*(byx(j,k,l)+byz(j,k,l))
       do j = 1, nx
         ru = 1.+0.5/j
         rd = 1.-0.5/j
@@ -3389,10 +3517,10 @@ else
                                        + rd*bmfx(j)*(byx(j-1,k,l)+byz(j-1,k,l)) !- 0.5_8*dt*j(j,k,l,3)
       end do
     end do
-  end if 
+  end if
 
  end if
- 
+
 end if
 
   return
@@ -3433,7 +3561,7 @@ if (.not.l_2dxz) then
   do l = 0, nz
    do k = 0, ny
     do j = 0, nx-ist
-     exy(j,k,l) = afy(k)*exy(j,k,l) 
+     exy(j,k,l) = afy(k)*exy(j,k,l)
      do i = 1, nordery/2
       exy(j,k,l) = exy(j,k,l) + ycoefs(i)*bpfy(k)*(bzx(j,k+i-ist,l)+bzy(j,k+i-ist,l))  &
                               + ycoefs(i)*bmfy(k)*(bzx(j,k-i,l)+bzy(j,k-i,l)) !- 0.5_8*dt*j(j,k,l,1)
@@ -3598,7 +3726,7 @@ else
   if (xmin==0.) then
     do l = 0, nz-1
       j = 0
-      ezx(j,k,l) = afx(j)*ezx(j,k,l) + 4*bpfx(j)*(byx(j,k,l)+byz(j,k,l))  
+      ezx(j,k,l) = afx(j)*ezx(j,k,l) + 4*bpfx(j)*(byx(j,k,l)+byz(j,k,l))
       do j = 1, nx
         ru = 1.+0.5/j
         rd = 1.-0.5/j
@@ -3615,10 +3743,10 @@ else
                                        + rd*bmfx(j)*(byx(j-1,k,l)+byz(j-1,k,l)) !- 0.5_8*dt*j(j,k,l,3)
       end do
     end do
-  end if 
+  end if
 
  end if
- 
+
 end if
 
   return
@@ -3642,7 +3770,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard
    do k = -nyguard, ny+nyguard
     do j = -nxguard, max(0,nx+nxguard-1)
-      exy(j,k,l) = sfy(k)*exy(j,k,l) 
+      exy(j,k,l) = sfy(k)*exy(j,k,l)
     end do
    end do
   end do
@@ -3650,7 +3778,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard
    do k = -nyguard, ny+nyguard
     do j = -nxguard, max(0,nx+nxguard-1)
-      exz(j,k,l) = sfz(l)*exz(j,k,l) 
+      exz(j,k,l) = sfz(l)*exz(j,k,l)
     end do
    end do
   end do
@@ -3666,7 +3794,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard
    do k = -nyguard, max(0,ny+nyguard-1)
     do j = -nxguard, nx+nxguard
-      eyz(j,k,l) = sfz(l)*eyz(j,k,l) 
+      eyz(j,k,l) = sfz(l)*eyz(j,k,l)
     end do
    end do
   end do
@@ -3674,7 +3802,7 @@ INTEGER :: j, k, l
   do l = -nzguard, max(0,nz+nzguard-1)
    do k = -nyguard, ny+nyguard
     do j = -nxguard, nx+nxguard
-      ezx(j,k,l) = sfx(j)*ezx(j,k,l) 
+      ezx(j,k,l) = sfx(j)*ezx(j,k,l)
     end do
    end do
   end do
@@ -3682,7 +3810,7 @@ INTEGER :: j, k, l
   do l = -nzguard, max(0,nz+nzguard-1)
    do k = -nyguard, ny+nyguard
     do j = -nxguard, nx+nxguard
-      ezy(j,k,l) = sfy(k)*ezy(j,k,l) 
+      ezy(j,k,l) = sfy(k)*ezy(j,k,l)
     end do
    end do
   end do
@@ -3774,7 +3902,7 @@ else
       end if
     end do
   end do
- 
+
 end if
 
   return
@@ -3798,7 +3926,7 @@ INTEGER :: j, k, l,which
                              sf%agx,sf%agy,sf%agz, &
                              sf%bpgx,sf%bpgy,sf%bpgz, &
                              sf%bmgx,sf%bmgy,sf%bmgz,sf%l_2dxz)
-    if(sf%nconds>0) then 
+    if(sf%nconds>0) then
        call push_em3d_splite_setcond(sf%nx,sf%ny,sf%nz,sf%nxcond,sf%nycond,sf%nzcond,sf%nxguard,sf%nyguard,sf%nzguard, &
                                      sf%exx,sf%exy,sf%exz,sf%eyx,sf%eyy,sf%eyz,sf%ezx,sf%ezy,sf%ezz,sf%incond,sf%l_2dxz,sf%l_2drz, &
                                      sf%xmin,sf%ymin,sf%zmin,sf%dx,sf%dy,sf%dz)
@@ -3899,7 +4027,7 @@ logical(ISZ) :: l_1dz,l_2dxz,l_2drz
   do l = -nzguard, nz+nzguard
    do k = -nyguard, ny+nyguard
     do j = -nxguard, nx+nxguard-1
-      exx(j,k,l) = sgx(j)*exx(j,k,l) 
+      exx(j,k,l) = sgx(j)*exx(j,k,l)
     end do
    end do
   end do
@@ -3916,7 +4044,7 @@ logical(ISZ) :: l_1dz,l_2dxz,l_2drz
   do l = -nzguard, nz+nzguard-1
    do k = -nyguard, ny+nyguard
     do j = -nxguard, nx+nxguard
-      ezz(j,k,l) = sgz(l)*ezz(j,k,l) 
+      ezz(j,k,l) = sgz(l)*ezz(j,k,l)
     end do
    end do
   end do
@@ -3986,7 +4114,7 @@ if (.not.l_2dxz) then
                                      + bmgy(k)*gammay * ( fx(j+1,k  ,l+1) + fy(j+1,k  ,l+1) + fz(j+1,k  ,l+1)  &
                                                       +   fx(j-1,k  ,l+1) + fy(j-1,k  ,l+1) + fz(j-1,k  ,l+1)  &
                                                       +   fx(j+1,k  ,l-1) + fy(j+1,k  ,l-1) + fz(j+1,k  ,l-1)  &
-                                                      +   fx(j-1,k  ,l-1) + fy(j-1,k  ,l-1) + fz(j-1,k  ,l-1)) 
+                                                      +   fx(j-1,k  ,l-1) + fy(j-1,k  ,l-1) + fz(j-1,k  ,l-1))
     end do
    end do
   end do
@@ -4011,7 +4139,7 @@ if (.not.l_2dxz) then
                                      + bmgz(l)*gammaz * ( fx(j+1,k+1,l  ) + fy(j+1,k+1,l  ) + fz(j+1,k+1,l  )  &
                                                       +   fx(j-1,k+1,l  ) + fy(j-1,k+1,l  ) + fz(j-1,k+1,l  )  &
                                                       +   fx(j+1,k-1,l  ) + fy(j+1,k-1,l  ) + fz(j+1,k-1,l  )  &
-                                                      +   fx(j-1,k-1,l  ) + fy(j-1,k-1,l  ) + fz(j-1,k-1,l  ))  
+                                                      +   fx(j-1,k-1,l  ) + fy(j-1,k-1,l  ) + fz(j-1,k-1,l  ))
     end do
    end do
   end do
@@ -4026,7 +4154,7 @@ else
                                                           +   fx(j+1,k  ,l-1) + fz(j+1,k  ,l-1))  &
                                      + bmgx(j)*    alphax * ( fx(j  ,k  ,l  ) + fz(j  ,k  ,l  ) ) &
                                      + bmgx(j)*    betaxz * ( fx(j  ,k  ,l+1) + fz(j  ,k  ,l+1)   &
-                                                          +   fx(j  ,k  ,l-1) + fz(j  ,k  ,l-1))  
+                                                          +   fx(j  ,k  ,l-1) + fz(j  ,k  ,l-1))
     end do
   end do
 
@@ -4037,7 +4165,7 @@ else
                                                           +   fx(j-1,k  ,l+1) + fz(j-1,k  ,l+1))  &
                                      + bmgz(l)*    alphaz * ( fx(j  ,k  ,l  ) + fz(j  ,k  ,l  ) ) &
                                      + bmgz(l)*    betazx * ( fx(j+1,k  ,l  ) + fz(j+1,k  ,l  )   &
-                                                          +   fx(j-1,k  ,l  ) + fz(j-1,k  ,l  ))  
+                                                          +   fx(j-1,k  ,l  ) + fz(j-1,k  ,l  ))
     end do
   end do
 
@@ -4433,7 +4561,7 @@ INTEGER :: j, k, l
   do l = -nzguard, max(0,nz+nzguard-1)
    do k = -nyguard, ny+nyguard-1
     do j = -nxguard, nx+nxguard
-      bxy(j,k,l) = sgy(k)*bxy(j,k,l) 
+      bxy(j,k,l) = sgy(k)*bxy(j,k,l)
     end do
    end do
   end do
@@ -4441,7 +4569,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard-1
    do k = -nyguard, max(0,ny+nyguard-1)
     do j = -nxguard, nx+nxguard
-      bxz(j,k,l) = sgz(l)*bxz(j,k,l) 
+      bxz(j,k,l) = sgz(l)*bxz(j,k,l)
     end do
    end do
   end do
@@ -4457,7 +4585,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard-1
    do k = -nyguard, ny+nyguard
     do j = -nxguard, max(0,nx+nxguard-1)
-      byz(j,k,l) = sgz(l)*byz(j,k,l) 
+      byz(j,k,l) = sgz(l)*byz(j,k,l)
     end do
    end do
   end do
@@ -4465,7 +4593,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard
    do k = -nyguard, max(0,ny+nyguard-1)
     do j = -nxguard, nx+nxguard-1
-      bzx(j,k,l) = sgx(j)*bzx(j,k,l) 
+      bzx(j,k,l) = sgx(j)*bzx(j,k,l)
     end do
    end do
   end do
@@ -4473,7 +4601,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard
    do k = -nyguard, ny+nyguard-1
     do j = -nxguard, max(0,nx+nxguard-1)
-      bzy(j,k,l) = sgy(k)*bzy(j,k,l) 
+      bzy(j,k,l) = sgy(k)*bzy(j,k,l)
     end do
    end do
   end do
@@ -4496,7 +4624,7 @@ INTEGER :: j, k, l
   do l = -nzguard, max(0,nz+nzguard-1)
    do k = -nyguard, max(0,ny+nyguard-1)
     do j = -nxguard, nx+nxguard
-      bxx(j,k,l) = sfx(k)*bxx(j,k,l) 
+      bxx(j,k,l) = sfx(k)*bxx(j,k,l)
     end do
    end do
   end do
@@ -4513,7 +4641,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard
    do k = -nyguard, max(0,ny+nyguard-1)
     do j = -nxguard, max(0,nx+nxguard-1)
-      bzz(j,k,l) = sfz(j)*bzz(j,k,l) 
+      bzz(j,k,l) = sfz(j)*bzz(j,k,l)
     end do
    end do
   end do
@@ -4536,7 +4664,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard
    do k = -nyguard, ny+nyguard
     do j = -nxguard, nx+nxguard-1
-      gx(j,k,l) = sgx(k)*gx(j,k,l) 
+      gx(j,k,l) = sgx(k)*gx(j,k,l)
     end do
    end do
   end do
@@ -4553,7 +4681,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard-1
    do k = -nyguard, ny+nyguard
     do j = -nxguard, nx+nxguard
-      gz(j,k,l) = sgz(j)*gz(j,k,l) 
+      gz(j,k,l) = sgz(j)*gz(j,k,l)
     end do
    end do
   end do
@@ -4602,7 +4730,7 @@ if (.not.l_2dxz) then
                                      - bmgy(k)*gammay * (ezx(j+1,k  ,l+1)+ezy(j+1,k  ,l+1)+ezz(j+1,k  ,l+1) &
                                                       +  ezx(j-1,k  ,l+1)+ezy(j-1,k  ,l+1)+ezz(j-1,k  ,l+1) &
                                                       +  ezx(j+1,k  ,l-1)+ezy(j+1,k  ,l-1)+ezz(j+1,k  ,l-1) &
-                                                      +  ezx(j-1,k  ,l-1)+ezy(j-1,k  ,l-1)+ezz(j-1,k  ,l-1)) 
+                                                      +  ezx(j-1,k  ,l-1)+ezy(j-1,k  ,l-1)+ezz(j-1,k  ,l-1))
     end do
    end do
   end do
@@ -4627,7 +4755,7 @@ if (.not.l_2dxz) then
                                      + bmgz(l)*gammaz * (eyx(j+1,k+1,l  )+eyy(j+1,k+1,l  )+eyz(j+1,k+1,l  ) &
                                                       +  eyx(j-1,k+1,l  )+eyy(j-1,k+1,l  )+eyz(j-1,k+1,l  ) &
                                                       +  eyx(j+1,k-1,l  )+eyy(j+1,k-1,l  )+eyz(j+1,k-1,l  ) &
-                                                      +  eyx(j-1,k-1,l  )+eyy(j-1,k-1,l  )+eyz(j-1,k-1,l  )) 
+                                                      +  eyx(j-1,k-1,l  )+eyy(j-1,k-1,l  )+eyz(j-1,k-1,l  ))
     end do
    end do
   end do
@@ -4652,7 +4780,7 @@ if (.not.l_2dxz) then
                                      + bmgx(j)*gammax * (ezx(j  ,k+1,l+1)+ezy(j  ,k+1,l+1)+ezz(j  ,k+1,l+1) &
                                                       +  ezx(j  ,k-1,l+1)+ezy(j  ,k-1,l+1)+ezz(j  ,k-1,l+1) &
                                                       +  ezx(j  ,k+1,l-1)+ezy(j  ,k+1,l-1)+ezz(j  ,k+1,l-1) &
-                                                      +  ezx(j  ,k-1,l-1)+ezy(j  ,k-1,l-1)+ezz(j  ,k-1,l-1)) 
+                                                      +  ezx(j  ,k-1,l-1)+ezy(j  ,k-1,l-1)+ezz(j  ,k-1,l-1))
     end do
    end do
   end do
@@ -4677,7 +4805,7 @@ if (.not.l_2dxz) then
                                      - bmgz(l)*gammaz * (exx(j+1,k+1,l  )+exy(j+1,k+1,l  )+exz(j+1,k+1,l  ) &
                                                       +  exx(j-1,k+1,l  )+exy(j-1,k+1,l  )+exz(j-1,k+1,l  ) &
                                                       +  exx(j+1,k-1,l  )+exy(j+1,k-1,l  )+exz(j+1,k-1,l  ) &
-                                                      +  exx(j-1,k-1,l  )+exy(j-1,k-1,l  )+exz(j-1,k-1,l  )) 
+                                                      +  exx(j-1,k-1,l  )+exy(j-1,k-1,l  )+exz(j-1,k-1,l  ))
 
     end do
    end do
@@ -4703,7 +4831,7 @@ if (.not.l_2dxz) then
                                      - bmgx(j)*gammax * (eyx(j  ,k+1,l+1)+eyy(j  ,k+1,l+1)+eyz(j  ,k+1,l+1) &
                                                       +  eyx(j  ,k-1,l+1)+eyy(j  ,k-1,l+1)+eyz(j  ,k-1,l+1) &
                                                       +  eyx(j  ,k+1,l-1)+eyy(j  ,k+1,l-1)+eyz(j  ,k+1,l-1) &
-                                                      +  eyx(j  ,k-1,l-1)+eyy(j  ,k-1,l-1)+eyz(j  ,k-1,l-1)) 
+                                                      +  eyx(j  ,k-1,l-1)+eyy(j  ,k-1,l-1)+eyz(j  ,k-1,l-1))
     end do
    end do
   end do
@@ -4728,7 +4856,7 @@ if (.not.l_2dxz) then
                                      + bmgy(k)*gammay * (exx(j+1,k  ,l+1)+exy(j+1,k  ,l+1)+exz(j+1,k  ,l+1) &
                                                       +  exx(j-1,k  ,l+1)+exy(j-1,k  ,l+1)+exz(j-1,k  ,l+1) &
                                                       +  exx(j+1,k  ,l-1)+exy(j+1,k  ,l-1)+exz(j+1,k  ,l-1) &
-                                                      +  exx(j-1,k  ,l-1)+exy(j-1,k  ,l-1)+exz(j-1,k  ,l-1)) 
+                                                      +  exx(j-1,k  ,l-1)+exy(j-1,k  ,l-1)+exz(j-1,k  ,l-1))
     end do
    end do
   end do
@@ -4748,7 +4876,7 @@ else
                                      - b*    betazx * (eyx(j+1,k  ,l  )+eyz(j+1,k  ,l  ) &
                                                     +  eyx(j-1,k  ,l  )+eyz(j-1,k  ,l  )) &
                                      + c* (eyx(j  ,k  ,l+1)+eyz(j  ,k  ,l+1)  &
-                                     -    (eyx(j  ,k  ,l  )+eyz(j  ,k  ,l  ))) 
+                                     -    (eyx(j  ,k  ,l  )+eyz(j  ,k  ,l  )))
     end do
   end do
 
@@ -4810,7 +4938,7 @@ else
                                                           +  eyx(j-1,k  ,l+1)+eyz(j-1,k  ,l+1)) &
                                      + bmgz(l)*    alphaz * (eyx(j  ,k  ,l  )+eyz(j  ,k  ,l  )) &
                                      + bmgz(l)*    betazx * (eyx(j+1,k  ,l  )+eyz(j+1,k  ,l  ) &
-                                                          +  eyx(j-1,k  ,l  )+eyz(j-1,k  ,l  )) 
+                                                          +  eyx(j-1,k  ,l  )+eyz(j-1,k  ,l  ))
     end do
   end do
 
@@ -4821,7 +4949,7 @@ else
                                                           +  ezx(j+1,k  ,l-1)+ezz(j+1,k  ,l-1)) &
                                      + bmgx(j)*    alphax * (ezx(j  ,k  ,l  )+ezz(j  ,k  ,l  )) &
                                      + bmgx(j)*    betaxz * (ezx(j  ,k  ,l+1)+ezz(j  ,k  ,l+1) &
-                                                          +  ezx(j  ,k  ,l-1)+ezz(j  ,k  ,l-1)) 
+                                                          +  ezx(j  ,k  ,l-1)+ezz(j  ,k  ,l-1))
     end do
   end do
 
@@ -4832,7 +4960,7 @@ else
                                                           +  exx(j-1,k  ,l+1)+exz(j-1,k  ,l+1)) &
                                      - bmgz(l)*    alphaz * (exx(j  ,k  ,l  )+exz(j  ,k  ,l  )) &
                                      - bmgz(l)*    betazx * (exx(j+1,k  ,l  )+exz(j+1,k  ,l  ) &
-                                                          +  exx(j-1,k  ,l  )+exz(j-1,k  ,l  )) 
+                                                          +  exx(j-1,k  ,l  )+exz(j-1,k  ,l  ))
 
     end do
   end do
@@ -4844,11 +4972,11 @@ else
                                                           +  eyx(j+1,k  ,l-1)+eyz(j+1,k  ,l-1)) &
                                      - bmgx(j)*    alphax * (eyx(j  ,k  ,l  )+eyz(j  ,k  ,l  )) &
                                      - bmgx(j)*    betaxz * (eyx(j  ,k  ,l+1)+eyz(j  ,k  ,l+1) &
-                                                          +  eyx(j  ,k  ,l-1)+eyz(j  ,k  ,l-1)) 
+                                                          +  eyx(j  ,k  ,l-1)+eyz(j  ,k  ,l-1))
     end do
   end do
   end if
-  
+
 end if
 
   return
@@ -4873,7 +5001,7 @@ INTEGER :: j, k, l,which
                            sf%bpfx,sf%bpfy,sf%bpfz, &
                            sf%bmfx,sf%bmfy,sf%bmfz,sf%l_2dxz,sf%l_2drz, &
                            sf%xmin,sf%ymin,sf%zmin,sf%dx,sf%dy,sf%dz)
-  if(sf%nconds>0) then 
+  if(sf%nconds>0) then
      call push_em3d_splitf_setcond(sf%nx,sf%ny,sf%nz,sf%nxcond,sf%nycond,sf%nzcond,sf%nxguard,sf%nyguard,sf%nzguard, &
                                    sf%fx,sf%fy,sf%fz,sf%l_2dxz,sf%incond)
   end if
@@ -4973,7 +5101,7 @@ else
     if (xmin==0.) then
       do l = 0, nz
         j = 0
-        fx(j,k,l) = afx(j)*fx(j,k,l) + 4*bpfx(j)*(exx(j  ,k  ,l  )+exz(j  ,k  ,l  )) 
+        fx(j,k,l) = afx(j)*fx(j,k,l) + 4*bpfx(j)*(exx(j  ,k  ,l  )+exz(j  ,k  ,l  ))
         do j = 1, nx
           ru = 1.+0.5/j
           rd = 1.-0.5/j
@@ -5030,7 +5158,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard
    do k = -nyguard, ny+nyguard
     do j = -nxguard, nx+nxguard
-      fx(j,k,l) = sfx(j)*fx(j,k,l) 
+      fx(j,k,l) = sfx(j)*fx(j,k,l)
     end do
    end do
   end do
@@ -5038,7 +5166,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard
    do k = -nyguard, ny+nyguard
     do j = -nxguard, nx+nxguard
-      fy(j,k,l) = sfy(k)*fy(j,k,l) 
+      fy(j,k,l) = sfy(k)*fy(j,k,l)
     end do
    end do
   end do
@@ -5046,7 +5174,7 @@ INTEGER :: j, k, l
   do l = -nzguard, nz+nzguard
    do k = -nyguard, ny+nyguard
     do j = -nxguard, nx+nxguard
-      fz(j,k,l) = sfz(l)*fz(j,k,l) 
+      fz(j,k,l) = sfz(l)*fz(j,k,l)
     end do
    end do
   end do
@@ -5070,10 +5198,10 @@ if (.not.l_2dxz) then
   do l = 0, nz
    do k = 0, ny
     do j = 0, nx
-     if (incond(j,k,l)) then 
-       fx(j,k,l) = 0. 
-       fy(j,k,l) = 0. 
-       fz(j,k,l) = 0. 
+     if (incond(j,k,l)) then
+       fx(j,k,l) = 0.
+       fy(j,k,l) = 0.
+       fz(j,k,l) = 0.
       end if
     end do
    end do
@@ -5084,9 +5212,9 @@ else
 
     do l = 0, nz
       do j = 0, nx
-        if (incond(j,k,l)) then 
-          fx(j,k,l) = 0. 
-          fz(j,k,l) = 0. 
+        if (incond(j,k,l)) then
+          fx(j,k,l) = 0.
+          fz(j,k,l) = 0.
         end if
       end do
     end do
@@ -5151,9 +5279,9 @@ INTEGER :: j, k, l,which
   do l = 0, sf%nz
    do k = 0, sf%ny
     do j = 0, sf%nx
-     sf%phi(1,j,k,l) = sf%afx(j)*sf%phi(1,j,k,l) - sf%bpfx(j)*sf%ax(j,k,l) - sf%bmfx(j)*sf%ax(j-1,k  ,l  ) 
-     sf%phi(2,j,k,l) = sf%afy(k)*sf%phi(2,j,k,l) - sf%bpfy(k)*sf%ay(j,k,l) - sf%bmfy(k)*sf%ay(j  ,k-1,l  ) 
-     sf%phi(3,j,k,l) = sf%afz(l)*sf%phi(3,j,k,l) - sf%bpfz(l)*sf%az(j,k,l) - sf%bmfz(l)*sf%az(j  ,k  ,l-1) 
+     sf%phi(1,j,k,l) = sf%afx(j)*sf%phi(1,j,k,l) - sf%bpfx(j)*sf%ax(j,k,l) - sf%bmfx(j)*sf%ax(j-1,k  ,l  )
+     sf%phi(2,j,k,l) = sf%afy(k)*sf%phi(2,j,k,l) - sf%bpfy(k)*sf%ay(j,k,l) - sf%bmfy(k)*sf%ay(j  ,k-1,l  )
+     sf%phi(3,j,k,l) = sf%afz(l)*sf%phi(3,j,k,l) - sf%bpfz(l)*sf%az(j,k,l) - sf%bmfz(l)*sf%az(j  ,k  ,l-1)
     end do
    end do
   end do
@@ -5182,7 +5310,7 @@ INTEGER :: j, k, l
   call push_em3d_e(b%core%yf,dt)
   call push_em3d_blockbndef(b,dt,0)
   call push_em3d_blockbnde(b,dt,0)
-  
+
   call em3d_exchange_e(b)
 
   call push_em3d_f(b%core%yf,dt*0.5)
@@ -5205,7 +5333,7 @@ REAL(kind=8), INTENT(IN) :: dt
 logical(ISZ) :: l_pushf,l_pushpot,l_pushe
 
 INTEGER(ISZ) :: j, k, l,which
-  
+
   if (which==0) then
     if(l_pushpot) call push_em3d_phi(b%core%yf,dt)
     if(l_pushf) call push_em3d_ef(b%core%yf,dt)
@@ -5219,7 +5347,7 @@ INTEGER(ISZ) :: j, k, l,which
 !  if(l_pushpot) call push_em3d_blockbndphi(b,dt,which)
   if(l_pushf) call push_em3d_blockbndef(b,dt,which)
   call push_em3d_blockbnde(b,dt,which)
-  
+
   call em3d_applybc_e(b%core%yf, &
                       b%xlbnd, &
                       b%xrbnd, &
@@ -5559,7 +5687,7 @@ implicit none
 TYPE(EM3D_BLOCKtype) :: b
 integer(ISZ):: n
 
-  ! --- shift core 
+  ! --- shift core
   call shift_em3df_ncells_z(b%core%yf,b%zlbnd,b%zrbnd,n)
   ! --- shift sides
   if(b%xlbnd==openbc) call shift_em3dsplitf_ncells_z(b%sidexl%syf,b%zlbnd,b%zrbnd,n)
@@ -5598,7 +5726,7 @@ integer(ISZ):: n
   call shift_em3dsplitf_ncells_z(b%cornerxlyrzr%syf,openbc,openbc,n)
   if(b%xrbnd==openbc .and. b%yrbnd==openbc .and. b%zrbnd==openbc) &
   call shift_em3dsplitf_ncells_z(b%cornerxryrzr%syf,openbc,openbc,n)
-  
+
   return
 end subroutine shift_em3dblock_ncells_z
 
@@ -5633,7 +5761,7 @@ integer(ISZ):: n,i,it,zl,zr
    end if
    if (f%nxf>0) then
       call shift_3darray_ncells_z(f%F,f%nxf,f%nyf,f%nzf,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
-      if ( f%l_2drz .and. f%circ_m > 0 ) then 
+      if ( f%l_2drz .and. f%circ_m > 0 ) then
          call shift_circarray_ncells_z(f%F_circ,f%nxf,f%nzf,f%circ_m,f%nxguard,f%nzguard,zl,zr,n)
       endif
   end if
@@ -5657,7 +5785,7 @@ integer(ISZ):: n,i,it,zl,zr
     call shift_3darray_ncells_z(f%Az,f%nxpo,f%nypo,f%nzpo,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
     call shift_3darray_ncells_z(f%Phi,f%nxpo,f%nypo,f%nzpo,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
   end if
-  
+
   return
 end subroutine shift_em3df_ncells_z
 
@@ -5697,7 +5825,7 @@ end subroutine shift_em3dsplitf_ncells_z
 
 subroutine shift_3darray_ncells_z(f,nx,ny,nz,nxguard,nyguard,nzguard,zl,zr,n)
 ! ==================================================================================
-! Shift an array of reals along the z axis by n cells, and exchange values with 
+! Shift an array of reals along the z axis by n cells, and exchange values with
 ! neighboring processors, in the direction of the shift
 ! If n is positive, the values are shifted to the left within one domain
 ! If n is negative, the values are shifter to the right within one domain
@@ -5709,7 +5837,7 @@ use mpirz
 implicit none
 integer(ISZ) :: nx,ny,nz,nxguard,nyguard,nzguard,n,zl,zr
 integer(ISZ), parameter:: otherproc=10, ibuf = 950
-real(kind=8) :: f(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) 
+real(kind=8) :: f(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard)
 
 if (n > 0) then
   ! Shift the values to the left within one domain
@@ -5761,7 +5889,7 @@ end subroutine shift_3darray_ncells_z
 
 subroutine shift_3dlarray_ncells_z(f,nx,ny,nz,nxguard,nyguard,nzguard,zl,zr,n)
 ! ==================================================================================
-! Shift an array of booleans along the z axis by n cells, and exchange values with 
+! Shift an array of booleans along the z axis by n cells, and exchange values with
 ! neighboring processors, in the direction of the shift
 ! If n is positive, the values are shifted to the left within one domain
 ! If n is negative, the values are shifter to the right within one domain
@@ -5773,7 +5901,7 @@ use mpirz
 implicit none
 integer(ISZ) :: nx,ny,nz,nxguard,nyguard,nzguard,n,zl,zr
 integer(ISZ), parameter:: otherproc=10, ibuf = 950
-logical(ISZ) :: f(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) 
+logical(ISZ) :: f(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard)
 
 if (n > 0) then
   ! Shift the values to the left within one domain
@@ -5825,7 +5953,7 @@ end subroutine shift_3dlarray_ncells_z
 
 subroutine shift_circarray_ncells_z(f,nx,nz,circ_m,nxguard,nzguard,zl,zr,n)
 ! ==================================================================================
-! Shift an array of reals along the z axis by n cells, and exchange values with 
+! Shift an array of reals along the z axis by n cells, and exchange values with
 ! neighboring processors, in the direction of the shift
 ! If n is positive, the values are shifted to the left within one domain
 ! If n is negative, the values are shifter to the right within one domain
@@ -5924,7 +6052,7 @@ implicit none
 TYPE(EM3D_BLOCKtype) :: b
 integer(ISZ):: n
 
-  ! --- shift core 
+  ! --- shift core
   call shift_em3df_ncells_x(b%core%yf,b%xlbnd,b%xrbnd,n)
   ! --- shift sides
   if(b%xlbnd==openbc) call shift_em3dsplitf_ncells_x(b%sidexl%syf,openbc,openbc,n)
@@ -5963,7 +6091,7 @@ integer(ISZ):: n
   call shift_em3dsplitf_ncells_x(b%cornerxlyrzr%syf,openbc,openbc,n)
   if(b%xrbnd==openbc .and. b%yrbnd==openbc .and. b%zrbnd==openbc) &
   call shift_em3dsplitf_ncells_x(b%cornerxryrzr%syf,openbc,openbc,n)
-  
+
   return
 end subroutine shift_em3dblock_ncells_x
 
@@ -6013,7 +6141,7 @@ integer(ISZ):: n,i,it,xl,xr
     call shift_3darray_ncells_x(f%Az,f%nxpo,f%nypo,f%nzpo,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
     call shift_3darray_ncells_x(f%Phi,f%nxpo,f%nypo,f%nzpo,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   end if
-  
+
   return
 end subroutine shift_em3df_ncells_x
 
@@ -6064,7 +6192,7 @@ use mpirz
 implicit none
 integer(ISZ) :: nx,ny,nz,nxguard,nyguard,nzguard,n,xl,xr
 integer(ISZ), parameter:: otherproc=10, ibuf = 950
-real(kind=8) :: f(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) 
+real(kind=8) :: f(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard)
 
 if (n>0) then
   f(-nxguard:nx+nxguard-n,:,:) = f(-nxguard+n:nx+nxguard,:,:)
@@ -6075,7 +6203,7 @@ if (n>0) then
        call mpi_packbuffer_init(size(f(nxguard-n+1:nxguard,:,:)),ibuf)
        call mympi_pack(f(nxguard-n+1:nxguard,:,:),ibuf)
        call mpi_send_pack(procneighbors(0,0),0,ibuf)
-    end if    
+    end if
     if (xr==otherproc) then
       call mpi_packbuffer_init(size(f(nx+nxguard-n+1:nx+nxguard,:,:)),ibuf)
       call mpi_recv_pack(procneighbors(1,0),0,ibuf)
@@ -6086,7 +6214,7 @@ if (n>0) then
 end if
 if (n<0) then
   n=-n
-  f(-nxguard+n:nx+nxguard,:,:) = f(-nxguard:nx+nxguard-n,:,:) 
+  f(-nxguard+n:nx+nxguard,:,:) = f(-nxguard:nx+nxguard-n,:,:)
   if (xl/=otherproc) f(-nxguard:-nxguard+n-1,:,:) = 0.
 
 #ifdef MPIPARALLEL
@@ -6094,7 +6222,7 @@ if (n<0) then
        call mpi_packbuffer_init(size(f(nx-nxguard:nx-nxguard+n,:,:)),ibuf)
        call mympi_pack(f(nx-nxguard:nx-nxguard+n,:,:),ibuf)
        call mpi_send_pack(procneighbors(1,0),0,ibuf)
-    end if    
+    end if
     if (xl==otherproc) then
       call mpi_packbuffer_init(size(f(:-nxguard+n-1,:,:)),ibuf)
       call mpi_recv_pack(procneighbors(0,0),0,ibuf)
@@ -6139,7 +6267,7 @@ integer(ISZ) :: xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,ifact,m
                 -ifact*f%ex_circ(f%ixmin+f%nxguard-1:f%ixmin:-1,:,m)
            f%ey_circ(f%ixmin-f%nxguard:f%ixmin-1,:,m) = &
                 -ifact*f%ey_circ(f%ixmin+f%nxguard:f%ixmin+1:-1,:,m)
-       end do 
+       end do
     end if
   end if
 
@@ -6243,7 +6371,7 @@ integer(ISZ) :: xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,ifact,m
      f%bz(f%ixmin-f%nxguard:f%ixmin-1,:,:) =  f%bz(f%ixmin+f%nxguard-1:f%ixmin:-1,:,:)
      if (f%circ_m>0) then
         do m = 1 , f%circ_m
-           if (mod(m,2)==0) then 
+           if (mod(m,2)==0) then
               ifact=1
            else
               ifact=-1
@@ -6350,14 +6478,14 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
   use mod_emfield3d
   use Constant
   implicit none
-  
+
   TYPE(EM3D_YEEFIELDtype) :: f
   integer(ISZ) :: xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,j,ifact, m,type_rz_depose
   real(8)::r,r1,r2
   complex(kind=8) :: I=(0.,1.)
-  
+
   ! MODE 0 : Fetch the current deposited in the guards cells and add it to the grid (fold back)
-  
+
   ! In rz geometry, for the guards cells below the axis
   if (f%l_2drz .and. f%xmin==0.) then
      ! Fields that are located on the boundary
@@ -6365,7 +6493,7 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
           + f%jy(f%ixmin-1:f%ixmin-f%nxguard:-1,:,:)
      f%jz(f%ixmin+1:f%ixmin+f%nxguard,:,:) = f%jz(f%ixmin+1:f%ixmin+f%nxguard,:,:) &
           + f%jz(f%ixmin-1:f%ixmin-f%nxguard:-1,:,:)
-     ! Fields that are located off the boundary 
+     ! Fields that are located off the boundary
      f%jx(f%ixmin:f%ixmin+f%nxguard-1,:,:) = f%jx(f%ixmin:f%ixmin+f%nxguard-1,:,:) &
           - f%jx(f%ixmin-1:f%ixmin-f%nxguard:-1,:,:)
   end if
@@ -6460,7 +6588,7 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
               ifact=1
            else
               ifact=-1
-           end if 
+           end if
            f%Jy_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) = f%Jy_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) &
                 + ifact*f%Jy_circ(f%ixmin-1:f%ixmin-f%nxguard:-1,:,m)
            f%Jz_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) = f%Jz_circ(f%ixmin+1:f%ixmin+f%nxguard,:,m) &
@@ -6543,7 +6671,7 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
   if (f%l_2drz) then
 
        ! -- Jr
-      
+
        ! Since Jr is not cell centered in r, no need for distinction
        ! between on axis and off-axis factors
        do j=f%ixmin-f%nxguard,f%ixmax+f%nxguard
@@ -6553,18 +6681,18 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
        end do
 
      ! -- Jtheta and Jz
-     
+
      ! In the lower guard cells in x (exchanged with nearby processors)
      do j=f%ixmin-f%nxguard,f%ixmin-1
         r = abs(f%xmin+j*f%dx)
         f%jy(j,:,:) = f%jy(j,:,:)/(2.*pi*r)    ! Mode 0
         f%jz(j,:,:) = f%jz(j,:,:)/(2.*pi*r)    ! Mode 0
-        if (f%circ_m>0) then 
+        if (f%circ_m>0) then
             f%Jy_circ(j,:,:) = f%Jy_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
             f%Jz_circ(j,:,:) = f%Jz_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
         endif
      end do
-     
+
      ! On the lower boundary
      j = f%ixmin
      if (f%xmin==0.) then
@@ -6577,7 +6705,7 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
         endif
         ! Jz, modes > 0
         if (f%circ_m>0) f%Jz_circ(j,:,:) = 0. ! Mode > 0 : Jz is zero on axis.
-        ! Jt, mode 0 and modes > 1 
+        ! Jt, mode 0 and modes > 1
         f%jy(j,:,:)= 0. ! Mode 0 : Jt is zero on axis.
         if (f%circ_m>1) f%Jy_circ(j,:,2:) = 0. ! Modes > 1 : Jt = 0.
         ! Jt, mode 1
@@ -6588,24 +6716,24 @@ subroutine em3d_applybc_j(f,xlbnd,xrbnd,ylbnd,yrbnd,zlbnd,zrbnd,type_rz_depose)
         r = abs(f%xmin+j*f%dx)
         f%jy(j,:,:) = f%jy(j,:,:)/(2.*pi*r)    ! Mode 0
         f%jz(j,:,:) = f%jz(j,:,:)/(2.*pi*r)    ! Mode 0
-        if (f%circ_m>0) then   
+        if (f%circ_m>0) then
             f%Jy_circ(j,:,:) = f%Jy_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
             f%Jz_circ(j,:,:) = f%Jz_circ(j,:,:)/(2.*pi*r)  ! Mode > 0
         endif
      end if
-     
+
      ! In the rest of the grid
      do j=f%ixmin+1,f%ixmax+f%nxguard
         r = abs(f%xmin+j*f%dx)
         f%jy(j,:,:) = f%jy(j,:,:)/(2.*pi*r)
         f%jz(j,:,:) = f%jz(j,:,:)/(2.*pi*r)
-        if (f%circ_m>0) then 
+        if (f%circ_m>0) then
             f%Jy_circ(j,:,:) = f%Jy_circ(j,:,:)/(2.*pi*r)
             f%Jz_circ(j,:,:) = f%Jz_circ(j,:,:)/(2.*pi*r)
-        endif 
+        endif
      end do
   end if
-  
+
   return
 end subroutine em3d_applybc_j
 
@@ -6728,7 +6856,7 @@ real(8)::r
      if (f%xmin==0.) then
         ! On axis
         if (type_rz_depose == 1) then ! Verboncoeur JCP 164, 421-427 (2001) : corrected volumes
-           f%rho(j,:,:) = f%rho(j,:,:)/(pi*f%dx/3.) 
+           f%rho(j,:,:) = f%rho(j,:,:)/(pi*f%dx/3.)
         else                          ! Standard volume
            f%rho(j,:,:) = f%rho(j,:,:)/(pi*f%dx/4.)
         endif
@@ -6739,16 +6867,16 @@ real(8)::r
         f%rho(j,:,:) = f%rho(j,:,:)/(2.*pi*r)
         if (f%circ_m>0) f%rho_circ(j,:,:) = f%rho_circ(j,:,:)/(2.*pi*r)
      end if
-     
+
      ! In the rest of the grid
      do j=f%ixmin+1,f%ixmax+f%nxguard
         r = abs(f%xmin+j*f%dx)
         f%rho(j,:,:) = f%rho(j,:,:)/(2.*pi*r)
         if (f%circ_m>0) f%rho_circ(j,:,:) = f%rho_circ(j,:,:)/(2.*pi*r)
      end do
-     
+
   end if
-  
+
   return
 end subroutine em3d_applybc_rho
 
@@ -6992,7 +7120,7 @@ subroutine em3d_exchange_bnde_x(fl,fu,ibuf)
 #ifdef MPIPARALLEL
         if(l_mpiverbose) write(STDOUT,*) '-- sending e along x'
 
-        if (fl%proc/=my_index) then   
+        if (fl%proc/=my_index) then
            ! --- send data down in x
 
            ! Number of slices to communicate along x
@@ -7032,7 +7160,7 @@ subroutine em3d_exchange_bnde_x(fl,fu,ibuf)
            ! (yfl%nxguard for ex, yfl%nxguard-1 for ey and ez)
            n_slices = (3*yfl%nxguard-2)
            bufsize = n_slices*size( yfl%ez(0,:,:))
-           ! Check whether to also pack the circ arrays 
+           ! Check whether to also pack the circ arrays
            if (yfl%circ_m > 0) &
                 ! Factor 2 since a complex takes up twice more space
                 bufsize = bufsize + 2*n_slices*size(yfl%ez_circ(0,:,:))
@@ -7273,9 +7401,9 @@ subroutine em3d_exchange_bnde_xrecv(fl,fu,ibuf)
      select case(fu%fieldtype)
      case(yeefield)
         yfu=>fu%yf
-        
+
         if(l_mpiverbose) write(STDOUT,*) '-- receiving e along x'
-        
+
         if (fl%proc/=my_index) then
            ! --- recv data from down in x
 
@@ -7314,7 +7442,7 @@ subroutine em3d_exchange_bnde_xrecv(fl,fu,ibuf)
                       reshape( mpi_unpack_complex_array( size(yfu%Ez_circ(0,:,:)), ibuf), shape(yfu%Ez_circ(0,:,:)))
               end do
            end if
-           
+
         else if (fu%proc/=my_index) then
            ! --- recv data from up in x
 
@@ -7399,7 +7527,7 @@ subroutine em3d_exchange_bnde_xrecv(fl,fu,ibuf)
             call mpi_packbuffer_init(6*size(syfl%ezx(syfl%ixmax+1:syfl%ixmaxg-1,:,:)) &
                                     +3*size(syfl%ezx(syfl%ixmax  :syfl%ixmaxg-1,:,:)),ibuf)
             call mpi_recv_pack(fu%proc,3,ibuf)
-            
+
             do ix=syfl%ixmax,syfl%ixmaxg-1
               syfl%exx(ix,:,:) = reshape(mpi_unpack_real_array( size(syfl%exx(ix,:,:)),ibuf),shape(syfl%exx(ix,:,:)))
            end do
@@ -7494,7 +7622,7 @@ subroutine em3d_exchange_bndb_x(fl,fu,ibuf)
               if (yfu%circ_m > 0) call mympi_pack(yfu%bz_circ(ix,:,:),ibuf)
            end do
            call mpi_isend_pack(fl%proc,1,ibuf)
-           
+
         else if (fu%proc/=my_index) then
            ! --- send data up in x
 
@@ -7657,7 +7785,7 @@ end subroutine em3d_exchange_bndb_x
 subroutine em3d_exchange_bndb_xrecv(fl,fu,ibuf)
   ! ---------------------------------------------------
   ! Receive the magnetic field at the x boundary
-  ! ---------------------------------------------------  
+  ! ---------------------------------------------------
   use mod_emfield3d
   implicit none
 
@@ -7710,7 +7838,7 @@ subroutine em3d_exchange_bndb_xrecv(fl,fu,ibuf)
                    yfu%bz_circ(ix,:,:) = &
                    reshape(mpi_unpack_complex_array( size(yfu%bz_circ(ix,:,:)),ibuf),shape(yfu%bz_circ(ix,:,:)))
            end do
-           
+
         else if (fu%proc/=my_index) then
            ! --- recv data from up in z
 
@@ -7833,7 +7961,7 @@ subroutine em3d_exchange_bndf_x(fl,fu,ibuf)
         yfu=>fu%yf
 #ifdef MPIPARALLEL
         if(l_mpiverbose) write(STDOUT,*) '-- sending f along x'
-        
+
         if (fl%proc/=my_index) then
            ! --- send data down in x
 
@@ -7854,10 +7982,10 @@ subroutine em3d_exchange_bndf_x(fl,fu,ibuf)
               end do
               call mpi_isend_pack(fl%proc,1,ibuf)
            endif
-           
+
         else if (fu%proc/=my_index) then
            ! --- send data up in x
-           
+
            if (yfl%nxguard>1) then
               ! Number of slices to communicate along x
               n_slices = (yfl%nxguard-1)
@@ -7990,10 +8118,10 @@ subroutine em3d_exchange_bndf_xrecv(fl,fu,ibuf)
         yfu=>fu%yf
 
         if(l_mpiverbose) write(STDOUT,*) '-- receiving f along x'
-        
+
         if (fl%proc/=my_index) then
            ! --- recv data from down in x
-           
+
            if (yfu%nxguard>1) then
               ! Number of slices to communicate along x
               n_slices = (yfu%nxguard-1)
@@ -8014,7 +8142,7 @@ subroutine em3d_exchange_bndf_xrecv(fl,fu,ibuf)
                       size(yfu%F_circ(0,:,:)),ibuf), shape(yfu%F_circ(0,:,:)))
               end do
            end if
-           
+
         else if (fu%proc/=my_index) then
            ! --- recv data from up in x
 
@@ -8111,7 +8239,7 @@ subroutine em3d_exchange_bndj_x(fl,fu,ibuf)
 #ifdef MPIPARALLEL
 
         if(l_mpiverbose) write(STDOUT,*) '-- sending j along x'
-        
+
         if (fl%proc/=my_index) then
            ! --- send data down in x
 
@@ -8180,7 +8308,7 @@ subroutine em3d_exchange_bndj_x(fl,fu,ibuf)
            nguardinl = yfl%nxguard
 
            yfu%Jx(-nguardinu:yfu%nxguard-1,:,:)  = yfu%Jx(-nguardinu:yfu%nxguard-1,:,:)  &
-                + yfl%Jx(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:) 
+                + yfl%Jx(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:)
            yfu%Jy(-nguardinu:yfu%nxguard,:,:)  = yfu%Jy(-nguardinu:yfu%nxguard,:,:)  &
                 + yfl%Jy(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
            yfu%Jz(-nguardinu:yfu%nxguard,:,:)  = yfu%Jz(-nguardinu:yfu%nxguard,:,:)  &
@@ -8191,7 +8319,7 @@ subroutine em3d_exchange_bndj_x(fl,fu,ibuf)
 
            if (yfu%circ_m > 0) then
               yfu%Jx_circ(-nguardinu:yfu%nxguard-1,:,:) = yfu%Jx_circ(-nguardinu:yfu%nxguard-1,:,:)  &
-                   + yfl%Jx_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:) 
+                   + yfl%Jx_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard-1,:,:)
               yfu%Jy_circ(-nguardinu:yfu%nxguard,:,:) = yfu%Jy_circ(-nguardinu:yfu%nxguard,:,:)  &
                    + yfl%Jy_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:)
               yfu%Jz_circ(-nguardinu:yfu%nxguard,:,:) = yfu%Jz_circ(-nguardinu:yfu%nxguard,:,:)  &
@@ -8200,7 +8328,7 @@ subroutine em3d_exchange_bndj_x(fl,fu,ibuf)
               yfl%Jy_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:) = yfu%Jy_circ(-nguardinu:yfu%nxguard,:,:)
               yfl%Jz_circ(yfl%nx-nguardinl:yfl%nx+yfl%nxguard,:,:) = yfu%Jz_circ(-nguardinu:yfu%nxguard,:,:)
            endif
-           
+
 #ifdef MPIPARALLEL
         end if
 #endif
@@ -8213,7 +8341,7 @@ end subroutine em3d_exchange_bndj_x
 subroutine em3d_exchange_bndj_xrecv(fl,fu,ibuf)
   ! -----------------------------------------
   ! Receive the current at the x boundary
-  ! -----------------------------------------  
+  ! -----------------------------------------
   use mod_emfield3d
   implicit none
 
@@ -8232,7 +8360,7 @@ subroutine em3d_exchange_bndj_xrecv(fl,fu,ibuf)
         yfu=>fu%yf
 
         if(l_mpiverbose) write(STDOUT,*) '-- receiving j along x'
-        
+
         if (fl%proc/=my_index) then
            ! --- recv data from down in x
 
@@ -8335,7 +8463,7 @@ subroutine em3d_exchange_bndrho_x(fl,fu,ibuf)
         yfu=>fu%yf
 #ifdef MPIPARALLEL
         if(l_mpiverbose) write(STDOUT,*) '-- sending rho along x'
-        
+
         if (fl%proc/=my_index) then
            ! --- send data down in x
 
@@ -8368,7 +8496,7 @@ subroutine em3d_exchange_bndrho_x(fl,fu,ibuf)
            if (yfl%circ_m > 0) &
                 ! Factor 2 since a complex takes up twice more space
                 bufsize = bufsize + 2*n_slices*size(yfl%rho_circ(yfl%nx,:,:))
-           ! Allocate a buffer array in mpibuffer           
+           ! Allocate a buffer array in mpibuffer
            call mpi_packbuffer_init( bufsize, ibuf )
            ! Pack rho
            do ix = yfl%nx-nguardinl,yfl%nx+yfl%nxguard
@@ -8381,7 +8509,7 @@ subroutine em3d_exchange_bndrho_x(fl,fu,ibuf)
         else
 #endif
            ! periodic
-           
+
            nguardinu = yfu%nxguard
            nguardinl = yfl%nxguard
            yfu%Rho(-nguardinu:yfu%nxguard,:,:) = yfu%Rho(-nguardinu:yfu%nxguard,:,:) &
@@ -8431,9 +8559,9 @@ subroutine em3d_exchange_bndrho_xrecv(fl,fu,ibuf)
      select case(fu%fieldtype)
      case(yeefield)
         yfu=>fu%yf
-        
+
         if(l_mpiverbose) write(STDOUT,*) '-- receiving rho along x'
-        
+
         if (fl%proc/=my_index) then
            ! --- recv data from down in x
 
@@ -9409,7 +9537,7 @@ subroutine em3d_exchange_bndj_y(fl,fu,ibuf)
           yfu%Jz(:,-nguardinu:yfu%nyguard  ,:) = yfu%Jz(:,-nguardinu:yfu%nyguard,  :) &
                                                     + yfl%Jz(:,yfl%ny-nguardinl:+yfl%ny+yfl%nyguard  ,:)
           yfu%Jy(:,-nguardinu:yfu%nyguard-1,:) = yfu%Jy(:,-nguardinu:yfu%nyguard-1,:) &
-                                                    + yfl%Jy(:,yfl%ny-nguardinl:+yfl%ny+yfl%nyguard-1,:) 
+                                                    + yfl%Jy(:,yfl%ny-nguardinl:+yfl%ny+yfl%nyguard-1,:)
 
            yfl%Jx(:,yfl%ny-nguardinl:+yfl%ny+yfl%nyguard  ,:) = yfu%Jx(:,-nguardinu:yfu%nyguard  ,:)
            yfl%Jz(:,yfl%ny-nguardinl:+yfl%ny+yfl%nyguard  ,:) = yfu%Jz(:,-nguardinu:yfu%nyguard  ,:)
@@ -9527,18 +9655,18 @@ subroutine em3d_exchange_bndrho_y(fl,fu,ibuf)
 
         else
 #endif
-          ! periodic 
+          ! periodic
           nguardinu = yfu%nyguard
           nguardinl = yfl%nyguard
           yfu%Rho(:,-nguardinu:yfu%nyguard,:) = yfu%Rho(:,-nguardinu:yfu%nyguard,:)      &
                                               + yfl%Rho(:,yfl%ny-nguardinl:yfl%ny+yfl%nyguard,:)
-          yfl%Rho(:,yfl%ny-nguardinl:yfl%ny+yfl%nyguard,:) = yfu%Rho(:,-nguardinu:yfu%nyguard,:)                                     
+          yfl%Rho(:,yfl%ny-nguardinl:yfl%ny+yfl%nyguard,:) = yfu%Rho(:,-nguardinu:yfu%nyguard,:)
 
            if (yfu%nxdrho>0) then
               ! if Rhoold_local is allocated, then exchange corresponding data
               yfu%Rhoold_local(:,-nguardinu:yfu%nyguard,:) = yfu%Rhoold_local(:,-nguardinu:yfu%nyguard,:)      &
                                                   + yfl%Rhoold_local(:,yfl%ny-nguardinl:yfl%ny+yfl%nyguard,:)
-              yfl%Rhoold_local(:,yfl%ny-nguardinl:yfl%ny+yfl%nyguard,:) = yfu%Rhoold_local(:,-nguardinu:yfu%nyguard,:)                                     
+              yfl%Rhoold_local(:,yfl%ny-nguardinl:yfl%ny+yfl%nyguard,:) = yfu%Rhoold_local(:,-nguardinu:yfu%nyguard,:)
            end if
 
 #ifdef MPIPARALLEL
@@ -9622,9 +9750,9 @@ subroutine em3d_exchange_bnde_z(fl,fu,ibuf)
         ! --- case lower yee, upper yee
         yfu=>fu%yf
 #ifdef MPIPARALLEL
-        
+
         if(l_mpiverbose) write(STDOUT,*) '-- sending e along z'
-        
+
         if (fl%proc/=my_index) then
            ! --- send data down in z
 
@@ -9657,7 +9785,7 @@ subroutine em3d_exchange_bnde_z(fl,fu,ibuf)
               end do
            end if
            call mpi_isend_pack(fl%proc,1,ibuf)
-           
+
         else if (fu%proc/=my_index) then
            ! --- send data up in z
 
@@ -9709,7 +9837,7 @@ subroutine em3d_exchange_bnde_z(fl,fu,ibuf)
                    yfu%ey_circ(:,yfu%izmin+1:yfu%izmin+yfu%nzguard-1,:)
               yfl%ez_circ(:,yfl%izmax  :yfl%izmaxg-1,:) = &
                    yfu%ez_circ(:,yfu%izmin  :yfu%izmin+yfu%nzguard-1,:)
-              
+
               yfu%ex_circ(:,yfu%izming+1:yfu%izmin-1,:) = &
                    yfl%ex_circ(:,yfl%izmax-yfl%nzguard+1:yfl%izmax-1,:)
               yfu%ey_circ(:,yfu%izming+1:yfu%izmin-1,:) = &
@@ -9717,7 +9845,7 @@ subroutine em3d_exchange_bnde_z(fl,fu,ibuf)
               yfu%ez_circ(:,yfu%izming  :yfu%izmin-1,:) = &
                    yfl%ez_circ(:,yfl%izmax-yfl%nzguard  :yfl%izmax-1,:)
           endif
-           
+
 #ifdef MPIPARALLEL
         end if
 #endif
@@ -9938,10 +10066,10 @@ subroutine em3d_exchange_bnde_zrecv(fl,fu,ibuf)
                       reshape(mpi_unpack_complex_array( size(yfu%Ey_circ(:,0,:)),ibuf),shape(yfu%Ey_circ(:,0,:)))
               end do
            end if
-           
+
         else if (fu%proc/=my_index) then
            ! --- recv data from up in z
-           
+
            ! Number of slices to communicate along z
            ! (yfu%nzguard for ez, yfu%nzguard-1 for ex and ey)
            n_slices = (3*yfl%nzguard-2)
@@ -10109,7 +10237,7 @@ subroutine em3d_exchange_bndb_z(fl,fu,ibuf)
            ! by
           do iz=yfu%izmin, yfu%izmin+yfu%nzguard-1
               call mympi_pack(yfu%by(:,:,iz),ibuf)
-              if (yfu%circ_m > 0) call mympi_pack(yfu%by_circ(:,iz,:),ibuf)           
+              if (yfu%circ_m > 0) call mympi_pack(yfu%by_circ(:,iz,:),ibuf)
            end do
            ! bz
            do iz=yfu%izmin+1,yfu%izmin+yfu%nzguard-1
@@ -10117,10 +10245,10 @@ subroutine em3d_exchange_bndb_z(fl,fu,ibuf)
              if (yfu%circ_m > 0) call mympi_pack(yfu%bz_circ(:,iz,:),ibuf)
            end do
            call mpi_isend_pack(fl%proc,1,ibuf)
-           
+
         else if (fu%proc/=my_index) then
            ! --- send data up in z
-           
+
            ! Number of slices to communicate along z
            ! (yfl%nzguard for bx and by, yfl%nzguard-1 for bz)
            n_slices = (3*yfl%nzguard-1)
@@ -10167,7 +10295,7 @@ subroutine em3d_exchange_bndb_z(fl,fu,ibuf)
                    yfu%by_circ(:,yfu%izmin+1:yfu%izmin+yfu%nzguard-1,:)
               yfl%bz_circ(:,yfl%izmax  :yfl%izmaxg-1,:) = &
                    yfu%bz_circ(:,yfu%izmin  :yfu%izmin+yfu%nzguard-1,:)
-              
+
               yfu%bx_circ(:,yfu%izming+1:yfu%izmin-1,:) = &
                    yfl%bx_circ(:,yfl%izmax-yfl%nzguard+1:yfl%izmax-1,:)
               yfu%by_circ(:,yfu%izming+1:yfu%izmin-1,:) = &
@@ -10175,7 +10303,7 @@ subroutine em3d_exchange_bndb_z(fl,fu,ibuf)
               yfu%bz_circ(:,yfu%izming  :yfu%izmin-1,:) = &
                    yfl%bz_circ(:,yfl%izmax-yfl%nzguard  :yfl%izmax-1,:)
           endif
-           
+
 #ifdef MPIPARALLEL
         end if
 #endif
@@ -10306,7 +10434,7 @@ subroutine em3d_exchange_bndb_zrecv(fl,fu,ibuf)
   TYPE(EM3D_YEEFIELDtype), pointer :: yfl, yfu
   TYPE(EM3D_SPLITYEEFIELDtype), pointer :: syfl, syfu
   integer(ISZ) :: ibuf,iz,n_slices,bufsize
-  
+
   if (fl%proc/=my_index .and. fu%proc/=my_index) return
 
   select case(fl%fieldtype)
@@ -10351,7 +10479,7 @@ subroutine em3d_exchange_bndb_zrecv(fl,fu,ibuf)
                    yfu%bz_circ(:,iz,:) = &
                    reshape(mpi_unpack_complex_array( size(yfu%bz_circ(:,iz,:)),ibuf),shape(yfu%bz_circ(:,iz,:)))
            end do
-           
+
         else if (fu%proc/=my_index) then
            ! --- recv data from up in z
 
@@ -10382,7 +10510,7 @@ subroutine em3d_exchange_bndb_zrecv(fl,fu,ibuf)
            do iz=yfl%izmax+1,yfl%izmaxg-1
               yfl%bz(:,:,iz) = reshape(mpi_unpack_real_array( size(yfl%bz(:,:,iz)),ibuf),shape(yfl%bz(:,:,iz)))
               if (yfl%circ_m > 0) &
-                   yfl%bz_circ(:,iz,:) = & 
+                   yfl%bz_circ(:,iz,:) = &
                    reshape(mpi_unpack_complex_array( size(yfl%bz_circ(:,0,:)),ibuf),shape(yfl%bz_circ(:,0,:)))
            end do
         end if
@@ -10475,7 +10603,7 @@ subroutine em3d_exchange_bndf_z(fl,fu,ibuf)
 #ifdef MPIPARALLEL
 
         if(l_mpiverbose) write(STDOUT,*) '-- sending f along z'
-        
+
         if (fl%proc/=my_index) then
            ! --- send data down in z
 
@@ -10497,10 +10625,10 @@ subroutine em3d_exchange_bndf_z(fl,fu,ibuf)
               end do
               call mpi_isend_pack(fl%proc,1,ibuf)
            end if
-           
+
         else if (fu%proc/=my_index) then
            ! --- send data up in z
-           
+
            if (yfl%nzguard>1) then
               ! Number of slices to communicate along z
               n_slices = (yfl%nzguard-1)
@@ -10636,7 +10764,7 @@ subroutine em3d_exchange_bndf_zrecv(fl,fu,ibuf)
         yfu=>fu%yf
 
         if(l_mpiverbose) write(STDOUT,*) '-- receiving f along z'
-        
+
         if (fl%proc/=my_index) then
            ! --- recv data from down in z
 
@@ -10663,7 +10791,7 @@ subroutine em3d_exchange_bndf_zrecv(fl,fu,ibuf)
 
         else if (fu%proc/=my_index) then
            ! --- recv data from up in z
-           
+
            if (yfl%nzguard>1) then
               ! Number of slices to communicate along z
               n_slices = (yfl%nzguard-1)
@@ -10685,7 +10813,7 @@ subroutine em3d_exchange_bndf_zrecv(fl,fu,ibuf)
               end do
            end if
         end if
-        
+
      end select
   case(splityeefield)
      syfl=>fl%syf
@@ -10757,7 +10885,7 @@ subroutine em3d_exchange_bndj_z(fl,fu,ibuf)
 #ifdef MPIPARALLEL
 
         if(l_mpiverbose) write(STDOUT,*) '-- sending j along z'
-        
+
         if (fl%proc/=my_index) then
            ! --- send data down in z
 
@@ -10836,7 +10964,7 @@ subroutine em3d_exchange_bndj_z(fl,fu,ibuf)
            yfu%Jy(:,:,-nguardinu:yfu%nzguard) = yfu%Jy(:,:,-nguardinu:yfu%nzguard) &
                 + yfl%Jy(:,:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard)
            yfu%Jz(:,:,-nguardinu:yfu%nzguard-1) = yfu%Jz(:,:,-nguardinu:yfu%nzguard-1) &
-                + yfl%Jz(:,:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1) 
+                + yfl%Jz(:,:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1)
            yfl%Jx(:,:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard) = yfu%Jx(:,:,-nguardinu:yfu%nzguard)
            yfl%Jy(:,:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard) = yfu%Jy(:,:,-nguardinu:yfu%nzguard)
            yfl%Jz(:,:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1) = yfu%Jz(:,:,-nguardinu:yfu%nzguard-1)
@@ -10847,7 +10975,7 @@ subroutine em3d_exchange_bndj_z(fl,fu,ibuf)
               yfu%Jy_circ(:,-nguardinu:yfu%nzguard,:) = yfu%Jy_circ(:,-nguardinu:yfu%nzguard,:) &
                    + yfl%Jy_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:)
               yfu%Jz_circ(:,-nguardinu:yfu%nzguard-1,:) = yfu%Jz_circ(:,-nguardinu:yfu%nzguard-1,:) &
-                   + yfl%Jz_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1,:) 
+                   + yfl%Jz_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1,:)
               yfl%Jx_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:) = &
                    yfu%Jx_circ(:,-nguardinu:yfu%nzguard,:)
               yfl%Jy_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard,:) = &
@@ -10855,7 +10983,7 @@ subroutine em3d_exchange_bndj_z(fl,fu,ibuf)
               yfl%Jz_circ(:,yfl%nz-nguardinl:yfl%nz+yfl%nzguard-1,:) = &
                    yfu%Jz_circ(:,-nguardinu:yfu%nzguard-1,:)
            endif
-           
+
 #ifdef MPIPARALLEL
         end if
 #endif
@@ -10885,9 +11013,9 @@ subroutine em3d_exchange_bndj_zrecv(fl,fu,ibuf)
      select case(fu%fieldtype)
      case(yeefield)
         yfu=>fu%yf
-        
+
         if(l_mpiverbose) write(STDOUT,*) '-- receiving j along z'
-        
+
         if (fl%proc/=my_index) then
            ! --- recv data from down in z
 
@@ -10927,7 +11055,7 @@ subroutine em3d_exchange_bndj_zrecv(fl,fu,ibuf)
 
         else if (fu%proc/=my_index) then
            ! --- recv data from up in z
-           
+
            ! Number of slices to communicate along z
            nguardinl = yfl%nzguard
            n_slices = (3*(yfl%nzguard+nguardinl) + 2)
@@ -11000,7 +11128,7 @@ subroutine em3d_exchange_bndrho_z(fl,fu,ibuf)
         yfu=>fu%yf
 #ifdef MPIPARALLEL
         if(l_mpiverbose) write(STDOUT,*) '-- sending rho along z'
-        
+
         if (fl%proc/=my_index) then
            ! --- send data down in z
 
@@ -11024,7 +11152,7 @@ subroutine em3d_exchange_bndrho_z(fl,fu,ibuf)
 
         else if (fu%proc/=my_index) then
            ! --- send data up in z
-           
+
            ! Number of slices to communicate along z
            nguardinl = yfl%nzguard
            n_slices =  yfl%nzguard + nguardinl + 1
@@ -11046,7 +11174,7 @@ subroutine em3d_exchange_bndrho_z(fl,fu,ibuf)
         else
 #endif
            ! periodic BC
-           
+
            nguardinl = yfl%nzguard
            nguardinu = yfu%nzguard
 
@@ -11067,7 +11195,7 @@ subroutine em3d_exchange_bndrho_z(fl,fu,ibuf)
               yfl%Rho_circ(:,yfl%nz-nguardinl:yfl%nz+yfu%nzguard,:) = &
                    yfu%Rho_circ(:,-nguardinu:yfu%nzguard,:)
            endif
-           
+
 #ifdef MPIPARALLEL
         end if
 #endif
@@ -11099,10 +11227,10 @@ subroutine em3d_exchange_bndrho_zrecv(fl,fu,ibuf)
         yfu=>fu%yf
 
         if(l_mpiverbose) write(STDOUT,*) '-- receiving rho along z'
-        
+
         if (fl%proc/=my_index) then
            ! --- recv data from down in z
-           
+
            ! Number of slices to communicate along z
            nguardinu = yfu%nzguard
            n_slices =  yfu%nzguard + nguardinu + 1
@@ -12188,7 +12316,7 @@ subroutine node2yee3d(f)
 	  endif
 
   end if
-  
+
   f%l_nodecentered = .false.
 
   return
@@ -12303,11 +12431,11 @@ integer(ISZ) :: j,k,l
   if (f%l_2dxz) then
     do i=1,n
       f%incond(indx(1,i),0,indx(3,i)) = .true.
-    end do  
+    end do
   else
     do i=1,n
       f%incond(indx(1,i),indx(2,i),indx(3,i)) = .true.
-    end do  
+    end do
   end if
 
   ! --- NOTE: if l_2drz is TRUE, then l_2dxz is TRUE
@@ -12338,7 +12466,7 @@ integer(ISZ) :: j,k,l
    end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, f%nz-1
    do k = 0, f%ny
     do j = 0, f%nx
@@ -12376,7 +12504,7 @@ else ! --- now 2D XZ or RZ
     end do
   end do
 
-  ! advance Ez 
+  ! advance Ez
   do l = 0, f%nz-1
     do j = 0, f%nx
       if ( f%incond(j,k,l) .and. f%incond(j,k,l+1)) then
@@ -12392,4 +12520,3 @@ end if
 
 return
 end subroutine set_macroscopic_coefs_on_yee
-

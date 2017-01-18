@@ -67,9 +67,6 @@ def initialize_em_solver( stencil, dim,
     An instance of EM3D or EM3DFFT
     """
     # Run a few checks
-    if (dim == "circ") and (stencil != 0):
-        raise ValueError("In the case of cylindrical geometry, \n"
-            "only the Yee stencil (stencil 0) can be used.")
     if (norder is not None) and ((stencil in [0, -1]) is False):
         raise ValueError("The parameter norder can only be set \n"
             "for the Yee solver (stencil 0) or spectral solver (stencil -1)")
