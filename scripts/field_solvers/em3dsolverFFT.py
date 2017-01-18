@@ -462,11 +462,8 @@ class EM3DFFT(EM3D):
         # --- add slices
         self.add_source_ndts_slices()
         self.aftersetsourcep()
-        # -- add laser if laser_mode==2
-#        if self.laser_mode==2 and self.spectral:self.add_laser(self.block.core.yf)
-        if self.laser_mode==2:self.add_laser(self.block.core.yf)
-        # -- add laser if laser_mode==2
-#        if self.laser_mode==2:self.add_laser(self.block.core.yf)
+        # -- add laser
+        self.add_laser(self.block.core.yf)
         if not self.spectral_current:self.Jyee2node3d()
         if self.spectral_current:self.getcurrent_spectral()
         # --- smooth current density

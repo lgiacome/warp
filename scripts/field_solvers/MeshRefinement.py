@@ -3259,8 +3259,8 @@ class EMMRBlock(MeshRefinement,EM3D):
         self.aftersetsourcep()
         # --- smooth current density
         self.smoothdensity()
-        # -- add laser if laser_mode==2
-        if self.laser_mode==2:self.add_laser(self.block.core.yf)
+        # -- add laser 
+        self.add_laser(self.block.core.yf)
         self.applysourceboundaryconditions()
         if self.l_verbose:print 'finalizesourcep done'
 

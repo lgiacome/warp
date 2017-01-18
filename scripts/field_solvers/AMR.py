@@ -824,6 +824,7 @@ class AMRTree(VisualizableClass):
                 if self.solvergeom == w3d.XYZgeom:
                     lower = nint(array(patch[:3])*r)
                     upper = lower + nint(array(patch[3:])*r)
+                    print lower,upper,upper-lower
                     mothergrid.addchild(lower,upper,refinement=self.MRfact)
                 else:
                     try:
