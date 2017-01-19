@@ -22,6 +22,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
     def __init__(self, period, top, w3d, comm_world=None,
                  species = {"electrons": None},
+                 iteration_min=None, iteration_max=None,
                  particle_data=["position", "momentum", "weighting"],
                  select=None, write_dir=None, lparallel_output=False,
                  sub_sample=None) :
@@ -48,6 +49,12 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             The Species object that is written (e.g. elec)
             is assigned to the particleName of this species.
             (e.g. "electrons")
+
+        iteration_min: int, optional
+            iteration at which the diagnostic starts to be active
+
+        iteration_max: int, optional
+            iteration at which the diagnostic stops being active
 
         particle_data : a list of strings, optional
             A list indicating which particle data should be written.
@@ -76,7 +83,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         """
         # General setup
         OpenPMDDiagnostic.__init__(self, period, top, w3d, comm_world,
-                                   lparallel_output, write_dir)
+                    iteration_min, iteration_max, lparallel_output, write_dir)
         # Register the arguments
         self.particle_data = particle_data
         self.species_dict = species
@@ -579,7 +586,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             # to be converted to the nearest integer (rint)
             dict_keys_val["id"] = \
             (np.rint( species.getssn(gather=False) )).astype('uint64')
-            
+
         string_to_exec=quantity
         for keys in dict_keys_val.keys():
             string_to_exec=string_to_exec.replace(keys,"dict_keys_val[\'"+keys+"\']")

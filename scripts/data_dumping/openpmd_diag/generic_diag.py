@@ -41,10 +41,10 @@ class OpenPMDDiagnostic(object) :
         comm_world : a communicator object
             Either an mpi4py or a pyMPI object, or None (single-proc)
 
-        iteratin_min: int, optional
+        iteration_min: int, optional
             iteration at which the diagnostic starts to be active
 
-        iteratin_max: int, optional
+        iteration_max: int, optional
             iteration at which the diagnostic stops being active
 
         lparallel_output : boolean, optional
