@@ -557,7 +557,7 @@ case(2)  ! Cole-Karkkainen stencil on the E push (Note : Yee stencil on the B pu
   call push_em3d_kyeevec(f%ex,f%ey,f%ez,f%bx,f%by,f%bz,f%Jx,f%Jy,f%Jz, &
                          mudt,dtsdx,dtsdy,dtsdz, &
                          f%nx,f%ny,f%nz, &
-                         f%nxguard,f%nyguard,f%nzguard,f%E_inz_pos,f%Ex_inz,f%Ey_inz,f%l_2dxz,f%zmin,f%dz)
+                         f%nxguard,f%nyguard,f%nzguard,f%l_2dxz,f%zmin,f%dz)
 
 end select
 
@@ -574,7 +574,6 @@ real(kind=8), intent(IN) :: mudt,dtsdx,dtsdy,dtsdz,xmin,zmin,dx,dy,dz,clight
 integer(ISZ) :: j,k,l
 logical(ISZ) :: l_1dz,l_2dxz,l_2drz
 real(kind=8) :: w,zlaser,rd,ru
-!real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard) :: Ez_inz
 
 ! --- NOTE: if l_2drz is TRUE, then l_2dxz is TRUE
 if (.not. l_2dxz) then ! --- 3D XYZ
@@ -729,7 +728,6 @@ real(kind=8), intent(IN) :: mudt,dtsdx(norderx/2),dtsdy(nordery/2),dtsdz(norderz
 integer(ISZ) :: i,j,k,l,ist
 logical(ISZ) :: l_1dz,l_2dxz,l_2drz,l_nodalgrid
 real(kind=8) :: w,zlaser,rd,ru
-!real(kind=8), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard) :: Ez_inz
 
 if (l_nodalgrid) then
   ist = 0
@@ -1450,18 +1448,17 @@ return
 end subroutine push_em3d_evec_macroscopic
 
 subroutine push_em3d_kyeevec(ex,ey,ez,bx,by,bz,Jx,Jy,Jz,mudt,dtsdx,dtsdy,dtsdz, &
-                             nx,ny,nz,nxguard,nyguard,nzguard,e_inz_pos,Ex_inz,Ey_inz,l_2dxz,zmin,dz)
+                             nx,ny,nz,nxguard,nyguard,nzguard,l_2dxz,zmin,dz)
 use EM3D_kyee
 implicit none
 integer :: nx,ny,nz,nxguard,nyguard,nzguard
-real(kind=8), intent(IN) :: E_inz_pos,zmin,dz
+real(kind=8), intent(IN) :: zmin,dz
 real(kind=8), intent(IN OUT), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: ex,ey,ez,bx,by,bz
 real(kind=8), intent(IN), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard) :: Jx, Jy, Jz
-real(kind=8), intent(IN), dimension(-nxguard:nx+nxguard,-nyguard:ny+nyguard) :: Ex_inz,Ey_inz
 logical(ISZ) :: l_2dxz
 
 INTEGER :: j, k, l
-real(kind=8) :: dtsdx,dtsdy,dtsdz,mudt,E_inz_angle,zlaser,w
+real(kind=8) :: dtsdx,dtsdy,dtsdz,mudt,zlaser,w
 
 if (.not.l_2dxz) then
   ! advance Ex

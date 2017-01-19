@@ -168,7 +168,6 @@ class Fourier_Space():
                       'norderx':np.inf,'nordery':np.inf,'norderz':np.inf,
                       'dt':1.,'dx':1.,'dy':1.,'dz':1.,
                       'l_staggered':False,
-                      'l_staggered_a_la_brendan':False,
                       'bc_periodic':[0,0,0],
                       'l_fftw': l_fftw_fort,
                       'nthreads': None}
@@ -234,14 +233,14 @@ class Fourier_Space():
             self.kxunit = kxunit
             if self.norderx is not np.inf:
                 xcoefs=0.
-                if self.l_staggered or self.l_staggered_a_la_brendan:
+                if self.l_staggered:
 #                    xc = 0.5
                     xi = 2
                 else:
 #                    xc = 0.
                     xi = 1
 #                w = FD_weights(xc, self.norderx+1,1)[-1,self.norderx/2+1:]
-                w = FD_weights_hvincenti(self.norderx,l_staggered=self.l_staggered or self.l_staggered_a_la_brendan)
+                w = FD_weights_hvincenti(self.norderx,l_staggered=self.l_staggered)
 
                 for i in range(self.norderx/2):
                     xcoefs+=w[i]*2*np.sin(kxunit*(xi*i+1)*self.dx/xi)
@@ -259,14 +258,14 @@ class Fourier_Space():
             self.kyunit = kyunit
             if self.nordery is not np.inf:
                 ycoefs=0.
-                if self.l_staggered or self.l_staggered_a_la_brendan:
+                if self.l_staggered:
                     yc = 0.5
                     yi = 2
                 else:
                     yc = 0.
                     yi = 1
 #                w = FD_weights(yc, self.nordery+1,1)[-1,self.nordery/2+1:]
-                w = FD_weights_hvincenti(self.nordery,l_staggered=self.l_staggered or self.l_staggered_a_la_brendan)
+                w = FD_weights_hvincenti(self.nordery,l_staggered=self.l_staggered)
 
                 for i in range(self.nordery/2):
                     ycoefs+=w[i]*2*np.sin(kyunit*(yi*i+1)*self.dy/yi)
@@ -281,14 +280,14 @@ class Fourier_Space():
             self.kzunit = kzunit
             if self.norderz is not np.inf:
                 zcoefs=0.
-                if self.l_staggered or self.l_staggered_a_la_brendan:
+                if self.l_staggered:
                     zc = 0.5
                     zi = 2
                 else:
                     zc = 0.
                     zi = 1
 #                w = FD_weights(zc, self.norderz+1,1)[-1,self.norderz/2+1:]
-                w = FD_weights_hvincenti(self.norderz,l_staggered=self.l_staggered or self.l_staggered_a_la_brendan)
+                w = FD_weights_hvincenti(self.norderz,l_staggered=self.l_staggered)
 
                 for i in range(self.norderz/2):
                     zcoefs+=w[i]*2*np.sin(kzunit*(zi*i+1)*self.dz/zi)
