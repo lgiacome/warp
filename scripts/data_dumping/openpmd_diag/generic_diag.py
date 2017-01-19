@@ -67,7 +67,7 @@ class OpenPMDDiagnostic(object) :
             self.iteration_min=0
         else:
             self.iteration_min=iteration_min
-        if (itmax is None):
+        if (iteration_max is None):
             self.iteration_max=np.inf
         else:
             self.iteration_max=iteration_max
