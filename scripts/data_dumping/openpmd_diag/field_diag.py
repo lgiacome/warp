@@ -23,6 +23,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
     """
 
     def __init__(self, period, em, top, w3d, comm_world=None,
+                 iteration_min=None, iteration_max=None,
                  fieldtypes=["rho", "E", "B", "J"],
                  sub_sampling=[1,1,1], write_dir=None, lparallel_output=False):
         """
@@ -47,6 +48,12 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         comm_world: a communicator object
             Either an mpi4py or a pyMPI object, or None (single-proc)
 
+        iteration_min: int, optional
+            iteration at which the diagnostic starts to be active
+
+        iteration_max: int, optional
+            iteration at which the diagnostic stops being active
+
         fieldtypes: a list of strings, optional
             The strings are either "rho", "E", "B" or "J"
             and indicate which field should be written.
@@ -68,7 +75,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         """
         # General setup
         OpenPMDDiagnostic.__init__(self, period, top, w3d, comm_world,
-                                   lparallel_output, write_dir)
+                    iteration_min, iteration_max, lparallel_output, write_dir)
 
         # Register the arguments
         self.em = em

@@ -22,6 +22,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
 
     def __init__(self, period, top, w3d, comm_world=None,
                  species = {"electrons": None},
+                 iteration_min=None, iteration_max=None,
                  particle_data=["position", "momentum", "weighting"],
                  select=None, write_dir=None, lparallel_output=False,
                  sub_sample=None) :
@@ -48,6 +49,12 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             The Species object that is written (e.g. elec)
             is assigned to the particleName of this species.
             (e.g. "electrons")
+
+        iteration_min: int, optional
+            iteration at which the diagnostic starts to be active
+
+        iteration_max: int, optional
+            iteration at which the diagnostic stops being active
 
         particle_data : a list of strings, optional
             A list indicating which particle data should be written.
@@ -76,7 +83,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         """
         # General setup
         OpenPMDDiagnostic.__init__(self, period, top, w3d, comm_world,
-                                   lparallel_output, write_dir)
+                    iteration_min, iteration_max, lparallel_output, write_dir)
         # Register the arguments
         self.particle_data = particle_data
         self.species_dict = species
@@ -527,39 +534,63 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             Describes which quantity is queried
             Either "x", "y", "z", "ux", "uy", "uz", "w", "ex", "ey", "ez",
             "bx", "by" or "bz"
+            or even a formula involving particle quantities ("x+y")
         """
-        # Extract the chosen quantities
 
-        if quantity == "x" :
-            quantity_array = species.getx(gather=False)
-        elif quantity == "y" :
-            quantity_array = species.gety(gather=False)
-        elif quantity == "z" :
-            quantity_array = species.getz(gather=False)
-        elif quantity == "ux" :
-            quantity_array = species.getux(gather=False)
-        elif quantity == "uy" :
-            quantity_array = species.getuy(gather=False)
-        elif quantity == "uz" :
-            quantity_array = species.getuz(gather=False)
-        elif quantity == "ex" :
-            quantity_array = species.getex(gather=False)
-        elif quantity == "ey" :
-            quantity_array = species.getey(gather=False)
-        elif quantity == "ez" :
-            quantity_array = species.getez(gather=False)
-        elif quantity == "bx" :
-            quantity_array = species.getbx(gather=False)
-        elif quantity == "by" :
-            quantity_array = species.getby(gather=False)
-        elif quantity == "bz" :
-            quantity_array = species.getbz(gather=False)
-        elif quantity == "w" :
-            quantity_array = species.getweights(gather=False)
-        elif quantity == "id":
+        #NB (for developers): this is a very simple implementation
+        #one must take care of the order of search of particle quantities
+        #'ux','uy','uz' etc. so that the routine effectively works by just
+        #using the replace method on strings. In addition, double character
+        #quantities containing other quantitities (e.g 'ex' contains 'x')
+        #are replaced with numbered quantities 'e1' to avoid collisions
+        #with replace().
+
+        dict_keys_val=dict()
+        if "ux" in quantity :
+            dict_keys_val["u1"]=species.getux(gather=False)
+            quantity=quantity.replace("ux","u1")
+        if "uy" in quantity :
+            dict_keys_val["u2"]=species.getuy(gather=False)
+            quantity=quantity.replace("uy","u2")
+        if "uz" in quantity :
+            dict_keys_val["u3"]=species.getuz(gather=False)
+            quantity=quantity.replace("uz","u3")
+        if "ex" in quantity :
+            dict_keys_val["e1"]=species.getex(gather=False)
+            quantity=quantity.replace("ex","e1")
+        if "ey" in quantity :
+            dict_keys_val["e2"]=species.getey(gather=False)
+            quantity=quantity.replace("ey","e2")
+        if "ez" in quantity :
+            dict_keys_val["e3"]=species.getez(gather=False)
+            quantity=quantity.replace("ez","e3")
+        if "bx" in quantity :
+            dict_keys_val["b1"]=species.getbx(gather=False)
+            quantity=quantity.replace("bx","b1")
+        if "by" in quantity :
+            dict_keys_val["b2"]=species.getby(gather=False)
+            quantity=quantity.replace("by","b2")
+        if "bz" in quantity :
+            dict_keys_val["b3"]=species.getbz(gather=False)
+            quantity=quantity.replace("bz","b3")
+        if "w" in quantity  :
+            dict_keys_val["w"]=species.getweights(gather=False)
+        if "x" in quantity :
+            dict_keys_val["x"]=species.getx(gather=False)
+        if "y" in quantity :
+            dict_keys_val["y"]=species.gety(gather=False)
+        if "z" in quantity :
+            dict_keys_val["z"]=species.getz(gather=False)
+        if "id" in quantity:
             # The ssnid is stored in Warp as a float. Thus, it needs
             # to be converted to the nearest integer (rint)
-            quantity_array = np.rint( species.getssn(gather=False) )
-            quantity_array = quantity_array.astype('uint64')
+            dict_keys_val["id"] = \
+            (np.rint( species.getssn(gather=False) )).astype('uint64')
+
+        string_to_exec=quantity
+        for keys in dict_keys_val.keys():
+            string_to_exec=string_to_exec.replace(keys,"dict_keys_val[\'"+keys+"\']")
+        string_to_exec='quantity_array = '+string_to_exec
+        exec(string_to_exec)
 
         return( quantity_array )
