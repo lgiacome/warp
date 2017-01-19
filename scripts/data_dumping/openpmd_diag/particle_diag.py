@@ -579,7 +579,8 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             # to be converted to the nearest integer (rint)
             dict_keys_val["id"] = \
             (np.rint( species.getssn(gather=False) )).astype('uint64')
-
+            
+        string_to_exec=quantity
         for keys in dict_keys_val.keys():
             string_to_exec=string_to_exec.replace(keys,"dict_keys_val[\'"+keys+"\']")
         string_to_exec='quantity_array = '+string_to_exec
