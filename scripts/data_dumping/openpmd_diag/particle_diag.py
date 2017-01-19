@@ -528,14 +528,15 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             Either "x", "y", "z", "ux", "uy", "uz", "w", "ex", "ey", "ez",
             "bx", "by" or "bz"
             or even a formula involving particle quantities ("x+y")
-        NB (for developers): this is a very simple implementation
-        one must take care of the order of search of particle quantities
-        'ux','uy','uz' etc. so that the routine effectively works by just
-        using the replace method on strings. In addition, double character
-        quantities containing other quantitities (e.g 'ex' contains 'x')
-        are replaced with numbered quantities 'e1' to avoid collisions
-        with replace().
         """
+
+        #NB (for developers): this is a very simple implementation
+        #one must take care of the order of search of particle quantities
+        #'ux','uy','uz' etc. so that the routine effectively works by just
+        #using the replace method on strings. In addition, double character
+        #quantities containing other quantitities (e.g 'ex' contains 'x')
+        #are replaced with numbered quantities 'e1' to avoid collisions
+        #with replace().
 
         dict_keys_val=dict()
         if "ux" in quantity :
@@ -579,10 +580,9 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             dict_keys_val["id"] = \
             (np.rint( species.getssn(gather=False) )).astype('uint64')
 
-        string_to_exec=" "+quantity
         for keys in dict_keys_val.keys():
             string_to_exec=string_to_exec.replace(keys,"dict_keys_val[\'"+keys+"\']")
-        string_to_exec='quantity_array ='+string_to_exec
+        string_to_exec='quantity_array = '+string_to_exec
         exec(string_to_exec)
 
         return( quantity_array )

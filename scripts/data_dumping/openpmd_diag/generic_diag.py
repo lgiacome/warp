@@ -20,7 +20,7 @@ class OpenPMDDiagnostic(object) :
     to both FieldDiagnostic and ParticleDiagnostic
     """
 
-    def __init__(self, period, top, w3d, comm_world, itmin=None, itmax=None,
+    def __init__(self, period, top, w3d, comm_world, iteration_min=None, iteration_max=None,
                  lparallel_output=False, write_dir=None ) :
         """
         General setup of the diagnostic
@@ -41,9 +41,11 @@ class OpenPMDDiagnostic(object) :
         comm_world : a communicator object
             Either an mpi4py or a pyMPI object, or None (single-proc)
 
-        itmin      : min iteration from which output dumps are enabled
+        iteratin_min: int, optional
+            iteration at which the diagnostic starts to be active
 
-        itmax      : max iteration after which output dumps are disabled
+        iteratin_max: int, optional
+            iteration at which the diagnostic stops being active
 
         lparallel_output : boolean, optional
             Switch to set output mode (parallel or gathering)
@@ -61,14 +63,14 @@ class OpenPMDDiagnostic(object) :
             self.rank = 0
 
         # Register the arguments
-        if (itmin is None):
-            self.itmin=0
+        if (iteration_min is None):
+            self.iteration_min=0
         else:
-            self.itmin=itmin
+            self.iteration_min=iteration_min
         if (itmax is None):
-            self.itmax=np.inf
+            self.iteration_max=np.inf
         else:
-            self.itmax=itmax
+            self.iteration_max=iteration_max
         self.top = top
         self.w3d = w3d
         self.period = period
@@ -134,8 +136,9 @@ class OpenPMDDiagnostic(object) :
         timesteps in the simulation.
         """
         # Check if the fields should be written at this iteration
-        if ((self.top.it % self.period == 0) and (self.top.it>=self.itmin) \
-        and (self.top.it<=self.itmax)):
+        if ((self.top.it % self.period == 0) and \
+        (self.top.it>=self.iteration_min)    and \
+        (self.top.it<=self.iteration_max)):
             # Write the hdf5 file if needed
             self.write_hdf5( self.top.it )
 
