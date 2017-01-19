@@ -33,6 +33,9 @@ class EM3D(SubcycledPoissonSolver):
                       'laser_gauss_widthy':None,'laser_gauss_centery':0.,
                       'laser_anglex':0.,'laser_angley':0.,
                       'laser_polangle':0.,
+                      'laser_vector':array([1.,0.,0.]),
+                      'laser_polvector':array([0.,1.,0.]),
+                      'laser_spot':array([0.,0.,0.]),
                       'laser_wavelength':None,'laser_wavenumber':None,
                       'laser_frequency':None,
                       'laser_source_z':None,'laser_source_v':0.,
@@ -647,8 +650,103 @@ class EM3D(SubcycledPoissonSolver):
             self.laser_phase_func = PicklableFunction(self.laser_phase)
             self.laser_phase = None
 
-        # --- sets positions of E fields on Yee mesh 
+        # --- sets positions of E fields on Yee mesh
         f = self.block.core.yf
+
+        #############################
+        # Antenna with a laser_vector orthogonal to the plane of the antenna
+        #############################
+
+        #Normalisation of laser_vector and polvector
+        self.laser_vector = self.laser_vector/sqrt(self.laser_vector[0]**2 +self.laser_vector[1]**2+self.laser_vector[2]**2)
+        self.laser_polvector = self.laser_polvector/sqrt(self.laser_polvector[0]**2+self.laser_polvector[1]**2+self.pollaser_vector[2]**2)
+
+        # Creation of a third vector orthogonal to both laser_vector and polvector
+        self.laser_polvector_2 = cross(self.laser_vector, self.laser_polvector)
+
+        # laser_spot is a point of the antenna plane given by the user
+        x0=self.laser_spot[0]
+        y0=self.laser_spot[1]
+        z0=self.laser_spot[2]
+
+
+        if not self.l_2dxz:
+            # 3D case, Ux = laser_polvector and Uy = laser_polvector_2
+            self.Ux = self.laser_polvector
+            self.Uy = self.laser_polvector_2
+
+            # Spacing between virtual particles to ensure one particle per cell
+            self.Sx =min(f.dx/abs(self.Ux[0]), f.dy/abs(self.Ux[1]), f.dz/abs(self.Ux[2]))
+            self.Sy =min(f.dx/abs(self.Uy[0]), f.dy/abs(self.Uy[1]), f.dz/abs(self.Uy[2]))
+
+            xmin_i= self.switch_min_max(f.xmin, f.xmax, self.Ux[0])
+            ymin_i= self.switch_min_max(f.ymin, f.ymax, self.Ux[1])
+            zmin_i= self.switch_min_max(f.zmin, f.zmax, self.Ux[2])
+            xmax_i= self.switch_min_max(f.xmax, f.xmin, self.Ux[0])
+            ymax_i= self.switch_min_max(f.ymax, f.ymin, self.Ux[1])
+            zmax_i= self.switch_min_max(f.zmax, f.zmin, self.Ux[2])
+
+            xmin_j= self.switch_min_max(f.xmin, f.xmax, self.Uy[0])
+            ymin_j= self.switch_min_max(f.ymin, f.ymax, self.Uy[1])
+            zmin_j= self.switch_min_max(f.zmin, f.zmax, self.Uy[2])
+            xmax_j= self.switch_min_max(f.xmax, f.xmin, self.Uy[0])
+            ymax_j= self.switch_min_max(f.ymax, f.ymin, self.Uy[1])
+            zmax_j= self.switch_min_max(f.zmax, f.zmin, self.Uy[2])
+
+            antenna_imin=self.Ux[0]*(xmin_i-x0)+self.Ux[1]*(ymin_i-y0)+self.Ux[2]*(zmin_i-z0)
+            antenna_imax=self.Ux[0]*(xmax_i-x0)+self.Ux[1]*(ymax_i-y0)+self.Ux[2]*(zmax_i-z0)
+            antenna_jmin=self.Uy[0]*(xmin_j-x0)+self.Uy[1]*(ymin_j-y0)+self.Uy[2]*(zmin_j-z0)
+            antenna_jmax=self.Uy[0]*(xmax_j-x0)+self.Uy[1]*(ymax_j-y0)+self.Uy[2]*(zmax_j-z0)
+
+            antenna_imin=floor(antenna_imin/self.Sx)
+            antenna_imax=floor(antenna_imax/self.Sx)+1
+            antenna_jmin=floor(antenna_jmin/self.Sy)
+            antenna_jmax=floor(antenna_jmax/self.Sy)+1
+
+            array_i=arange(antenna_imin, antenna_imax)
+            array_j=arange(antenna_jmin, antenna_jmax)
+            self.antenna_i, self.antenna_j =getmesh2d(array_i,array_j)
+
+            self.laser_xx = x0 + self.Sx*self.Ux[0]*self.antenna_i + self.Sy*self.Uy[0]*self.antenna_j
+            self.laser_yy = y0 + self.Sx*self.Ux[1]*self.antenna_i + self.Sy*self.Uy[1]*self.antenna_j
+            self.laser_zz = z0 + self.Sx*self.Ux[2]*self.antenna_i + self.Sy*self.Uy[2]*self.antenna_j
+
+            self.laser_xx=self.laser_xx.flatten()
+            self.laser_yy=self.laser_yy.flatten()
+            self.laser_zz=self.laser_zz.flatten()
+
+        else:
+            if self.l_1dz:
+                # 1D injection along x
+            else:
+                # 2D with Ux orthogonal to laser_vector in the plane (x,z)
+                self.Ux = cross(self.laser_vector,array([0.,1.,0.]))
+
+                # Spacing between virtual particles to ensure one particle per cell
+                self.Sx =min(f.dx/abs(self.Ux[0]), f.dz/abs(self.Ux[2]))
+
+                xmin_i= self.switch_min_max(f.xmin, f.xmax, self.Ux[0])
+                ymin_i= self.switch_min_max(f.ymin, f.ymax, self.Ux[1])
+                zmin_i= self.switch_min_max(f.zmin, f.zmax, self.Ux[2])
+                xmax_i= self.switch_min_max(f.xmax, f.xmin, self.Ux[0])
+                ymax_i= self.switch_min_max(f.ymax, f.ymin, self.Ux[1])
+                zmax_i= self.switch_min_max(f.zmax, f.zmin, self.Ux[2])
+
+                antenna_imin=self.Ux[0]*(xmin_i-x0)+self.Ux[1]*(ymin_i-y0)+self.Ux[2]*(zmin_i-z0)
+                antenna_imax=self.Ux[0]*(xmax_i-x0)+self.Ux[1]*(ymax_i-y0)+self.Ux[2]*(zmax_i-z0)
+
+                antenna_imin=floor(antenna_imin/self.Sx)
+                antenna_imax=floor(antenna_imax/self.Sx)+1
+
+                self.antenna_i=arange(antenna_imin, antenna_imax)
+
+                self.laser_xx = x0 + self.Sx*self.Ux[0]*self.antenna_i
+                self.laser_zz = z0 + self.Sx*self.Ux[2]*self.antenna_i
+
+
+        #######
+        # Old code
+
         if not self.l_2dxz:
             self.laser_xx,self.laser_yy = getmesh2d(f.xmin+0.5*f.dx,f.dx,f.nx-1,f.ymin+0.5*f.dy,f.dy,f.ny-1)
             self.laser_xx=self.laser_xx.flatten()
@@ -711,6 +809,15 @@ class EM3D(SubcycledPoissonSolver):
         if self.refinement is not None: # --- disable laser on MR patches
             self.laser_profile=None
             self.field_coarse.laser_profile=None
+
+    def switch_min_max(x1,x2,u):
+        '''
+            Return x1 or x2 depending on the sign of u
+        '''
+        if u>=0 :
+            return x1
+        else:
+            return x2
 
 #===============================================================================
     def setuplaser_profile(self,f):
@@ -1705,7 +1812,7 @@ class EM3D(SubcycledPoissonSolver):
         # --- add slices
         self.add_source_ndts_slices()
         self.aftersetsourcep()
-        # -- add laser 
+        # -- add laser
         self.add_laser(self.block.core.yf)
         # --- smooth current density
         if any(self.npass_smooth>0):self.smoothdensity()
@@ -2305,7 +2412,7 @@ class EM3D(SubcycledPoissonSolver):
                        (top,'%spmax'%(coord) ),
                        (top,'%spminlocal'%(coord) ),
                        (top,'%spmaxlocal'%(coord) )]
-                       
+
         # The variable self.laser_zz does not exist yet
         if coord in ['x', 'y']:
             listtoshift += [ (self,'laser_%s%s' %(coord,coord)) ]
