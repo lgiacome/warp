@@ -64,7 +64,8 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
         # Initialize Particle diagnostic normal attributes
         ParticleDiagnostic.__init__(self, period, top, w3d, comm_world,
-            species, particle_data, select, write_dir, lparallel_output)
+            species=species, particle_data=particle_data, select=select,
+            write_dir=write_dir, lparallel_output=lparallel_output)
 
         # Register the boost quantities
         self.gamma_boost = gamma_boost
