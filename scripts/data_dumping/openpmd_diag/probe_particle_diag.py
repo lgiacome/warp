@@ -28,7 +28,7 @@ class ProbeParticleDiagnostic(ParticleDiagnostic):
     the 'write' method.
     """
     def __init__(self, plane_position, plane_normal_vector,
-                 period, em, top, w3d, comm_world=None,
+                 period, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting", "t"],
                  select=None, write_dir=None, lparallel_output=False,
                  species={"electrons": None}):
@@ -70,7 +70,7 @@ class ProbeParticleDiagnostic(ParticleDiagnostic):
         # Initialize a corresponding empty file
         if self.lparallel_output == False and self.rank == 0:
             self.create_file_empty_particles(
-                self.particle_storer, 0, 0, self.top.dt)
+                self.particle_storer.filename, 0, 0, self.top.dt)
 
     def write( self ):
         """
@@ -98,7 +98,7 @@ class ProbeParticleDiagnostic(ParticleDiagnostic):
         for species_name, species in self.species_dict.iteritems():
 
             slice_array = self.particle_catcher.extract_slice(
-                        species, self.select, selt.top.t )
+                        species, self.select )
             self.particle_storer.register_slice( slice_array, species_name )
 
     def flush_to_disk(self):
@@ -219,15 +219,15 @@ class ProbeParticleDiagnostic(ParticleDiagnostic):
                     self.write_probe_dataset(
                             species_grp, path, data, quantity)
 
-            elif particle_var == "weighting":
-               quantity= "w"
-               path = 'weighting'
+            elif particle_var == "t":
+               quantity= "t"
+               path = "t"
                data = particle_array[ p2i[ quantity ] ]
                self.write_probe_dataset(species_grp, path, data, quantity)
 
-           elif particle_var == "t":
-               quantity = "t"
-               path = "t"
+            elif particle_var == "weighting":
+               quantity= "w"
+               path = "weighting"
                data = particle_array[ p2i[ quantity ] ]
                self.write_probe_dataset(species_grp, path, data, quantity)
 
@@ -238,7 +238,7 @@ class ParticleStorer:
     """
     Class that stores data relative to the particles that are crossing the plane
     """
-    def __init__(self, dt, write_dir, i, species_dict, lparallel_output, rank):
+    def __init__(self, dt, write_dir, species_dict, lparallel_output, rank):
         """
         Initialize a ParticleStorer object
 
@@ -247,9 +247,6 @@ class ParticleStorer:
         write_dir: string
             Absolute path to the directory where the data for
             this snapshot is to be written
-
-        i: int
-            Number of the file where this snapshot is to be written
 
         species_dict: dict
             Contains all the species name of the species object
@@ -385,7 +382,7 @@ class ParticleCatcher:
             + n[2]*(current_z - r[2])
         selected_indices = np.compress(
             (previous_position_relative_to_plane <= 0 ) &
-            (current_position_relative_to_plan > 0 )  , particle_indices)
+            (current_position_relative_to_plane > 0 )  , particle_indices)
 
         num_part = np.shape(selected_indices)[0]
 
@@ -399,7 +396,7 @@ class ParticleCatcher:
         self.uy_captured = np.take(current_uy, selected_indices)
         self.uz_captured = np.take(current_uz, selected_indices)
         self.w_captured = np.take(current_weights, selected_indices)
-        self.t_captured = self.top.t * np.ones( num_part )
+        self.t_captured = self.top.time * np.ones( num_part )
 
         return( num_part )
 

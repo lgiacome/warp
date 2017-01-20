@@ -409,7 +409,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                                                            particle_var)
 
                     # Scalar quantity
-                    elif particle_var in ["weighting", "id"]:
+                    elif particle_var in ["weighting", "id", "t"]:
                         # Choose the type of the output
                         if particle_var == "id":
                             dtype = 'uint64'
