@@ -31,6 +31,7 @@ class EM3D(SubcycledPoissonSolver):
                       'laser_amplitude':1.,'laser_profile':None,'laser_phase':0.,
                       'laser_gauss_widthx':None,'laser_gauss_centerx':0.,
                       'laser_gauss_widthy':None,'laser_gauss_centery':0.,
+                      'laser_gauss_widthz':None,'laser_gauss_centerz':0.,
                       'laser_anglex':0.,'laser_angley':0.,
                       'laser_polangle':0.,
                       'laser_vector':array([1.,0.,0.]),
@@ -659,7 +660,7 @@ class EM3D(SubcycledPoissonSolver):
 
         #Normalisation of laser_vector and polvector
         self.laser_vector = self.laser_vector/sqrt(self.laser_vector[0]**2 +self.laser_vector[1]**2+self.laser_vector[2]**2)
-        self.laser_polvector = self.laser_polvector/sqrt(self.laser_polvector[0]**2+self.laser_polvector[1]**2+self.pollaser_vector[2]**2)
+        self.laser_polvector = self.laser_polvector/sqrt(self.laser_polvector[0]**2+self.laser_polvector[1]**2+self.laser_polvector[2]**2)
 
         # Creation of a third vector orthogonal to both laser_vector and polvector
         self.laser_polvector_2 = cross(self.laser_vector, self.laser_polvector)
@@ -669,15 +670,22 @@ class EM3D(SubcycledPoissonSolver):
         y0=self.laser_spot[1]
         z0=self.laser_spot[2]
 
-
         if not self.l_2dxz:
             # 3D case, Ux = laser_polvector and Uy = laser_polvector_2
             self.Ux = self.laser_polvector
             self.Uy = self.laser_polvector_2
 
             # Spacing between virtual particles to ensure one particle per cell
-            self.Sx =min(f.dx/abs(self.Ux[0]), f.dy/abs(self.Ux[1]), f.dz/abs(self.Ux[2]))
-            self.Sy =min(f.dx/abs(self.Uy[0]), f.dy/abs(self.Uy[1]), f.dz/abs(self.Uy[2]))
+            # select only the components of Ux and Uy different from 0
+            list_Ux=[]; list_Uy=[]
+            if not self.Ux[0]==0.: list_Ux.append(f.dx/abs(self.Ux[0]))
+            if not self.Ux[1]==0.: list_Ux.append(f.dy/abs(self.Ux[1]))
+            if not self.Ux[2]==0.: list_Ux.append(f.dz/abs(self.Ux[2]))
+            if not self.Uy[0]==0.: list_Uy.append(f.dx/abs(self.Uy[0]))
+            if not self.Uy[1]==0.: list_Uy.append(f.dy/abs(self.Uy[1]))
+            if not self.Uy[2]==0.: list_Uy.append(f.dz/abs(self.Uy[2]))
+            self.Sx =min(list_Ux)
+            self.Sy =min(list_Uy)
 
             xmin_i= self.switch_min_max(f.xmin, f.xmax, self.Ux[0])
             ymin_i= self.switch_min_max(f.ymin, f.ymax, self.Ux[1])
@@ -705,7 +713,7 @@ class EM3D(SubcycledPoissonSolver):
 
             array_i=arange(antenna_imin, antenna_imax)
             array_j=arange(antenna_jmin, antenna_jmax)
-            self.antenna_i, self.antenna_j =getmesh2d(array_i,array_j)
+            self.antenna_i, self.antenna_j =meshgrid(array_i,array_j)
 
             self.laser_xx = x0 + self.Sx*self.Ux[0]*self.antenna_i + self.Sy*self.Uy[0]*self.antenna_j
             self.laser_yy = y0 + self.Sx*self.Ux[1]*self.antenna_i + self.Sy*self.Uy[1]*self.antenna_j
@@ -715,15 +723,37 @@ class EM3D(SubcycledPoissonSolver):
             self.laser_yy=self.laser_yy.flatten()
             self.laser_zz=self.laser_zz.flatten()
 
+            # Normalization to respect the boundaries
+            self.laser_yy=self.boundaries_reduction(self.laser_yy,self.laser_xx, f.xmin, f.xmax)
+            self.laser_zz=self.boundaries_reduction(self.laser_zz,self.laser_xx, f.xmin, f.xmax)
+            self.laser_xx=self.boundaries_reduction(self.laser_xx,self.laser_xx, f.xmin, f.xmax)
+
+            self.laser_xx=self.boundaries_reduction(self.laser_xx,self.laser_yy, f.ymin, f.ymax)
+            self.laser_zz=self.boundaries_reduction(self.laser_zz,self.laser_yy, f.ymin, f.ymax)
+            self.laser_yy=self.boundaries_reduction(self.laser_yy,self.laser_yy, f.ymin, f.ymax)
+
+            self.laser_xx=self.boundaries_reduction(self.laser_xx,self.laser_zz, f.zmin, f.zmax)
+            self.laser_yy=self.boundaries_reduction(self.laser_yy,self.laser_zz, f.zmin, f.zmax)
+            self.laser_zz=self.boundaries_reduction(self.laser_zz,self.laser_zz, f.zmin, f.zmax)
+
+            # Number of virtual particles
+            self.laser_nn=shape(self.laser_xx)[0]
+
         else:
             if self.l_1dz:
                 # 1D injection along x
+                print "Work in progress"
             else:
                 # 2D with Ux orthogonal to laser_vector in the plane (x,z)
                 self.Ux = cross(self.laser_vector,array([0.,1.,0.]))
 
                 # Spacing between virtual particles to ensure one particle per cell
-                self.Sx =min(f.dx/abs(self.Ux[0]), f.dz/abs(self.Ux[2]))
+                # select only the components of Ux different from 0
+                list_Ux=[]
+                if not self.Ux[0]==0.: list_Ux.append(f.dx/abs(self.Ux[0]))
+                if not self.Ux[1]==0.: list_Ux.append(f.dy/abs(self.Ux[1]))
+                if not self.Ux[2]==0.: list_Ux.append(f.dz/abs(self.Ux[2]))
+                self.Sx =min(list_Ux)
 
                 xmin_i= self.switch_min_max(f.xmin, f.xmax, self.Ux[0])
                 ymin_i= self.switch_min_max(f.ymin, f.ymax, self.Ux[1])
@@ -739,10 +769,19 @@ class EM3D(SubcycledPoissonSolver):
                 antenna_imax=floor(antenna_imax/self.Sx)+1
 
                 self.antenna_i=arange(antenna_imin, antenna_imax)
-
                 self.laser_xx = x0 + self.Sx*self.Ux[0]*self.antenna_i
                 self.laser_zz = z0 + self.Sx*self.Ux[2]*self.antenna_i
 
+                # Normalization to respect the boundaries
+                self.laser_zz=self.boundaries_reduction(self.laser_zz,self.laser_xx, f.xmin, f.xmax)
+                self.laser_xx=self.boundaries_reduction(self.laser_xx,self.laser_xx, f.xmin, f.xmax)
+
+                self.laser_xx=self.boundaries_reduction(self.laser_xx,self.laser_zz, f.zmin, f.zmax)
+                self.laser_zz=self.boundaries_reduction(self.laser_zz,self.laser_zz, f.zmin, f.zmax)
+
+                self.laser_yy=zeros(len(self.laser_xx))
+                # Number of virtual particles
+                self.laser_nn=shape(self.laser_xx)[0]
 
         #######
         # Old code
@@ -810,7 +849,7 @@ class EM3D(SubcycledPoissonSolver):
             self.laser_profile=None
             self.field_coarse.laser_profile=None
 
-    def switch_min_max(x1,x2,u):
+    def switch_min_max(self,x1,x2,u):
         '''
             Return x1 or x2 depending on the sign of u
         '''
@@ -818,6 +857,15 @@ class EM3D(SubcycledPoissonSolver):
             return x1
         else:
             return x2
+
+    def boundaries_reduction(self, u, x, xmin, xmax):
+        '''
+            u and x, two same size vectors
+            Return the values of u such as xmin <= x < xmax
+        '''
+        u=u[x >= xmin]; x=x[x >= xmin]
+        u=u[x < xmax]
+        return u
 
 #===============================================================================
     def setuplaser_profile(self,f):
@@ -829,10 +877,14 @@ class EM3D(SubcycledPoissonSolver):
                    "For a gaussian laser, the width in X must be specified using laser_gauss_widthx"
             assert self.laser_gauss_widthy is not None,\
                    "For a gaussian laser, the width in Y must be specified using laser_gauss_widthy"
+            assert self.laser_gauss_widthz is not None,\
+                   "For a gaussian laser, the width in Z must be specified using laser_gauss_widthz"
 
             xx = self.laser_xx-self.laser_gauss_centerx; xx /= self.laser_gauss_widthx
             yy = self.laser_yy-self.laser_gauss_centery; yy /= self.laser_gauss_widthy
-            self.laser_profile = exp(-(xx**2+yy**2)/2.)
+            zz = self.laser_zz-self.laser_gauss_centerz; zz /= self.laser_gauss_widthz
+            print "gauss shape", shape(xx), shape(yy), shape(zz)
+            self.laser_profile = exp(-(xx**2+yy**2+zz**2)/2.)
 
         elif isinstance(self.laser_profile,collections.Sequence):
             assert len(self.laser_profile[:,0]) == f.nx+1,"The specified profile must be of length nx+1"
