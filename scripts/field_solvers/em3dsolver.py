@@ -666,6 +666,11 @@ class EM3D(SubcycledPoissonSolver):
         self.laser_polvector_2 = cross(self.laser_vector, self.laser_polvector)
 
         # laser_spot is a point of the antenna plane given by the user
+        if self.laser_spot is None:
+            if self.laser_source_z is None:
+                self.laser_source_z = w3d.zmmin
+            self.laser_source_z = max(min(self.laser_source_z,w3d.zmmax),w3d.zmmin)
+            self.laser_spot = array([0,0,self.laser_source_z])
         x0=self.laser_spot[0]
         y0=self.laser_spot[1]
         z0=self.laser_spot[2]
@@ -742,70 +747,51 @@ class EM3D(SubcycledPoissonSolver):
         else:
             if self.l_1dz:
                 # 1D injection along x
-                print "Work in progress"
-            else:
-                # 2D with Ux orthogonal to laser_vector in the plane (x,z)
-                self.Ux = cross(self.laser_vector,array([0.,1.,0.]))
-
-                # Spacing between virtual particles to ensure one particle per cell
-                # select only the components of Ux different from 0
-                list_Ux=[]
-                if not self.Ux[0]==0.: list_Ux.append(f.dx/abs(self.Ux[0]))
-                if not self.Ux[1]==0.: list_Ux.append(f.dy/abs(self.Ux[1]))
-                if not self.Ux[2]==0.: list_Ux.append(f.dz/abs(self.Ux[2]))
-                self.Sx =min(list_Ux)
-
-                xmin_i= self.switch_min_max(f.xmin, f.xmax, self.Ux[0])
-                ymin_i= self.switch_min_max(f.ymin, f.ymax, self.Ux[1])
-                zmin_i= self.switch_min_max(f.zmin, f.zmax, self.Ux[2])
-                xmax_i= self.switch_min_max(f.xmax, f.xmin, self.Ux[0])
-                ymax_i= self.switch_min_max(f.ymax, f.ymin, self.Ux[1])
-                zmax_i= self.switch_min_max(f.zmax, f.zmin, self.Ux[2])
-
-                antenna_imin=self.Ux[0]*(xmin_i-x0)+self.Ux[1]*(ymin_i-y0)+self.Ux[2]*(zmin_i-z0)
-                antenna_imax=self.Ux[0]*(xmax_i-x0)+self.Ux[1]*(ymax_i-y0)+self.Ux[2]*(zmax_i-z0)
-
-                antenna_imin=floor(antenna_imin/self.Sx)
-                antenna_imax=floor(antenna_imax/self.Sx)+1
-
-                self.antenna_i=arange(antenna_imin, antenna_imax)
-                self.laser_xx = x0 + self.Sx*self.Ux[0]*self.antenna_i
-                self.laser_zz = z0 + self.Sx*self.Ux[2]*self.antenna_i
-
-                # Normalization to respect the boundaries
-                self.laser_zz=self.boundaries_reduction(self.laser_zz,self.laser_xx, f.xmin, f.xmax)
-                self.laser_xx=self.boundaries_reduction(self.laser_xx,self.laser_xx, f.xmin, f.xmax)
-
-                self.laser_xx=self.boundaries_reduction(self.laser_xx,self.laser_zz, f.zmin, f.zmax)
-                self.laser_zz=self.boundaries_reduction(self.laser_zz,self.laser_zz, f.zmin, f.zmax)
-
-                self.laser_yy=zeros(len(self.laser_xx))
-                # Number of virtual particles
-                self.laser_nn=shape(self.laser_xx)[0]
-
-        #######
-        # Old code
-
-        if not self.l_2dxz:
-            self.laser_xx,self.laser_yy = getmesh2d(f.xmin+0.5*f.dx,f.dx,f.nx-1,f.ymin+0.5*f.dy,f.dy,f.ny-1)
-            self.laser_xx=self.laser_xx.flatten()
-            self.laser_yy=self.laser_yy.flatten()
-            self.laser_nn=shape(self.laser_xx)[0]
-        else:
-            if self.l_1dz:
                 self.laser_nn=1
-                self.laser_xx=zeros(self.laser_nn)
-                self.laser_yy=zeros(self.laser_nn)
-            else:   # 2D and Circ
-                nlas = 1
+                self.laser_xx=x0+zeros(self.laser_nn)
+                self.laser_yy=y0+zeros(self.laser_nn)
+                self.laser_zz=z0+zeros(self.laser_nn)
+            else:
                 if self.l_laser_cart :
-                    # The fictious macroparticles are initialized in a 2D x-y plane, as regularly spaced
-                    self.laser_xx, self.laser_yy = getmesh2d(
-                        -f.xmax+0.5*f.dx/nlas, f.dx/nlas, 2*nlas*f.nx-1,
-                        -f.xmax+0.5*f.dx/nlas, f.dx/nlas, 2*nlas*f.nx-1)
-                    self.laser_xx=self.laser_xx.flatten()
-                    self.laser_yy=self.laser_yy.flatten()
+                    # 2D with Ux orthogonal to laser_vector in the plane (x,z)
+                    self.Ux = cross(self.laser_vector,array([0.,1.,0.]))
+
+                    # Spacing between virtual particles to ensure one particle per cell
+                    # select only the components of Ux different from 0
+                    list_Ux=[]
+                    if not self.Ux[0]==0.: list_Ux.append(f.dx/abs(self.Ux[0]))
+                    if not self.Ux[1]==0.: list_Ux.append(f.dy/abs(self.Ux[1]))
+                    if not self.Ux[2]==0.: list_Ux.append(f.dz/abs(self.Ux[2]))
+                    self.Sx =min(list_Ux)
+
+                    xmin_i= self.switch_min_max(f.xmin, f.xmax, self.Ux[0])
+                    ymin_i= self.switch_min_max(f.ymin, f.ymax, self.Ux[1])
+                    zmin_i= self.switch_min_max(f.zmin, f.zmax, self.Ux[2])
+                    xmax_i= self.switch_min_max(f.xmax, f.xmin, self.Ux[0])
+                    ymax_i= self.switch_min_max(f.ymax, f.ymin, self.Ux[1])
+                    zmax_i= self.switch_min_max(f.zmax, f.zmin, self.Ux[2])
+
+                    antenna_imin=self.Ux[0]*(xmin_i-x0)+self.Ux[1]*(ymin_i-y0)+self.Ux[2]*(zmin_i-z0)
+                    antenna_imax=self.Ux[0]*(xmax_i-x0)+self.Ux[1]*(ymax_i-y0)+self.Ux[2]*(zmax_i-z0)
+
+                    antenna_imin=floor(antenna_imin/self.Sx)
+                    antenna_imax=floor(antenna_imax/self.Sx)+1
+
+                    self.antenna_i=arange(antenna_imin, antenna_imax)
+                    self.laser_xx = x0 + self.Sx*self.Ux[0]*self.antenna_i
+                    self.laser_zz = z0 + self.Sx*self.Ux[2]*self.antenna_i
+
+                    # Normalization to respect the boundaries
+                    self.laser_zz=self.boundaries_reduction(self.laser_zz,self.laser_xx, f.xmin, f.xmax)
+                    self.laser_xx=self.boundaries_reduction(self.laser_xx,self.laser_xx, f.xmin, f.xmax)
+
+                    self.laser_xx=self.boundaries_reduction(self.laser_xx,self.laser_zz, f.zmin, f.zmax)
+                    self.laser_zz=self.boundaries_reduction(self.laser_zz,self.laser_zz, f.zmin, f.zmax)
+
+                    self.laser_yy=zeros(len(self.laser_xx))
+                    # Number of virtual particles
                     self.laser_nn=shape(self.laser_xx)[0]
+
                 else :
                     # The fictious macroparticles are initialized in a star-pattern, with 4*circ_m branches
                     self.laser_xx = arange(f.nx*nlas)*f.dx/nlas + f.xmin + 0.5*f.dx/nlas
@@ -821,6 +807,7 @@ class EM3D(SubcycledPoissonSolver):
                             self.laser_yy = concatenate((self.laser_yy,rr*sin(0.5*pi*float(i)/self.circ_m)))
                             self.weights_circ = concatenate((self.weights_circ,w0))
                         self.laser_nn=shape(self.laser_xx)[0]
+                    self.laser_zz=z0+zeros(self.laser_nn)
 
         if self.laser_amplitude_dict is not None:
             self.laser_xdx={}
@@ -841,28 +828,25 @@ class EM3D(SubcycledPoissonSolver):
 
         self.setuplaser_profile(self.fields)
 
-        if self.laser_source_z is None:
-            self.laser_source_z = w3d.zmmin
-        self.laser_source_z = max(min(self.laser_source_z,w3d.zmmax),w3d.zmmin)
 
         if self.refinement is not None: # --- disable laser on MR patches
             self.laser_profile=None
             self.field_coarse.laser_profile=None
 
     def switch_min_max(self,x1,x2,u):
-        '''
+        """
             Return x1 or x2 depending on the sign of u
-        '''
+        """
         if u>=0 :
             return x1
         else:
             return x2
 
     def boundaries_reduction(self, u, x, xmin, xmax):
-        '''
+        """
             u and x, two same size vectors
             Return the values of u such as xmin <= x < xmax
-        '''
+        """
         u=u[x >= xmin]; x=x[x >= xmin]
         u=u[x < xmax]
         return u
@@ -930,12 +914,10 @@ class EM3D(SubcycledPoissonSolver):
         field : EM3D_YEEFIELD
             The self.fields object, whose attributes are the field arrays Ex, Ey, etc ...
         """
-
-        if 1:#self.laser_source_z>self.zmmin+self.zgrid and self.laser_source_z<=self.zmmax+self.zgrid:
-            if self.laser_focus_z is not None:self.laser_focus_z+=self.laser_focus_v*top.dt#/self.ntsub
-            self.laser_source_z+=self.laser_source_v*top.dt#/self.ntsub
-        else:
-            return
+        if self.laser_focus_z is not None:self.laser_focus_z+=self.laser_focus_v*top.dt#/self.ntsub
+        self.laser_xx += self.laser_source_v * self.laser_vector[0] * top.dt
+        self.laser_yy += self.laser_source_v * self.laser_vector[1] * top.dt
+        self.laser_zz += self.laser_source_v * self.laser_vector[2] * top.dt
 
         f = self.block.core.yf
         betafrm = -self.laser_source_v/clight
@@ -1054,9 +1036,9 @@ class EM3D(SubcycledPoissonSolver):
         # Depose the current of the antenna
         self.depose_j_laser(f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight)
 
-
 #===============================================================================
-    def depose_j_laser(self,f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight):
+    def depose_j_laser(self, f, laser_xdx, laser_ydy, laser_zdz,
+            laser_ux, laser_uy, laser_uz, weights, l_particles_weight):
         """
         Depose the current that generates the laser, on the grid (generation of the laser by an antenna)
 
@@ -1069,11 +1051,11 @@ class EM3D(SubcycledPoissonSolver):
         f : EM3D_YEEFIELD
             The self.block.core.yf object, whose attributes are the field arrays Ex, Ey, J, etc...
 
-        laser_xdx, laser_ydy : 1darray
+        laser_xdx, laser_ydy, laser_zdz : 1darray
             1d arrays with one element per fictious macroparticles, containing the displacement of
             the macroparticles with respect to their mean position along x and y.
 
-        laser_ux, laser_uy : 1darray
+        laser_ux, laser_uy, laser_uz : 1darray
             1d arrays with one element per fictious macroparticles, containing the normalized momenta
             of the particles along each direction.
 
@@ -1092,228 +1074,53 @@ class EM3D(SubcycledPoissonSolver):
         f.Jz = self.fields.Jzarray[:,:,:,0]
         f.Rho = self.fields.Rhoarray[:,:,:,0]
 
-        for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
-            # The antenna is made of two types of fictious particles : positive and negative
-
-            if self.l_2dxz:
-
-                if self.l_1dz: # 1D case
-                    depose_j_n_1dz(f.J,
-                                              self.laser_nn,
-                                              self.laser_source_z*ones(self.laser_nn),
-                                              q*laser_ux,
-                                              q*laser_uy,
-                                              self.laser_source_v*ones(self.laser_nn),
-                                              self.laser_gi,
-                                              weights,
-                                              q,
-                                              f.zmin+self.zgrid,
-                                              top.dt,
-                                              f.dz,
-                                              f.nz,
-                                              f.nzguard,
-                                              self.laser_depos_order_z,
-                                              l_particles_weight)
-                else:
-                    if self.circ_m == 0 : # pure 2D case
-                        print 'weight = ',weights,q
-                        depose_jxjyjz_esirkepov_n_2d(f.J,
-                                                self.laser_nn,
-                                                self.laser_xx+q*laser_xdx,
-                                                self.laser_yy+q*laser_ydy,
-                                                self.laser_source_z*ones(self.laser_nn),
-                                                q*laser_ux,
-                                                q*laser_uy,
-                                                self.laser_source_v*ones(self.laser_nn),
-                                                self.laser_gi,
-                                                weights,
-                                                q,
-                                                f.xmin,f.zmin+self.zgrid,
-                                                top.dt,
-                                                f.dx,f.dz,
-                                                f.nx,f.nz,
-                                                f.nxguard,f.nzguard,
-                                                self.laser_depos_order_x,
-                                                self.laser_depos_order_z,
-                                                l_particles_weight,
-                                                w3d.l4symtry,
-                                                self.l_2drz, self.type_rz_depose)
-
-                    else: # Circ case
-                        depose_jxjyjz_esirkepov_n_2d_circ(f.J,f.J_circ,f.circ_m,
-                                                self.laser_nn,
-                                                self.laser_xx+q*laser_xdx,
-                                                self.laser_yy+q*laser_ydy,
-                                                self.laser_source_z*ones(self.laser_nn),
-                                                q*laser_ux,
-                                                q*laser_uy,
-                                                self.laser_source_v*ones(self.laser_nn),
-                                                self.laser_gi,
-                                                weights,
-                                                q,
-                                                f.xmin,f.zmin+self.zgrid,
-                                                top.dt,
-                                                f.dx,f.dz,
-                                                f.nx,f.nz,
-                                                f.nxguard,f.nzguard,
-                                                self.laser_depos_order_x,
-                                                self.laser_depos_order_z,
-                                                l_particles_weight, self.type_rz_depose)
-
-            else: # 3D case
-                depose_jxjyjz_esirkepov_n(f.J,
-                                             self.laser_nn,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             q*laser_ux,
-                                             q*laser_uy,
-                                             self.laser_source_v*ones(self.laser_nn),
-                                             self.laser_gi,
-                                             weights,
-                                             q,
-                                             f.xmin,f.ymin,f.zmin+self.zgrid,
-                                             top.dt,
-                                             f.dx,f.dy,f.dz,
-                                             f.nx,f.ny,f.nz,
-                                             f.nxguard,f.nyguard,f.nzguard,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_y,
-                                             self.laser_depos_order_z,
-                                             l_particles_weight,
-                                             w3d.l4symtry)
-
-            # --- now deposits Rho if needed
-            if self.l_getrho :
-                if self.l_2dxz:
-                    if self.circ_m==0:  # pure 2D case
-                        depose_rho_n_2dxz(f.Rho,
-                                             self.laser_nn,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             weights,
-                                             q,
-                                         f.xmin,f.zmin+self.zgrid,
-                                         f.dx,f.dz,
-                                         f.nx,f.nz,
-                                         f.nxguard,f.nzguard,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_z,
-                                         l_particles_weight,w3d.l4symtry,self.l_2drz,
-                                         self.type_rz_depose)
-                    else: # Circ case
-                        depose_rho_n_2d_circ(f.Rho,
-                                         f.Rho_circ,
-                                         f.circ_m,
-                                             self.laser_nn,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             weights,
-                                             q,
-                                         f.xmin,f.zmin+self.zgrid,
-                                         f.dx,f.dz,
-                                         f.nx,f.nz,
-                                         f.nxguard,f.nzguard,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_z,
-                                         l_particles_weight, self.type_rz_depose)
-                else: # 3D case
-                    depose_rho_n(f.Rho,
-                                             self.laser_nn,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             weights,
-                                             q,
-                                       f.xmin,f.ymin,f.zmin+self.zgrid,
-                                       f.dx,f.dy,f.dz,
-                                       f.nx,f.ny,f.nz,
-                                       f.nxguard,f.nyguard,f.nzguard,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_y,
-                                             self.laser_depos_order_z,
-                                       l_particles_weight,w3d.l4symtry)
-
-#===============================================================================
-    def depose_j_laser(self,f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight):
-        """
-        Depose the current that generates the laser, on the grid (generation of the laser by an antenna)
-
-        Notice that this current is generated by fictious macroparticles, whose motion is explicitly specified.
-        Thus, this current does not correspond to that of the actual macroparticles of the simulation.
-
-        Parameters :
-        ------------
-
-        f : EM3D_YEEFIELD
-            The self.block.core.yf object, whose attributes are the field arrays Ex, Ey, J, etc...
-
-        laser_xdx, laser_ydy : 1darray
-            1d arrays with one element per fictious macroparticles, containing the displacement of
-            the macroparticles with respect to their mean position along x and y.
-
-        laser_ux, laser_uy : 1darray
-            1d arrays with one element per fictious macroparticles, containing the normalized momenta
-            of the particles along each direction.
-
-        weights : 1darray
-            1d array with one element per fictious macroparticle, containing the weights of the particles.
-
-        l_particles_weight : bool
-            A flag indicating whether the different fictious macroparticles have different weights
-        """
-
-        if top.ndts[0]<>1:
-            print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
-            raise
-        f.Jx = self.fields.Jxarray[:,:,:,0]
-        f.Jy = self.fields.Jyarray[:,:,:,0]
-        f.Jz = self.fields.Jzarray[:,:,:,0]
-        f.Rho = self.fields.Rhoarray[:,:,:,0]
+        laser_v = self.laser_source_v
+        laser_source_vx = laser_v * self.laser_vector[0] * ones(self.laser_nn)
+        laser_source_vy = laser_v * self.laser_vector[1] * ones(self.laser_nn)
+        laser_source_vz = laser_v * self.laser_vector[2] * ones(self.laser_nn)
 
         for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
             # The antenna is made of two types of fictious particles : positive and negative
 
             self.depose_current_density(
-                                             self.laser_nn,
-                                             f,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             q*laser_ux,
-                                             q*laser_uy,
-                                             self.laser_source_v*ones(self.laser_nn),
-                                             self.laser_gi,
-                                             top.dt,
-                                             weights,
-                                             self.zgrid,
-                                             q,
-                                             1.,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_y,
-                                             self.laser_depos_order_z,
-                                             l_particles_weight)
+                                 self.laser_nn,
+                                 f,
+                                 self.laser_xx + q*laser_xdx,
+                                 self.laser_yy + q*laser_ydy,
+                                 self.laser_zz + q*laser_zdz,
+                                 laser_source_vx + q*laser_ux,
+                                 laser_source_vy + q*laser_uy,
+                                 laser_source_vz + q*laser_uz,
+                                 self.laser_gi,
+                                 top.dt,
+                                 weights,
+                                 self.zgrid,
+                                 q,
+                                 1.,
+                                 self.laser_depos_order_x,
+                                 self.laser_depos_order_y,
+                                 self.laser_depos_order_z,
+                                 l_particles_weight)
             if self.l_getrho :
-               self.depose_charge_density(   self.laser_nn,
-                                             f,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             q*laser_ux,
-                                             q*laser_uy,
-                                             self.laser_source_v*ones(self.laser_nn),
-                                             self.laser_gi,
-                                             top.dt,
-                                             weights,
-                                             self.zgrid,
-                                             q,
-                                             1.,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_y,
-                                             self.laser_depos_order_z,
-                                             l_particles_weight)
+               self.depose_charge_density(
+                                 self.laser_nn,
+                                 f,
+                                 self.laser_xx + q*laser_xdx,
+                                 self.laser_yy + q*laser_ydy,
+                                 self.laser_zz + q*laser_zdz,
+                                 laser_source_vx + q*laser_ux,
+                                 laser_source_vy + q*laser_uy,
+                                 laser_source_vz + q*laser_uz,
+                                 self.laser_gi,
+                                 top.dt,
+                                 weights,
+                                 self.zgrid,
+                                 q,
+                                 1.,
+                                 self.laser_depos_order_x,
+                                 self.laser_depos_order_y,
+                                 self.laser_depos_order_z,
+                                 l_particles_weight)
 
 ################################################################################
 # FIELD FETCHING
