@@ -1855,6 +1855,9 @@ class EM3D(SubcycledPoissonSolver):
                        (top,'%spmax'%(coord) ),
                        (top,'%spminlocal'%(coord) ),
                        (top,'%spmaxlocal'%(coord) )]
+        # The variable self.laser_zz does not exist yet
+        if coord in ['x', 'y']:
+            listtoshift += [ (self,'laser_%s%s' %(coord,coord)) ]
 
         for (coord_object,coord_attribute) in listtoshift:
             # loop equivalent to coord_object.coord_attribute+=self.V_galilean[..]*top.dt
@@ -5694,7 +5697,10 @@ class EM3D(SubcycledPoissonSolver):
         # --- Calculate the static fields.
         top.grid_overlap = 2
         if self.solvergeom == w3d.XYZgeom:
-            ESolver = MultiGrid3D
+            try:
+                from warp.field_solvers.openbcsolver import OpenBC3D as ESolver
+            except ImporError:
+                ESolver = MultiGrid3D
         else:
             ESolver = MultiGrid2D
         esolver = ESolver(nxguardphi=self.nxguard+1,
@@ -5703,7 +5709,7 @@ class EM3D(SubcycledPoissonSolver):
                           nxguarde=self.nxguard,
                           nyguarde=self.nyguard,
                           nzguarde=self.nzguard,
-                          mgtol = 1.e-20,
+#                          mgtol = 1.e-20,
                           )
 
         esolver.conductordatalist = self.conductordatalist
