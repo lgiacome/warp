@@ -3,7 +3,7 @@ import shutil
 from warp import *
 from warp.data_dumping.openpmd_diag import FieldDiagnostic, \
     ParticleDiagnostic, BoostedFieldDiagnostic, \
-    BoostedParticleDiagnostic
+    BoostedParticleDiagnostic, ProbeParticleDiagnostic
         
 def set_numerics( depos_order, efetch, particle_pusher, dim ):
     """
