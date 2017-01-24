@@ -354,7 +354,7 @@ class ParticleCatcher:
         current_ux = self.get_quantity( species, "ux" )
         current_uy = self.get_quantity( species, "uy" )
         current_uz = self.get_quantity( species, "uz" )
-        current_weights = self.get_quantity( species, "w" )
+        weights = self.get_quantity( species, "w" )
 
         # Quantities at previous time step
         previous_x = self.get_quantity( species, "x", l_prev=True )
@@ -386,17 +386,49 @@ class ParticleCatcher:
 
         num_part = np.shape(selected_indices)[0]
 
-        ## Particle quantities that satisfy the aforementioned condition
+        ## Select the particle quantities that satisfy the
+        ## aforementioned condition
         self.mass = species.mass
+        self.w_captured = np.take(weights, selected_indices)
 
-        self.x_captured = np.take(current_x, selected_indices)
-        self.y_captured = np.take(current_y, selected_indices)
-        self.z_captured = np.take(current_z, selected_indices)
-        self.ux_captured = np.take(current_ux, selected_indices)
-        self.uy_captured = np.take(current_uy, selected_indices)
-        self.uz_captured = np.take(current_uz, selected_indices)
-        self.w_captured = np.take(current_weights, selected_indices)
-        self.t_captured = self.top.time * np.ones( num_part )
+        current_x = np.take(current_x, selected_indices)
+        current_y = np.take(current_y, selected_indices)
+        current_z = np.take(current_z, selected_indices)
+        current_ux = np.take(current_ux, selected_indices)
+        current_uy = np.take(current_uy, selected_indices)
+        current_uz = np.take(current_uz, selected_indices)
+        current_position_relative_to_plane = np.take(
+            current_position_relative_to_plane, selected_indices )
+
+        previous_x = np.take(previous_x, selected_indices)
+        previous_y = np.take(previous_y, selected_indices)
+        previous_z = np.take(previous_z, selected_indices)
+        previous_ux = np.take(previous_ux, selected_indices)
+        previous_uy = np.take(previous_uy, selected_indices)
+        previous_uz = np.take(previous_uz, selected_indices)
+        previous_position_relative_to_plane = np.take(
+            previous_position_relative_to_plane, selected_indices )
+
+        # Interpolate particle quantity to the time when they cross the plane
+        norm_factor = 1 / ( np.abs(previous_position_relative_to_plane) \
+                + current_position_relative_to_plane )
+        interp_current = np.abs(previous_position_relative_to_plane) * norm_factor
+        interp_previous = current_position_relative_to_plane * norm_factor
+
+        self.t_captured = interp_current * self.top.time + \
+                            interp_previous * (self.top.time - self.top.dt)
+        self.x_captured = interp_current * current_x + \
+                            interp_previous * previous_x
+        self.y_captured = interp_current * current_y + \
+                            interp_previous * previous_y
+        self.z_captured = interp_current * current_z + \
+                            interp_previous * previous_z
+        self.ux_captured = interp_current * current_ux + \
+                            interp_previous * previous_ux
+        self.uy_captured = interp_current * current_uy + \
+                            interp_previous * previous_uy
+        self.uz_captured = interp_current * current_uz + \
+                            interp_previous * previous_uz
 
         return( num_part )
 
@@ -462,6 +494,7 @@ class ParticleCatcher:
         num_part = self.get_particle_slice( species )
         slice_array = np.empty((np.shape(p2i.keys())[0], num_part,))
 
+        # Get the particle quantities
         for quantity in self.particle_to_index.keys():
             # Here typical values for 'quantity' are e.g. 'z', 'ux', 'gamma'
             # you should just gather array locally
