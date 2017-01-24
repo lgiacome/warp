@@ -752,7 +752,18 @@ class EM3D(SubcycledPoissonSolver):
                 self.laser_yy=y0+zeros(self.laser_nn)
                 self.laser_zz=z0+zeros(self.laser_nn)
             else:
-                if self.l_laser_cart :
+                if self.circ_m>0:
+                    rr = self.laser_xx.copy()
+                    self.weights_circ=2*pi*rr/f.dx/nlas
+                    self.weights_circ/=4*self.circ_m
+                    w0 = self.weights_circ.copy()
+                    for i in range(1,4*self.circ_m):
+                        self.laser_xx = concatenate((self.laser_xx,rr*cos(0.5*pi*float(i)/self.circ_m)))
+                        self.laser_yy = concatenate((self.laser_yy,rr*sin(0.5*pi*float(i)/self.circ_m)))
+                        self.weights_circ = concatenate((self.weights_circ,w0))
+                    self.laser_nn=shape(self.laser_xx)[0]
+                    self.laser_zz=z0+zeros(self.laser_nn)
+                else:
                     # 2D with Ux orthogonal to laser_vector in the plane (x,z)
                     self.Ux = cross(self.laser_vector,array([0.,1.,0.]))
 
@@ -792,38 +803,27 @@ class EM3D(SubcycledPoissonSolver):
                     # Number of virtual particles
                     self.laser_nn=shape(self.laser_xx)[0]
 
-                else :
-                    # The fictious macroparticles are initialized in a star-pattern, with 4*circ_m branches
-                    self.laser_xx = arange(f.nx*nlas)*f.dx/nlas + f.xmin + 0.5*f.dx/nlas
-                    self.laser_nn=shape(self.laser_xx)[0]
-                    self.laser_yy=zeros(self.laser_nn)
-                    if self.circ_m>0: # Circ
-                        rr = self.laser_xx.copy()
-                        self.weights_circ=2*pi*rr/f.dx/nlas
-                        self.weights_circ/=4*self.circ_m
-                        w0 = self.weights_circ.copy()
-                        for i in range(1,4*self.circ_m):
-                            self.laser_xx = concatenate((self.laser_xx,rr*cos(0.5*pi*float(i)/self.circ_m)))
-                            self.laser_yy = concatenate((self.laser_yy,rr*sin(0.5*pi*float(i)/self.circ_m)))
-                            self.weights_circ = concatenate((self.weights_circ,w0))
-                        self.laser_nn=shape(self.laser_xx)[0]
-                    self.laser_zz=z0+zeros(self.laser_nn)
-
         if self.laser_amplitude_dict is not None:
             self.laser_xdx={}
             self.laser_ydy={}
+            self.laser_zdz={}
             self.laser_ux={}
             self.laser_uy={}
+            self.laser_uz={}
             for self.laser_key in self.laser_amplitude_dict.keys():
                 self.laser_xdx[self.laser_key]=zeros(self.laser_nn)
-                self.laser_ux[self.laser_key]=zeros(self.laser_nn)
                 self.laser_ydy[self.laser_key]=zeros(self.laser_nn)
+                self.laser_zdz[self.laser_key]=zeros(self.laser_nn)
+                self.laser_ux[self.laser_key]=zeros(self.laser_nn)
                 self.laser_uy[self.laser_key]=zeros(self.laser_nn)
+                self.laser_uz[self.laser_key]=zeros(self.laser_nn)
         else:
             self.laser_xdx=zeros(self.laser_nn)
             self.laser_ydy=zeros(self.laser_nn)
+            self.laser_zdz=zeros(self.laser_nn)
             self.laser_ux=zeros(self.laser_nn)
             self.laser_uy=zeros(self.laser_nn)
+            self.laser_uz=zeros(self.laser_nn)
         self.laser_gi=ones(self.laser_nn)
 
         self.setuplaser_profile(self.fields)
@@ -900,7 +900,7 @@ class EM3D(SubcycledPoissonSolver):
             for self.laser_key in self.laser_amplitude_dict.keys():
                 self.laser_amplitude_func = self.laser_amplitude_dict[self.laser_key]
                 self.add_laser_work(field)
-        else:
+        elif self.laser_profile is not None or self.laser_func is not None:
             self.add_laser_work(field)
 
 #===============================================================================
@@ -918,6 +918,7 @@ class EM3D(SubcycledPoissonSolver):
         self.laser_xx += self.laser_source_v * self.laser_vector[0] * top.dt
         self.laser_yy += self.laser_source_v * self.laser_vector[1] * top.dt
         self.laser_zz += self.laser_source_v * self.laser_vector[2] * top.dt
+        self.antenna_vector=array([self.laser_xx, self.laser_yy, self.laser_zz])
 
         f = self.block.core.yf
         betafrm = -self.laser_source_v/clight
@@ -954,11 +955,12 @@ class EM3D(SubcycledPoissonSolver):
         # Determine the phase of the laser, at this present time, and at the positions of
         # the fictious macroparticles of the antenna.
         if self.laser_frequency is not None:
+            #Coordinate of the antenna in the plane (Ux,Uy)
+            x = dot(self.antenna_vector,self.Ux)
+            y = dot(self.antenna_vector,self.Uy)
             # If the user provided a phase function, use it
             if self.laser_phase_func is not None:
                 t = top.time*(1.-self.laser_source_v/clight)
-                x = self.laser_xx
-                y = self.laser_yy
                 phase = self.laser_phase_func(x,y,t)
             # If the user did not provide a phase function, imprint either the phase of a focusing laser
             # or that of a plane wave propagating at a given angle
@@ -969,9 +971,11 @@ class EM3D(SubcycledPoissonSolver):
                         fsign = -1.
                     else:
                         fsign = 1.
-                    phase = (fsign*(sqrt(self.laser_xx**2+self.laser_yy**2+z0**2)-z0)/clight-top.time*(1.-self.laser_source_v/clight))*self.laser_frequency
+                    phase = (fsign*(sqrt(x**2+y**2+z0**2)-z0)/clight-top.time*(1.-self.laser_source_v/clight))*self.laser_frequency
+                ###### TO REMOVE ?
                 else: # Plane wave propagating at a given angle
                     phase = ((self.laser_xx*sin(self.laser_anglex)+self.laser_yy*sin(self.laser_angley))/clight-top.time*(1.-self.laser_source_v/clight))*self.laser_frequency
+                ######
         else:
             phase = 0.
 
@@ -980,61 +984,68 @@ class EM3D(SubcycledPoissonSolver):
         # Determine the amplitude of the laser along both directions (laser_amplitude_x, laser_amplitude_y)
         # - If a laser function is provided, it overrides the above profile parameters.
         if self.laser_func is not None:
-            x = self.laser_xx
-            y = self.laser_yy
+            #Coordinate of the antenna in the plane (Ux,Uy)
+            x = dot(self.antenna_vector,self.Ux)
+            y = dot(self.antenna_vector,self.Uy)
             t = top.time*(1.-self.laser_source_v/clight)
             laser_amplitude = self.laser_func(x,y,t)
+            coef_ampli=(1.-self.laser_source_v/clight)/self.laser_emax*dispmax
             if isinstance(laser_amplitude,list):
-                laser_amplitude_x=laser_amplitude[0]*(1.-self.laser_source_v/clight)/self.laser_emax*dispmax
-                laser_amplitude_y=laser_amplitude[1]*(1.-self.laser_source_v/clight)/self.laser_emax*dispmax
+                laser_amplitude_x=coef_ampli*(laser_amplitude[0]*laser_polvector[0]+laser_amplitude[1]*laser_polvector_2[0])
+                laser_amplitude_y=coef_ampli*(laser_amplitude[0]*laser_polvector[1]+laser_amplitude[1]*laser_polvector_2[1])
+                laser_amplitude_z=coef_ampli*(laser_amplitude[0]*laser_polvector[2]+laser_amplitude[1]*laser_polvector_2[2])
             else:
-                laser_amplitude=laser_amplitude*(1.-self.laser_source_v/clight)/self.laser_emax*dispmax
-                laser_amplitude_x=laser_amplitude*cos(self.laser_polangle)
-                laser_amplitude_y=laser_amplitude*sin(self.laser_polangle)
+                laser_amplitude_x=coef_ampli*laser_amplitude*laser_polvector[0]
+                laser_amplitude_y=coef_ampli*laser_amplitude*laser_polvector[1]
+                laser_amplitude_z=coef_ampli*laser_amplitude*laser_polvector[2]
         # - If no laser function is provided, use the previously determined profile parameters
         # (laser_amplitude and laser profile).
         else:
             laser_amplitude=self.laser_amplitude/self.laser_emax*dispmax
             laser_amplitude*=self.laser_profile*cos(phase)*(1.-self.laser_source_v/clight)
-            laser_amplitude_x=laser_amplitude*cos(self.laser_polangle)
-            laser_amplitude_y=laser_amplitude*sin(self.laser_polangle)
+            laser_amplitude_x=laser_amplitude*laser_polvector[0]
+            laser_amplitude_y=laser_amplitude*laser_polvector[1]
+            laser_amplitude_z=laser_amplitude*laser_polvector[2]
         if self.laser_amplitude_dict is not None:
             laser_xdx=self.laser_xdx[self.laser_key]
-            laser_ux=self.laser_ux[self.laser_key]
             laser_ydy=self.laser_ydy[self.laser_key]
+            laser_zdz=self.laser_zdz[self.laser_key]
+            laser_ux=self.laser_ux[self.laser_key]
             laser_uy=self.laser_uy[self.laser_key]
+            laser_uz=self.laser_uz[self.laser_key]
         else:
             laser_xdx=self.laser_xdx
-            laser_ux=self.laser_ux
             laser_ydy=self.laser_ydy
+            laser_zdz=self.laser_zdz
+            laser_ux=self.laser_ux
             laser_uy=self.laser_uy
+            laser_uz=self.laser_uz
         # Set the amplitude of the normalized momenta of the fictious macroparticles
         laser_ux[...] = laser_amplitude_x
         laser_uy[...] = laser_amplitude_y
+        laser_uz[...] = laser_amplitude_z
         # Set the corresponding displacement of the fictious macroparticles
         laser_xdx[...] += laser_ux*top.dt
         laser_ydy[...] += laser_uy*top.dt
+        laser_zdz[...] += laser_uz*top.dt
 #        weights = ones(self.laser_nn)*f.dx*f.dz*eps0/(top.dt)*self.laser_emax*top.dt/(0.1*f.dx)
 #        weights = ones(self.laser_nn)*f.dx*clight*eps0*self.laser_emax/(dispmax*self.laser_frequency)
         weights = ones(self.laser_nn)*eps0*self.laser_emax/0.01
         l_particles_weight=True   # Flag indicating that the particles do not all have the same weight
         if not self.l_1dz: # 2D and 3D
-            weights*=f.dx
+            weights*=self.Sx
         if (not self.l_2dxz) : # 3D cartesian
-            weights*=f.dy
-        if self.l_laser_cart :
-            # Laser initialized with particles regularly spaced in x-y plane
-            weights*=f.dx
-        elif self.circ_m > 0 : # Circ
+            weights*=self.Sy
+        if self.circ_m > 0 : # Circ
             # Laser initialized with particles in a star-pattern
             weights*=f.dx*self.weights_circ
-
 
         # If the antenna is not currently in the local grid, return
         if self.laser_source_z<f.zmin+self.zgrid or self.laser_source_z>=f.zmax+self.zgrid:return
 
         # Depose the current of the antenna
-        self.depose_j_laser(f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight)
+        self.depose_j_laser(f,laser_xdx,laser_ydy,laser_zdz, laser_ux,
+                            laser_uy,laser_uz, weights,l_particles_weight)
 
 #===============================================================================
     def depose_j_laser(self, f, laser_xdx, laser_ydy, laser_zdz,
