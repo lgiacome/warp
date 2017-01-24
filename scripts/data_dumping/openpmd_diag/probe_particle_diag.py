@@ -306,7 +306,7 @@ class ParticleStorer:
 
 class ParticleCatcher:
     """
-    Class that extracts, Lorentz-transforms and gathers particles
+    Class that extracts, interpolates and gathers particles
     """
     def __init__(self, top, plane_position, plane_normal_vector ):
         """
