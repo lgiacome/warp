@@ -757,7 +757,7 @@ class EM3D(SubcycledPoissonSolver):
             for self.laser_key in self.laser_amplitude_dict.keys():
                 self.laser_amplitude_func = self.laser_amplitude_dict[self.laser_key]
                 self.add_laser_work(field)
-        else:
+        elif self.laser_profile is not None or self.laser_func is not None:
             self.add_laser_work(field)
 
 #===============================================================================
