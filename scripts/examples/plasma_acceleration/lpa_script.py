@@ -318,15 +318,13 @@ if use_moving_window :
 remove_existing_directory( ['diags'] )
 if write_fields == 1:
     diag1 = FieldDiagnostic( period=diag_period, top=top, w3d=w3d, em=em,
-                comm_world=comm_world, lparallel_output=parallel_output,
-                iteration_min=100)
+                comm_world=comm_world, lparallel_output=parallel_output )
     installafterstep( diag1.write )
 if write_particles == 1:
     diag2 = ParticleDiagnostic( period=diag_period, top=top, w3d=w3d,
             species={species.name : species for species in listofallspecies}, 
             particle_data={"position","momentum","weighting","id"},
-            comm_world=comm_world, lparallel_output=parallel_output,
-            iteration_min=100 )
+            comm_world=comm_world, lparallel_output=parallel_output )
     installafterstep( diag2.write )
 
 print('\nInitialization complete\n')
