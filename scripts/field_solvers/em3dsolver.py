@@ -34,9 +34,9 @@ class EM3D(SubcycledPoissonSolver):
                       'laser_gauss_widthz':None,'laser_gauss_centerz':0.,
                       'laser_anglex':0.,'laser_angley':0.,
                       'laser_polangle':0.,
-                      'laser_vector':array([1.,0.,0.]),
-                      'laser_polvector':array([0.,1.,0.]),
-                      'laser_spot':array([0.,0.,0.]),
+                      'laser_vector':array([0.,0.,1.]),
+                      'laser_polvector':None,
+                      'laser_spot':None,
                       'laser_wavelength':None,'laser_wavenumber':None,
                       'laser_frequency':None,
                       'laser_source_z':None,'laser_source_v':0.,
@@ -657,13 +657,20 @@ class EM3D(SubcycledPoissonSolver):
         #############################
         # Antenna with a laser_vector orthogonal to the plane of the antenna
         #############################
+        if self.laser_polvector is None:
+            if self.laser_polangle is None:
+                self.laser_polangle=0.
+            self.laser_polvector=array([cos(self.laser_polangle),sin(self.laser_polangle),0.])
 
         #Normalisation of laser_vector and polvector
         self.laser_vector = self.laser_vector/sqrt(self.laser_vector[0]**2 +self.laser_vector[1]**2+self.laser_vector[2]**2)
         self.laser_polvector = self.laser_polvector/sqrt(self.laser_polvector[0]**2+self.laser_polvector[1]**2+self.laser_polvector[2]**2)
-
         # Creation of a third vector orthogonal to both laser_vector and polvector
         self.laser_polvector_2 = cross(self.laser_vector, self.laser_polvector)
+
+        #Error if the 2 main vectors are not orthognal
+        assert isclose(dot(self.laser_vector, self.laser_polvector),0.), \
+                "Error : laser_vector and laser_polvector must be orthogonal. "
 
         # laser_spot is a point of the antenna plane given by the user
         if self.laser_spot is None:
@@ -920,6 +927,9 @@ class EM3D(SubcycledPoissonSolver):
         self.laser_zz += self.laser_source_v * self.laser_vector[2] * top.dt
 
         f = self.block.core.yf
+        x0=self.laser_spot[0]
+        y0=self.laser_spot[1]
+        z0=self.laser_spot[2]
         betafrm = -self.laser_source_v/clight
         gammafrm = 1./sqrt((1.-betafrm)*(1.+betafrm))
 
@@ -955,8 +965,8 @@ class EM3D(SubcycledPoissonSolver):
         # the fictious macroparticles of the antenna.
         if self.laser_frequency is not None:
             #Coordinate of the antenna in the plane (Ux,Uy)
-            x = self.laser_xx*self.Ux[0]+self.laser_yy*self.Ux[1]+self.laser_zz*self.Ux[2]
-            y = self.laser_xx*self.Uy[0]+self.laser_yy*self.Uy[1]+self.laser_zz*self.Uy[2]
+            x = (self.laser_xx-x0)*self.Ux[0]+(self.laser_yy-y0)*self.Ux[1]+(self.laser_zz-z0)*self.Ux[2]
+            y = (self.laser_xx-x0)*self.Uy[0]+(self.laser_yy-y0)*self.Uy[1]+(self.laser_zz-z0)*self.Uy[2]
             # If the user provided a phase function, use it
             if self.laser_phase_func is not None:
                 t = top.time*(1.-self.laser_source_v/clight)
@@ -983,8 +993,8 @@ class EM3D(SubcycledPoissonSolver):
         # - If a laser function is provided, it overrides the above profile parameters.
         if self.laser_func is not None:
             #Coordinate of the antenna in the plane (Ux,Uy)
-            x = self.laser_xx*self.Ux[0]+self.laser_yy*self.Ux[1]+self.laser_zz*self.Ux[2]
-            y = self.laser_xx*self.Uy[0]+self.laser_yy*self.Uy[1]+self.laser_zz*self.Uy[2]
+            x = (self.laser_xx-x0)*self.Ux[0]+(self.laser_yy-y0)*self.Ux[1]+(self.laser_zz-z0)*self.Ux[2]
+            y = (self.laser_xx-x0)*self.Uy[0]+(self.laser_yy-y0)*self.Uy[1]+(self.laser_zz-z0)*self.Uy[2]
             t = top.time*(1.-self.laser_source_v/clight)
             laser_amplitude = self.laser_func(x,y,t)
             if isinstance(laser_amplitude,list):
