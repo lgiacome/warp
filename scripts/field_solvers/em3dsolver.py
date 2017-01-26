@@ -600,6 +600,21 @@ class EM3D(SubcycledPoissonSolver):
 #===============================================================================
     def setuplaser(self):
 #===============================================================================
+        if self.l_1dz:
+            dim = "1d"
+        elif self.circ_m > 0:
+            dim = "circ"
+        elif self.l_2dxz:
+            dim = "2d"
+        else:
+            dim = "3d"
+
+        self.laser_antenna = LaserAntenna( w3d, dim, self.circ_m )
+
+
+        # Laser profile code
+        # --------------------
+
         if self.laser_profile is not None:
             if self.laser_frequency is None:
                 if self.laser_wavenumber is not None:
@@ -657,11 +672,6 @@ class EM3D(SubcycledPoissonSolver):
         #############################
         # Antenna with a laser_vector orthogonal to the plane of the antenna
         #############################
-        if self.laser_polvector is None:
-            if self.laser_polangle is None:
-                self.laser_polangle=0.
-            self.laser_polvector=array([cos(self.laser_polangle),sin(self.laser_polangle),0.])
-
         #Normalisation of laser_vector and polvector
         self.laser_vector = self.laser_vector/sqrt(self.laser_vector[0]**2 +self.laser_vector[1]**2+self.laser_vector[2]**2)
         self.laser_polvector = self.laser_polvector/sqrt(self.laser_polvector[0]**2+self.laser_polvector[1]**2+self.laser_polvector[2]**2)
