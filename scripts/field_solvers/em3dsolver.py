@@ -621,6 +621,7 @@ class EM3D(SubcycledPoissonSolver):
             The self.fields object, whose attributes are the field arrays
             Ex, Ey, etc ...
         """
+
         f = self.block.core.yf
 
         # Push particles accordingly to laser_func

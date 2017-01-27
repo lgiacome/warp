@@ -43,7 +43,7 @@ Use the following commands
 ```
 git clone https://bitbucket.org/dpgrote/pygist.git
 cd pygist
-ptyhon setup.py config
+python setup.py config
 python setup.py install
 ```
 
