@@ -15,7 +15,7 @@ class LaserAntenna(object):
         else:
             self.spot = spot
 
-        # Initialize the variable self.polvector
+        # Initialize the variable polvector
         if polvector is None:
             if polangle is None:
                 polangle = 0.
@@ -28,17 +28,16 @@ class LaserAntenna(object):
         # Normalisation of vector and polvector
         vect_norm = np.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2)
         polvect_norm = np.sqrt(polvector[0]**2+polvector[1]**2+polvector[2]**2)
-
         self.vector = vector/vect_norm
         self.polvector = polvector/polvect_norm
 
         # Creation of a third vector orthogonal to both vector and polvector
         self.polvector_2 = np.cross(self.vector, self.polvector)
 
-        #
+        # Maximal amplitude
         self.emax = emax
 
-        #
+        # Function that describes the laser evolution
         self.laser_func = PicklableFunction( laser_func )
 
         # Dimension
@@ -58,14 +57,11 @@ class LaserAntenna(object):
         """
         Initialization of the antenna particles depending on the dimension and
         the laser propagation vector.
-
         """
-
         # Shortcut definition
         x0 = self.spot[0]
         y0 = self.spot[1]
         z0 = self.spot[2]
-
         xmin = w3d.xmminlocal
         xmax = w3d.xmmaxlocal
         ymin = w3d.ymminlocal
@@ -81,16 +77,33 @@ class LaserAntenna(object):
             self.zz = z0 + np.zeros(self.nn)
 
         elif self.dim == "circ":
-            #2D circ
-            #CORRECTIONS NEEDED : rr, nlas etc..
-            rr = self.xx.copy()
-            self.weights_circ=2*np.pi*rr/w3d.dx/nlas
-            self.weights_circ/=4*self.circ_m
+            # 2D circ
+
+            # Check that the normal vector is along z and that the
+            # position of the antenna is on the axis
+            # (Otherwise the simulation cannot be performed in cylindrical
+            # coordinate)
+            assert np.allclose( self.vector, np.array([0,0,1]) )
+            assert np.allclose( self.spot[:1], np.array([0,0]) )
+            # Get the vectors that give the coordinate system of the antenna
+            Ux = self.polvector
+            Uy = self.polvector_2
+            self.Ux = Ux
+            self.Uy = Uy
+
+            # The points of the antenna are along a star-pattern
+            imin = np.floor( xmin/w3d.dx )
+            imax = np.floor( xmax/w3d.dx )
+            rr = w3d.dx * np.arange( imin, imax+1 )
+            self.weights_circ = 2 * np.pi * rr / w3d.dx
+            self.weights_circ /= 4 * self.circ_m
             w0 = self.weights_circ.copy()
-            for i in range(1,4*self.circ_m):
+            self.xx = rr.copy()
+            self.yy = np.zeros_like( self.xx )
+            for i in range( 1, 4*self.circ_m ):
                 phase = 0.5*np.pi*float(i)/self.circ_m
-                self.xx = np.concatenate((self.xx,rr*cos(phase)))
-                self.yy = np.concatenate((self.yy,rr*sin(phase)))
+                self.xx = np.concatenate( (self.xx,rr*np.cos(phase)) )
+                self.yy = np.concatenate( (self.yy,rr*np.sin(phase)) )
                 self.weights_circ = np.concatenate((self.weights_circ,w0))
             self.nn = np.shape(self.xx)[0]
             self.zz = z0 + np.zeros(self.nn)
@@ -98,11 +111,14 @@ class LaserAntenna(object):
         elif self.dim == "2d":
             # 2D plane
 
-            # Ux is chosen orthogonal to vector in the plane (x,z)
+            # Ux is chosen orthogonal to self.vector in the plane (x,z)
             Uy = np.array([0.,1.,0.])
             Ux = np.cross(Uy,self.vector)
+            self.Ux = Ux
+            self.Uy = Uy
 
-            # Spacing between virtual particles to ensure one particle per cell
+            # Spacing between virtual particles to ensure at least one
+            # particle per cell
             # select only the Ux components different from 0
             list_Ux = []
             if not Ux[0] == 0.: list_Ux.append(w3d.dx/np.abs(Ux[0]))
@@ -110,33 +126,32 @@ class LaserAntenna(object):
             if not Ux[2] == 0.: list_Ux.append(w3d.dz/np.abs(Ux[2]))
             self.Sx = min(list_Ux)
 
-            xmin_i = self.switch_min_max(xmin, xmax, Ux[0])
-            ymin_i = self.switch_min_max(ymin, ymax, Ux[1])
-            zmin_i = self.switch_min_max(zmin, zmax, Ux[2])
-            xmax_i = self.switch_min_max(xmax, xmin, Ux[0])
-            ymax_i = self.switch_min_max(ymax, ymin, Ux[1])
-            zmax_i = self.switch_min_max(zmax, zmin, Ux[2])
+            # Boundaries of the box, depending on sign of the components of Ux
+            xmin_i = switch_min_max(xmin, xmax, Ux[0])
+            ymin_i = switch_min_max(ymin, ymax, Ux[1])
+            zmin_i = switch_min_max(zmin, zmax, Ux[2])
+            xmax_i = switch_min_max(xmax, xmin, Ux[0])
+            ymax_i = switch_min_max(ymax, ymin, Ux[1])
+            zmax_i = switch_min_max(zmax, zmin, Ux[2])
 
+            # Find the range of integer with which the particles will be
+            # initialized
             imin = Ux[0]*(xmin_i-x0) + Ux[1]*(ymin_i-y0) + Ux[2]*(zmin_i-z0)
             imax = Ux[0]*(xmax_i-x0) + Ux[1]*(ymax_i-y0) + Ux[2]*(zmax_i-z0)
-
             imin = np.floor(imin/self.Sx)
             imax = np.floor(imax/self.Sx)+1
-
             antenna_i = np.arange(imin, imax)
+
+            # Initialize the particle positions
             self.xx = x0 + self.Sx*Ux[0]*antenna_i
             self.zz = z0 + self.Sx*Ux[2]*antenna_i
 
-            # Normalization to respect the boundaries
-            self.zz = self.boundaries_reduction(self.zz,self.xx, xmin, xmax)
-            self.xx = self.boundaries_reduction(self.xx,self.xx, xmin, xmax)
-
-            self.xx = self.boundaries_reduction(self.xx,self.zz, zmin, zmax)
-            self.zz = self.boundaries_reduction(self.zz,self.zz, zmin, zmax)
-
+            # Keep only the particles that are inside the local box
+            is_in_local_box = (self.xx >= xmin) & (self.xx < xmax) \
+                                & (self.zz >= zmin) & (self.zz < zmax)
+            self.zz = self.zz[is_in_local_box]
+            self.xx = self.xx[is_in_local_box]
             self.yy = np.zeros(len(self.xx))
-            self.Ux = Ux
-            self.Uy = Uy
             # Number of virtual particles
             self.nn = np.shape(self.xx)[0]
 
@@ -144,8 +159,11 @@ class LaserAntenna(object):
             # 3D case, Ux = polvector and Uy = polvector_2
             Ux = self.polvector
             Uy = self.polvector_2
+            self.Ux = Ux
+            self.Uy = Uy
 
-            # Spacing between virtual particles to ensure one particle per cell
+            # Spacing between virtual particles to ensure at least
+            # one particle per cell
             # select only the components of Ux and Uy different from 0
             list_Ux = []; list_Uy = []
             if not Ux[0] == 0.: list_Ux.append( w3d.dx/np.abs(Ux[0]) )
@@ -157,57 +175,50 @@ class LaserAntenna(object):
             self.Sx = min(list_Ux)
             self.Sy = min(list_Uy)
 
-            xmin_i = self.switch_min_max(xmin, xmax, Ux[0])
-            ymin_i = self.switch_min_max(ymin, ymax, Ux[1])
-            zmin_i = self.switch_min_max(zmin, zmax, Ux[2])
-            xmax_i = self.switch_min_max(xmax, xmin, Ux[0])
-            ymax_i = self.switch_min_max(ymax, ymin, Ux[1])
-            zmax_i = self.switch_min_max(zmax, zmin, Ux[2])
+            # Boundaries of the box, depending on sign of the components of Ux
+            xmin_i = switch_min_max(xmin, xmax, Ux[0])
+            ymin_i = switch_min_max(ymin, ymax, Ux[1])
+            zmin_i = switch_min_max(zmin, zmax, Ux[2])
+            xmax_i = switch_min_max(xmax, xmin, Ux[0])
+            ymax_i = switch_min_max(ymax, ymin, Ux[1])
+            zmax_i = switch_min_max(zmax, zmin, Ux[2])
+            # Boundaries of the box, depending on sign of the components of Uy
+            xmin_j = switch_min_max(xmin, xmax, Uy[0])
+            ymin_j = switch_min_max(ymin, ymax, Uy[1])
+            zmin_j = switch_min_max(zmin, zmax, Uy[2])
+            xmax_j = switch_min_max(xmax, xmin, Uy[0])
+            ymax_j = switch_min_max(ymax, ymin, Uy[1])
+            zmax_j = switch_min_max(zmax, zmin, Uy[2])
 
-            xmin_j = self.switch_min_max(xmin, xmax, Uy[0])
-            ymin_j = self.switch_min_max(ymin, ymax, Uy[1])
-            zmin_j = self.switch_min_max(zmin, zmax, Uy[2])
-            xmax_j = self.switch_min_max(xmax, xmin, Uy[0])
-            ymax_j = self.switch_min_max(ymax, ymin, Uy[1])
-            zmax_j = self.switch_min_max(zmax, zmin, Uy[2])
-
+            # Find the range of integer with which the particles will be
+            # initialized
             imin = Ux[0]*(xmin_i-x0) + Ux[1]*(ymin_i-y0) + Ux[2]*(zmin_i-z0)
             imax = Ux[0]*(xmax_i-x0) + Ux[1]*(ymax_i-y0) + Ux[2]*(zmax_i-z0)
             jmin = Uy[0]*(xmin_j-x0) + Uy[1]*(ymin_j-y0) + Uy[2]*(zmin_j-z0)
             jmax = Uy[0]*(xmax_j-x0) + Uy[1]*(ymax_j-y0) + Uy[2]*(zmax_j-z0)
-
             imin = np.floor(imin/self.Sx)
             imax = np.floor(imax/self.Sx)+1
             jmin = np.floor(jmin/self.Sy)
             jmax = np.floor(jmax/self.Sy)+1
-
             array_i = np.arange(imin, imax)
-            array_j = np.arange(jmin, max)
+            array_j = np.arange(jmin, jmax)
             antenna_i, antenna_j = np.meshgrid(array_i,array_j)
 
+            # Initialize the particle positions
             self.xx = x0 + self.Sx*Ux[0]*antenna_i + self.Sy*Uy[0]*antenna_j
             self.yy = y0 + self.Sx*Ux[1]*antenna_i + self.Sy*Uy[1]*antenna_j
             self.zz = z0 + self.Sx*Ux[2]*antenna_i + self.Sy*Uy[2]*antenna_j
-
             self.xx = self.xx.flatten()
             self.yy = self.yy.flatten()
             self.zz = self.zz.flatten()
 
-            # Normalization to respect the boundaries
-            self.yy = self.boundaries_reduction(self.yy,self.xx, xmin, xmax)
-            self.zz = self.boundaries_reduction(self.zz,self.xx, xmin, xmax)
-            self.xx = self.boundaries_reduction(self.xx,self.xx, xmin, xmax)
-
-            self.xx = self.boundaries_reduction(self.xx,self.yy, ymin, ymax)
-            self.zz = self.boundaries_reduction(self.zz,self.yy, ymin, ymax)
-            self.yy = self.boundaries_reduction(self.yy,self.yy, ymin, ymax)
-
-            self.xx = self.boundaries_reduction(self.xx,self.zz, zmin, zmax)
-            self.yy = self.boundaries_reduction(self.yy,self.zz, zmin, zmax)
-            self.zz = self.boundaries_reduction(self.zz,self.zz, zmin, zmax)
-
-            self.Ux = Ux
-            self.Uy = Uy
+            # Keep only the particles that are inside the local box
+            is_in_local_box = (self.xx >= xmin) & (self.xx < xmax) \
+                                & (self.yy >= ymin) & (self.yy < ymax) \
+                                & (self.zz >= zmin) & (self.zz < zmax)
+            self.zz = self.zz[is_in_local_box]
+            self.yy = self.yy[is_in_local_box]
+            self.xx = self.xx[is_in_local_box]
             # Number of virtual particles
             self.nn = np.shape(self.xx)[0]
 
@@ -277,29 +288,20 @@ class LaserAntenna(object):
 
         self.weights = np.ones(self.nn) * eps0 * self.emax/0.01
 
-        if not self.dim == "1d": # 2D and 3D
+        if self.dim == "2d":
             self.weights *= self.Sx
-        if self.dim == "3d" : # 3D cartesian
-            self.weights *= self.Sy
-        if self.circ_m > 0 : # Circ
+        elif self.dim == "3d" :
+            self.weights *= self.Sy*self.Sx
+        elif self.circ_m > 0 : # Circ
             # Laser initialized with particles in a star-pattern
-            self.weights *= f.dx * self.weights_circ
+            self.weights *= f.dx**2 * self.weights_circ
 
-    #Additional routines
-    def switch_min_max(self,x1,x2,u):
-        """
-            Return x1 or x2 depending on the sign of u
-        """
-        if u >= 0 :
-            return x1
-        else:
-            return x2
-
-    def boundaries_reduction(self, u, x, xmin, xmax):
-        """
-            u and x, two same size vectors
-            Return the values of u such as xmin <= x < xmax
-        """
-        u = u[x >= xmin]; x = x[x >= xmin]
-        u = u[x < xmax]
-        return u
+# Additional routines
+def switch_min_max( x1, x2, u ):
+    """
+    Return x1 or x2 depending on the sign of u
+    """
+    if u >= 0 :
+        return x1
+    else:
+        return x2
