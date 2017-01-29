@@ -632,10 +632,14 @@ class EM3D(SubcycledPoissonSolver):
         f = self.block.core.yf
 
         # Push particles accordingly to laser_func
-        self.laser_antenna.push_virtual_particles(top, f, clight, eps0)
+        self.laser_antenna.push_virtual_particles(top, f, clight)
+        self.laser_antenna.select_particles_in_local_box( w3d, self.zgrid )
+        # Skip current deposition when no laser particles are in the local box
+        if self.laser_antenna.nn == 0:
+            return
 
         # Current and charge deposition
-        if top.ndts[0]<>1:
+        if top.ndts[0] != 1:
             print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting\
                    a laser"
             raise

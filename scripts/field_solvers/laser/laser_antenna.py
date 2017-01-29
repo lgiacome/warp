@@ -1,9 +1,10 @@
 import numpy as np
+from scipy.constants import epsilon_0
 from ...warp import PicklableFunction
 
 class LaserAntenna(object):
 
-    def __init__(self, laser_func,vector, polvector, spot, emax,
+    def __init__(self, laser_func, vector, polvector, spot, emax,
                  source_z, source_v, polangle, w3d, dim, circ_m ):
 
         # Initialize the variable self.spot
@@ -49,9 +50,9 @@ class LaserAntenna(object):
 
         # Antenna velocity
         self.v = source_v
-        self.vx = self.v * self.vector[0] * np.ones(self.nn)
-        self.vy = self.v * self.vector[1] * np.ones(self.nn)
-        self.vz = self.v * self.vector[2] * np.ones(self.nn)
+        self.vx = self.v * self.vector[0]
+        self.vy = self.v * self.vector[1]
+        self.vz = self.v * self.vector[2]
 
     def initialize_virtual_particles( self, w3d ):
         """
@@ -62,19 +63,19 @@ class LaserAntenna(object):
         x0 = self.spot[0]
         y0 = self.spot[1]
         z0 = self.spot[2]
-        xmin = w3d.xmminlocal
-        xmax = w3d.xmmaxlocal
-        ymin = w3d.ymminlocal
-        ymax = w3d.ymmaxlocal
-        zmin = w3d.zmminlocal
-        zmax = w3d.zmmaxlocal
+        xmin = w3d.xmmin
+        xmax = w3d.xmmax
+        ymin = w3d.ymmin
+        ymax = w3d.ymmax
+        zmin = w3d.zmmin
+        zmax = w3d.zmmax
 
         if self.dim == "1d":
             # 1D injection along x
-            self.nn = 1
-            self.xx = x0 + np.zeros(self.nn)
-            self.yy = y0 + np.zeros(self.nn)
-            self.zz = z0 + np.zeros(self.nn)
+            self.nn_global = 1
+            self.xx_global = x0 + np.zeros(self.nn_global)
+            self.yy_global = y0 + np.zeros(self.nn_global)
+            self.zz_global = z0 + np.zeros(self.nn_global)
 
         elif self.dim == "circ":
             # 2D circ
@@ -98,15 +99,17 @@ class LaserAntenna(object):
             self.weights_circ = 2 * np.pi * rr / w3d.dx
             self.weights_circ /= 4 * self.circ_m
             w0 = self.weights_circ.copy()
-            self.xx = rr.copy()
-            self.yy = np.zeros_like( self.xx )
+            self.xx_global = rr.copy()
+            self.yy_global = np.zeros_like( self.xx_global  )
             for i in range( 1, 4*self.circ_m ):
                 phase = 0.5*np.pi*float(i)/self.circ_m
-                self.xx = np.concatenate( (self.xx,rr*np.cos(phase)) )
-                self.yy = np.concatenate( (self.yy,rr*np.sin(phase)) )
+                self.xx_global = np.concatenate( (self.xx_global,
+                                                    rr*np.cos(phase)) )
+                self.yy_global = np.concatenate( (self.yy_global,
+                                                    rr*np.sin(phase)) )
                 self.weights_circ = np.concatenate((self.weights_circ,w0))
-            self.nn = np.shape(self.xx)[0]
-            self.zz = z0 + np.zeros(self.nn)
+            self.nn_global = np.shape(self.xx_global)[0]
+            self.zz_global = z0 + np.zeros(self.nn_global)
 
         elif self.dim == "2d":
             # 2D plane
@@ -143,17 +146,19 @@ class LaserAntenna(object):
             antenna_i = np.arange(imin, imax)
 
             # Initialize the particle positions
-            self.xx = x0 + self.Sx*Ux[0]*antenna_i
-            self.zz = z0 + self.Sx*Ux[2]*antenna_i
+            self.xx_global = x0 + self.Sx*Ux[0]*antenna_i
+            self.zz_global = z0 + self.Sx*Ux[2]*antenna_i
 
-            # Keep only the particles that are inside the local box
-            is_in_local_box = (self.xx >= xmin) & (self.xx < xmax) \
-                                & (self.zz >= zmin) & (self.zz < zmax)
-            self.zz = self.zz[is_in_local_box]
-            self.xx = self.xx[is_in_local_box]
-            self.yy = np.zeros(len(self.xx))
+            # Keep only the particles that are inside the global box
+            is_in_global_box = (self.xx_global >= xmin) \
+                                & (self.xx_global < xmax) \
+                                & (self.zz_global >= zmin) \
+                                & (self.zz_global < zmax)
+            self.zz_global = self.zz_global[is_in_global_box]
+            self.xx_global = self.xx_global[is_in_global_box]
+            self.yy_global = np.zeros(len(self.xx_global))
             # Number of virtual particles
-            self.nn = np.shape(self.xx)[0]
+            self.nn_global = np.shape(self.xx_global)[0]
 
         else:
             # 3D case, Ux = polvector and Uy = polvector_2
@@ -205,36 +210,48 @@ class LaserAntenna(object):
             antenna_i, antenna_j = np.meshgrid(array_i,array_j)
 
             # Initialize the particle positions
-            self.xx = x0 + self.Sx*Ux[0]*antenna_i + self.Sy*Uy[0]*antenna_j
-            self.yy = y0 + self.Sx*Ux[1]*antenna_i + self.Sy*Uy[1]*antenna_j
-            self.zz = z0 + self.Sx*Ux[2]*antenna_i + self.Sy*Uy[2]*antenna_j
-            self.xx = self.xx.flatten()
-            self.yy = self.yy.flatten()
-            self.zz = self.zz.flatten()
+            self.xx_global = x0 + self.Sx*Ux[0]*antenna_i + self.Sy*Uy[0]*antenna_j
+            self.yy_global = y0 + self.Sx*Ux[1]*antenna_i + self.Sy*Uy[1]*antenna_j
+            self.zz_global = z0 + self.Sx*Ux[2]*antenna_i + self.Sy*Uy[2]*antenna_j
+            self.xx_global = self.xx_global.flatten()
+            self.yy_global = self.yy_global.flatten()
+            self.zz_global = self.zz_global.flatten()
 
-            # Keep only the particles that are inside the local box
-            is_in_local_box = (self.xx >= xmin) & (self.xx < xmax) \
-                                & (self.yy >= ymin) & (self.yy < ymax) \
-                                & (self.zz >= zmin) & (self.zz < zmax)
-            self.zz = self.zz[is_in_local_box]
-            self.yy = self.yy[is_in_local_box]
-            self.xx = self.xx[is_in_local_box]
+            # Keep only the particles that are inside the global box
+            is_in_global_box = (self.xx_global >= xmin) \
+                                & (self.xx_global < xmax) \
+                                & (self.yy_global >= ymin) \
+                                & (self.yy_global < ymax) \
+                                & (self.zz_global >= zmin) \
+                                & (self.zz_global < zmax)
+            self.zz_global = self.zz_global[is_in_global_box]
+            self.yy_global = self.yy_global[is_in_global_box]
+            self.xx_global = self.xx_global[is_in_global_box]
             # Number of virtual particles
-            self.nn = np.shape(self.xx)[0]
+            self.nn_global = np.shape(self.xx_global)[0]
 
         # Set the deplacement around the initial position and normalized momenta
         # variation of each macroparticles to 0
-        self.xdx = np.zeros(self.nn)
-        self.ydy = np.zeros(self.nn)
-        self.zdz = np.zeros(self.nn)
+        self.xdx_global = np.zeros(self.nn_global)
+        self.ydy_global = np.zeros(self.nn_global)
+        self.zdz_global = np.zeros(self.nn_global)
+        self.ux_global = np.zeros(self.nn_global)
+        self.uy_global = np.zeros(self.nn_global)
+        self.uz_global = np.zeros(self.nn_global)
+        self.gi_global = np.ones(self.nn_global)
 
-        self.ux = np.zeros(self.nn)
-        self.uy = np.zeros(self.nn)
-        self.uz = np.zeros(self.nn)
+        # Calculate the weights
+        self.weights_global = np.ones(self.nn_global) * epsilon_0*self.emax/0.01
 
-        self.gi = np.ones(self.nn)
+        if self.dim == "2d":
+            self.weights_global *= self.Sx
+        elif self.dim == "3d" :
+            self.weights_global *= self.Sy*self.Sx
+        elif self.circ_m > 0 : # Circ
+            # Laser initialized with particles in a star-pattern
+            self.weights_global *= w3d.dx**2 * self.weights_circ
 
-    def push_virtual_particles(self, top, f, clight, eps0):
+    def push_virtual_particles(self, top, f, clight ):
         """
         Calculate the motion parameters of the laser antenna at a given
         timestep
@@ -247,13 +264,13 @@ class LaserAntenna(object):
         Ux = self.Ux
         Uy = self.Uy
 
-        self.xx += self.vx * dt
-        self.yy += self.vy * dt
-        self.zz += self.vz * dt
+        self.xx_global += self.vx * dt
+        self.yy_global += self.vy * dt
+        self.zz_global += self.vz * dt
 
-        #Coordinate of the antenna in the plane (Ux,Uy)
-        x = (self.xx-x0)*Ux[0] + (self.yy-y0)*Ux[1] + (self.zz-z0)*Ux[2]
-        y = (self.xx-x0)*Uy[0] + (self.yy-y0)*Uy[1] + (self.zz-z0)*Uy[2]
+        # Coordinate of the antenna in the plane (Ux,Uy)
+        x = (self.xx_global-x0)*Ux[0] + (self.yy_global-y0)*Ux[1] + (self.zz_global-z0)*Ux[2]
+        y = (self.xx_global-x0)*Uy[0] + (self.yy_global-y0)*Uy[1] + (self.zz_global-z0)*Uy[2]
         t = top.time*(1.-self.v/clight)
         amp = self.laser_func(x,y,t)
 
@@ -277,24 +294,58 @@ class LaserAntenna(object):
 
         # Set the amplitude of the normalized momenta of the fictious
         # macroparticles
-        self.ux[...] = amplitude_x
-        self.uy[...] = amplitude_y
-        self.uz[...] = amplitude_z
+        self.ux_global[...] = amplitude_x
+        self.uy_global[...] = amplitude_y
+        self.uz_global[...] = amplitude_z
 
         # Set the corresponding displacement of the fictious macroparticles
-        self.xdx[...] += self.ux * dt
-        self.ydy[...] += self.uy * dt
-        self.zdz[...] += self.uz * dt
+        self.xdx_global[...] += self.ux_global * dt
+        self.ydy_global[...] += self.uy_global * dt
+        self.zdz_global[...] += self.uz_global * dt
 
-        self.weights = np.ones(self.nn) * eps0 * self.emax/0.01
+    def select_particles_in_local_box( self, w3d, zgrid ):
+        """
+        Among the global arrays of particles, select only the particles
+        that are currently in the local box.
 
-        if self.dim == "2d":
-            self.weights *= self.Sx
-        elif self.dim == "3d" :
-            self.weights *= self.Sy*self.Sx
-        elif self.circ_m > 0 : # Circ
-            # Laser initialized with particles in a star-pattern
-            self.weights *= f.dx**2 * self.weights_circ
+        These arrays are then used for current deposition.
+        """
+        # Extract local boundaries
+        xmin = w3d.xmminlocal
+        xmax = w3d.xmmaxlocal
+        ymin = w3d.ymminlocal
+        ymax = w3d.ymmaxlocal
+        zmin = w3d.zmminlocal + zgrid
+        zmax = w3d.zmmaxlocal + zgrid
+
+        # Select the particles that are in the local box
+        if self.dim == "1d":
+            in_local_box = (self.zz_global >= zmin) & (self.zz_global < zmax)
+        elif self.dim == "circ":
+            r2 = self.xx_global**2 + self.yy_global**2
+            in_local_box = (self.zz_global >= zmin) & (self.zz_global < zmax) \
+                         & (r2 >= xmin**2) & (r2 < xmax**2)
+        elif self.dim == "2d":
+            in_local_box = (self.zz_global >= zmin) & (self.zz_global < zmax) \
+                         & (self.xx_global >= xmin) & (self.xx_global < xmax)
+        elif self.dim == "3d":
+            in_local_box = (self.zz_global >= zmin) & (self.zz_global < zmax) \
+                         & (self.xx_global >= xmin) & (self.xx_global < xmax) \
+                         & (self.yy_global >= ymin) & (self.yy_global < ymax)
+
+        # Build the arrays of selected particles
+        self.nn = in_local_box.sum()
+        self.xx = self.xx_global[ in_local_box ]
+        self.yy = self.yy_global[ in_local_box ]
+        self.zz = self.zz_global[ in_local_box ]
+        self.xdx = self.xdx_global[ in_local_box ]
+        self.ydy = self.ydy_global[ in_local_box ]
+        self.zdz = self.zdz_global[ in_local_box ]
+        self.ux = self.ux_global[ in_local_box ]
+        self.uy = self.uy_global[ in_local_box ]
+        self.uz = self.uz_global[ in_local_box ]
+        self.gi = self.gi_global[ in_local_box ]
+        self.weights = self.weights_global[ in_local_box ]
 
 # Additional routines
 def switch_min_max( x1, x2, u ):
