@@ -602,12 +602,19 @@ class EM3D(SubcycledPoissonSolver):
         else:
             dim = "3d"
 
-        self.laser_antenna = LaserAntenna(self.laser_func, self.laser_vector,
-                                          self.laser_polvector, self.laser_spot,
-                                          self.laser_emax, self.laser_source_z,
-                                          self.laser_source_v,
-                                          self.laser_polangle,
-                                          w3d, dim, self.circ_m)
+        # If the user does not require a laser, laser_antenna is None
+        if self.laser_func is None:
+            self.laser_antenna = None
+            return
+        # Otherwise, initialize the laser antenna
+        else:
+            self.laser_antenna = LaserAntenna(
+                self.laser_func, self.laser_vector,
+                self.laser_polvector, self.laser_spot,
+                self.laser_emax, self.laser_source_z,
+                self.laser_source_v,
+                self.laser_polangle,
+                w3d, dim, self.circ_m)
 
 #===============================================================================
     def add_laser(self,field):
@@ -628,6 +635,10 @@ class EM3D(SubcycledPoissonSolver):
             The self.fields object, whose attributes are the field arrays
             Ex, Ey, etc ...
         """
+        # If the user did not request a laser antenna,
+        # this function should not be executed
+        if self.laser_antenna is None:
+            return
 
         f = self.block.core.yf
 
