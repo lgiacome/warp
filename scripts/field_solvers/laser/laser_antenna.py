@@ -49,10 +49,10 @@ class LaserAntenna(object):
         self.initialize_virtual_particles( w3d )
 
         # Antenna velocity
-        self.v = source_v
-        self.vx = self.v * self.vector[0]
-        self.vy = self.v * self.vector[1]
-        self.vz = self.v * self.vector[2]
+        self.vx = source_v[0]
+        self.vy = source_v[1]
+        self.vz = source_v[2]
+        self.v  = np.sqrt(self.vx**2 + self.vy**2 + self.vz**2)
 
     def initialize_virtual_particles( self, w3d ):
         """
@@ -256,10 +256,15 @@ class LaserAntenna(object):
         Calculate the motion parameters of the laser antenna at a given
         timestep
         """
+        dt = top.dt
+
+        self.spot[0] += self.vx * dt
+        self.spot[1] += self.vy * dt
+        self.spot[2] += self.vz * dt
+
         x0 = self.spot[0]
         y0 = self.spot[1]
         z0 = self.spot[2]
-        dt = top.dt
 
         Ux = self.Ux
         Uy = self.Uy
