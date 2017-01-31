@@ -49,10 +49,24 @@ class LaserAntenna(object):
         self.initialize_virtual_particles( w3d )
 
         # Antenna velocity
-        self.vx = source_v[0]
-        self.vy = source_v[1]
-        self.vz = source_v[2]
-        self.v  = np.sqrt(self.vx**2 + self.vy**2 + self.vz**2)
+        # If dim(source_v)=1, source_v is consider as a norm and the velocity
+        # is normal to the plane of the antenna. If not, source_v is a vector
+        # and the antenna moves along this vector.
+        if np.size(source_v) == 1:
+            self.vx = source_v * self.vector[0]
+            self.vy = source_v * self.vector[1]
+            self.vz = source_v * self.vector[2]
+            self.v  = source_v
+
+        elif np.size(source_v) == 3:
+            self.vx = source_v[0]
+            self.vy = source_v[1]
+            self.vz = source_v[2]
+            self.v  = np.sqrt(self.vx**2 + self.vy**2 + self.vz**2)
+
+        else:
+            raise TypeError("source_v must be a scalar or a 3-components \
+            vector")
 
     def initialize_virtual_particles( self, w3d ):
         """
