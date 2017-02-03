@@ -1,3 +1,8 @@
+"""
+This file defines a set of standard laser profiles, that can be passed
+as `laser_func` to the EM3D class or to the `LaserAntenna` class
+"""
+
 import numpy as np
 from scipy.constants import c, m_e, e
 from scipy.interpolate import RegularGridInterpolator
