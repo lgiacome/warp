@@ -15,7 +15,7 @@ import time
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
 from parallel import gatherarray
-
+from data_dict import particle_quantity_dict
 
 class ParticleAccumulator(ParticleDiagnostic):
     """
@@ -28,10 +28,10 @@ class ParticleAccumulator(ParticleDiagnostic):
     After initialization, the diagnostic is called by using
     the 'write' method.
     """
-    def __init__(self,period, top, w3d, comm_world=None,
+    def __init__(self,period_flush,period_diag, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting", "t"],
                  select=None, write_dir=None, lparallel_output=False,
-                 species={"electrons": None}):
+                 species={"electrons": None},iteration_min=None,iteration_max=None):
         """
         Initialize diagnostics that retrieve the particles crossing a given
         plane.
@@ -44,9 +44,12 @@ class ParticleAccumulator(ParticleDiagnostic):
         plane_normal_vector: a list of 3 floats
             The coordinates (in x, y, z) of one of the vectors of the plane
 
-        period: int
+        period_flush: int
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
+		
+		period_diag: int 
+			period at which the particle diag is performed 
 
         See the documentation of ParticleDiagnostic for the other parameters
         """
@@ -56,13 +59,19 @@ class ParticleAccumulator(ParticleDiagnostic):
             write_dir = 'probe_diags'
 
         # Initialize Particle diagnostic normal attributes
-        ParticleDiagnostic.__init__(self, period, top, w3d, comm_world,
+        ParticleDiagnostic.__init__(self, period_flush, top, w3d, comm_world,
             species=species, particle_data=particle_data, select=select,
-            write_dir=write_dir, lparallel_output=lparallel_output)
+            write_dir=write_dir, lparallel_output=lparallel_output,
+            iteration_min=iteration_min,iteration_max=iteration_max)
+        self.period_diag = period_diag
 
         # Initialize proper helper objects
         self.particle_storer = ParticleStorer( top.dt, self.write_dir,
             self.species_dict, self.lparallel_output, self.rank )
+		# Sanity check 
+        if ("t" not in particle_data): 
+            particle_data.append("t")
+		# Init particle catcher object 
         self.particle_catcher = ParticleCatcher( top, particle_data)
 
         # Initialize a corresponding empty file
@@ -76,12 +85,14 @@ class ParticleAccumulator(ParticleDiagnostic):
 
         Should be registered with installafterstep in Warp
         """
-        # At each timestep, store new particles in memory buffers
-        self.store_new_particles()
-
-        # Every self.period, write the buffered slices to disk
-        if self.top.it % self.period == 0:
-            self.flush_to_disk()
+        if ((self.top.it>=self.iteration_min) and \
+        (self.top.it<=self.iteration_max)):
+            # At each period_diag, store new particles in memory buffers
+            if self.top.it % self.period_diag == 0: 
+                self.store_new_particles()
+            # Every self.period, write the buffered slices to disk
+            if self.top.it % self.period == 0:
+                self.flush_to_disk()
 
     def store_new_particles( self ):
         """
@@ -248,7 +259,7 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
                  period, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting", "t"],
                  select=None, write_dir=None, lparallel_output=False,
-                 species={"electrons": None}):
+                 species={"electrons": None},iteration_min=None,iteration_max=None):
         """
         Initialize diagnostics that retrieve the particles crossing a given
         plane.
@@ -275,7 +286,11 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
         # Initialize Particle diagnostic normal attributes
         ParticleDiagnostic.__init__(self, period, top, w3d, comm_world,
             species=species, particle_data=particle_data, select=select,
-            write_dir=write_dir, lparallel_output=lparallel_output)
+            write_dir=write_dir, lparallel_output=lparallel_output,
+            iteration_min=iteration_min,iteration_max=iteration_max)
+		
+		# Period at which particle probe is performed 
+        self.period_diag=1
 
         # Initialize proper helper objects
         self.particle_storer = ParticleStorer( top.dt, self.write_dir,
@@ -367,19 +382,33 @@ class ParticleCatcher:
     a derived class of ParticleCatcher and defining a new method
     get_particle_slice()
     """
-    def __init__(self, top, list_of_quantities):
+    def __init__(self, top, particle_data):
         """
         Initialize the ParticleCatcher object
 
         Parameters
         ----------
-        list_of_quantities: list of particle quantities to extract
+        particle_data: list of particle data to "catch"
 
         top: WARP object
         """
+
+		# Get list of particle quantities to catch
+		# for current species 
+        list_of_quantities=[]
+        for particle_var in particle_data:
+            if particle_var in ["position","momentum","E","B"]:
+                for coord in ["x", "y", "z"]:
+                    quantity = "%s%s" %(particle_quantity_dict[particle_var],coord)
+                    list_of_quantities.append(quantity)
+            elif particle_var=="weighting":
+                list_of_quantities.append("w")
+            elif particle_var=="id": 
+                list_of_quantities.append("id")
+            elif particle_var=="t": 
+                list_of_quantities.append("t")
+
         # Some attributes neccessary for particle selections
-        self.plane_position = plane_position
-        self.plane_normal_vector = plane_normal_vector
         self.top = top
 
         # Create a dictionary that contains the correspondance
@@ -390,7 +419,7 @@ class ParticleCatcher:
         particle_to_index=dict()
         for i in range(self.nquants):
             particle_to_index[self.list_of_quantities[i]]=i
-            if self.list_of_quantities[i]=='t':
+            if self.list_of_quantities[i]=="t":
                 self.t_index=i
         self.particle_to_index = particle_to_index
         self.captured_quantities = dict()
@@ -417,14 +446,14 @@ class ParticleCatcher:
         for i in range(self.nquants):
             # Quantities at current time step
             if (i is not self.t_index):
-                self.captured_quantities[self.list_of_quantities[i]]=
+                self.captured_quantities[self.list_of_quantities[i]]= \
                     self.get_quantity( species,self.list_of_quantities[i] )
 
         i_not_t = np.delete(np.arange(self.nquants),self.t_index)[0]
-        numpart= \
+        num_part= \
         np.size(self.captured_quantities[self.list_of_quantities[i_not_t]])
-        self.captured_quantities[self.list_of_quantities[self.t_index]]=
-            np.ones(numpart)*self.top.time
+        self.captured_quantities[self.list_of_quantities[self.t_index]]= \
+            np.ones(num_part)*self.top.time
 
         return( num_part )
 
@@ -491,8 +520,9 @@ class ParticleCatcher:
                 temp_slice_array,(np.shape(p2i.keys())[0],-1))
 
         # Multiplying momenta by the species mass to make them unitless
-        for quantity in ["ux", "uy", "uz"]:
-            slice_array[p2i[quantity]] *= species.mass
+        for quantity in self.particle_to_index.keys(): 
+             if quantity in ["ux", "uy", "uz"]:
+            	slice_array[p2i[quantity]] *= species.mass
 
         return slice_array
 
@@ -550,11 +580,23 @@ class ParticleCatcher:
                     gather=0, bcast=0)
 
          # Quantities that do not depend on time step
-         if quantity == "w":
+        if quantity == "w":
              quantity_array = species.getweights( gather=False )
-         elif quantity == "id":
+        elif quantity == "id":
              quantity_array = \
              (np.rint( species.getssn(gather=False) )).astype('uint64')
+        elif quantity == "ex":
+                quantity_array = species.getex( gather=False )
+        elif quantity == "ey":
+                quantity_array = species.getey( gather=False )
+        elif quantity == "ez":
+                quantity_array = species.getez( gather=False )
+        elif quantity == "bx":
+                quantity_array = species.getex( gather=False )
+        elif quantity == "by":
+                quantity_array = species.getey( gather=False )
+        elif quantity == "bz":
+                quantity_array = species.getez( gather=False )
 
         return( quantity_array )
 
