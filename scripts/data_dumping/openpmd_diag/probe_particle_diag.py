@@ -63,7 +63,7 @@ class ProbeParticleDiagnostic(ParticleDiagnostic):
         # Initialize proper helper objects
         self.particle_storer = ParticleStorer( top.dt, self.write_dir,
             self.species_dict, self.lparallel_output, self.rank )
-        self.particle_catcher = ParticleCatcher( top, plane_position,
+        self.particle_catcher = ParticleProbeCatcher( top, plane_position,
                                                 plane_normal_vector )
         self.particle_catcher.allocate_previous_instant()
 
@@ -306,11 +306,265 @@ class ParticleStorer:
 
 class ParticleCatcher:
     """
+    Class that extracts, and gathers particle quantities
+    Provides tools to select and extract particle quantities according
+    to selection rules. Selection rules can be customized by defining
+    a derived class of ParticleCatcher and defining a new method
+    get_particle_slice()
+    """
+    def __init__(self, top, list_of_quantities):
+        """
+        Initialize the ParticleCatcher object
+
+        Parameters
+        ----------
+        list_of_quantities: list of particle quantities to extract
+
+        top: WARP object
+        """
+        # Some attributes neccessary for particle selections
+        self.plane_position = plane_position
+        self.plane_normal_vector = plane_normal_vector
+        self.top = top
+
+        # Create a dictionary that contains the correspondance
+        # between the particles quantity and array index
+        self.list_of_quantities=list_of_quantities
+        nquants=len(self.list_of_quantities)
+        self.nquants=nquants
+        particle_to_index=dict()
+        for i in range(self.nquants):
+            particle_to_index[self.list_of_quantities[i]]=i
+            if self.list_of_quantities[i]=='t':
+                self.t_index=i
+        self.particle_to_index = particle_to_index
+        self.captured_quantities = dict()
+
+    def get_particle_slice( self, species ):
+        """
+        Select the particles for the current slice, and extract their
+        particle quantities. By default, all particles are taken in the
+        generic class. User have to redefine this function in a derived
+        class to implement custom selection rule adapted to its diag
+
+        Parameters
+        ----------
+        species: a Species object of Warp
+            Contains the particle data from which one slice will be extracted
+
+        Returns
+        -------
+        num_part: int
+            Number of selected particles
+        """
+
+        # By default all particles are chosen
+        for i in range(self.nquants):
+            # Quantities at current time step
+            if (i is not self.t_index):
+                self.captured_quantities[self.list_of_quantities[i]]=
+                    self.get_quantity( species,self.list_of_quantities[i] )
+
+        i_not_t = np.delete(np.arange(self.nquants),self.t_index)[0]
+        numpart= \
+        np.size(self.captured_quantities[self.list_of_quantities[i_not_t]])
+        self.captured_quantities[self.list_of_quantities[self.t_index]]=
+            np.ones(numpart)*self.top.time
+
+        return( num_part )
+
+    def gather_array(self, quantity):
+        """
+        Get quantity arrays to be gathered
+        ----------
+        quantity: String
+            Quantity of the particles that is wished to be gathered
+
+        Returns
+        -------
+        ar: array of reals
+            An array of gathered particle's quantity
+        """
+
+        return self.captured_quantities[quantity]
+
+    def extract_slice(self, species, select ):
+        """
+        Extract a slice of the particles
+
+        If select is present, extract only particles that satisfy the criteria
+
+        Parameters
+        ----------
+        species: a Species object of Warp
+            Contains the particle data from which one slice will be extracted
+
+        select: dict
+            A set of rules defined by the users in selecting the particles
+            Ex: {"uz": [50, 100]} for particles which have normalized
+            values between 50 and 100
+
+        Returns
+        -------
+        slice_array: An array of reals of shape (8, num_part)
+            An array that packs together the different particle quantities
+            (x, y, z, ux, uy, uz, weight, t)
+        """
+        # Declare an attribute for convenience
+        p2i = self.particle_to_index
+
+        # Get the particles
+        num_part = self.get_particle_slice( species )
+        slice_array = np.empty((np.shape(p2i.keys())[0], num_part,))
+
+        # Get the particle quantities
+        for quantity in self.particle_to_index.keys():
+            # Here typical values for 'quantity' are e.g. 'z', 'ux', 'gamma'
+            # you should just gather array locally
+            slice_array[ p2i[quantity], ... ] = self.gather_array(quantity)
+
+        # Choose the particles based on the select criteria defined by the
+        # users.
+        if (select is not None) and slice_array.size:
+            select_array = self.apply_selection(select, slice_array)
+            row, column =  np.where(select_array==True)
+            temp_slice_array = slice_array[row,column]
+
+            # Temp_slice_array is a 1D numpy array, we reshape it so that it
+            # has the same size as slice_array
+            slice_array = np.reshape(
+                temp_slice_array,(np.shape(p2i.keys())[0],-1))
+
+        # Multiplying momenta by the species mass to make them unitless
+        for quantity in ["ux", "uy", "uz"]:
+            slice_array[p2i[quantity]] *= species.mass
+
+        return slice_array
+
+    def get_quantity(self, species, quantity, l_prev=False):
+        """
+        Get a given particle quantity
+
+        Parameters
+        ----------
+        species: a Species object of Warp
+            Contains the particle data from which the quantity is extracted
+
+        quantity: string
+            Describes which quantity is queried
+            Either "x", "y", "z", "ux", "uy", "uz", "w"
+
+        l_prev: boolean
+            If True, then return the quantities of the previous timestep;
+            else return quantities of the current timestep
+        """
+        # Extract the chosen quantities
+        # At current timestep
+        if not(l_prev):
+            if quantity == "x":
+                quantity_array = species.getx( gather=False )
+            elif quantity == "y":
+                quantity_array = species.gety( gather=False )
+            elif quantity == "z":
+                quantity_array = species.getz( gather=False )
+            elif quantity == "ux":
+                quantity_array = species.getux( gather=False )
+            elif quantity == "uy":
+                quantity_array = species.getuy( gather=False )
+            elif quantity == "uz":
+                quantity_array = species.getuz( gather=False )
+        # Or at previous timestep
+        else:
+            if quantity == "x":
+                quantity_array = species.getpid( id=self.top.xoldpid-1,
+                    gather=0, bcast=0)
+            elif quantity == "y":
+                quantity_array = species.getpid( id=self.top.yoldpid-1,
+                    gather=0, bcast=0)
+            elif quantity == "z":
+                quantity_array = species.getpid( id=self.top.zoldpid-1,
+                    gather=0, bcast=0)
+            elif quantity == "ux":
+                quantity_array = species.getpid( id=self.top.uxoldpid-1,
+                    gather=0, bcast=0)
+            elif quantity == "uy":
+                quantity_array = species.getpid( id=self.top.uyoldpid-1,
+                    gather=0, bcast=0)
+            elif quantity == "uz":
+                quantity_array = species.getpid( id=self.top.uzoldpid-1,
+                    gather=0, bcast=0)
+
+         # Quantities that do not depend on time step
+         if quantity == "w":
+             quantity_array = species.getweights( gather=False )
+         elif quantity == "id":
+             quantity_array = \
+             (np.rint( species.getssn(gather=False) )).astype('uint64')
+
+        return( quantity_array )
+
+    def apply_selection(self, select, slice_array):
+        """
+        Apply the rules of self.select to determine which
+        particles should be written
+
+        Parameters
+        ----------
+        select: a dictionary that defines all selection rules based
+        on the quantities
+
+        Returns
+        -------
+        A 1d array of the same shape as that particle array
+        containing True for the particles that satify all
+        the rules of self.select
+        """
+        p2i = self.particle_to_index
+
+        # Initialize an array filled with True
+        select_array = np.ones( np.shape(slice_array), dtype='bool' )
+
+        # Apply the rules successively
+        # Go through the quantities on which a rule applies
+        for quantity in select.keys():
+            # Lower bound
+            if select[quantity][0] is not None:
+                select_array = np.logical_and(
+                    slice_array[p2i[quantity]] >\
+                     select[quantity][0], select_array )
+            # Upper bound
+            if select[quantity][1] is not None:
+                select_array = np.logical_and(
+                    slice_array[p2i[quantity]] <\
+                    select[quantity][1], select_array )
+
+        return select_array
+
+    def allocate_previous_instant(self):
+        """
+        Allocate the top.'quantity'oldpid arrays. This is used to store
+        the previous values of the quantities.
+        """
+        if not self.top.xoldpid:
+            self.top.xoldpid = self.top.nextpid()
+        if not self.top.yoldpid:
+            self.top.yoldpid = self.top.nextpid()
+        if not self.top.zoldpid:
+            self.top.zoldpid = self.top.nextpid()
+        if not self.top.uxoldpid:
+            self.top.uxoldpid = self.top.nextpid()
+        if not self.top.uyoldpid:
+            self.top.uyoldpid = self.top.nextpid()
+        if not self.top.uzoldpid:
+            self.top.uzoldpid = self.top.nextpid()
+
+class ParticleProbeCatcher(ParticleCatcher):
+    """
     Class that extracts, interpolates and gathers particles
     """
     def __init__(self, top, plane_position, plane_normal_vector ):
         """
-        Initialize the ParticleCatcher object
+        Initialize the ParticleProbeCatcher object
 
         Parameters
         ----------
@@ -322,15 +576,14 @@ class ParticleCatcher:
 
         top: WARP object
         """
+
+        # Init ParticleCatcher Normal attributes
+        list_of_quantities=['x','y','z','ux','uy','uz','w','t']
+        ParticleCatcher.__init__(self, top, list_of_quantities)
+
         # Some attributes neccessary for particle selections
         self.plane_position = plane_position
         self.plane_normal_vector = plane_normal_vector
-        self.top = top
-
-        # Create a dictionary that contains the correspondance
-        # between the particles quantity and array index
-        self.particle_to_index = {'x':0, 'y':1, 'z':2, 'ux':3,
-                'uy':4, 'uz':5, 'w':6, 't':7}
 
     def get_particle_slice( self, species ):
         """
@@ -415,219 +668,19 @@ class ParticleCatcher:
         interp_current = np.abs(previous_position_relative_to_plane) * norm_factor
         interp_previous = current_position_relative_to_plane * norm_factor
 
-        self.t_captured = interp_current * self.top.time + \
+        self.captured_quantities['t']= interp_current * self.top.time + \
                             interp_previous * (self.top.time - self.top.dt)
-        self.x_captured = interp_current * current_x + \
+        self.captured_quantities['x'] = interp_current * current_x + \
                             interp_previous * previous_x
-        self.y_captured = interp_current * current_y + \
+        self.captured_quantities['y'] = interp_current * current_y + \
                             interp_previous * previous_y
-        self.z_captured = interp_current * current_z + \
+        self.captured_quantities['z'] = interp_current * current_z + \
                             interp_previous * previous_z
-        self.ux_captured = interp_current * current_ux + \
+        self.captured_quantities['ux'] = interp_current * current_ux + \
                             interp_previous * previous_ux
-        self.uy_captured = interp_current * current_uy + \
+        self.captured_quantities['uy'] = interp_current * current_uy + \
                             interp_previous * previous_uy
-        self.uz_captured = interp_current * current_uz + \
+        self.captured_quantities['uz'] = interp_current * current_uz + \
                             interp_previous * previous_uz
 
         return( num_part )
-
-    def gather_array(self, quantity):
-        """
-        Gather the quantity arrays and normalize the momenta
-        Parameters
-        ----------
-        quantity: String
-            Quantity of the particles that is wished to be gathered
-
-        Returns
-        -------
-        ar: array of reals
-            An array of gathered particle's quantity
-        """
-        ar = np.zeros(np.shape(self.x_captured)[0])
-
-        if quantity == "x":
-            ar = np.array(self.x_captured)
-        elif quantity == "y":
-            ar = np.array(self.y_captured)
-        elif quantity == "z":
-            ar = np.array(self.z_captured)
-        elif quantity == "ux":
-            ar = np.array(self.ux_captured)
-        elif quantity == "uy":
-            ar = np.array(self.uy_captured)
-        elif quantity == "uz":
-            ar = np.array(self.uz_captured)
-        elif quantity == "w":
-            ar = np.array(self.w_captured)
-        elif quantity == "t":
-            ar = np.array(self.t_captured)
-        return ar
-
-    def extract_slice(self, species, select ):
-        """
-        Extract a slice of the particles
-
-        If select is present, extract only particles that satisfy the criteria
-
-        Parameters
-        ----------
-        species: a Species object of Warp
-            Contains the particle data from which one slice will be extracted
-
-        select: dict
-            A set of rules defined by the users in selecting the particles
-            Ex: {"uz": [50, 100]} for particles which have normalized
-            values between 50 and 100
-
-        Returns
-        -------
-        slice_array: An array of reals of shape (8, num_part)
-            An array that packs together the different particle quantities
-            (x, y, z, ux, uy, uz, weight, t)
-        """
-        # Declare an attribute for convenience
-        p2i = self.particle_to_index
-
-        # Get the particles
-        num_part = self.get_particle_slice( species )
-        slice_array = np.empty((np.shape(p2i.keys())[0], num_part,))
-
-        # Get the particle quantities
-        for quantity in self.particle_to_index.keys():
-            # Here typical values for 'quantity' are e.g. 'z', 'ux', 'gamma'
-            # you should just gather array locally
-            slice_array[ p2i[quantity], ... ] = self.gather_array(quantity)
-
-        # Choose the particles based on the select criteria defined by the
-        # users.
-        if (select is not None) and slice_array.size:
-            select_array = self.apply_selection(select, slice_array)
-            row, column =  np.where(select_array==True)
-            temp_slice_array = slice_array[row,column]
-
-            # Temp_slice_array is a 1D numpy array, we reshape it so that it
-            # has the same size as slice_array
-            slice_array = np.reshape(
-                temp_slice_array,(np.shape(p2i.keys())[0],-1))
-
-        # Multiplying momenta by the species mass to make them unitless
-        for quantity in ["ux", "uy", "uz"]:
-            slice_array[p2i[quantity]] *= species.mass
-
-        return slice_array
-
-    def get_quantity(self, species, quantity, l_prev=False):
-        """
-        Get a given particle quantity
-
-        Parameters
-        ----------
-        species: a Species object of Warp
-            Contains the particle data from which the quantity is extracted
-
-        quantity: string
-            Describes which quantity is queried
-            Either "x", "y", "z", "ux", "uy", "uz", "w"
-
-        l_prev: boolean
-            If True, then return the quantities of the previous timestep;
-            else return quantities of the current timestep
-        """
-        # Extract the chosen quantities
-
-        # At current timestep
-        if not(l_prev):
-            if quantity == "x":
-                quantity_array = species.getx( gather=False )
-            elif quantity == "y":
-                quantity_array = species.gety( gather=False )
-            elif quantity == "z":
-                quantity_array = species.getz( gather=False )
-            elif quantity == "ux":
-                quantity_array = species.getux( gather=False )
-            elif quantity == "uy":
-                quantity_array = species.getuy( gather=False )
-            elif quantity == "uz":
-                quantity_array = species.getuz( gather=False )
-            elif quantity == "w":
-                quantity_array = species.getweights( gather=False )
-
-        # Or at previous timestep
-        else:
-            if quantity == "x":
-                quantity_array = species.getpid( id=self.top.xoldpid-1,
-                    gather=0, bcast=0)
-            elif quantity == "y":
-                quantity_array = species.getpid( id=self.top.yoldpid-1,
-                    gather=0, bcast=0)
-            elif quantity == "z":
-                quantity_array = species.getpid( id=self.top.zoldpid-1,
-                    gather=0, bcast=0)
-            elif quantity == "ux":
-                quantity_array = species.getpid( id=self.top.uxoldpid-1,
-                    gather=0, bcast=0)
-            elif quantity == "uy":
-                quantity_array = species.getpid( id=self.top.uyoldpid-1,
-                    gather=0, bcast=0)
-            elif quantity == "uz":
-                quantity_array = species.getpid( id=self.top.uzoldpid-1,
-                    gather=0, bcast=0)
-
-        return( quantity_array )
-
-    def allocate_previous_instant(self):
-        """
-        Allocate the top.'quantity'oldpid arrays. This is used to store
-        the previous values of the quantities.
-        """
-        if not self.top.xoldpid:
-            self.top.xoldpid = self.top.nextpid()
-        if not self.top.yoldpid:
-            self.top.yoldpid = self.top.nextpid()
-        if not self.top.zoldpid:
-            self.top.zoldpid = self.top.nextpid()
-        if not self.top.uxoldpid:
-            self.top.uxoldpid = self.top.nextpid()
-        if not self.top.uyoldpid:
-            self.top.uyoldpid = self.top.nextpid()
-        if not self.top.uzoldpid:
-            self.top.uzoldpid = self.top.nextpid()
-
-    def apply_selection(self, select, slice_array):
-        """
-        Apply the rules of self.select to determine which
-        particles should be written
-
-        Parameters
-        ----------
-        select: a dictionary that defines all selection rules based
-        on the quantities
-
-        Returns
-        -------
-        A 1d array of the same shape as that particle array
-        containing True for the particles that satify all
-        the rules of self.select
-        """
-        p2i = self.particle_to_index
-
-        # Initialize an array filled with True
-        select_array = np.ones( np.shape(slice_array), dtype='bool' )
-
-        # Apply the rules successively
-        # Go through the quantities on which a rule applies
-        for quantity in select.keys():
-            # Lower bound
-            if select[quantity][0] is not None:
-                select_array = np.logical_and(
-                    slice_array[p2i[quantity]] >\
-                     select[quantity][0], select_array )
-            # Upper bound
-            if select[quantity][1] is not None:
-                select_array = np.logical_and(
-                    slice_array[p2i[quantity]] <\
-                    select[quantity][1], select_array )
-
-        return select_array
