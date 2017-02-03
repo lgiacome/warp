@@ -16,7 +16,8 @@ from scipy.constants import c
 from particle_diag import ParticleDiagnostic
 from parallel import gatherarray
 
-class ProbeParticleDiagnostic(ParticleDiagnostic):
+
+class ParticleAccumulator(ParticleDiagnostic):
     """
     Class that writes the particles that go cross a given plane, in
     the direction given by `plane_normal_vector`
@@ -27,8 +28,7 @@ class ProbeParticleDiagnostic(ParticleDiagnostic):
     After initialization, the diagnostic is called by using
     the 'write' method.
     """
-    def __init__(self, plane_position, plane_normal_vector,
-                 period, top, w3d, comm_world=None,
+    def __init__(self,period, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting", "t"],
                  select=None, write_dir=None, lparallel_output=False,
                  species={"electrons": None}):
@@ -63,9 +63,7 @@ class ProbeParticleDiagnostic(ParticleDiagnostic):
         # Initialize proper helper objects
         self.particle_storer = ParticleStorer( top.dt, self.write_dir,
             self.species_dict, self.lparallel_output, self.rank )
-        self.particle_catcher = ParticleProbeCatcher( top, plane_position,
-                                                plane_normal_vector )
-        self.particle_catcher.allocate_previous_instant()
+        self.particle_catcher = ParticleCatcher( top, particle_data)
 
         # Initialize a corresponding empty file
         if self.lparallel_output == False and self.rank == 0:
@@ -233,6 +231,63 @@ class ProbeParticleDiagnostic(ParticleDiagnostic):
 
         # Close the file
         f.close()
+
+
+class ProbeParticleDiagnostic(ParticleAccumulator):
+    """
+    Class that writes the particles that go cross a given plane, in
+    the direction given by `plane_normal_vector`
+    (The particles that cross the plane in the other direction are not saved.)
+
+    Usage
+    -----
+    After initialization, the diagnostic is called by using
+    the 'write' method.
+    """
+    def __init__(self, plane_position, plane_normal_vector,
+                 period, top, w3d, comm_world=None,
+                 particle_data=["position", "momentum", "weighting", "t"],
+                 select=None, write_dir=None, lparallel_output=False,
+                 species={"electrons": None}):
+        """
+        Initialize diagnostics that retrieve the particles crossing a given
+        plane.
+
+        Parameters
+        ----------
+        plane_position: a list of 3 floats (in meters)
+            The position (in x, y, z) of one of the points of the plane
+
+        plane_normal_vector: a list of 3 floats
+            The coordinates (in x, y, z) of one of the vectors of the plane
+
+        period: int
+            Number of iterations for which the data is accumulated in memory,
+            before finally writing it to the disk.
+
+        See the documentation of ParticleDiagnostic for the other parameters
+        """
+        # Do not leave write_dir as None, as this may conflict with
+        # the default directory ('./diags')
+        if write_dir is None:
+            write_dir = 'probe_diags'
+
+        # Initialize Particle diagnostic normal attributes
+        ParticleDiagnostic.__init__(self, period, top, w3d, comm_world,
+            species=species, particle_data=particle_data, select=select,
+            write_dir=write_dir, lparallel_output=lparallel_output)
+
+        # Initialize proper helper objects
+        self.particle_storer = ParticleStorer( top.dt, self.write_dir,
+            self.species_dict, self.lparallel_output, self.rank )
+        self.particle_catcher = ParticleProbeCatcher( top, plane_position,
+                                                plane_normal_vector )
+        self.particle_catcher.allocate_previous_instant()
+
+        # Initialize a corresponding empty file
+        if self.lparallel_output == False and self.rank == 0:
+            self.create_file_empty_particles(
+                self.particle_storer.filename, 0, 0, self.top.dt)
 
 class ParticleStorer:
     """
