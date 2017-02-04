@@ -19,9 +19,7 @@ from data_dict import particle_quantity_dict
 
 class ParticleAccumulator(ParticleDiagnostic):
     """
-    Class that writes the particles that go cross a given plane, in
-    the direction given by `plane_normal_vector`
-    (The particles that cross the plane in the other direction are not saved.)
+    Class that allows buffering of particle quantities 
 
     Usage
     -----
