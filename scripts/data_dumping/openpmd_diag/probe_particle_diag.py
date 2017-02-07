@@ -31,23 +31,17 @@ class ParticleAccumulator(ParticleDiagnostic):
                  select=None, write_dir=None, lparallel_output=False,
                  species={"electrons": None},iteration_min=None,iteration_max=None):
         """
-        Initialize diagnostics that retrieve the particles crossing a given
-        plane.
+        Initialization 
 
         Parameters
         ----------
-        plane_position: a list of 3 floats (in meters)
-            The position (in x, y, z) of one of the points of the plane
-
-        plane_normal_vector: a list of 3 floats
-            The coordinates (in x, y, z) of one of the vectors of the plane
 
         period_flush: int
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
 		
-		period_diag: int 
-			period at which the particle diag is performed 
+	period_diag: int 
+	    period at which the particle diag is performed 
 
         See the documentation of ParticleDiagnostic for the other parameters
         """
