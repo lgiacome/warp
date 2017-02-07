@@ -98,7 +98,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                 if self.select[momentum][1] is not None:
                     self.select[momentum][1] *= constants.c
 
-    def setup_openpmd_species_group( self, grp, species, N=1 ) :
+    def setup_openpmd_species_group( self, grp, species, N=None ) :
         """
         Set the attributes that are specific to the particle group
 
@@ -113,6 +113,10 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             The global number of particles (if known)
             (used in order to store constant records)
         """
+        # If the number of particles is unknown, set it to 1
+        if N is None:
+            N = 1
+        
         # Generic attributes
         grp.attrs["particleShape"] = float( self.top.depos_order[0][0] )
         grp.attrs["currentDeposition"] = np.string_("Esirkepov")
@@ -145,7 +149,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         grp["positionOffset/y"].attrs["value"] = 0.
         grp["positionOffset/z"].attrs["value"] = 0.
 
-    def setup_openpmd_species_record( self, grp, quantity ) :
+    def setup_openpmd_species_record( self, grp, quantity ):
         """
         Set the attributes that are specific to a species record
 
@@ -374,18 +378,19 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             # Setup the meshes group (contains all the particles)
             particle_path = "/data/%d/particles/" %iteration
             particle_grp = f.require_group(particle_path)
-
+            # Loop through all particle species
             for species_name, species in self.species_dict.iteritems():
-                species_path = particle_path+"%s/" %(species_name)
-                # Create and setup the h5py.Group species_grp
-                species_grp = f.require_group( species_path )
-                self.setup_openpmd_species_group( species_grp, species )
 
-                # Check the shape of the array
+                # Check the number of particles to write
                 if select_nglobal_dict is not None:
                     N = select_nglobal_dict[species_name]
                 else:
                     N = None
+
+                # Create and setup the h5py.Group species_grp
+                species_path = particle_path+"%s/" %(species_name)
+                species_grp = f.require_group( species_path )
+                self.setup_openpmd_species_group( species_grp, species, N=N )
 
                 # Loop over the different quantities that should be written
                 # and setup the corresponding datasets
