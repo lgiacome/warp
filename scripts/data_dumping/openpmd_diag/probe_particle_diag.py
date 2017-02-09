@@ -19,7 +19,7 @@ from data_dict import particle_quantity_dict
 
 class ParticleAccumulator(ParticleDiagnostic):
     """
-    Class that allows buffering of particle quantities 
+    Class that allows buffering of particle quantities
 
     Usage
     -----
@@ -31,7 +31,7 @@ class ParticleAccumulator(ParticleDiagnostic):
                  select=None, write_dir=None, lparallel_output=False,
                  species={"electrons": None},iteration_min=None,iteration_max=None):
         """
-        Initialization 
+        Initialization
 
         Parameters
         ----------
@@ -39,9 +39,9 @@ class ParticleAccumulator(ParticleDiagnostic):
         period_flush: int
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
-		
-	period_diag: int 
-	    period at which the particle diag is performed 
+
+	period_diag: int
+	    period at which the particle diag is performed
 
         See the documentation of ParticleDiagnostic for the other parameters
         """
@@ -60,16 +60,16 @@ class ParticleAccumulator(ParticleDiagnostic):
         # Initialize proper helper objects
         self.particle_storer = ParticleStorer( top.dt, self.write_dir,
             self.species_dict, self.lparallel_output, self.rank )
-		# Sanity check 
-        if ("t" not in particle_data): 
+		# Sanity check
+        if ("t" not in particle_data):
             particle_data.append("t")
-		# Init particle catcher object 
+		# Init particle catcher object
         self.particle_catcher = ParticleCatcher( top, particle_data)
 
         # Initialize a corresponding empty file
-        if self.lparallel_output == False and self.rank == 0:
-            self.create_file_empty_particles(
-                self.particle_storer.filename, 0, 0, self.top.dt)
+        self.create_file_empty_particles(self.particle_storer.filename, \
+        0, 0, self.top.dt)
+
 
     def write( self ):
         """
@@ -80,7 +80,7 @@ class ParticleAccumulator(ParticleDiagnostic):
         if ((self.top.it>=self.iteration_min) and \
         (self.top.it<=self.iteration_max)):
             # At each period_diag, store new particles in memory buffers
-            if self.top.it % self.period_diag == 0: 
+            if self.top.it % self.period_diag == 0:
                 self.store_new_particles()
             # Every self.period, write the buffered slices to disk
             if self.top.it % self.period == 0:
@@ -280,8 +280,8 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
             species=species, particle_data=particle_data, select=select,
             write_dir=write_dir, lparallel_output=lparallel_output,
             iteration_min=iteration_min,iteration_max=iteration_max)
-		
-		# Period at which particle probe is performed 
+
+		# Period at which particle probe is performed
         self.period_diag=1
 
         # Initialize proper helper objects
@@ -386,7 +386,7 @@ class ParticleCatcher:
         """
 
 		# Get list of particle quantities to catch
-		# for current species 
+		# for current species
         list_of_quantities=[]
         for particle_var in particle_data:
             if particle_var in ["position","momentum","E","B"]:
@@ -395,9 +395,9 @@ class ParticleCatcher:
                     list_of_quantities.append(quantity)
             elif particle_var=="weighting":
                 list_of_quantities.append("w")
-            elif particle_var=="id": 
+            elif particle_var=="id":
                 list_of_quantities.append("id")
-            elif particle_var=="t": 
+            elif particle_var=="t":
                 list_of_quantities.append("t")
 
         # Some attributes neccessary for particle selections
@@ -512,7 +512,7 @@ class ParticleCatcher:
                 temp_slice_array,(np.shape(p2i.keys())[0],-1))
 
         # Multiplying momenta by the species mass to make them unitless
-        for quantity in self.particle_to_index.keys(): 
+        for quantity in self.particle_to_index.keys():
              if quantity in ["ux", "uy", "uz"]:
             	slice_array[p2i[quantity]] *= species.mass
 
