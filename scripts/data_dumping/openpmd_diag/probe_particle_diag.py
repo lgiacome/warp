@@ -315,8 +315,7 @@ class ParticleStorer:
             (inherited from Warp)
         """
         # Deduce the name of the filename where this snapshot writes
-        if lparallel_output == False and rank == 0:
-            self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %0)
+        self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %0)
         self.iteration = 0
         self.dt = dt
 
