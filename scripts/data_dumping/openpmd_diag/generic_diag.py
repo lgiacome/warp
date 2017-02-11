@@ -79,7 +79,7 @@ class OpenPMDDiagnostic(object) :
         self.period = period
         self.comm_world = comm_world
         self.lparallel_output = lparallel_output
-		self.write_metadata_parallel=write_metadata_parallel
+        self.write_metadata_parallel=write_metadata_parallel
         if (self.comm_world is None) or (self.comm_world.size==1):
             self.lparallel_output = False
 
