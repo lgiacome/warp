@@ -21,7 +21,7 @@ class OpenPMDDiagnostic(object) :
     """
 
     def __init__(self, period, top, w3d, comm_world, iteration_min=None, iteration_max=None,
-                 lparallel_output=False, write_dir=None ) :
+                 lparallel_output=False, write_metadata_parallel=False, write_dir=None ) :
         """
         General setup of the diagnostic
 
@@ -51,6 +51,9 @@ class OpenPMDDiagnostic(object) :
             Switch to set output mode (parallel or gathering)
             If "True" : Parallel output
 
+        write_metadata_parallel : boolean
+            If "True" : file metadata are written in parallel 
+
         write_dir : string, optional
             The POSIX path to the directory where the results are
             to be written. If none is provided, this will be the path
@@ -76,6 +79,7 @@ class OpenPMDDiagnostic(object) :
         self.period = period
         self.comm_world = comm_world
         self.lparallel_output = lparallel_output
+		self.write_metadata_parallel=write_metadata_parallel
         if (self.comm_world is None) or (self.comm_world.size==1):
             self.lparallel_output = False
 

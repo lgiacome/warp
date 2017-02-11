@@ -28,7 +28,8 @@ class ParticleAccumulator(ParticleDiagnostic):
     """
     def __init__(self,period_flush,period_diag, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting", "t"],
-                 select=None, write_dir=None, lparallel_output=False,
+                 select=None, write_dir=None, lparallel_output=False, 
+				 write_metadata_parallel=False, 
                  species={"electrons": None},iteration_min=None,iteration_max=None):
         """
         Initialization
@@ -41,7 +42,8 @@ class ParticleAccumulator(ParticleDiagnostic):
             before finally writing it to the disk.
 
 	period_diag: int
-	    period at which the particle diag is performed
+	    period at which the diagnostic looks for new particle to be accumulated in memory.
+
 
         See the documentation of ParticleDiagnostic for the other parameters
         """
@@ -54,21 +56,26 @@ class ParticleAccumulator(ParticleDiagnostic):
         ParticleDiagnostic.__init__(self, period_flush, top, w3d, comm_world,
             species=species, particle_data=particle_data, select=select,
             write_dir=write_dir, lparallel_output=lparallel_output,
+			write_metadata_parallel=write_metadata_parallel, 
             iteration_min=iteration_min,iteration_max=iteration_max)
         self.period_diag = period_diag
 
         # Initialize proper helper objects
         self.particle_storer = ParticleStorer( top.dt, self.write_dir,
             self.species_dict, self.lparallel_output, self.rank )
-		# Sanity check
-        if ("t" not in particle_data):
+        # Sanity check
+        if ("t" not in self.particle_data):
             particle_data.append("t")
-		# Init particle catcher object
-        self.particle_catcher = ParticleCatcher( top, particle_data)
+        # Init particle catcher object
+		self.init_catcher_object()
 
         # Initialize a corresponding empty file
-        self.create_file_empty_particles(self.particle_storer.filename, \
-        0, 0, self.top.dt)
+		if self.write_metadata_parallel or self.rank == 0:
+        	self.create_file_empty_particles(self.particle_storer.filename, \
+        	0, 0, self.top.dt)
+
+	def init_catcher_object (self) : 
+		self.particle_catcher = ParticleCatcher( self.top, self.particle_data)
 
 
     def write( self ):
@@ -238,7 +245,7 @@ class ParticleAccumulator(ParticleDiagnostic):
 
 class ProbeParticleDiagnostic(ParticleAccumulator):
     """
-    Class that writes the particles that go cross a given plane, in
+    Class that writes the particles that go across a given plane, in
     the direction given by `plane_normal_vector`
     (The particles that cross the plane in the other direction are not saved.)
 
@@ -251,6 +258,7 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
                  period, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting", "t"],
                  select=None, write_dir=None, lparallel_output=False,
+				 write_metadata_parallel=False, 
                  species={"electrons": None},iteration_min=None,iteration_max=None):
         """
         Initialize diagnostics that retrieve the particles crossing a given
@@ -274,27 +282,27 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
         # the default directory ('./diags')
         if write_dir is None:
             write_dir = 'probe_diags'
+		self.plane_position = plane_position 
+        self.plane_normal_vector = plane_normal_vector
 
-        # Initialize Particle diagnostic normal attributes
-        ParticleDiagnostic.__init__(self, period, top, w3d, comm_world,
+        # Initialize Particle Accumulator normal attributes
+        ParticleAccumulator.__init__(self, period, 1, top, w3d, comm_world,
             species=species, particle_data=particle_data, select=select,
             write_dir=write_dir, lparallel_output=lparallel_output,
+		    write_metadata_parallel=write_metadata_parallel, 
             iteration_min=iteration_min,iteration_max=iteration_max)
 
-		# Period at which particle probe is performed
-        self.period_diag=1
 
         # Initialize proper helper objects
         self.particle_storer = ParticleStorer( top.dt, self.write_dir,
             self.species_dict, self.lparallel_output, self.rank )
-        self.particle_catcher = ParticleProbeCatcher( top, plane_position,
-                                                plane_normal_vector )
+		self.init_catcher_object()
         self.particle_catcher.allocate_previous_instant()
 
-        # Initialize a corresponding empty file
-        if self.lparallel_output == False and self.rank == 0:
-            self.create_file_empty_particles(
-                self.particle_storer.filename, 0, 0, self.top.dt)
+
+	def init_catcher_object (self) : 
+        self.particle_catcher = ParticleProbeCatcher( self.top, self.plane_position,
+                                                self.plane_normal_vector )
 
 class ParticleStorer:
     """
@@ -384,8 +392,8 @@ class ParticleCatcher:
         top: WARP object
         """
 
-		# Get list of particle quantities to catch
-		# for current species
+        # Get list of particle quantities to catch
+        # for current species
         list_of_quantities=[]
         for particle_var in particle_data:
             if particle_var in ["position","momentum","E","B"]:
