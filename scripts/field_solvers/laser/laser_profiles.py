@@ -90,7 +90,7 @@ class GaussianProfile( object ):
     """Class that calculates a Gaussian laser pulse."""
 
     def __init__( self, k0, waist, ctau, z0, zf, source_z, source_v, a0,
-                  dim, boost ):
+                  dim, boost, temporal_order = 2 ):
 
         # Set a number of parameters for the laser
         E0 = a0*m_e*c**2*k0/e
@@ -109,6 +109,7 @@ class GaussianProfile( object ):
         self.source_z = source_z
         self.zf = zf
         self.boost = boost
+        self.temporal_order = temporal_order
 
         # Geometric coefficient (for the evolution of the amplitude)
         # In 1D, there is no transverse components, therefore the geomtric
@@ -171,7 +172,7 @@ class GaussianProfile( object ):
         # - Longitudinal and transverse profile
         trans_profile = (self.waist/w)**self.geom_coeff * np.exp( - r2 / w**2 )
         long_profile = np.exp(
-            - ( z_source - c*t + self.z0 )**2 /self.ctau**2 )
+            - ( (z_source - c*t + self.z0 ) /self.ctau )**self.temporal_order)
         # -Curvature oscillations
         curvature_oscillations = np.cos( propag_phase )
         # - Combine profiles
@@ -300,27 +301,26 @@ class LaguerreGaussianProfile(object):
     """
     Class that calculates a Laguerre-Gaussian laser pulse.
     A typical LG pulse is defined as :
-                 r/sqrt(2) ^n         _  2r^2 _
-    E(x,y,z) = ( -------- )   . L_mn |  -----  | . exp(-inφ) . GaussianProfile
-                     w                -  w^2  -
 
-    where  r = (x^2 + y^2)^(1/2) and φ = arctan(y/x).
+    E(x,y,z) = \left(\frac{r \sqrt{2}}{w} \right)^n L_{mn} \left[
+                 \frac{2 r^2}{w^2} \right] e^{- i n \varphi} \; GaussianProfile
+
+    where  r = (x^2 + y^2)^(1/2) and \phi = arctan(y/x).
     n and m are specific parameters to calculate the Laguerre
     polynomial :
-                         exp(x)       d^m   _               _
-            L_mn(x) = ------------- . ---- | exp(-x).x^(n+m) |
-                        m!  x^n       dx^m  -               -
+
+    L_{mn} \left[  x \right] = \frac{e^x}{m! \: x^n}  \frac{d^m}{dx^m} \left[
+                               e^{-x} x^{n+m} \right]
 
     Be careful, a new Gouy phase is defined such as :
-                ψ  = (2m + n+ 1) arctan(ζ) = (2m + n+ 1) ψ
-                 LG                                       G
+                \psi  = (2m + n+ 1) arctan( xi ) = (2m + n+ 1) \psi
 
     Note than when n and m are both equal to 0, this function returns the same
     results as GaussianProfile.
     """
 
     def __init__( self, m, n, k0, waist, ctau, z0, zf, source_z, source_v, a0,
-                  dim, boost ):
+                  dim, boost, temporal_order = 2 ):
 
         # Set a number of parameters for the laser
         E0 = a0 * m_e * c**2 * k0/e
@@ -341,6 +341,7 @@ class LaguerreGaussianProfile(object):
         self.source_z = source_z
         self.zf = zf
         self.boost = boost
+        self.temporal_order = temporal_order
 
         # Geometric coefficient (for the evolution of the amplitude)
         # In 1D, there is no transverse components, therefore the geomtric
@@ -411,7 +412,7 @@ class LaguerreGaussianProfile(object):
         # - Longitudinal and transverse profile
         trans_profile = np.exp( - r2 / w**2 )
         long_profile = np.exp(
-            - ( z_source - c*t + self.z0 )**2 /self.ctau**2 )
+            - (( z_source - c*t + self.z0 ) /self.ctau )**self.temporal_order)
         # -Curvature oscillations
         curvature_oscillations = np.cos( propag_phase )
 
