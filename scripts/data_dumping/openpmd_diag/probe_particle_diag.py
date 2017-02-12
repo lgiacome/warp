@@ -14,7 +14,7 @@ import numpy as np
 import time
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
-from parallel import gatherarray
+from parallel import gatherarray, mpiallgather
 from data_dict import particle_quantity_dict
 
 class ParticleAccumulator(ParticleDiagnostic):
@@ -41,7 +41,7 @@ class ParticleAccumulator(ParticleDiagnostic):
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
 
-	period_diag: int
+	    period_diag: int
 	    period at which the diagnostic looks for new particle to be accumulated in memory.
 
 
@@ -124,65 +124,79 @@ class ParticleAccumulator(ParticleDiagnostic):
             particle_array = self.particle_storer.compact_slices(species_name)
 
             if self.comm_world is not None:
-                # In MPI mode: gather an array containing the number
-                # of particles on each process
-                n_rank = self.comm_world.allgather(np.shape(particle_array)[1])
+				if (self.lparallel_output): 
+					p_array=particle_array
+				else: 
+					# In MPI mode: gather an array containing the number
+					# of particles on each process
+					n_rank = self.comm_world.allgather(np.shape(particle_array)[1])
 
-                # Note that gatherarray routine in parallel.py only works
-                # with 1D array. Here we flatten the 2D particle arrays
-                # before gathering.
-                g_curr = gatherarray(particle_array.flatten(), root=0,
-                    comm=self.comm_world)
+					# Note that gatherarray routine in parallel.py only works
+					# with 1D array. Here we flatten the 2D particle arrays
+					# before gathering.
+					g_curr = gatherarray(particle_array.flatten(), root=0,
+						comm=self.comm_world)
 
-                if self.rank == 0:
-                    # Get the number of quantities
-                    nquant = np.shape(
-                        self.particle_catcher.particle_to_index.keys())[0]
+					if self.rank == 0:
+						# Get the number of quantities
+						nquant = np.shape(
+							self.particle_catcher.particle_to_index.keys())[0]
 
-                    # Prepare an empty array for reshaping purposes. The
-                    # final shape of the array is (8, total_num_particles)
-                    p_array = np.empty((nquant, 0))
+						# Prepare an empty array for reshaping purposes. The
+						# final shape of the array is (8, total_num_particles)
+						p_array = np.empty((nquant, 0))
 
-                    # Index needed in reshaping process
-                    n_ind = 0
+						# Index needed in reshaping process
+						n_ind = 0
 
-                    # Loop over all the processors, if the processor
-                    # contains particles, we reshape the gathered_array
-                    # and reconstruct by concatenation
-                    for i in xrange(self.top.nprocs):
+						# Loop over all the processors, if the processor
+						# contains particles, we reshape the gathered_array
+						# and reconstruct by concatenation
+						for i in xrange(self.top.nprocs):
 
-                        if n_rank[i] != 0:
-                            p_array = np.concatenate((p_array, np.reshape(
-                                g_curr[n_ind:n_ind+nquant*n_rank[i]],
-                                (nquant,n_rank[i]))),axis=1)
+							if n_rank[i] != 0:
+								p_array = np.concatenate((p_array, np.reshape(
+									g_curr[n_ind:n_ind+nquant*n_rank[i]],
+									(nquant,n_rank[i]))),axis=1)
 
-                            # Update the index
-                            n_ind += nquant*n_rank[i]
+								# Update the index
+								n_ind += nquant*n_rank[i]
 
             else:
                 p_array = particle_array
 
             # Write this array to disk (if this self.particle_storer has new slices)
-            if self.rank == 0 and p_array.size:
-                self.write_slices(p_array, species_name, self.particle_storer,
-                    self.particle_catcher.particle_to_index)
+            if (self.rank == 0) and (p_array.size) and (not self.lparallel_output):
+                self.write_slices(p_array, species_name, self.particle_storer, \
+                self.particle_catcher.particle_to_index)
+            elif self.lparallel_output:
+                self.write_slices(p_array, species_name, self.particle_storer, \
+                self.particle_catcher.particle_to_index)
 
-        # Erase the buffers
-        self.particle_storer.buffered_slices[species_name] = []
+            # Erase the buffers
+            self.particle_storer.buffered_slices[species_name] = []
 
-    def write_probe_dataset(self, species_grp, path, data, quantity):
+    def write_probe_dataset(self, species_grp, path, data, quantity, n_rank, nglobal):
         """
         Writes each quantity of the buffered dataset to the disk, the
         final step of the writing
         """
         dset = species_grp[path]
         index = dset.shape[0]
+        dset.resize(index+nglobal, axis=0)
 
-        # Resize the h5py dataset
-        dset.resize(index+len(data), axis=0)
-
-        # Write the data to the dataset at correct indices
-        dset[index:] = data
+        # Write data in parallel 
+        if n_rank is not None:
+            iold = index+sum(n_rank[0:self.rank])
+            # Calculate the last index occupied by the current rank
+            inew = iold+n_rank[self.rank]
+            # Write the local data to the global array
+            dset[iold:inew] = data
+		#Write data in serial 
+        else:
+       		 # Resize the h5py dataset
+			 # Write the data to the dataset at correct indices
+        	 dset[index:] = data
 
     def write_slices( self, particle_array, species_name, particle_storer, p2i ):
         """
@@ -203,10 +217,20 @@ class ParticleAccumulator(ParticleDiagnostic):
             and the integer index in the particle_array
         """
         # Open the file without parallel I/O in this implementation
-        f = self.open_file( particle_storer.filename, parallel_open=False )
+        f = self.open_file( particle_storer.filename, parallel_open=self.lparallel_output)
         particle_path = "/data/%d/particles/%s" %(particle_storer.iteration,
                                                     species_name)
         species_grp = f[particle_path]
+
+		# In parallel mode get local number of particles per proc to dump 
+		# and global number of particles to dump 
+        n = np.size(particle_array[0])
+        if (self.comm_world is not None) and (self.lparallel_output) :
+			n_locals =  mpiallgather( n )
+			nglobal  = np.sum(n_locals)
+        else: 
+			n_locals = None 
+			nglobal = n 
 
         # Loop over the different quantities that should be written
         for particle_var in self.particle_data:
@@ -217,7 +241,7 @@ class ParticleAccumulator(ParticleDiagnostic):
                     path = "%s/%s" %(particle_var, quantity)
                     data = particle_array[ p2i[ quantity ] ]
                     self.write_probe_dataset(
-                            species_grp, path, data, quantity)
+                            species_grp, path, data, quantity, n_locals, nglobal)
 
             elif particle_var == "momentum":
                 for coord in ["x","y","z"]:
@@ -225,19 +249,21 @@ class ParticleAccumulator(ParticleDiagnostic):
                     path = "%s/%s" %(particle_var,coord)
                     data = particle_array[ p2i[ quantity ] ]
                     self.write_probe_dataset(
-                            species_grp, path, data, quantity)
+                            species_grp, path, data, quantity, n_locals, nglobal)
 
             elif particle_var == "t":
                quantity= "t"
                path = "t"
                data = particle_array[ p2i[ quantity ] ]
-               self.write_probe_dataset(species_grp, path, data, quantity)
+               self.write_probe_dataset(species_grp, path, data, quantity, n_locals, \
+               nglobal)
 
             elif particle_var == "weighting":
                quantity= "w"
                path = "weighting"
                data = particle_array[ p2i[ quantity ] ]
-               self.write_probe_dataset(species_grp, path, data, quantity)
+               self.write_probe_dataset(species_grp, path, data, quantity, n_locals, \
+               nglobal )
 
         # Close the file
         f.close()
