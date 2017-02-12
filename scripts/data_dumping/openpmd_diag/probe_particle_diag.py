@@ -30,7 +30,8 @@ class ParticleAccumulator(ParticleDiagnostic):
                  particle_data=["position", "momentum", "weighting", "t"],
                  select=None, write_dir=None, lparallel_output=False, 
                  write_metadata_parallel=False, 
-                 species={"electrons": None},iteration_min=None,iteration_max=None):
+                 species={"electrons": None},iteration_min=None,iteration_max=None,
+                 onefile_per_flush=False):
         """
         Initialization
 
@@ -44,6 +45,10 @@ class ParticleAccumulator(ParticleDiagnostic):
 	    period_diag: int
 	    period at which the diagnostic looks for new particle to be accumulated in memory.
 
+        onefile_per_flush: boolean 
+		if False (default), produces one file for the entire run. 
+		if True, produces one file per flush (useful for very large dumps -e.g in 3D-,
+	    where resizing large datasets can be really costly)
 
         See the documentation of ParticleDiagnostic for the other parameters
         """
@@ -59,6 +64,7 @@ class ParticleAccumulator(ParticleDiagnostic):
         	write_metadata_parallel=write_metadata_parallel, 
             iteration_min=iteration_min,iteration_max=iteration_max)
         self.period_diag = period_diag
+        self.onefile_per_flush=onefile_per_flush
 
         # Initialize proper helper objects
         self.particle_storer = ParticleStorer( top.dt, self.write_dir,
@@ -70,7 +76,7 @@ class ParticleAccumulator(ParticleDiagnostic):
         self.init_catcher_object()
 
         # Initialize a corresponding empty file
-        if self.write_metadata_parallel or self.rank == 0:
+        if (self.write_metadata_parallel) or (self.rank == 0) and (not self.onefile_per_flush):
         	self.create_file_empty_particles(self.particle_storer.filename, \
         	0, 0, self.top.dt)
 
@@ -114,19 +120,23 @@ class ParticleAccumulator(ParticleDiagnostic):
         Writes the buffered slices of particles to the disk. Erase the
         buffered slices of the ParticleStorer object
 
-        Notice: In parallel version, data are gathered to proc 0
-        before being saved to disk
         """
         # Compact the successive slices that have been buffered
         # over time into a single array
+        nlocals_dict = dict()
+        nglobal_dict = dict()
+        parray_dict  = dict()
         for species_name in self.species_dict:
-
             particle_array = self.particle_storer.compact_slices(species_name)
 
             if self.comm_world is not None:
 				if (self.lparallel_output): 
-					p_array=particle_array
+					parray_dict[species_name]=particle_array
+					n = np.size(particle_array[0])
+					nlocals_dict[species_name]= mpiallgather( n )
+					nglobal_dict[species_name]=np.sum(nlocals_dict[species_name])
 				else: 
+					nlocals_dict[species_name]= None
 					# In MPI mode: gather an array containing the number
 					# of particles on each process
 					n_rank = self.comm_world.allgather(np.shape(particle_array)[1])
@@ -134,7 +144,7 @@ class ParticleAccumulator(ParticleDiagnostic):
 					# Note that gatherarray routine in parallel.py only works
 					# with 1D array. Here we flatten the 2D particle arrays
 					# before gathering.
-					g_curr = gatherarray(particle_array.flatten(), root=0,
+					g_curr = gatherarray(particle_array.flatten(), root=0, \
 						comm=self.comm_world)
 
 					if self.rank == 0:
@@ -144,7 +154,7 @@ class ParticleAccumulator(ParticleDiagnostic):
 
 						# Prepare an empty array for reshaping purposes. The
 						# final shape of the array is (8, total_num_particles)
-						p_array = np.empty((nquant, 0))
+						parray_dict[species_name]= np.empty((nquant, 0))
 
 						# Index needed in reshaping process
 						n_ind = 0
@@ -155,50 +165,81 @@ class ParticleAccumulator(ParticleDiagnostic):
 						for i in xrange(self.top.nprocs):
 
 							if n_rank[i] != 0:
-								p_array = np.concatenate((p_array, np.reshape(
-									g_curr[n_ind:n_ind+nquant*n_rank[i]],
+								parray_dict[species_name] = \
+								np.concatenate((parray_dict[species_name], np.reshape( \
+									g_curr[n_ind:n_ind+nquant*n_rank[i]], \
 									(nquant,n_rank[i]))),axis=1)
 
 								# Update the index
 								n_ind += nquant*n_rank[i]
+						n = np.size(parray_dict[species_name][0])
+						nglobal_dict[species_name]= n
+					else: 
+						parray_dict[species_name] = particle_array
+						nglobal_dict[species_name]= None
 
             else:
-                p_array = particle_array
+                parray_dict[species_name] = particle_array
+                n = np.size(parray_dict[species_name][0])
+                nlocals_dict[species_name]= None
+                nglobal_dict[species_name]= n
 
-            # Write this array to disk (if this self.particle_storer has new slices)
-            if (self.rank == 0) and (p_array.size) and (not self.lparallel_output):
-                self.write_slices(p_array, species_name, self.particle_storer, \
-                self.particle_catcher.particle_to_index)
-            elif self.lparallel_output:
-                self.write_slices(p_array, species_name, self.particle_storer, \
-                self.particle_catcher.particle_to_index)
+        if self.onefile_per_flush:
+            # Create the file for current flush 
+			iteration = self.top.it
+			file_suffix = "data%08d.h5" %iteration
+			curr_filename = os.path.join( self.write_dir, "hdf5", file_suffix  )
+			self.create_file_empty_particles( curr_filename, iteration, \
+                     self.top.time, self.top.dt, nglobal_dict )
+        else: 
+			iteration = self.particle_storer.iteration
+			# File already created (same file for all flushes)
+			curr_filename = self.particle_storer.filename
 
-            # Erase the buffers
-            self.particle_storer.buffered_slices[species_name] = []
+        # Open the file with or without parallel I/O depending on self.lparallel_output
+        f = self.open_file( curr_filename, parallel_open=self.lparallel_output)
+			
+        for species_name in self.species_dict:
+			species_path = "/data/%d/particles/%s" %(iteration,species_name)
+			if f is not None: 
+				species_grp = f[species_path]
+			else: 
+				species_grp = None
+			# Write this array to disk (if this self.particle_storer has new slices)
+			self.write_slices(species_grp, parray_dict[species_name], \
+			self.particle_catcher.particle_to_index, nlocals_dict[species_name],nglobal_dict[species_name])
+			# Erase the buffers
+			self.particle_storer.buffered_slices[species_name] = []
+
+        # Close the file
+        if f is not None: 
+        	f.close()
 
     def write_probe_dataset(self, species_grp, path, data, quantity, n_rank, nglobal):
         """
         Writes each quantity of the buffered dataset to the disk, the
         final step of the writing
         """
-        dset = species_grp[path]
-        index = dset.shape[0]
-        dset.resize(index+nglobal, axis=0)
+        if species_grp is not None :
+			dset = species_grp[path]
+			index = dset.shape[0]
+            # Resize the h5py dataset if one file for entire run
+			if not self.onefile_per_flush: 
+				dset.resize(index+nglobal, axis=0)
 
-        # Write data in parallel 
-        if n_rank is not None:
-            iold = index+sum(n_rank[0:self.rank])
-            # Calculate the last index occupied by the current rank
-            inew = iold+n_rank[self.rank]
-            # Write the local data to the global array
-            dset[iold:inew] = data
-		#Write data in serial 
-        else:
-       		 # Resize the h5py dataset
-			 # Write the data to the dataset at correct indices
-        	 dset[index:] = data
+			# All procs write the data 
+			if n_rank is not None:
+				iold = index+sum(n_rank[0:self.rank])
+				# Calculate the last index occupied by the current rank
+				inew = iold+n_rank[self.rank]
+				# Write the local data to the global array
+				dset[iold:inew] = data
+			#One proc writes the data (serial and lparallel_output=False)
+			else:
+				 # Write the data to the dataset at correct indices
+				 dset[index:] = data
 
-    def write_slices( self, particle_array, species_name, particle_storer, p2i ):
+    def write_slices( self, species_grp, particle_array, p2i, n_locals, nglobal ):
         """
         Write the slices of the different species to an openPMD file
 
@@ -216,21 +257,6 @@ class ParticleAccumulator(ParticleDiagnostic):
             Dictionary of correspondance between the particle quantities
             and the integer index in the particle_array
         """
-        # Open the file without parallel I/O in this implementation
-        f = self.open_file( particle_storer.filename, parallel_open=self.lparallel_output)
-        particle_path = "/data/%d/particles/%s" %(particle_storer.iteration,
-                                                    species_name)
-        species_grp = f[particle_path]
-
-		# In parallel mode get local number of particles per proc to dump 
-		# and global number of particles to dump 
-        n = np.size(particle_array[0])
-        if (self.comm_world is not None) and (self.lparallel_output) :
-			n_locals =  mpiallgather( n )
-			nglobal  = np.sum(n_locals)
-        else: 
-			n_locals = None 
-			nglobal = n 
 
         # Loop over the different quantities that should be written
         for particle_var in self.particle_data:
@@ -257,8 +283,6 @@ class ParticleAccumulator(ParticleDiagnostic):
                self.write_probe_dataset(species_grp, path, data, quantity, n_locals, \
                nglobal )
 
-        # Close the file
-        f.close()
 
 
 class ProbeParticleDiagnostic(ParticleAccumulator):
@@ -276,7 +300,7 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
                  period, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting", "t"],
                  select=None, write_dir=None, lparallel_output=False,
-                 write_metadata_parallel=False, 
+                 write_metadata_parallel=False, onefile_per_flush=False,
                  species={"electrons": None},iteration_min=None,iteration_max=None):
         """
         Initialize diagnostics that retrieve the particles crossing a given
@@ -294,7 +318,8 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
 
-        See the documentation of ParticleDiagnostic for the other parameters
+        See the documentation of ParticleDiagnostic and ParticleAccumulator 
+		for the other parameters
         """
         # Do not leave write_dir as None, as this may conflict with
         # the default directory ('./diags')
@@ -308,6 +333,7 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
             species=species, particle_data=particle_data, select=select,
             write_dir=write_dir, lparallel_output=lparallel_output,
             write_metadata_parallel=write_metadata_parallel, 
+            onefile_per_flush=onefile_per_flush, 
             iteration_min=iteration_min,iteration_max=iteration_max)
 
 
