@@ -76,7 +76,7 @@ class ParticleAccumulator(ParticleDiagnostic):
         self.init_catcher_object()
 
         # Initialize a corresponding empty file
-        if (self.write_metadata_parallel) or (self.rank == 0) and (not self.onefile_per_flush):
+        if (self.write_metadata_parallel or self.rank == 0) and (not self.onefile_per_flush):
         	self.create_file_empty_particles(self.particle_storer.filename, \
         	0, 0, self.top.dt)
 
