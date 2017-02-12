@@ -235,18 +235,10 @@ class ParticleAccumulator(ParticleDiagnostic):
         # Loop over the different quantities that should be written
         for particle_var in self.particle_data:
 
-            if particle_var == "position":
+            if particle_var in  ["position","momentum","E", "B"]:
                 for coord in ["x","y","z"]:
                     quantity= coord
                     path = "%s/%s" %(particle_var, quantity)
-                    data = particle_array[ p2i[ quantity ] ]
-                    self.write_probe_dataset(
-                            species_grp, path, data, quantity, n_locals, nglobal)
-
-            elif particle_var == "momentum":
-                for coord in ["x","y","z"]:
-                    quantity= "u%s" %coord
-                    path = "%s/%s" %(particle_var,coord)
                     data = particle_array[ p2i[ quantity ] ]
                     self.write_probe_dataset(
                             species_grp, path, data, quantity, n_locals, nglobal)
