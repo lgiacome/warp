@@ -28,8 +28,8 @@ class ParticleAccumulator(ParticleDiagnostic):
     """
     def __init__(self,period_flush,period_diag, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting", "t"],
-                 select=None, write_dir=None, lparallel_output=False, 
-                 write_metadata_parallel=False, 
+                 select=None, write_dir=None, lparallel_output=False,
+                 write_metadata_parallel=False,
                  species={"electrons": None},iteration_min=None,iteration_max=None,
                  onefile_per_flush=False):
         """
@@ -45,8 +45,8 @@ class ParticleAccumulator(ParticleDiagnostic):
 	    period_diag: int
 	    period at which the diagnostic looks for new particle to be accumulated in memory.
 
-        onefile_per_flush: boolean 
-		if False (default), produces one file for the entire run. 
+        onefile_per_flush: boolean
+		if False (default), produces one file for the entire run.
 		if True, produces one file per flush (useful for very large dumps -e.g in 3D-,
 	    where resizing large datasets can be really costly)
 
@@ -61,7 +61,7 @@ class ParticleAccumulator(ParticleDiagnostic):
         ParticleDiagnostic.__init__(self, period_flush, top, w3d, comm_world,
             species=species, particle_data=particle_data, select=select,
             write_dir=write_dir, lparallel_output=lparallel_output,
-        	write_metadata_parallel=write_metadata_parallel, 
+        	write_metadata_parallel=write_metadata_parallel,
             iteration_min=iteration_min,iteration_max=iteration_max)
         self.period_diag = period_diag
         self.onefile_per_flush=onefile_per_flush
@@ -80,7 +80,7 @@ class ParticleAccumulator(ParticleDiagnostic):
         	self.create_file_empty_particles(self.particle_storer.filename, \
         	0, 0, self.top.dt)
 
-    def init_catcher_object (self): 
+    def init_catcher_object (self):
         self.particle_catcher = ParticleCatcher( self.top, self.particle_data)
 
 
@@ -130,12 +130,12 @@ class ParticleAccumulator(ParticleDiagnostic):
             particle_array = self.particle_storer.compact_slices(species_name)
 
             if self.comm_world is not None:
-				if (self.lparallel_output): 
+				if (self.lparallel_output):
 					parray_dict[species_name]=particle_array
 					n = np.size(particle_array[0])
 					nlocals_dict[species_name]= mpiallgather( n )
 					nglobal_dict[species_name]=np.sum(nlocals_dict[species_name])
-				else: 
+				else:
 					nlocals_dict[species_name]= None
 					# In MPI mode: gather an array containing the number
 					# of particles on each process
@@ -172,11 +172,11 @@ class ParticleAccumulator(ParticleDiagnostic):
 
 								# Update the index
 								n_ind += nquant*n_rank[i]
-						n = np.size(parray_dict[species_name][0])
-						nglobal_dict[species_name]= n
-					else: 
+					else:
 						parray_dict[species_name] = particle_array
-						nglobal_dict[species_name]= None
+                    # Get global size on all procs
+					n = np.sum(n_rank)
+					nglobal_dict[species_name]= n
 
             else:
                 parray_dict[species_name] = particle_array
@@ -185,25 +185,25 @@ class ParticleAccumulator(ParticleDiagnostic):
                 nglobal_dict[species_name]= n
 
         if self.onefile_per_flush:
-            # Create the file for current flush 
+            # Create the file for current flush
 			iteration = self.top.it
 			file_suffix = "data%08d.h5" %iteration
 			curr_filename = os.path.join( self.write_dir, "hdf5", file_suffix  )
 			self.create_file_empty_particles( curr_filename, iteration, \
                      self.top.time, self.top.dt, nglobal_dict )
-        else: 
+        else:
 			iteration = self.particle_storer.iteration
 			# File already created (same file for all flushes)
 			curr_filename = self.particle_storer.filename
 
         # Open the file with or without parallel I/O depending on self.lparallel_output
         f = self.open_file( curr_filename, parallel_open=self.lparallel_output)
-			
+
         for species_name in self.species_dict:
 			species_path = "/data/%d/particles/%s" %(iteration,species_name)
-			if f is not None: 
+			if f is not None:
 				species_grp = f[species_path]
-			else: 
+			else:
 				species_grp = None
 			# Write this array to disk (if this self.particle_storer has new slices)
 			self.write_slices(species_grp, parray_dict[species_name], \
@@ -212,7 +212,7 @@ class ParticleAccumulator(ParticleDiagnostic):
 			self.particle_storer.buffered_slices[species_name] = []
 
         # Close the file
-        if f is not None: 
+        if f is not None:
         	f.close()
 
     def write_probe_dataset(self, species_grp, path, data, quantity, n_rank, nglobal):
@@ -224,10 +224,10 @@ class ParticleAccumulator(ParticleDiagnostic):
 			dset = species_grp[path]
 			index = dset.shape[0]
             # Resize the h5py dataset if one file for entire run
-			if not self.onefile_per_flush: 
+			if not self.onefile_per_flush:
 				dset.resize(index+nglobal, axis=0)
 
-			# All procs write the data 
+			# All procs write the data
 			if n_rank is not None:
 				iold = index+sum(n_rank[0:self.rank])
 				# Calculate the last index occupied by the current rank
@@ -318,22 +318,22 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
 
-        See the documentation of ParticleDiagnostic and ParticleAccumulator 
+        See the documentation of ParticleDiagnostic and ParticleAccumulator
 		for the other parameters
         """
         # Do not leave write_dir as None, as this may conflict with
         # the default directory ('./diags')
         if write_dir is None:
             write_dir = 'probe_diags'
-        self.plane_position = plane_position 
+        self.plane_position = plane_position
         self.plane_normal_vector = plane_normal_vector
 
         # Initialize Particle Accumulator normal attributes
         ParticleAccumulator.__init__(self, period, 1, top, w3d, comm_world,
             species=species, particle_data=particle_data, select=select,
             write_dir=write_dir, lparallel_output=lparallel_output,
-            write_metadata_parallel=write_metadata_parallel, 
-            onefile_per_flush=onefile_per_flush, 
+            write_metadata_parallel=write_metadata_parallel,
+            onefile_per_flush=onefile_per_flush,
             iteration_min=iteration_min,iteration_max=iteration_max)
 
 
@@ -344,7 +344,7 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
         self.particle_catcher.allocate_previous_instant()
 
 
-    def init_catcher_object (self): 
+    def init_catcher_object (self):
         self.particle_catcher = ParticleProbeCatcher( self.top, self.plane_position, \
                                 self.plane_normal_vector )
 
