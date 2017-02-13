@@ -283,6 +283,12 @@ class ParticleAccumulator(ParticleDiagnostic):
                self.write_probe_dataset(species_grp, path, data, quantity, n_locals, \
                nglobal )
 
+           elif particle_var == "id":
+               quantity= "id"
+               path = "id"
+               data = particle_array[ p2i[ quantity ] ]
+               self.write_probe_dataset(species_grp, path, data, quantity, n_locals, \
+               nglobal )
 
 
 class ProbeParticleDiagnostic(ParticleAccumulator):
