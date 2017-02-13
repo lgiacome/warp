@@ -58,7 +58,8 @@ class ParticleAccumulator(ParticleDiagnostic):
             write_dir = 'probe_diags'
 
         # Initialize Particle diagnostic normal attributes
-        ParticleDiagnostic.__init__(self, period_flush, top, w3d, comm_world,
+        ParticleDiagnostic.__init__(self, period_flush, top, w3d,
+            comm_world=comm_world,
             species=species, particle_data=particle_data, select=select,
             write_dir=write_dir, lparallel_output=lparallel_output,
         	write_metadata_parallel=write_metadata_parallel,
@@ -190,7 +191,7 @@ class ParticleAccumulator(ParticleDiagnostic):
 			file_suffix = "data%08d.h5" %iteration
 			curr_filename = os.path.join( self.write_dir, "hdf5", file_suffix  )
 			self.create_file_empty_particles( curr_filename, iteration, \
-                     self.top.time, self.top.dt, nglobal_dict )
+                     self.top.time, self.top.dt, select_nglobal_dict=nglobal_dict )
         else:
 			iteration = self.particle_storer.iteration
 			# File already created (same file for all flushes)
@@ -220,7 +221,7 @@ class ParticleAccumulator(ParticleDiagnostic):
         Writes each quantity of the buffered dataset to the disk, the
         final step of the writing
         """
-        if species_grp is not None :
+        if (species_grp is not None) and (nglobal>0) :
 			dset = species_grp[path]
 			index = dset.shape[0]
             # Resize the h5py dataset if one file for entire run
