@@ -223,11 +223,12 @@ class ParticleAccumulator(ParticleDiagnostic):
         """
         if (species_grp is not None) and (nglobal>0) :
 			dset = species_grp[path]
-			index = dset.shape[0]
             # Resize the h5py dataset if one file for entire run
 			if not self.onefile_per_flush:
-				dset.resize(index+nglobal, axis=0)
-
+			    index = dset.shape[0]
+			    dset.resize(index+nglobal, axis=0)
+			else:
+			    index=0
 			# All procs write the data
 			if n_rank is not None:
 				iold = index+sum(n_rank[0:self.rank])
@@ -237,8 +238,10 @@ class ParticleAccumulator(ParticleDiagnostic):
 				dset[iold:inew] = data
 			#One proc writes the data (serial and lparallel_output=False)
 			else:
-				 # Write the data to the dataset at correct indices
-				 dset[index:] = data
+			    if (self.rank==0):
+			        print('hello data',data, index )
+			        # Write the data to the dataset at correct indices
+			        dset[index:] = data
 
     def write_slices( self, species_grp, particle_array, p2i, n_locals, nglobal ):
         """
