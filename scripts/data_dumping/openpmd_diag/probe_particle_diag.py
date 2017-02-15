@@ -267,8 +267,8 @@ class ParticleAccumulator(ParticleDiagnostic):
 
             if particle_var in  ["position","momentum","E", "B"]:
                 for coord in ["x","y","z"]:
-                    quantity= coord
-                    path = "%s/%s" %(particle_var, quantity)
+                    quantity= "%s%s" %(particle_quantity_dict[particle_var],coord)
+                    path = "%s/%s" %(particle_var, coord)
                     data = particle_array[ p2i[ quantity ] ]
                     self.write_probe_dataset(
                             species_grp, path, data, quantity, n_locals, nglobal)
