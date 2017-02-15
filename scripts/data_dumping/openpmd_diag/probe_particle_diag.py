@@ -239,7 +239,6 @@ class ParticleAccumulator(ParticleDiagnostic):
 			#One proc writes the data (serial and lparallel_output=False)
 			else:
 			    if (self.rank==0):
-			        print('hello data',data, index )
 			        # Write the data to the dataset at correct indices
 			        dset[index:] = data
 
