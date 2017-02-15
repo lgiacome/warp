@@ -290,7 +290,7 @@ class ParticleAccumulator(ParticleDiagnostic):
             elif particle_var == "id":
                quantity= "id"
                path = "id"
-               data = particle_array[ p2i[ quantity ] ]
+               data = (np.rint(particle_array[ p2i[ quantity ] ])).astype('uint64')
                self.write_probe_dataset(species_grp, path, data, quantity, n_locals, \
                nglobal )
 
