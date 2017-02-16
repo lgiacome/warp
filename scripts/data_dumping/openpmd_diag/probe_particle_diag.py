@@ -644,11 +644,11 @@ class ParticleCatcher:
         elif quantity == "ez":
                 quantity_array = species.getez( gather=False )
         elif quantity == "bx":
-                quantity_array = species.getex( gather=False )
+                quantity_array = species.getbx( gather=False )
         elif quantity == "by":
-                quantity_array = species.getey( gather=False )
+                quantity_array = species.getby( gather=False )
         elif quantity == "bz":
-                quantity_array = species.getez( gather=False )
+                quantity_array = species.getbz( gather=False )
 
         return( quantity_array )
 
