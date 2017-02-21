@@ -97,7 +97,8 @@ class ParticleAccumulator(ParticleDiagnostic):
             if self.top.it % self.period_diag == 0:
                 self.store_new_particles()
             # Every self.period, write the buffered slices to disk
-            if self.top.it % self.period == 0:
+            if (self.top.it % self.period == 0 or \
+                self.top.it==self.iteration_max):
                 self.flush_to_disk()
 
     def store_new_particles( self ):
