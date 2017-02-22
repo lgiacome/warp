@@ -1126,7 +1126,6 @@ def getpid(id=0,iw=0,gather=1,bcast=None,**kw):
     if 'pgroups' in kw:
         return _handlepgroups(getpid, iw, gather, bcast, idpgroups=id, **kw)
     if 'idpgroups' in kw:
-        print("kw print",kw.keys())
         id=kw.pop('idpgroups')
     if bcast is None: bcast = _particlebcastdefault[0]
     suffix,object,pgroup = _getobjectpgroup(kw)
