@@ -25,8 +25,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
                  iteration_min=None, iteration_max=None,
                  particle_data=["position", "momentum", "weighting"],
                  select=None, write_dir=None, lparallel_output=False,
-				 write_metadata_parallel=False,
-                 sub_sample=None) :
+                 write_metadata_parallel=False, sub_sample=None) :
         """
         Initialize the field diagnostics.
 
@@ -79,7 +78,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             If "True" : Parallel output
 
         write_metadata_parallel : boolean
-            If "True" : file metadata are written in parallel 
+            If "True" : file metadata are written in parallel
 
         sub_sample : integer
             If "None" : all particles are dumped
@@ -87,10 +86,9 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
         """
         # General setup
         OpenPMDDiagnostic.__init__(self, period, top, w3d, comm_world,
-                    iteration_min=iteration_min, iteration_max=iteration_max, 
-				    lparallel_output=lparallel_output,
-					write_metadata_parallel=write_metadata_parallel, 
-					write_dir=write_dir)
+                    iteration_min=iteration_min, iteration_max=iteration_max,
+                    lparallel_output=lparallel_output, write_dir=write_dir,
+                    write_metadata_parallel=write_metadata_parallel )
 
         # Register the arguments
         self.particle_data = particle_data
@@ -370,9 +368,9 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             If `select_nglobal_dict` is None, then the datasets are considered
             appendable, instead of having a fixed size.
         """
-        # Create the file (only the first proc creates the file,
-        # since this is only for the purpose of writing the metadata)
-        f = self.open_file( fullpath, parallel_open=self.write_metadata_parallel )
+        # Create the file (can be done by one proc or in parallel)
+        f = self.open_file( fullpath,
+            parallel_open=self.write_metadata_parallel )
 
         # Setup the different layers of the openPMD file
         # (f is None if this processor does not participate is writing data)

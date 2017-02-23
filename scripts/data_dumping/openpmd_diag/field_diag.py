@@ -25,9 +25,8 @@ class FieldDiagnostic(OpenPMDDiagnostic):
     def __init__(self, period, em, top, w3d, comm_world=None,
                  iteration_min=None, iteration_max=None,
                  fieldtypes=["rho", "E", "B", "J"],
-                 sub_sampling=[1,1,1], write_dir=None, 
-				 write_metadata_parallel=False, 
-				 lparallel_output=False):
+                 sub_sampling=[1,1,1], write_dir=None,
+                 lparallel_output=False, write_metadata_parallel=False ):
         """
         Initialize the field diagnostic.
 
@@ -71,19 +70,18 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             to be written. If none is provided, this will be the path
             of the current working directory.
 
-        write_metadata_parallel : boolean
-            If "True" : file metadata are written in parallel 
-
         lparallel_output: boolean, optional
             Switch to set output mode (parallel or gathering)
             If "True": Parallel output
+
+        write_metadata_parallel : boolean
+            If "True" : file metadata are written in parallel
         """
         # General setup
         OpenPMDDiagnostic.__init__(self, period, top, w3d, comm_world,
-                    iteration_min=iteration_min, iteration_max=iteration_max, 
-					lparallel_output=lparallel_output,
-					write_metadata_parallel=write_metadata_parallel,
-				    write_dir=write_dir)
+            iteration_min=iteration_min, iteration_max=iteration_max,
+            lparallel_output=lparallel_output, write_dir=write_dir,
+            write_metadata_parallel=write_metadata_parallel )
 
         # Register the arguments
         self.em = em
@@ -369,7 +367,8 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             data_shape = ( self.nx+1, self.ny+1, Nz+1 )
 
         # Create the file (can be done by one proc or in parallel)
-        f = self.open_file( fullpath, parallel_open = self.write_metadata_parallel)
+        f = self.open_file( fullpath,
+            parallel_open=self.write_metadata_parallel)
 
         # Setup the different layers of the openPMD file
         # (f is None if this processor does not participate is writing data)

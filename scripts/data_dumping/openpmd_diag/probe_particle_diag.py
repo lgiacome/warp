@@ -42,13 +42,14 @@ class ParticleAccumulator(ParticleDiagnostic):
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
 
-	    period_diag: int
-	    period at which the diagnostic looks for new particle to be accumulated in memory.
+        period_diag: int
+            Period at which the diagnostic looks for new particle
+            to be accumulated in memory.
 
         onefile_per_flush: boolean
-		if False (default), produces one file for the entire run.
-		if True, produces one file per flush (useful for very large dumps -e.g in 3D-,
-	    where resizing large datasets can be really costly)
+            if False (default), produces one file for the entire run.
+            if True, produces one file per flush (useful for very large dumps
+            -e.g in 3D-, where resizing large datasets can be really costly)
 
         See the documentation of ParticleDiagnostic for the other parameters
         """
@@ -77,9 +78,10 @@ class ParticleAccumulator(ParticleDiagnostic):
         self.init_catcher_object()
 
         # Initialize a corresponding empty file
-        if (self.write_metadata_parallel or self.rank == 0) and (not self.onefile_per_flush):
-        	self.create_file_empty_particles(self.particle_storer.filename, \
-        	0, 0, self.top.dt)
+        if (not self.onefile_per_flush) and \
+            (self.write_metadata_parallel or self.rank == 0):
+            self.create_file_empty_particles(
+                self.particle_storer.filename, 0, 0, self.top.dt )
 
     def init_catcher_object (self):
         self.particle_catcher = ParticleCatcher( self.top, self.particle_data)
@@ -92,7 +94,7 @@ class ParticleAccumulator(ParticleDiagnostic):
         Should be registered with installafterstep in Warp
         """
         if ((self.top.it>=self.iteration_min) and \
-        (self.top.it<=self.iteration_max)):
+            (self.top.it<=self.iteration_max)):
             # At each period_diag, store new particles in memory buffers
             if self.top.it % self.period_diag == 0:
                 self.store_new_particles()
@@ -123,62 +125,66 @@ class ParticleAccumulator(ParticleDiagnostic):
         buffered slices of the ParticleStorer object
 
         """
-        # Compact the successive slices that have been buffered
-        # over time into a single array
+        # Prepare dictionary that contain, for each species, the local number
+        # of macroparticles to be dumped, to global number of particles to
+        # be dumped, and ... TODO
         nlocals_dict = dict()
         nglobal_dict = dict()
         parray_dict  = dict()
+
+        # Compact the successive slices that have been buffered
+        # over time into a single array
         for species_name in self.species_dict:
             particle_array = self.particle_storer.compact_slices(species_name)
 
             if self.comm_world is not None:
-				if (self.lparallel_output):
-					parray_dict[species_name]=particle_array
-					n = np.size(particle_array[0])
-					nlocals_dict[species_name]= mpiallgather( n )
-					nglobal_dict[species_name]=np.sum(nlocals_dict[species_name])
-				else:
-					nlocals_dict[species_name]= None
-					# In MPI mode: gather an array containing the number
-					# of particles on each process
-					n_rank = self.comm_world.allgather(np.shape(particle_array)[1])
+                if (self.lparallel_output):
+                parray_dict[species_name]=particle_array
+                n = np.size(particle_array[0])
+                nlocals_dict[species_name]= mpiallgather( n )
+                nglobal_dict[species_name]=np.sum(nlocals_dict[species_name])
+                else:
+                nlocals_dict[species_name]= None
+                # In MPI mode: gather an array containing the number
+                # of particles on each process
+                n_rank = self.comm_world.allgather(np.shape(particle_array)[1])
 
-					# Note that gatherarray routine in parallel.py only works
-					# with 1D array. Here we flatten the 2D particle arrays
-					# before gathering.
-					g_curr = gatherarray(particle_array.flatten(), root=0, \
-						comm=self.comm_world)
+                # Note that gatherarray routine in parallel.py only works
+                # with 1D array. Here we flatten the 2D particle arrays
+                # before gathering.
+                g_curr = gatherarray(particle_array.flatten(),
+                    root=0, comm=self.comm_world )
 
-					if self.rank == 0:
-						# Get the number of quantities
-						nquant = np.shape(
-							self.particle_catcher.particle_to_index.keys())[0]
+                if self.rank == 0:
+                    # Get the number of quantities
+                    nquant = np.shape(
+                        self.particle_catcher.particle_to_index.keys())[0]
 
-						# Prepare an empty array for reshaping purposes. The
-						# final shape of the array is (8, total_num_particles)
-						parray_dict[species_name]= np.empty((nquant, 0))
+                	# Prepare an empty array for reshaping purposes. The
+                	# final shape of the array is (8, total_num_particles)
+                	parray_dict[species_name]= np.empty((nquant, 0))
 
-						# Index needed in reshaping process
-						n_ind = 0
+                	# Index needed in reshaping process
+                	n_ind = 0
 
-						# Loop over all the processors, if the processor
-						# contains particles, we reshape the gathered_array
-						# and reconstruct by concatenation
-						for i in xrange(self.top.nprocs):
+                	# Loop over all the processors, if the processor
+                	# contains particles, we reshape the gathered_array
+                	# and reconstruct by concatenation
+                	for i in xrange(self.top.nprocs):
 
-							if n_rank[i] != 0:
-								parray_dict[species_name] = \
-								np.concatenate((parray_dict[species_name], np.reshape( \
-									g_curr[n_ind:n_ind+nquant*n_rank[i]], \
-									(nquant,n_rank[i]))),axis=1)
+                		if n_rank[i] != 0:
+                			parray_dict[species_name] = \
+                			np.concatenate((parray_dict[species_name], np.reshape( \
+                				g_curr[n_ind:n_ind+nquant*n_rank[i]], \
+                				(nquant,n_rank[i]))),axis=1)
 
-								# Update the index
-								n_ind += nquant*n_rank[i]
-					else:
-						parray_dict[species_name] = particle_array
-                    # Get global size on all procs
-					n = np.sum(n_rank)
-					nglobal_dict[species_name]= n
+                			# Update the index
+                			n_ind += nquant*n_rank[i]
+                else:
+                	parray_dict[species_name] = particle_array
+                # Get global size on all procs
+                n = np.sum(n_rank)
+                nglobal_dict[species_name]= n
 
             else:
                 parray_dict[species_name] = particle_array
