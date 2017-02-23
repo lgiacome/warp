@@ -63,7 +63,7 @@ class ParticleAccumulator(ParticleDiagnostic):
             comm_world=comm_world,
             species=species, particle_data=particle_data, select=select,
             write_dir=write_dir, lparallel_output=lparallel_output,
-        	write_metadata_parallel=write_metadata_parallel,
+            write_metadata_parallel=write_metadata_parallel,
             iteration_min=iteration_min,iteration_max=iteration_max)
         self.period_diag = period_diag
         self.onefile_per_flush=onefile_per_flush
@@ -139,51 +139,51 @@ class ParticleAccumulator(ParticleDiagnostic):
 
             if self.comm_world is not None:
                 if (self.lparallel_output):
-					parray_dict[species_name]=particle_array
-					n = np.size(particle_array[0])
-					nlocals_dict[species_name]= mpiallgather( n )
-					nglobal_dict[species_name]=np.sum(nlocals_dict[species_name])
+                    parray_dict[species_name]=particle_array
+                    n = np.size(particle_array[0])
+                    nlocals_dict[species_name]= mpiallgather( n )
+                    nglobal_dict[species_name]=np.sum(nlocals_dict[species_name])
                 else:
-					nlocals_dict[species_name]= None
-					# In MPI mode: gather an array containing the number
-					# of particles on each process
-					n_rank = self.comm_world.allgather(np.shape(particle_array)[1])
+                    nlocals_dict[species_name]= None
+                    # In MPI mode: gather an array containing the number
+                    # of particles on each process
+                    n_rank = self.comm_world.allgather(np.shape(particle_array)[1])
 
-					# Note that gatherarray routine in parallel.py only works
-					# with 1D array. Here we flatten the 2D particle arrays
-					# before gathering.
-					g_curr = gatherarray(particle_array.flatten(),
-						root=0, comm=self.comm_world )
+                    # Note that gatherarray routine in parallel.py only works
+                    # with 1D array. Here we flatten the 2D particle arrays
+                    # before gathering.
+                    g_curr = gatherarray(particle_array.flatten(),
+                        root=0, comm=self.comm_world )
 
-					if self.rank == 0:
-						# Get the number of quantities
-						nquant = np.shape(self.particle_catcher.particle_to_index.keys())[0]
+                    if self.rank == 0:
+                        # Get the number of quantities
+                        nquant = np.shape(self.particle_catcher.particle_to_index.keys())[0]
 
-						# Prepare an empty array for reshaping purposes. The
-						# final shape of the array is (8, total_num_particles)
-						parray_dict[species_name]= np.empty((nquant, 0))
+                        # Prepare an empty array for reshaping purposes. The
+                        # final shape of the array is (8, total_num_particles)
+                        parray_dict[species_name]= np.empty((nquant, 0))
 
-						# Index needed in reshaping process
-						n_ind = 0
+                        # Index needed in reshaping process
+                        n_ind = 0
 
-						# Loop over all the processors, if the processor
-						# contains particles, we reshape the gathered_array
-						# and reconstruct by concatenation
-						for i in xrange(self.top.nprocs):
+                        # Loop over all the processors, if the processor
+                        # contains particles, we reshape the gathered_array
+                        # and reconstruct by concatenation
+                        for i in xrange(self.top.nprocs):
 
-							if n_rank[i] != 0:
-								parray_dict[species_name] = \
-								np.concatenate((parray_dict[species_name], np.reshape( \
-									g_curr[n_ind:n_ind+nquant*n_rank[i]], \
-									(nquant,n_rank[i]))),axis=1)
+                            if n_rank[i] != 0:
+                                parray_dict[species_name] = \
+                                np.concatenate((parray_dict[species_name], np.reshape( \
+                                    g_curr[n_ind:n_ind+nquant*n_rank[i]], \
+                                    (nquant,n_rank[i]))),axis=1)
 
-								# Update the index
-								n_ind += nquant*n_rank[i]
-					else:
-						parray_dict[species_name] = particle_array
-					# Get global size on all procs
-					n = np.sum(n_rank)
-					nglobal_dict[species_name]= n
+                                # Update the index
+                                n_ind += nquant*n_rank[i]
+                    else:
+                        parray_dict[species_name] = particle_array
+                    # Get global size on all procs
+                    n = np.sum(n_rank)
+                    nglobal_dict[species_name]= n
 
             else:
                 parray_dict[species_name] = particle_array
@@ -193,34 +193,34 @@ class ParticleAccumulator(ParticleDiagnostic):
 
         if self.onefile_per_flush:
             # Create the file for current flush
-			iteration = self.top.it
-			file_suffix = "data%08d.h5" %iteration
-			curr_filename = os.path.join( self.write_dir, "hdf5", file_suffix  )
-			self.create_file_empty_particles( curr_filename, iteration, \
+            iteration = self.top.it
+            file_suffix = "data%08d.h5" %iteration
+            curr_filename = os.path.join( self.write_dir, "hdf5", file_suffix  )
+            self.create_file_empty_particles( curr_filename, iteration, \
                      self.top.time, self.top.dt, select_nglobal_dict=nglobal_dict )
         else:
-			iteration = self.particle_storer.iteration
-			# File already created (same file for all flushes)
-			curr_filename = self.particle_storer.filename
+            iteration = self.particle_storer.iteration
+            # File already created (same file for all flushes)
+            curr_filename = self.particle_storer.filename
 
         # Open the file with or without parallel I/O depending on self.lparallel_output
         f = self.open_file( curr_filename, parallel_open=self.lparallel_output)
 
         for species_name in self.species_dict:
-			species_path = "/data/%d/particles/%s" %(iteration,species_name)
-			if f is not None:
-				species_grp = f[species_path]
-			else:
-				species_grp = None
-			# Write this array to disk (if this self.particle_storer has new slices)
-			self.write_slices(species_grp, parray_dict[species_name], \
-			self.particle_catcher.particle_to_index, nlocals_dict[species_name],nglobal_dict[species_name])
-			# Erase the buffers
-			self.particle_storer.buffered_slices[species_name] = []
+            species_path = "/data/%d/particles/%s" %(iteration,species_name)
+            if f is not None:
+                species_grp = f[species_path]
+            else:
+                species_grp = None
+            # Write this array to disk (if this self.particle_storer has new slices)
+            self.write_slices(species_grp, parray_dict[species_name], \
+            self.particle_catcher.particle_to_index, nlocals_dict[species_name],nglobal_dict[species_name])
+            # Erase the buffers
+            self.particle_storer.buffered_slices[species_name] = []
 
         # Close the file
         if f is not None:
-        	f.close()
+            f.close()
 
     def write_probe_dataset(self, species_grp, path, data, quantity, n_rank, nglobal):
         """
@@ -228,25 +228,25 @@ class ParticleAccumulator(ParticleDiagnostic):
         final step of the writing
         """
         if (species_grp is not None) and (nglobal>0) :
-			dset = species_grp[path]
+            dset = species_grp[path]
             # Resize the h5py dataset if one file for entire run
-			if not self.onefile_per_flush:
-			    index = dset.shape[0]
-			    dset.resize(index+nglobal, axis=0)
-			else:
-			    index=0
-			# All procs write the data
-			if n_rank is not None:
-				iold = index+sum(n_rank[0:self.rank])
-				# Calculate the last index occupied by the current rank
-				inew = iold+n_rank[self.rank]
-				# Write the local data to the global array
-				dset[iold:inew] = data
-			#One proc writes the data (serial and lparallel_output=False)
-			else:
-			    if (self.rank==0):
-			        # Write the data to the dataset at correct indices
-			        dset[index:] = data
+            if not self.onefile_per_flush:
+                index = dset.shape[0]
+                dset.resize(index+nglobal, axis=0)
+            else:
+                index=0
+            # All procs write the data
+            if n_rank is not None:
+                iold = index+sum(n_rank[0:self.rank])
+                # Calculate the last index occupied by the current rank
+                inew = iold+n_rank[self.rank]
+                # Write the local data to the global array
+                dset[iold:inew] = data
+            #One proc writes the data (serial and lparallel_output=False)
+            else:
+                if (self.rank==0):
+                    # Write the data to the dataset at correct indices
+                    dset[index:] = data
 
     def write_slices( self, species_grp, particle_array, p2i, n_locals, nglobal ):
         """
@@ -334,7 +334,7 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
             before finally writing it to the disk.
 
         See the documentation of ParticleDiagnostic and ParticleAccumulator
-		for the other parameters
+        for the other parameters
         """
         # Do not leave write_dir as None, as this may conflict with
         # the default directory ('./diags')
@@ -580,7 +580,7 @@ class ParticleCatcher:
         # Multiplying momenta by the species mass to make them unitless
         for quantity in self.particle_to_index.keys():
              if quantity in ["ux", "uy", "uz"]:
-            	slice_array[p2i[quantity]] *= species.mass
+                slice_array[p2i[quantity]] *= species.mass
 
         return slice_array
 
