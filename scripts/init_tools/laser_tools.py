@@ -88,11 +88,13 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
     """
     # Wavevector and speed of the antenna
     k0 = 2*np.pi/lambda0
-    source_v = 0.
     inv_c = 1./c
     tau = ctau * inv_c
     t_peak = - z0 * inv_c
-    focal_length = source_z - zf
+    if zf is None:
+        focal_length = source_z - z0
+    else:
+        focal_length = source_z - zf
 
     # Create a laser_profile object
     # Note that the laser_profile needs to be a callable instance of a class,
@@ -114,8 +116,8 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
         # Create a laser profile object to store these parameters
         if (beta == 0) and (zeta == 0) and (phi2 == 0):
             # Without spatio-temporal correlations
-            laser_profile = GaussianProfile( k0, w0, tau, t_peak, focal_length,
-                                source_v, a0, dim, boost )
+            laser_profile = GaussianProfile( k0, waist, tau, t_peak, a0, dim,
+                focal_length=focal_length, boost=boost, source_v=source_v )
         else:
             # With spatio-temporal correlations
             laser_profile = GaussianSTCProfile( k0, w0, ctau, z0, zf,

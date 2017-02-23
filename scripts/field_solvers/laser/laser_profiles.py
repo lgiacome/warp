@@ -2,7 +2,6 @@
 This file defines a set of standard laser profiles, that can be passed
 as `laser_func` to the EM3D class or to the `LaserAntenna` class
 """
-
 import numpy as np
 from scipy.constants import c, m_e, e
 from scipy.interpolate import RegularGridInterpolator
@@ -89,14 +88,57 @@ class ExperimentalProfile( object ):
 class GaussianProfile( object ):
     """Class that calculates a Gaussian laser pulse."""
 
-    def __init__( self, k0, waist, tau, t_peak, focal_length, source_v, a0,
-                  dim, boost, temporal_order = 2 ):
+    def __init__( self, k0, waist, tau, t_peak, a0, dim,
+        focal_length=0, temporal_order=2, boost=None, source_v=0 ):
+        """
+        Define a Gaussian laser profile.
+        (Gaussian transversally, hypergaussian longitudinally)
 
+        This object can then be passed to the `EM3D` class, as the argument
+        `laser_func`, in order to have a Gaussian laser emitted by the antenna.
+
+        Parameters:
+        -----------
+        k0: float (in meters^-1)
+            Laser wavevector (in the lab frame)
+
+        waist: float (in meters)
+            Laser waist in the focal plane (in the lab frame)
+
+        tau: float (in seconds)
+            Laser temporal waist (in the lab frame)
+
+        t_peak: float (in seconds)
+            The time at which the peak of the laser pulse is emitted
+            by the antenna (in the lab frame)
+
+        a0: float (dimensionless)
+            The peak normalized vector potential, in the focal plane
+
+        dim: string
+            The dimension of the simulation. Either "1d", "2d", "circ", or "3d"
+
+        focal_length: float (in meters)
+            Distance from the laser antenna to the focal plane
+            (along the direction normal to the plane of the antenna)
+            This distance is algebric: use a positive number for a laser that
+            is focusing as it is being emitted by the antenna ; use a negative
+            number for a laser that is defocusing as it is being emitted.
+
+        temporal order: int
+            The order of the hypergaussian temporal profile
+            (Use 2 for a Gaussian temporal profile)
+
+        boost: a BoostConverter object
+            If not None, the laser is emitted in the corresponding boosted-frame
+            (even though all parameters are passed in the lab frame)
+
+        source_v: float (meters/second)
+            The speed of the antenna in the direction normal to its plane
+        """
         # Set a number of parameters for the laser
         E0 = a0*m_e*c**2*k0/e
         zr = 0.5*k0*waist**2
-        # Set default focusing position
-        if focal_length is None : focal_length = - c * t_peak
 
         # Store the parameters
         self.k0 = k0
@@ -111,96 +153,7 @@ class GaussianProfile( object ):
         self.temporal_order = temporal_order
 
         # Geometric coefficient (for the evolution of the amplitude)
-        # In 1D, there is no transverse components, therefore the geomtric
-        # coefficient shouldn't be included.
-        if  dim=="1d":
-            self.geom_coeff = 0.
-        elif dim=="2d":
-            self.geom_coeff = 0.5
-        elif dim in ["circ", "3d"]:
-            self.geom_coeff = 1.
-
-    def __call__( self, x, y, t_modified ):
-        """
-        Return the transverse profile of the laser at the position
-        of the antenna
-
-        Parameters:
-        -----------
-        x: float or ndarray
-            First transverse direction in meters
-
-        y: float or ndarray
-            Second transverse direction in meters
-
-        t_modified: float
-            Time in seconds, multiplied by (1-v_antenna/c)
-            This multiplication is done in em3dsolver.py, when
-            calling the present function.
-        """
-        # Calculate the array of radius
-        r2 = x**2 + y**2
-
-        # Get the true time
-        # (The top.time has been multiplied by (1-v_antenna/c)
-        # in em3dsolver.py, before calling the present function)
-        t = t_modified/(1.-self.v_antenna/c)
-
-        # Lab-frame formula for the laser:
-        # - Waist and curvature and the position of the source
-        z =  self.focal_length
-        diffract_factor = 1 - 1j*z*self.inv_zr
-
-        # Calculate the argument of the complex exponential
-        exp_argument = 1j * self.k0*c*( t - self.t_peak ) \
-          - (y**2 + x**2) * self.inv_waist2 / diffract_factor \
-          - ( (t - self.t_peak ) * self.inv_tau )**self.temporal_order
-
-        # - Combine profiles
-        profile =  np.exp(exp_argument) / ( diffract_factor**self.geom_coeff )
-
-        # Return the combination of profile and field amplitude
-        return( self.E0 * profile.real )
-
-
-class GaussianSTCProfile( object ):
-    """Class that calculates a Gaussian laser pulse
-    with spatio-temporal correlations (STC)"""
-
-    def __init__( self, k0, waist, ctau, z0, zf, source_z, source_v,
-                  a0, zeta, beta, phi2, dim, boost ):
-
-        # Set a number of parameters for the laser
-        E0 = a0*m_e*c**2*k0/e
-        zr = 0.5*k0*waist**2
-        # Set default focusing position
-        if zf is None: zf = z0
-
-        # Store the parameters
-        self.k0 = k0
-        self.inv_zr = 1./zr
-        self.inv_waist2 = 1./waist**2
-        self.inv_tau2 = c**2/ctau**2
-        self.zf = zf
-        self.z0 = z0
-        self.v_antenna = source_v
-        self.source_z = source_z
-        self.E0 = E0
-        self.beta = beta
-        self.zeta = zeta
-        self.phi2 = phi2
-        self.boost = boost
-
-        # Geometric coefficient (for the evolution of the amplitude)
-        # In 1D, there is no transverse components, therefore the geomtric
-        # coefficient shouldn't be included.
-        if  dim=="1d":
-            self.geom_coeff = 0.
-        elif dim=="2d":
-            self.geom_coeff = 0.5
-        elif dim in ["circ", "3d"]:
-            self.geom_coeff = 1.
-
+        self.geom_coeff = get_geometric_coeff( dim )
 
     def __call__( self, x, y, t_modified ):
         """
@@ -225,7 +178,103 @@ class GaussianSTCProfile( object ):
         # in em3dsolver.py, before calling the present function)
         t = t_modified/(1.-self.v_antenna/c)
         # Get the position of the antenna at this time
-        z_source = self.source_z + self.v_antenna * t
+        z_source = self.v_antenna * t
+        # Change focal length in time, when using a moving antenna
+        if boost is not None:
+            focal_length = self.focal_length - self.v_antenna * t
+
+        # When running in the boosted frame, convert these position to
+        # the lab frame, so as to use the lab-frame formula of the laser
+        if self.boost is not None:
+            zlab_source = self.boost.gamma0*( z_source + self.boost.beta0*c*t )
+            tlab_source = self.boost.gamma0*( t + self.boost.beta0*z_source/c )
+            # Overwrite boosted frame values, within the scope of this function
+            z_source = zlab_source
+            t = tlab_source
+
+        # Lab-frame formula for the laser:
+        # - Waist and curvature and the position of the source
+        diffract_factor = 1 - 1j*focal_length*self.inv_zr
+
+        # Calculate the argument of the complex exponential
+        exp_argument = 1j * self.k0*c*( t - self.t_peak ) \
+          - (x**2 + y**2) * self.inv_waist2 / diffract_factor \
+          - ((t - self.t_peak - source_z/c ) * self.inv_tau)**self.temporal_order
+
+        # - Combine profiles
+        profile =  np.exp(exp_argument) / ( diffract_factor**self.geom_coeff )
+
+        # Boosted-frame: convert the laser amplitude
+        # These formula assume that the antenna is motionless in the lab frame
+        if self.boost is not None:
+            conversion_factor = 1./self.boost.gamma0
+            # The line below is to compensate the fact that the laser
+            # amplitude is multiplied by (1-v_antenna/c) in em3dsolver.py
+            conversion_factor *= 1./(1. - self.v_antenna/c)
+            E0 = conversion_factor * self.E0
+        else:
+            E0 = self.E0
+
+        # Return the combination of profile and field amplitude
+        return( E0 * profile.real )
+
+
+class GaussianSTCProfile( object ):
+    """Class that calculates a Gaussian laser pulse
+    with spatio-temporal correlations (STC)"""
+
+    def __init__( self, k0, waist, ctau, z0, zf, source_z, source_v,
+                  a0, zeta, beta, phi2, dim, boost=None ):
+
+
+        # Set a number of parameters for the laser
+        E0 = a0*m_e*c**2*k0/e
+        zr = 0.5*k0*waist**2
+        # Set default focusing position
+        if zf is None: zf = z0
+
+        # Store the parameters
+        self.k0 = k0
+        self.inv_zr = 1./zr
+        self.inv_waist2 = 1./waist**2
+        self.inv_tau2 = c**2/ctau**2
+        self.zf = zf
+        self.z0 = z0
+        self.v_antenna = source_v
+        self.source_z = source_z
+        self.E0 = E0
+        self.beta = beta
+        self.zeta = zeta
+        self.phi2 = phi2
+        self.boost = boost
+
+        # Geometric coefficient (for the evolution of the amplitude)
+        self.geom_coeff = get_geometric_coeff( dim )
+
+    def __call__( self, x, y, t_modified ):
+        """
+        Return the transverse profile of the laser at the position
+        of the antenna
+
+        Parameters:
+        -----------
+        x: float or ndarray
+            First transverse direction in meters
+
+        y: float or ndarray
+            Second transverse direction in meters
+
+        t_modified: float
+            Time in seconds, multiplied by (1-v_antenna/c)
+            This multiplication is done in em3dsolver.py, when
+            calling the present function.
+        """
+        # Get the true time
+        # (The top.time has been multiplied by (1-v_antenna/c)
+        # in em3dsolver.py, before calling the present function)
+        t = t_modified/(1.-self.v_antenna/c)
+        # Get the position of the antenna at this time
+        z_source = self.v_antenna * t
 
         # When running in the boosted frame, convert these position to
         # the lab frame, so as to use the lab-frame formula of the laser
@@ -315,14 +364,7 @@ class LaguerreGaussianProfile(object):
         self.temporal_order = temporal_order
 
         # Geometric coefficient (for the evolution of the amplitude)
-        # In 1D, there is no transverse components, therefore the geomtric
-        # coefficient shouldn't be included.
-        if  dim=="1d":
-            self.geom_coeff = 0.
-        elif dim=="2d":
-            self.geom_coeff = 0.5
-        elif dim in ["circ", "3d"]:
-            self.geom_coeff = 1.
+        self.geom_coeff = get_geometric_coeff( dim )
 
     def __call__( self, x, y, t_modified ):
         """
@@ -407,3 +449,25 @@ class LaguerreGaussianProfile(object):
             E0 = self.E0
 
         return( E0*profile )
+
+
+def get_geometric_coeff( dim ):
+    """
+    Calculate geometric coefficient for the Gouy phase and the evolution
+    of the amplitude.
+
+    Parameters:
+    -----------
+    dim: string
+        Either "1d", "2d", "circ" or "3d"
+    """
+    if  dim=="1d":
+        geom_coeff = 0.
+    elif dim=="2d":
+        geom_coeff = 0.5
+    elif dim in ["circ", "3d"]:
+        geom_coeff = 1.
+    else:
+        raise ValueError(
+            "`dim` is not recognized: use '1d', '2d', 'circ' or '3d'")
+    return( geom_coeff )
