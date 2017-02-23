@@ -139,52 +139,51 @@ class ParticleAccumulator(ParticleDiagnostic):
 
             if self.comm_world is not None:
                 if (self.lparallel_output):
-                parray_dict[species_name]=particle_array
-                n = np.size(particle_array[0])
-                nlocals_dict[species_name]= mpiallgather( n )
-                nglobal_dict[species_name]=np.sum(nlocals_dict[species_name])
+					parray_dict[species_name]=particle_array
+					n = np.size(particle_array[0])
+					nlocals_dict[species_name]= mpiallgather( n )
+					nglobal_dict[species_name]=np.sum(nlocals_dict[species_name])
                 else:
-                nlocals_dict[species_name]= None
-                # In MPI mode: gather an array containing the number
-                # of particles on each process
-                n_rank = self.comm_world.allgather(np.shape(particle_array)[1])
+					nlocals_dict[species_name]= None
+					# In MPI mode: gather an array containing the number
+					# of particles on each process
+					n_rank = self.comm_world.allgather(np.shape(particle_array)[1])
 
-                # Note that gatherarray routine in parallel.py only works
-                # with 1D array. Here we flatten the 2D particle arrays
-                # before gathering.
-                g_curr = gatherarray(particle_array.flatten(),
-                    root=0, comm=self.comm_world )
+					# Note that gatherarray routine in parallel.py only works
+					# with 1D array. Here we flatten the 2D particle arrays
+					# before gathering.
+					g_curr = gatherarray(particle_array.flatten(),
+						root=0, comm=self.comm_world )
 
-                if self.rank == 0:
-                    # Get the number of quantities
-                    nquant = np.shape(
-                        self.particle_catcher.particle_to_index.keys())[0]
+					if self.rank == 0:
+						# Get the number of quantities
+						nquant = np.shape(self.particle_catcher.particle_to_index.keys())[0]
 
-                	# Prepare an empty array for reshaping purposes. The
-                	# final shape of the array is (8, total_num_particles)
-                	parray_dict[species_name]= np.empty((nquant, 0))
+						# Prepare an empty array for reshaping purposes. The
+						# final shape of the array is (8, total_num_particles)
+						parray_dict[species_name]= np.empty((nquant, 0))
 
-                	# Index needed in reshaping process
-                	n_ind = 0
+						# Index needed in reshaping process
+						n_ind = 0
 
-                	# Loop over all the processors, if the processor
-                	# contains particles, we reshape the gathered_array
-                	# and reconstruct by concatenation
-                	for i in xrange(self.top.nprocs):
+						# Loop over all the processors, if the processor
+						# contains particles, we reshape the gathered_array
+						# and reconstruct by concatenation
+						for i in xrange(self.top.nprocs):
 
-                		if n_rank[i] != 0:
-                			parray_dict[species_name] = \
-                			np.concatenate((parray_dict[species_name], np.reshape( \
-                				g_curr[n_ind:n_ind+nquant*n_rank[i]], \
-                				(nquant,n_rank[i]))),axis=1)
+							if n_rank[i] != 0:
+								parray_dict[species_name] = \
+								np.concatenate((parray_dict[species_name], np.reshape( \
+									g_curr[n_ind:n_ind+nquant*n_rank[i]], \
+									(nquant,n_rank[i]))),axis=1)
 
-                			# Update the index
-                			n_ind += nquant*n_rank[i]
-                else:
-                	parray_dict[species_name] = particle_array
-                # Get global size on all procs
-                n = np.sum(n_rank)
-                nglobal_dict[species_name]= n
+								# Update the index
+								n_ind += nquant*n_rank[i]
+					else:
+						parray_dict[species_name] = particle_array
+					# Get global size on all procs
+					n = np.sum(n_rank)
+					nglobal_dict[species_name]= n
 
             else:
                 parray_dict[species_name] = particle_array
