@@ -280,11 +280,10 @@ class GaussianSTCProfile( object ):
         self.k0 = k0
         self.inv_zr = 1./zr
         self.inv_waist2 = 1./waist**2
-        self.inv_tau2 = c**2/ctau**2
+        self.inv_tau2 = 1/tau**2
         self.focal_length = focal_length
         self.t_peak = t_peak
         self.v_antenna = source_v
-        self.source_z = source_z
         self.E0 = E0
         self.beta = beta
         self.zeta = zeta
@@ -335,16 +334,17 @@ class GaussianSTCProfile( object ):
         # Diffraction and stretching factor
         diffract_factor = 1 - 1j*focal_length*self.inv_zr
         stretch_factor = 1 + \
-          4*(self.zeta + self.beta*z)**2 * \
+          4*(self.zeta + self.beta*focal_length)**2 * \
             (self.inv_tau2*self.inv_waist2) / diffract_factor \
-        + 2j*(self.phi2 - self.beta**2*self.k0*z) * self.inv_tau2
+        + 2j*(self.phi2 - self.beta**2*self.k0*focal_length) * self.inv_tau2
 
         # Calculate the argument of the complex exponential
         exp_argument = 1j * self.k0*c*( t - self.t_peak ) \
           - (x**2 + y**2) * self.inv_waist2 / diffract_factor \
           - 1./stretch_factor * self.inv_tau2 * \
             ( t  - self.t_peak - z_source/c - self.beta*self.k0*x \
-            - 2j*x*(self.zeta + self.beta*z)*self.inv_waist2/diffract_factor )**2
+            - 2j*x*(self.zeta + self.beta*focal_length) \
+                *self.inv_waist2/diffract_factor )**2
 
         # Get the profile
         profile = np.exp(exp_argument) / \
