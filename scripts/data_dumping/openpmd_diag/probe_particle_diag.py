@@ -125,9 +125,11 @@ class ParticleAccumulator(ParticleDiagnostic):
         buffered slices of the ParticleStorer object
 
         """
-        # Prepare dictionary that contain, for each species, the local number
-        # of macroparticles to be dumped, to global number of particles to
-        # be dumped, and ... TODO
+        # Prepare dictionary that contain, for each species, the list of the
+        # local number of macroparticles to be dumped on each proc,
+        # the total number of particles to be dumped across all procs,
+        # and the compact 2d arrays of particle quantities (with shape
+        # (n_quantity, n_particle))
         nlocals_dict = dict()
         nglobal_dict = dict()
         parray_dict  = dict()
@@ -139,14 +141,15 @@ class ParticleAccumulator(ParticleDiagnostic):
 
             if self.comm_world is not None:
                 if (self.lparallel_output):
+                    # Prepare parallel HDF5 output
                     parray_dict[species_name]=particle_array
                     n = np.size(particle_array[0])
                     nlocals_dict[species_name]= mpiallgather( n )
                     nglobal_dict[species_name]=np.sum(nlocals_dict[species_name])
+
                 else:
+                    # Prepare HDF5 output by the first proc, using MPI gathering
                     nlocals_dict[species_name]= None
-                    # In MPI mode: gather an array containing the number
-                    # of particles on each process
                     n_rank = self.comm_world.allgather(np.shape(particle_array)[1])
 
                     # Note that gatherarray routine in parallel.py only works
@@ -186,6 +189,7 @@ class ParticleAccumulator(ParticleDiagnostic):
                     nglobal_dict[species_name]= n
 
             else:
+                # Prepare single-proc output (for single-proc simulation)
                 parray_dict[species_name] = particle_array
                 n = np.size(parray_dict[species_name][0])
                 nlocals_dict[species_name]= None
