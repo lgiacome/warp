@@ -258,17 +258,25 @@ class ParticleAccumulator(ParticleDiagnostic):
 
         Parameters
         ----------
+        species_grp: an h5py.Group
+            Represent the group in which to write the current species
+
         particle_array: array of reals
             Array of shape (8, num_part)
-
-        species_name: String
-            A String that acts as the key for the buffered_slices dictionary
-
-        particle_storer: a ParticleStorer object
 
         p2i: dict
             Dictionary of correspondance between the particle quantities
             and the integer index in the particle_array
+
+        n_locals: list or None:
+            A list with one element per MPI rank, containing the number of
+            particles to be dumped from each rank.
+            Necessary for parallel HDF5 output.
+            If None: indicates that the output is serial (either single-proc
+            simulation, or output by first proc using MPI gather)
+
+        nglobal: int
+            The total number of particles to be dumped, across all procs.
         """
 
         # Loop over the different quantities that should be written
