@@ -47,7 +47,7 @@ As explained on the Warp website, in order to install Forthon :
 
 - Go to the `warp/pywarp90` directory and create a file called `Makefile.local.pympi`. Enter the following lines in this file :
 ```
-FCOMP = -F gfortran --fcompexec ftn --fargs "-fPIC -O3" --cargs "-fPIC -O3"
+FCOMP = -F gfortran --fcompexec ftn --fargs "-fPIC" --cargs "-fPIC"
 INSTALLOPTIONS = --home=$(SCRATCH)/warp_install/
 ```
   
@@ -79,6 +79,41 @@ INSTALLOPTIONS = --home=$(SCRATCH)/warp_install/
   
 - Then, in the directory `warp/pywarp90`, enter `make -f Makefile.Forthon.pympi install`. 
 The compilation then lasts for a few minutes.
+
+### Running simulations
+
+In order to run a simulation, create a new directory,
+copy your Warp input script to this directory, and rename this script
+to `warp_script.py`. (The folder `scripts/examples/` of the
+[Warp repository](https://bitbucket.org/berkeleylab/warp/src) contains
+several examples of input scripts.)
+
+Then create a submission script named `submission_script`. Here is an
+example of a typical submission script.
+```
+#!/bin/bash
+#SBATCH --job-name=test_simulation
+#SBATCH --time=00:30:00
+#SBATCH -n 32
+#SBATCH --partition=debug
+#SBATCH -C haswell
+#SBATCH -e test_simulation.err
+#SBATCH -o test_simulation.out
+
+export mydir="$SCRATCH/test_simulation"
+rm -fr $mydir
+mkdir -p $mydir
+
+cd $SLURM_SUBMIT_DIR
+
+cp ./* $mydir/.
+cd $mydir
+
+srun -n 32 python-mpi -i warp_script.py -p 2 1 16
+```
+
+Then submit the simulation by typing `sbatch submission_script`.  The
+progress of the simulation can be seen by typing ```squeue -u `whoami` ```. 
 
 ## Using Shifter
 
@@ -114,7 +149,7 @@ lines, as in the following example (note that the lines are commented out):
 ```
 
 
-## Running simulations
+### Running simulations with Shifter
 
 In order to run a simulation, create a new directory,
 copy your Warp input script to this directory, and rename this script
