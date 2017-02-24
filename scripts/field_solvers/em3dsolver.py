@@ -1,6 +1,7 @@
 """Class for doing 3 D electromagnetic solver """
 from ..warp import *
 from ..diagnostics.palettes.mkpalette import getpalhrgb
+from .laser.laser_antenna import LaserAntenna
 import collections
 import types
 import operator
@@ -28,15 +29,12 @@ class EM3D(SubcycledPoissonSolver):
                       'l_nodalgrid':false, # flag for nodal/staggered grid
                       'l_pushg':false,
                       'laser_func':None,
-                      'laser_amplitude':1.,'laser_profile':None,'laser_phase':0.,
-                      'laser_gauss_widthx':None,'laser_gauss_centerx':0.,
-                      'laser_gauss_widthy':None,'laser_gauss_centery':0.,
-                      'laser_anglex':0.,'laser_angley':0.,
                       'laser_polangle':0.,
-                      'laser_wavelength':None,'laser_wavenumber':None,
-                      'laser_frequency':None,
-                      'laser_source_z':None,'laser_source_v':0.,
-                      'laser_focus_z':None,'laser_focus_v':0.,
+                      'laser_vector':array([0.,0.,1.]),
+                      'laser_polvector':None,
+                      'laser_spot':None,
+                      'laser_source_z':None,
+                      'laser_source_v':array([0., 0., 0.]),
                       'laser_emax':None,
                       'laser_depos_order_x':3,
                       'laser_depos_order_y':3,
@@ -596,565 +594,116 @@ class EM3D(SubcycledPoissonSolver):
 #===============================================================================
     def setuplaser(self):
 #===============================================================================
-        if self.laser_profile is not None:
-            if self.laser_frequency is None:
-                if self.laser_wavenumber is not None:
-                    self.laser_frequency = clight*self.laser_wavenumber
-                elif self.laser_wavelength is not None:
-                    self.laser_frequency = 2.*pi*clight/self.laser_wavelength
-            assert self.laser_frequency is not None,\
-                   "One of the frequency, wavenumber, or wavelength must be given"
-
-        # --- Check if laser_func is a dictionary
-        self.laser_func_dict = None
-        if isinstance(self.laser_func,dict):
-            self.laser_func_dict = {}
-            for k,v in self.laser_func.iteritems():
-                self.laser_func_dict[k] = PicklableFunction(v)
-            self.laser_func = None
-        elif self.laser_func is not None:
-            self.laser_func = PicklableFunction(self.laser_func)
-
-        # --- Check if laser_amplitude is a function, table, or constant
-        self.laser_amplitude_func = None
-        self.laser_amplitude_table = None
-        self.laser_amplitude_dict = None
-        if isinstance(self.laser_amplitude,collections.Sequence):
-            assert len(self.laser_amplitude.shape) == 2 and \
-                   self.laser_amplitude.shape[1] == 2,\
-                   "The laser_amplitude table is not formatted properly"
-            self.laser_amplitude_table = self.laser_amplitude
-            self.laser_amplitude_table_i = -1
-        elif callable(self.laser_amplitude):
-            self.laser_amplitude_func = PicklableFunction(self.laser_amplitude)
-            self.laser_amplitude = None
-        elif isinstance(self.laser_amplitude,dict):
-            self.laser_amplitude_dict = {}
-            for k,v in self.laser_amplitude.iteritems():
-                self.laser_amplitude_dict[k] = PicklableFunction(v)
-            self.laser_amplitude = None
-
-        # --- Check if laser_phase is a function, table, or constant
-        self.laser_phase_func = None
-        self.laser_phase_table = None
-        if isinstance(self.laser_phase,collections.Sequence):
-            assert len(self.laser_phase.shape) == 2 and \
-                   self.laser_phase.shape[1] == 2,\
-                   "The laser_phase table is not formatted properly"
-            self.laser_phase_table = self.laser_phase
-            self.laser_phase_table_i = -1
-        elif callable(self.laser_phase):
-            self.laser_phase_func = PicklableFunction(self.laser_phase)
-            self.laser_phase = None
-
-        # --- sets positions of E fields on Yee mesh 
-        f = self.block.core.yf
-        if not self.l_2dxz:
-            self.laser_xx,self.laser_yy = getmesh2d(f.xmin+0.5*f.dx,f.dx,f.nx-1,f.ymin+0.5*f.dy,f.dy,f.ny-1)
-            self.laser_xx=self.laser_xx.flatten()
-            self.laser_yy=self.laser_yy.flatten()
-            self.laser_nn=shape(self.laser_xx)[0]
+        if self.l_1dz:
+            dim = "1d"
+        elif self.circ_m > 0:
+            dim = "circ"
+        elif self.l_2dxz:
+            dim = "2d"
         else:
-            if self.l_1dz:
-                self.laser_nn=1
-                self.laser_xx=zeros(self.laser_nn)
-                self.laser_yy=zeros(self.laser_nn)
-            else:   # 2D and Circ
-                nlas = 1
-                if self.l_laser_cart :
-                    # The fictious macroparticles are initialized in a 2D x-y plane, as regularly spaced
-                    self.laser_xx, self.laser_yy = getmesh2d(
-                        -f.xmax+0.5*f.dx/nlas, f.dx/nlas, 2*nlas*f.nx-1,
-                        -f.xmax+0.5*f.dx/nlas, f.dx/nlas, 2*nlas*f.nx-1)
-                    self.laser_xx=self.laser_xx.flatten()
-                    self.laser_yy=self.laser_yy.flatten()
-                    self.laser_nn=shape(self.laser_xx)[0]
-                else :
-                    # The fictious macroparticles are initialized in a star-pattern, with 4*circ_m branches
-                    self.laser_xx = arange(f.nx*nlas)*f.dx/nlas + f.xmin + 0.5*f.dx/nlas
-                    self.laser_nn=shape(self.laser_xx)[0]
-                    self.laser_yy=zeros(self.laser_nn)
-                    if self.circ_m>0: # Circ
-                        rr = self.laser_xx.copy()
-                        self.weights_circ=2*pi*rr/f.dx/nlas
-                        self.weights_circ/=4*self.circ_m
-                        w0 = self.weights_circ.copy()
-                        for i in range(1,4*self.circ_m):
-                            self.laser_xx = concatenate((self.laser_xx,rr*cos(0.5*pi*float(i)/self.circ_m)))
-                            self.laser_yy = concatenate((self.laser_yy,rr*sin(0.5*pi*float(i)/self.circ_m)))
-                            self.weights_circ = concatenate((self.weights_circ,w0))
-                        self.laser_nn=shape(self.laser_xx)[0]
+            dim = "3d"
 
-        if self.laser_amplitude_dict is not None:
-            self.laser_xdx={}
-            self.laser_ydy={}
-            self.laser_ux={}
-            self.laser_uy={}
-            for self.laser_key in self.laser_amplitude_dict.keys():
-                self.laser_xdx[self.laser_key]=zeros(self.laser_nn)
-                self.laser_ux[self.laser_key]=zeros(self.laser_nn)
-                self.laser_ydy[self.laser_key]=zeros(self.laser_nn)
-                self.laser_uy[self.laser_key]=zeros(self.laser_nn)
+        # If the user does not require a laser, laser_antenna is None
+        if self.laser_func is None:
+            self.laser_antenna = None
+            return
+        # Otherwise, initialize the laser antenna
         else:
-            self.laser_xdx=zeros(self.laser_nn)
-            self.laser_ydy=zeros(self.laser_nn)
-            self.laser_ux=zeros(self.laser_nn)
-            self.laser_uy=zeros(self.laser_nn)
-        self.laser_gi=ones(self.laser_nn)
-
-        self.setuplaser_profile(self.fields)
-
-        if self.laser_source_z is None:
-            self.laser_source_z = w3d.zmmin
-        self.laser_source_z = max(min(self.laser_source_z,w3d.zmmax),w3d.zmmin)
-
-        if self.refinement is not None: # --- disable laser on MR patches
-            self.laser_profile=None
-            self.field_coarse.laser_profile=None
-
-#===============================================================================
-    def setuplaser_profile(self,f):
-#===============================================================================
-        # --- Check if laser_profile has a type, is a function, or a table
-        self.laser_profile_func = None
-        if self.laser_profile == 'gaussian':
-            assert self.laser_gauss_widthx is not None,\
-                   "For a gaussian laser, the width in X must be specified using laser_gauss_widthx"
-            assert self.laser_gauss_widthy is not None,\
-                   "For a gaussian laser, the width in Y must be specified using laser_gauss_widthy"
-
-            xx = self.laser_xx-self.laser_gauss_centerx; xx /= self.laser_gauss_widthx
-            yy = self.laser_yy-self.laser_gauss_centery; yy /= self.laser_gauss_widthy
-            self.laser_profile = exp(-(xx**2+yy**2)/2.)
-
-        elif isinstance(self.laser_profile,collections.Sequence):
-            assert len(self.laser_profile[:,0]) == f.nx+1,"The specified profile must be of length nx+1"
-            assert len(self.laser_profile[0,:]) == f.ny+1,"The specified profile must be of length ny+1"
-            self.laser_profile_init = self.laser_profile.copy()
-            self.laser_profile = self.laser_profile_init.flatten()
-
-        elif callable(self.laser_profile):
-            self.laser_profile_func = PicklableFunction(self.laser_profile)
-            self.laser_profile = None
+            self.laser_antenna = LaserAntenna(
+                self.laser_func, self.laser_vector,
+                self.laser_polvector, self.laser_spot,
+                self.laser_emax, self.laser_source_z,
+                self.laser_source_v,
+                self.laser_polangle,
+                w3d, dim, self.circ_m)
 
 #===============================================================================
     def add_laser(self,field):
         """
-        Loop over the different laser profiles that exist in the simulation.
-        For each laser profile, calculate the parameters of the corresponding
-        antenna and depose the corresponding current on the grid.
+        Calculate the parameters of the corresponding antenna and depose the
+        corresponding current on the grid.
+
+        Depose the source that generates the laser, on the grid (generation of
+        the laser by an antenna).
+
+        Notice that this current is generated by fictious macroparticles, whose
+        motion is explicitly specified. Thus, this current does not correspond
+        to that of the actual macroparticles of the simulation.
 
         Parameter :
         -----------
         field : EM3D_YEEFIELD
-            The self.fields object, whose attributes are the field arrays Ex, Ey, etc ...
+            The self.fields object, whose attributes are the field arrays
+            Ex, Ey, etc ...
         """
-        if isinstance(self.laser_func_dict,dict):
-            for self.laser_key in self.laser_func_dict.keys():
-                self.laser_func = self.laser_func_dict[self.laser_key]
-                self.add_laser_work(field)
-        elif isinstance(self.laser_amplitude_dict,dict):
-            for self.laser_key in self.laser_amplitude_dict.keys():
-                self.laser_amplitude_func = self.laser_amplitude_dict[self.laser_key]
-                self.add_laser_work(field)
-        elif self.laser_profile is not None or self.laser_func is not None:
-            self.add_laser_work(field)
-
-#===============================================================================
-    def add_laser_work(self,field):
-        """
-        Calculate the parameters of the laser antenna at a given timestep and
-        depose the corresponding current on the grid.
-
-        Parameter :
-        -----------
-        field : EM3D_YEEFIELD
-            The self.fields object, whose attributes are the field arrays Ex, Ey, etc ...
-        """
-
-        if 1:#self.laser_source_z>self.zmmin+self.zgrid and self.laser_source_z<=self.zmmax+self.zgrid:
-            if self.laser_focus_z is not None:self.laser_focus_z+=self.laser_focus_v*top.dt#/self.ntsub
-            self.laser_source_z+=self.laser_source_v*top.dt#/self.ntsub
-        else:
+        # If the user did not request a laser antenna,
+        # this function should not be executed
+        if self.laser_antenna is None:
             return
 
         f = self.block.core.yf
-        betafrm = -self.laser_source_v/clight
-        gammafrm = 1./sqrt((1.-betafrm)*(1.+betafrm))
 
-        # Determine the laser amplitude at this present time (and at the current position of the antenna.)
-        # - either from the user-provided function
-        if self.laser_amplitude_func is not None:
-            self.laser_amplitude = self.laser_amplitude_func(top.time*(1.-self.laser_source_v/clight))
-        # - or from a user-provided table
-        elif self.laser_amplitude_table is not None:
-            if top.time < self.laser_amplitude_table[0,1]: # The time is out of the provided table bounds
-                self.laser_amplitude = self.laser_amplitude_table[0,0]
-            elif top.time >= self.laser_amplitude_table[-1,1]: # The time is out of the provided table bounds
-                self.laser_amplitude = self.laser_amplitude_table[-1,0]
-            else: # The time is within the provided table bounds : interpolate between the nearest table points
-                i = self.laser_amplitude_table_i
-                while top.time > self.laser_amplitude_table[i+1,1]:
-                    i = i + 1
-                self.laser_amplitude_table_i = i
-                # ww : linear interpolation weight
-                ww = ((top.time - self.laser_amplitude_table[i,1])/
-                   (self.laser_amplitude_table[i+1,1]-self.laser_amplitude_table[i,1]))
-                self.laser_amplitude = ((1.-ww)*self.laser_amplitude_table[i,0] +
-                                            ww *self.laser_amplitude_table[i+1,0])
+        # Push particles accordingly to laser_func
+        self.laser_antenna.push_virtual_particles(top, f, clight)
+        self.laser_antenna.select_particles_in_local_box( w3d, self.zgrid )
+        # Skip current deposition when no laser particles are in the local box
+        if self.laser_antenna.nn == 0:
+            return
 
-        # Determine the laser transverse profile at this present time, and at the positions of
-        # the fictious macroparticles of the antenna.
-        if self.laser_profile_func is not None:
-            self.laser_profile = self.laser_profile_func(top.time)
-            assert len(self.laser_profile[:,0]) == field.nx,"The specified profile must be of length nx"
-            assert len(self.laser_profile[0,:]) == field.ny,"The specified profile must be of length ny"
-
-        # Determine the phase of the laser, at this present time, and at the positions of
-        # the fictious macroparticles of the antenna.
-        if self.laser_frequency is not None:
-            # If the user provided a phase function, use it
-            if self.laser_phase_func is not None:
-                t = top.time*(1.-self.laser_source_v/clight)
-                x = self.laser_xx
-                y = self.laser_yy
-                phase = self.laser_phase_func(x,y,t)
-            # If the user did not provide a phase function, imprint either the phase of a focusing laser
-            # or that of a plane wave propagating at a given angle
-            else:
-                if self.laser_focus_z is not None: # Focusing laser
-                    z0 = self.laser_focus_z
-                    if self.laser_focus_z>0.:
-                        fsign = -1.
-                    else:
-                        fsign = 1.
-                    phase = (fsign*(sqrt(self.laser_xx**2+self.laser_yy**2+z0**2)-z0)/clight-top.time*(1.-self.laser_source_v/clight))*self.laser_frequency
-                else: # Plane wave propagating at a given angle
-                    phase = ((self.laser_xx*sin(self.laser_anglex)+self.laser_yy*sin(self.laser_angley))/clight-top.time*(1.-self.laser_source_v/clight))*self.laser_frequency
-        else:
-            phase = 0.
-
-        # --- displaces fixed weight particles on "continuous" trajectories
-        dispmax = 0.01*clight
-        # Determine the amplitude of the laser along both directions (laser_amplitude_x, laser_amplitude_y)
-        # - If a laser function is provided, it overrides the above profile parameters.
-        if self.laser_func is not None:
-            x = self.laser_xx
-            y = self.laser_yy
-            t = top.time*(1.-self.laser_source_v/clight)
-            laser_amplitude = self.laser_func(x,y,t)
-            if isinstance(laser_amplitude,list):
-                laser_amplitude_x=laser_amplitude[0]*(1.-self.laser_source_v/clight)/self.laser_emax*dispmax
-                laser_amplitude_y=laser_amplitude[1]*(1.-self.laser_source_v/clight)/self.laser_emax*dispmax
-            else:
-                laser_amplitude=laser_amplitude*(1.-self.laser_source_v/clight)/self.laser_emax*dispmax
-                laser_amplitude_x=laser_amplitude*cos(self.laser_polangle)
-                laser_amplitude_y=laser_amplitude*sin(self.laser_polangle)
-        # - If no laser function is provided, use the previously determined profile parameters
-        # (laser_amplitude and laser profile).
-        else:
-            laser_amplitude=self.laser_amplitude/self.laser_emax*dispmax
-            laser_amplitude*=self.laser_profile*cos(phase)*(1.-self.laser_source_v/clight)
-            laser_amplitude_x=laser_amplitude*cos(self.laser_polangle)
-            laser_amplitude_y=laser_amplitude*sin(self.laser_polangle)
-        if self.laser_amplitude_dict is not None:
-            laser_xdx=self.laser_xdx[self.laser_key]
-            laser_ux=self.laser_ux[self.laser_key]
-            laser_ydy=self.laser_ydy[self.laser_key]
-            laser_uy=self.laser_uy[self.laser_key]
-        else:
-            laser_xdx=self.laser_xdx
-            laser_ux=self.laser_ux
-            laser_ydy=self.laser_ydy
-            laser_uy=self.laser_uy
-        # Set the amplitude of the normalized momenta of the fictious macroparticles
-        laser_ux[...] = laser_amplitude_x
-        laser_uy[...] = laser_amplitude_y
-        # Set the corresponding displacement of the fictious macroparticles
-        laser_xdx[...] += laser_ux*top.dt
-        laser_ydy[...] += laser_uy*top.dt
-#        weights = ones(self.laser_nn)*f.dx*f.dz*eps0/(top.dt)*self.laser_emax*top.dt/(0.1*f.dx)
-#        weights = ones(self.laser_nn)*f.dx*clight*eps0*self.laser_emax/(dispmax*self.laser_frequency)
-        weights = ones(self.laser_nn)*eps0*self.laser_emax/0.01
-        l_particles_weight=True   # Flag indicating that the particles do not all have the same weight
-        if not self.l_1dz: # 2D and 3D
-            weights*=f.dx
-        if (not self.l_2dxz) : # 3D cartesian
-            weights*=f.dy
-        if self.l_laser_cart :
-            # Laser initialized with particles regularly spaced in x-y plane
-            weights*=f.dx
-        elif self.circ_m > 0 : # Circ
-            # Laser initialized with particles in a star-pattern
-            weights*=f.dx*self.weights_circ
-
-
-        # If the antenna is not currently in the local grid, return
-        if self.laser_source_z<f.zmin+self.zgrid or self.laser_source_z>=f.zmax+self.zgrid:return
-
-        # Depose the current of the antenna
-        self.depose_j_laser(f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight)
-
-
-#===============================================================================
-    def depose_j_laser(self,f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight):
-        """
-        Depose the current that generates the laser, on the grid (generation of the laser by an antenna)
-
-        Notice that this current is generated by fictious macroparticles, whose motion is explicitly specified.
-        Thus, this current does not correspond to that of the actual macroparticles of the simulation.
-
-        Parameters :
-        ------------
-
-        f : EM3D_YEEFIELD
-            The self.block.core.yf object, whose attributes are the field arrays Ex, Ey, J, etc...
-
-        laser_xdx, laser_ydy : 1darray
-            1d arrays with one element per fictious macroparticles, containing the displacement of
-            the macroparticles with respect to their mean position along x and y.
-
-        laser_ux, laser_uy : 1darray
-            1d arrays with one element per fictious macroparticles, containing the normalized momenta
-            of the particles along each direction.
-
-        weights : 1darray
-            1d array with one element per fictious macroparticle, containing the weights of the particles.
-
-        l_particles_weight : bool
-            A flag indicating whether the different fictious macroparticles have different weights
-        """
-
-        if top.ndts[0]<>1:
-            print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
+        # Current and charge deposition
+        if top.ndts[0] != 1:
+            print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting\
+                   a laser"
             raise
         f.Jx = self.fields.Jxarray[:,:,:,0]
         f.Jy = self.fields.Jyarray[:,:,:,0]
         f.Jz = self.fields.Jzarray[:,:,:,0]
         f.Rho = self.fields.Rhoarray[:,:,:,0]
 
-        for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
-            # The antenna is made of two types of fictious particles : positive and negative
+        # q represents the sign of the charged macroparticles
+        # The antenna is made of two types of fictious particles :
+        # positive and negative
+        l_particles_weight = True
+        for q in [1.,-1.]:
+            # Current deposition
+            self.depose_current_density(self.laser_antenna.nn, f,
+                           self.laser_antenna.xx + q*self.laser_antenna.xdx,
+                           self.laser_antenna.yy + q*self.laser_antenna.ydy,
+                           self.laser_antenna.zz + q*self.laser_antenna.zdz,
+                           self.laser_antenna.vx + q*self.laser_antenna.ux,
+                           self.laser_antenna.vy + q*self.laser_antenna.uy,
+                           self.laser_antenna.vz + q*self.laser_antenna.uz,
+                           self.laser_antenna.gi,
+                           top.dt,
+                           self.laser_antenna.weights,
+                           self.zgrid, q, 1.,
+                           self.laser_depos_order_x,
+                           self.laser_depos_order_y,
+                           self.laser_depos_order_z,
+                           l_particles_weight)
 
-            if self.l_2dxz:
-
-                if self.l_1dz: # 1D case
-                    depose_j_n_1dz(f.J,
-                                              self.laser_nn,
-                                              self.laser_source_z*ones(self.laser_nn),
-                                              q*laser_ux,
-                                              q*laser_uy,
-                                              self.laser_source_v*ones(self.laser_nn),
-                                              self.laser_gi,
-                                              weights,
-                                              q,
-                                              f.zmin+self.zgrid,
-                                              top.dt,
-                                              f.dz,
-                                              f.nz,
-                                              f.nzguard,
-                                              self.laser_depos_order_z,
-                                              l_particles_weight)
-                else:
-                    if self.circ_m == 0 : # pure 2D case
-                        print 'weight = ',weights,q
-                        depose_jxjyjz_esirkepov_n_2d(f.J,
-                                                self.laser_nn,
-                                                self.laser_xx+q*laser_xdx,
-                                                self.laser_yy+q*laser_ydy,
-                                                self.laser_source_z*ones(self.laser_nn),
-                                                q*laser_ux,
-                                                q*laser_uy,
-                                                self.laser_source_v*ones(self.laser_nn),
-                                                self.laser_gi,
-                                                weights,
-                                                q,
-                                                f.xmin,f.zmin+self.zgrid,
-                                                top.dt,
-                                                f.dx,f.dz,
-                                                f.nx,f.nz,
-                                                f.nxguard,f.nzguard,
-                                                self.laser_depos_order_x,
-                                                self.laser_depos_order_z,
-                                                l_particles_weight,
-                                                w3d.l4symtry,
-                                                self.l_2drz, self.type_rz_depose)
-
-                    else: # Circ case
-                        depose_jxjyjz_esirkepov_n_2d_circ(f.J,f.J_circ,f.circ_m,
-                                                self.laser_nn,
-                                                self.laser_xx+q*laser_xdx,
-                                                self.laser_yy+q*laser_ydy,
-                                                self.laser_source_z*ones(self.laser_nn),
-                                                q*laser_ux,
-                                                q*laser_uy,
-                                                self.laser_source_v*ones(self.laser_nn),
-                                                self.laser_gi,
-                                                weights,
-                                                q,
-                                                f.xmin,f.zmin+self.zgrid,
-                                                top.dt,
-                                                f.dx,f.dz,
-                                                f.nx,f.nz,
-                                                f.nxguard,f.nzguard,
-                                                self.laser_depos_order_x,
-                                                self.laser_depos_order_z,
-                                                l_particles_weight, self.type_rz_depose)
-
-            else: # 3D case
-                depose_jxjyjz_esirkepov_n(f.J,
-                                             self.laser_nn,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             q*laser_ux,
-                                             q*laser_uy,
-                                             self.laser_source_v*ones(self.laser_nn),
-                                             self.laser_gi,
-                                             weights,
-                                             q,
-                                             f.xmin,f.ymin,f.zmin+self.zgrid,
-                                             top.dt,
-                                             f.dx,f.dy,f.dz,
-                                             f.nx,f.ny,f.nz,
-                                             f.nxguard,f.nyguard,f.nzguard,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_y,
-                                             self.laser_depos_order_z,
-                                             l_particles_weight,
-                                             w3d.l4symtry)
-
-            # --- now deposits Rho if needed
             if self.l_getrho :
-                if self.l_2dxz:
-                    if self.circ_m==0:  # pure 2D case
-                        depose_rho_n_2dxz(f.Rho,
-                                             self.laser_nn,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             weights,
-                                             q,
-                                         f.xmin,f.zmin+self.zgrid,
-                                         f.dx,f.dz,
-                                         f.nx,f.nz,
-                                         f.nxguard,f.nzguard,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_z,
-                                         l_particles_weight,w3d.l4symtry,self.l_2drz,
-                                         self.type_rz_depose)
-                    else: # Circ case
-                        depose_rho_n_2d_circ(f.Rho,
-                                         f.Rho_circ,
-                                         f.circ_m,
-                                             self.laser_nn,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             weights,
-                                             q,
-                                         f.xmin,f.zmin+self.zgrid,
-                                         f.dx,f.dz,
-                                         f.nx,f.nz,
-                                         f.nxguard,f.nzguard,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_z,
-                                         l_particles_weight, self.type_rz_depose)
-                else: # 3D case
-                    depose_rho_n(f.Rho,
-                                             self.laser_nn,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             weights,
-                                             q,
-                                       f.xmin,f.ymin,f.zmin+self.zgrid,
-                                       f.dx,f.dy,f.dz,
-                                       f.nx,f.ny,f.nz,
-                                       f.nxguard,f.nyguard,f.nzguard,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_y,
-                                             self.laser_depos_order_z,
-                                       l_particles_weight,w3d.l4symtry)
+                # Charge deposition
+                self.depose_charge_density(self.laser_antenna.nn, f,
+                           self.laser_antenna.xx + q*self.laser_antenna.xdx,
+                           self.laser_antenna.yy + q*self.laser_antenna.ydy,
+                           self.laser_antenna.zz + q*self.laser_antenna.zdz,
+                           self.laser_antenna.vx + q*self.laser_antenna.ux,
+                           self.laser_antenna.vy + q*self.laser_antenna.uy,
+                           self.laser_antenna.vz + q*self.laser_antenna.uz,
+                           self.laser_antenna.gi,
+                           top.dt,
+                           self.laser_antenna.weights,
+                           self.zgrid, q, 1.,
+                           self.laser_depos_order_x,
+                           self.laser_depos_order_y,
+                           self.laser_depos_order_z,
+                           l_particles_weight)
 
-#===============================================================================
-    def depose_j_laser(self,f,laser_xdx,laser_ydy,laser_ux,laser_uy,weights,l_particles_weight):
-        """
-        Depose the current that generates the laser, on the grid (generation of the laser by an antenna)
+        # Call a function of the class em3dsolverFFT
+        if hasattr( self, 'current_cor' ) and self.current_cor:
+            self.depose_rho_old_laser(f)
 
-        Notice that this current is generated by fictious macroparticles, whose motion is explicitly specified.
-        Thus, this current does not correspond to that of the actual macroparticles of the simulation.
-
-        Parameters :
-        ------------
-
-        f : EM3D_YEEFIELD
-            The self.block.core.yf object, whose attributes are the field arrays Ex, Ey, J, etc...
-
-        laser_xdx, laser_ydy : 1darray
-            1d arrays with one element per fictious macroparticles, containing the displacement of
-            the macroparticles with respect to their mean position along x and y.
-
-        laser_ux, laser_uy : 1darray
-            1d arrays with one element per fictious macroparticles, containing the normalized momenta
-            of the particles along each direction.
-
-        weights : 1darray
-            1d array with one element per fictious macroparticle, containing the weights of the particles.
-
-        l_particles_weight : bool
-            A flag indicating whether the different fictious macroparticles have different weights
-        """
-
-        if top.ndts[0]<>1:
-            print "Error in depose_j_laser: top.ndts[0] must be 1 if injecting a laser"
-            raise
-        f.Jx = self.fields.Jxarray[:,:,:,0]
-        f.Jy = self.fields.Jyarray[:,:,:,0]
-        f.Jz = self.fields.Jzarray[:,:,:,0]
-        f.Rho = self.fields.Rhoarray[:,:,:,0]
-
-        for q in [1.,-1.]:  # q represents the sign of the charged macroparticles
-            # The antenna is made of two types of fictious particles : positive and negative
-
-            self.depose_current_density(
-                                             self.laser_nn,
-                                             f,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             q*laser_ux,
-                                             q*laser_uy,
-                                             self.laser_source_v*ones(self.laser_nn),
-                                             self.laser_gi,
-                                             top.dt,
-                                             weights,
-                                             self.zgrid,
-                                             q,
-                                             1.,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_y,
-                                             self.laser_depos_order_z,
-                                             l_particles_weight)
-            if self.l_getrho :
-               self.depose_charge_density(   self.laser_nn,
-                                             f,
-                                             self.laser_xx+q*laser_xdx,
-                                             self.laser_yy+q*laser_ydy,
-                                             self.laser_source_z*ones(self.laser_nn),
-                                             q*laser_ux,
-                                             q*laser_uy,
-                                             self.laser_source_v*ones(self.laser_nn),
-                                             self.laser_gi,
-                                             top.dt,
-                                             weights,
-                                             self.zgrid,
-                                             q,
-                                             1.,
-                                             self.laser_depos_order_x,
-                                             self.laser_depos_order_y,
-                                             self.laser_depos_order_z,
-                                             l_particles_weight)
 
 ################################################################################
 # FIELD FETCHING
@@ -1705,7 +1254,7 @@ class EM3D(SubcycledPoissonSolver):
         # --- add slices
         self.add_source_ndts_slices()
         self.aftersetsourcep()
-        # -- add laser 
+        # -- add laser
         self.add_laser(self.block.core.yf)
         # --- smooth current density
         if any(self.npass_smooth>0):self.smoothdensity()
@@ -2305,10 +1854,6 @@ class EM3D(SubcycledPoissonSolver):
                        (top,'%spmax'%(coord) ),
                        (top,'%spminlocal'%(coord) ),
                        (top,'%spmaxlocal'%(coord) )]
-                       
-        # The variable self.laser_zz does not exist yet
-        if coord in ['x', 'y']:
-            listtoshift += [ (self,'laser_%s%s' %(coord,coord)) ]
 
         for (coord_object,coord_attribute) in listtoshift:
             # loop equivalent to coord_object.coord_attribute+=self.V_galilean[..]*top.dt
@@ -2349,10 +1894,6 @@ class EM3D(SubcycledPoissonSolver):
                        (top,'%spmax'%(coord) ),
                        (top,'%spminlocal'%(coord) ),
                        (top,'%spmaxlocal'%(coord) )]
-
-        # The variable self.laser_zz does not exist yet
-        if coord in ['x', 'y']:
-            listtoshift += [ (self,'laser_%s%s' %(coord,coord)) ]
 
         if   coord=='x': increment=self.dx
         elif coord=='y': increment=self.dy
