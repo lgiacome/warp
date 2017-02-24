@@ -121,9 +121,9 @@ class GaussianProfile( object ):
         focal_length: float (in meters)
             Distance from the laser antenna to the focal plane
             (along the direction normal to the plane of the antenna)
-            This distance is algebric: use a positive number for a laser that
-            is focusing as it is being emitted by the antenna ; use a negative
-            number for a laser that is defocusing as it is being emitted.
+            Use a positive number for a laser that is focusing as it is
+            being emitted by the antenna ; use a negative number for a
+            laser that is defocusing as it is being emitted.
 
         temporal order: int
             The order of the hypergaussian temporal profile
@@ -221,17 +221,21 @@ class GaussianProfile( object ):
 
 
 class GaussianSTCProfile( object ):
-    """Class that calculates a Gaussian laser pulse
-    with spatio-temporal correlations (STC)"""
+    """Class that calculates a Gaussian laser pulse with spatio-temporal
+    correlations (i.e. spatial chirp, angular dispersion and temporal chirp)"""
 
     def __init__( self, k0, waist, tau, t_peak, a0, zeta, beta, phi2, dim,
-              focal_length=0, boost=None,  source_v=0 ):
+              focal_length=0, boost=None, source_v=0 ):
         """
-        Define a Gaussian laser profile with spatio-temporal correlations.
+        Define a Gaussian laser profile with spatio-temporal correlations
+        (i.e. with spatial chirp, angular dispersion and temporal chirp)
 
         This object can then be passed to the `EM3D` class, as the argument
         `laser_func`, in order to have a Gaussian with spatio-temporal
         correlations laser emitted by the antenna.
+
+        See Akturk et al., Pulse-front tilt caused by spatial and temporal
+        chirp, Optics Express, Vol. 12 No. 19 (2014) for more details.
 
         Parameters:
         -----------
@@ -254,15 +258,33 @@ class GaussianSTCProfile( object ):
         dim: string
             The dimension of the simulation. Either "1d", "2d", "circ", or "3d"
 
-        zeta, beta, phi2: float
-            ## need to complete the informations here ##
+        zeta: float (in meter.second)
+            The amount of spatial chirp, at focus (in the lab frame)
+            Namely, a wave packet centered on the frequency w0 + dw
+            (where w0 is the central frequency corresponding to k0)
+            will reach its peak intensity at an off-axis position
+            x(dw) = zeta * dw
+
+        beta: float (in radian.second)
+            The amount of spatial chirp, at focus (in the lab frame)
+            Namely, a wave packet centered on the frequency (w0 + dw) has
+            its wavefronts tilted by an angle theta(dw) = beta*dw
+            with respect to the normal of the plane of the antenna.
+
+        phi2: float (in second^2)
+            The amount of temporal chirp, at focuse (in the lab frame)
+            Namely, a wave packet centered on the frequency (w0 + dw) will
+            reach its peak intensity at a time t(dw) = t_peak + phi2*dw.
+            Thus, a positive phi2 corresponds to positive chirp, i.e. red part
+            of the spectrum in the front of the pulse and blue part of the
+            spectrum in the back.
 
         focal_length: float (in meters)
             Distance from the laser antenna to the focal plane
             (along the direction normal to the plane of the antenna)
-            This distance is algebric: use a positive number for a laser that
-            is focusing as it is being emitted by the antenna ; use a negative
-            number for a laser that is defocusing as it is being emitted.
+            Use a positive number for a laser that is focusing as it is
+            being emitted by the antenna ; use a negative number for a
+            laser that is defocusing as it is being emitted.
 
         boost: a BoostConverter object
             If not None, the laser is emitted in the corresponding boosted-frame
@@ -379,7 +401,7 @@ class LaguerreGaussianProfile(object):
                                e^{-x} x^{n+m} \right]
 
     Be careful, a new Gouy phase is defined such as :
-                \psi_{LG}  = (2m + n+ 1) arctan( xi ) = (2m + n+ 1) \psi_{G}
+                \psi_{LG}  = (2m + n+ 1) \psi_{G}
 
     Note than when n and m are both equal to 0, this function returns the same
     results as GaussianProfile.
@@ -398,7 +420,8 @@ class LaguerreGaussianProfile(object):
         -----------
 
         m, n: integer (dimensionless)
-            Laguerre polynomial coefficients, cf definition
+            Laguerre polynomial coefficients, cf definition in the docstring
+            of this class
 
         k0: float (in meters^-1)
             Laser wavevector (in the lab frame)
@@ -422,9 +445,9 @@ class LaguerreGaussianProfile(object):
         focal_length: float (in meters)
             Distance from the laser antenna to the focal plane
             (along the direction normal to the plane of the antenna)
-            This distance is algebric: use a positive number for a laser that
-            is focusing as it is being emitted by the antenna ; use a negative
-            number for a laser that is defocusing as it is being emitted.
+            Use a positive number for a laser that is focusing as it is
+            being emitted by the antenna ; use a negative number for a
+            laser that is defocusing as it is being emitted.
 
         temporal order: int
             The order of the hypergaussian temporal profile
