@@ -202,16 +202,16 @@ def retropropagation(em, w3d, negative_propagation=False):
 
     # Set the fields to 0 if negative_propagation is defined
     if negative_propagation is not None :
-        # Condition to find the corresponding halfspace depending on the value of
-        # negative_propagation.
+        # Condition to find the corresponding halfspace depending on the value
+        # of negative_propagation.
         if negative_propagation:
             zero_condition = (mesh_points_antenna_frame < 0 )
         else:
             zero_condition = (mesh_points_antenna_frame > 0 )
 
         # All the field arrays are put to 0 in this halfspace.
-        # The Rho array is not reset assuming there were no particles before and
-        # then no charges.
+        # The Rho array is not reset assuming there were no particles before
+        # and then no charges.
         f.Ex[zero_condition] = 0
         f.Ey[zero_condition] = 0
         f.Ez[zero_condition] = 0
@@ -225,7 +225,6 @@ def retropropagation(em, w3d, negative_propagation=False):
         # Set the fields in the PML to 0 if existing
         b = em.bounds
         list_boundaries = []
-        openbc = 3
 
         # side
         if b[0] == openbc:
