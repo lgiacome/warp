@@ -225,6 +225,7 @@ def retropropagation(em, w3d, negative_propagation=False):
         # Set the fields in the PML to 0 if existing
         b = em.bounds
         list_boundaries = []
+        openbc = 3 # Value of openbc in Warp
 
         # side
         if b[0] == openbc:
