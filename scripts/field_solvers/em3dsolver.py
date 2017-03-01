@@ -965,6 +965,7 @@ class EM3D(SubcycledPoissonSolver):
     def setsourcep(self,js,pgroup,zgrid):
 #===============================================================================
         if self.l_verbose:print 'setsourcep, species ',js
+        if (pgroup.ldodepos[js]==False): return 
         n  = pgroup.nps[js]
         if n == 0: return
         i  = pgroup.ins[js] - 1
