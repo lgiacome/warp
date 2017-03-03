@@ -373,7 +373,7 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
 
     def init_catcher_object (self):
         self.particle_catcher = ParticleProbeCatcher( self.top, self.plane_position, \
-                                self.plane_normal_vector )
+                                self.plane_normal_vector, self.particle_data )
 
 class ParticleStorer:
     """
@@ -729,7 +729,7 @@ class ParticleProbeCatcher(ParticleCatcher):
     """
     Class that extracts, interpolates and gathers particles
     """
-    def __init__(self, top, plane_position, plane_normal_vector ):
+    def __init__(self, top, plane_position, plane_normal_vector, particle_data ):
         """
         Initialize the ParticleProbeCatcher object
 
@@ -745,8 +745,7 @@ class ParticleProbeCatcher(ParticleCatcher):
         """
 
         # Init ParticleCatcher Normal attributes
-        list_of_quantities=['x','y','z','ux','uy','uz','w','t']
-        ParticleCatcher.__init__(self, top, list_of_quantities)
+        ParticleCatcher.__init__(self, top, particle_data)
 
         # Some attributes neccessary for particle selections
         self.plane_position = plane_position
@@ -809,7 +808,10 @@ class ParticleProbeCatcher(ParticleCatcher):
         ## Select the particle quantities that satisfy the
         ## aforementioned condition
         self.mass = species.mass
-        self.w_captured = np.take(weights, selected_indices)
+        self.captured_quantities['w'] = np.take(weights, selected_indices)
+        if self.top.wpid != 0:
+            pid = self.get_quantity( species, "id", l_prev=True )
+            self.captured_quantities['id'] = np.take( pid, selected_indices)
 
         current_x = np.take(current_x, selected_indices)
         current_y = np.take(current_y, selected_indices)
