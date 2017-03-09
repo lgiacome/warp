@@ -494,7 +494,10 @@ class Species(object):
             # --- the first species has already been setup, then a new species needs
             # --- to be added.
             if self.pgroup.ns == 0 or self.pgroup.sm[0] != 0.:
-                addspecies(pgroup=self.pgroup)
+                if self.pgroup.name() == 'ParticleGroup':
+                    addspecies(pgroup=self.pgroup)
+                else:
+                    self.pgroup.addspecies()
             js = self.pgroup.ns-1
             # --- Setup the starting index for this species in the particle
             # --- arrays.
