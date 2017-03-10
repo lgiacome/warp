@@ -85,6 +85,12 @@ class LaserAntenna(object):
         zmax = w3d.zmmax
 
         if self.dim == "1d":
+            # Ux is chosen orthogonal to self.vector in the plane (x,z)
+            Uy = np.array([0.,1.,0.])
+            Ux = np.cross(Uy,self.vector)
+            self.Ux = Ux
+            self.Uy = Uy
+
             # 1D injection along x
             self.nn_global = 1
             self.xx_global = x0 + np.zeros(self.nn_global)
