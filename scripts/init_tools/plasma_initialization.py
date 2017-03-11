@@ -139,6 +139,14 @@ class PlasmaInjector( object ):
         i_max = int( (z_end_plasma-zmax)/dz + 0.5 )
         i_max = max( i_max, 0 )
         z_reg = z_end_plasma - dz*( np.arange( i_max, i_min+1 ) + 0.5 )
+        # Only retain the positions which are inside the local box
+        zmin_local = self.w3d.zmminlocal + self.top.zgrid
+        zmax_local = self.w3d.zmmaxlocal + self.top.zgrid
+        z_reg = z_reg[ (z_reg >= zmin_local) & (z_reg < zmax_local) ]
+        # Skip the rest of this function if none of the positions were
+        # inside the original box
+        if len(z_reg) == 0:
+            return
 
         # Get the corresponding particle positions at injection
         if self.dim == "3d":
