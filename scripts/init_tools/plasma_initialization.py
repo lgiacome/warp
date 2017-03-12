@@ -211,7 +211,7 @@ class PlasmaInjector( object ):
             self.elec.addpart( x=x0, y=y0, z=z0,
                     vx=c*ux*gamma_inv, vy=c*uy*gamma_inv,
                     vz=c*uz*gamma_inv, gi=gamma_inv, w=w,
-                    lallindomain=False )
+                    lallindomain=True )
         if self.ions is not None:
             # For each element, only add particles to the lowest charge state
             for element in self.ions.keys():
@@ -222,7 +222,7 @@ class PlasmaInjector( object ):
                     vy=c*self.uy_m*self.gamma_inv_m,
                     vz=c*self.uz_m*self.gamma_inv_m,
                     gi=self.gamma_inv_m, w=w,
-                    lallindomain=False )
+                    lallindomain=True )
 
     def continuous_injection(self):
         """
