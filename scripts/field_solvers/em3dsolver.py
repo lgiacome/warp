@@ -1855,9 +1855,6 @@ class EM3D(SubcycledPoissonSolver):
                        (top,'%spmax'%(coord) ),
                        (top,'%spminlocal'%(coord) ),
                        (top,'%spmaxlocal'%(coord) )]
-        # The variable self.laser_zz does not exist yet
-        if coord in ['x', 'y']:
-            listtoshift += [ (self,'laser_%s%s' %(coord,coord)) ]
 
         for (coord_object,coord_attribute) in listtoshift:
             # loop equivalent to coord_object.coord_attribute+=self.V_galilean[..]*top.dt
@@ -5699,10 +5696,7 @@ class EM3D(SubcycledPoissonSolver):
         # Pick either a multigrid, or an openbc solver
         if self.solvergeom == w3d.XYZgeom:
             if w3d.boundxy == openbc:
-                try:
-                    from warp.field_solvers.openbcsolver import OpenBC3D as ESolver
-                except ImporError:
-                    ESolver = MultiGrid3D
+                from warp.field_solvers.openbcsolver import OpenBC3D as ESolver
             else:
                 ESolver = MultiGrid3D
         else:
