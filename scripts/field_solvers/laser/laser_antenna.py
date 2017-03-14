@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.constants import epsilon_0
+from ...warp import eps0 as epsilon_0
 from ...warp import PicklableFunction
 
 class LaserAntenna(object):
