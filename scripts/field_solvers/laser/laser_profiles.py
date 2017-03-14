@@ -6,7 +6,6 @@ import numpy as np
 from scipy.constants import c, m_e, e
 from scipy.interpolate import RegularGridInterpolator
 from scipy.special import genlaguerre
-#from .boost_tools import BoostConverter
 import h5py
 # Try importing parallel functions, in order to broadcast
 # the experimental laser file, if required
