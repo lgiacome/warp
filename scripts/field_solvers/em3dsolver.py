@@ -105,8 +105,8 @@ class EM3D(SubcycledPoissonSolver):
             self.l_1dz=True
         if self.l_2dxz: w3d.solvergeom=w3d.XZgeom
         if self.l_2drz:
-        	w3d.solvergeom=w3d.RZgeom
-        	self.l_2dxz=True
+            w3d.solvergeom=w3d.RZgeom
+            self.l_2dxz=True
         if self.l_1dz:
             w3d.solvergeom=w3d.Zgeom
             self.stencil=0
@@ -144,7 +144,7 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_2drz == False :
             self.type_rz_depose = 0
 
-		# --- smoothing lists to arrays if needed
+        # --- smoothing lists to arrays if needed
         self.npass_smooth  = array(self.npass_smooth)
         self.alpha_smooth  = array(self.alpha_smooth)
         self.stride_smooth  = array(self.stride_smooth)
@@ -157,11 +157,11 @@ class EM3D(SubcycledPoissonSolver):
             minguards[0] += self.norderx/2+1
             self.nxguard = minguards[0]
         if self.nyguard==1 and self.nordery is not inf:
-	        minguards[1] += self.nordery/2+1
-        	self.nyguard = minguards[1]
+            minguards[1] += self.nordery/2+1
+            self.nyguard = minguards[1]
         if self.nzguard==1 and self.norderz is not inf:
-	        minguards[2] += self.norderz/2+1
-        	self.nzguard = minguards[2]
+            minguards[2] += self.norderz/2+1
+            self.nzguard = minguards[2]
         # --- ensures that there is at least 2 guard cells with stencil>0
         if self.stencil>0:
             if self.nxguard<2:self.nxguard=2
@@ -174,7 +174,7 @@ class EM3D(SubcycledPoissonSolver):
             self.l_2dxz = True
             self.nxguard=self.nxlocal=self.nx=self.nxp=0
             self.nyguard=self.nylocal=self.ny=self.nyp=0
-		# --- enforces number of guards cells to not go over the number of local cells
+        # --- enforces number of guards cells to not go over the number of local cells
         self.nxguard = min(self.nxguard,self.nxlocal)
         self.nyguard = min(self.nyguard,self.nylocal)
         self.nzguard = min(self.nzguard,self.nzlocal)
