@@ -305,7 +305,7 @@ class LaserAntenna(object):
 
         if isinstance(amp,list): #elliptic polarization
             amp_x = amp[0]*self.polvector[0] + amp[1]*self.polvector_2[0]
-            amp_y = amp[0]*self.polvector[1] + amp[1]*self.polvector_2[2]
+            amp_y = amp[0]*self.polvector[1] + amp[1]*self.polvector_2[1]
             amp_z = amp[0]*self.polvector[2] + amp[1]*self.polvector_2[2]
 
             amplitude_x = coef_ampli * amp_x
