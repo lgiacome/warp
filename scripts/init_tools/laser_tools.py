@@ -2,7 +2,7 @@ import numpy as np
 from scipy.constants import c, m_e, e
 from .boost_tools import BoostConverter
 # Import laser antenna and laser profiles
-from ..field_solvers.laser import *
+from ..field_solvers.laser.laser_profiles import *
 from warp import openbc
 
 def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
