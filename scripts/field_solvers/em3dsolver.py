@@ -5773,11 +5773,11 @@ class EM3D(SubcycledPoissonSolver):
         # --- This assumes that the domains of the EM solver are all contained within the
         # --- domains of the static solvers. This should be the case since the static solvers
         # --- have a larger grid_overlap.
-        ix1 = self.fsdecomp.ix[self.fsdecomp.ixproc] - bsolver.fsdecomp.ix[bsolver.fsdecomp.ixproc] + 1
+        ix1 = self.fsdecomp.ix[self.fsdecomp.ixproc] - esolver.fsdecomp.ix[esolver.fsdecomp.ixproc] + 1
         ix2 = ix1 + self.fsdecomp.nx[self.fsdecomp.ixproc] + 1 + 2*self.nxguard
-        iy1 = self.fsdecomp.iy[self.fsdecomp.iyproc] - bsolver.fsdecomp.iy[bsolver.fsdecomp.iyproc] + 1
+        iy1 = self.fsdecomp.iy[self.fsdecomp.iyproc] - esolver.fsdecomp.iy[esolver.fsdecomp.iyproc] + 1
         iy2 = iy1 + self.fsdecomp.ny[self.fsdecomp.iyproc] + 1 + 2*self.nyguard
-        iz1 = self.fsdecomp.iz[self.fsdecomp.izproc] - bsolver.fsdecomp.iz[bsolver.fsdecomp.izproc] + 1
+        iz1 = self.fsdecomp.iz[self.fsdecomp.izproc] - esolver.fsdecomp.iz[esolver.fsdecomp.izproc] + 1
         iz2 = iz1 + self.fsdecomp.nz[self.fsdecomp.izproc] + 1 + 2*self.nzguard
 
         # --- Calculate the fields on the Yee mesh by direct finite differences
