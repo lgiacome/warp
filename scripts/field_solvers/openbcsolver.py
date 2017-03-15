@@ -5,7 +5,6 @@ Class for doing open boundary field solve in 3-D
 from ..warp import *
 import openbc
 
-
 ##############################################################################
 class OpenBC3D(SubcycledPoissonSolver):
     """
@@ -466,22 +465,30 @@ class OpenBC3D(SubcycledPoissonSolver):
                         self.nyguardphi:-self.nyguardphi-1,
                         self.nzguardphi:-self.nzguardphi-1]
 
+        # Local size of the arrays
         ilo, ihi = 1, self.nx
         jlo, jhi = 1, self.ny
         klo, khi = 1, self.nz
-
+        # Global size of the arrays
         ilo_rho_gbl, ihi_rho_gbl = ilo, ihi
         jlo_rho_gbl, jhi_rho_gbl = jlo, jhi
         klo_rho_gbl, khi_rho_gbl = klo, khi
 
-        idecomp = 0
+        # MPI decomposition
+        idecomp = -1
+        # Number of processors in each dimension
+        nxp = nyp = nzp = 1
+
         igfflag = ((self.igfflag and 1) or 0) # for normal green function (1 for IGF)
         self.ierr = zeros(1, 'l')
 
         charge = rho*self.dx*self.dy*self.dz
-        openbc.openbcpotential(charge/eps0,phi,self.dx,self.dy,self.dz,ilo,ihi,jlo,jhi,klo,khi,
-                               ilo_rho_gbl,ihi_rho_gbl,jlo_rho_gbl,jhi_rho_gbl,klo_rho_gbl,khi_rho_gbl,
-                               idecomp,igfflag,self.ierr)
+        openbc.openbcpotential(
+            charge/eps0, phi, self.dx, self.dy, self.dz,
+            ilo, ihi, jlo, jhi, klo, khi,
+            ilo_rho_gbl, ihi_rho_gbl, jlo_rho_gbl, jhi_rho_gbl,
+            klo_rho_gbl, khi_rho_gbl, idecomp, nxp, nyp, nzp,
+            igfflag, self.ierr)
 
         # --- Note that the guard cells and upper edge of the domain are not set yet.
         # --- A future fix will be to pass in the entire grid into the solver, including the guard
@@ -527,4 +534,3 @@ class OpenBC3D(SubcycledPoissonSolver):
                    0,self.bounds,1.,1,true,
                    false,0,conductorobject,false)
         return res
-
