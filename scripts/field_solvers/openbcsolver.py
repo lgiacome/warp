@@ -3,7 +3,7 @@ Class for doing open boundary field solve in 3-D
 ----------------------------------------------
 """
 from ..warp import *
-import openbc
+import openbc_poisson
 
 ##############################################################################
 class OpenBC3D(SubcycledPoissonSolver):
@@ -450,7 +450,7 @@ class OpenBC3D(SubcycledPoissonSolver):
     def hasconductors(self):
         return False
 
-    def dosolve(self,iwhich=0,zfact=None,isourcepndtscopies=None,indts=None,iselfb=None):
+    def dosolve(self,iwhich=0,zfact=1.,isourcepndtscopies=None,indts=None,iselfb=None):
         if not self.l_internal_dosolve: return
 
         # --- This is only done for convenience.
@@ -483,8 +483,8 @@ class OpenBC3D(SubcycledPoissonSolver):
         self.ierr = zeros(1, 'l')
 
         charge = rho*self.dx*self.dy*self.dz
-        openbc.openbcpotential(
-            charge/eps0, phi, self.dx, self.dy, self.dz,
+        openbc_poisson.openbcpotential(
+            charge/eps0, phi, self.dx, self.dy, self.dz*zfact,
             ilo, ihi, jlo, jhi, klo, khi,
             ilo_rho_gbl, ihi_rho_gbl, jlo_rho_gbl, jhi_rho_gbl,
             klo_rho_gbl, khi_rho_gbl, idecomp, nxp, nyp, nzp,
