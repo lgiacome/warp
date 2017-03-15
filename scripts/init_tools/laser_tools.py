@@ -185,10 +185,10 @@ def retropropagation(em, w3d, negative_propagation=False):
     nbpoints = f.Ex.shape
     xmin = w3d.xmminlocal - em.nxguard*em.dx
     xmax = w3d.xmmaxlocal + em.nxguard*em.dx
-    ymin = w3d.xmminlocal - em.nxguard*em.dy
-    ymax = w3d.ymmaxlocal + em.nxguard*em.dy
-    zmin = w3d.zmminlocal - em.nxguard*em.dz
-    zmax = w3d.zmmaxlocal + em.nxguard*em.dz
+    ymin = w3d.ymminlocal - em.nyguard*em.dy
+    ymax = w3d.ymmaxlocal + em.nyguard*em.dy
+    zmin = w3d.zmminlocal - em.nzguard*em.dz
+    zmax = w3d.zmmaxlocal + em.nzguard*em.dz
 
     x = np.linspace(xmin, xmax, nbpoints[0])
     y = np.linspace(ymin, ymax, nbpoints[1])
