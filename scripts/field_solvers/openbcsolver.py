@@ -47,7 +47,7 @@ class OpenBC3D(SubcycledPoissonSolver):
 
     """
 
-    def __init__(self,igfflag=False,lreducedpickle=1,**kw):
+    def __init__(self,igfflag=True,lreducedpickle=1,**kw):
         self.igfflag = igfflag
         kw['lreducedpickle'] = lreducedpickle
         self.grid_overlap = 2
@@ -482,9 +482,13 @@ class OpenBC3D(SubcycledPoissonSolver):
         igfflag = ((self.igfflag and 1) or 0) # for normal green function (1 for IGF)
         self.ierr = zeros(1, 'l')
 
-        charge = rho*self.dx*self.dy*self.dz
+        # Calculate charge per cell
+        charge = rho * (self.dx * self.dy * self.dz * zfact)
+        # Scale the charge, to match the assumed units of `openbcpotential`
+        # so that the returned potential phi is in SI units
+        charge *= 1./(4.*pi*eps0)
         openbc_poisson.openbcpotential(
-            charge/eps0, phi, self.dx, self.dy, self.dz*zfact,
+            charge, phi, self.dx, self.dy, self.dz*zfact,
             ilo, ihi, jlo, jhi, klo, khi,
             ilo_rho_gbl, ihi_rho_gbl, jlo_rho_gbl, jhi_rho_gbl,
             klo_rho_gbl, khi_rho_gbl, idecomp, nxp, nyp, nzp,
@@ -493,7 +497,6 @@ class OpenBC3D(SubcycledPoissonSolver):
         # --- Note that the guard cells and upper edge of the domain are not set yet.
         # --- A future fix will be to pass in the entire grid into the solver, including the guard
         # --- cells. Though, this would require the rho array to be the same size as phi.
-
         #applyboundaryconditions3d(self.nx,self.ny,self.nz,self.nxguardphi,self.nyguardphi,self.nzguardphi,
         #                          self._phi,1,self.bounds,false,false)
 
