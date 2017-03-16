@@ -458,17 +458,25 @@ class OpenBC3D(SubcycledPoissonSolver):
         self._rho = self.source
         if isinstance(self.potential,float): return
 
-        rho = self._rho[self.nxguardrho:-self.nxguardrho-1,
-                        self.nyguardrho:-self.nyguardrho-1,
-                        self.nzguardrho:-self.nzguardrho-1]
-        phi = self._phi[self.nxguardphi:-self.nxguardphi-1,
-                        self.nyguardphi:-self.nyguardphi-1,
-                        self.nzguardphi:-self.nzguardphi-1]
+        # The last proc in each direction has one more cell, in order to
+        # be able to calculate the finite difference for E.
+        # (For the other procs, this extra cell is not included, as it
+        # is obtained from a different proc)
+        x_offset = int(top.ixproc == top.nxprocs-1)
+        y_offset = int(top.iyproc == top.nyprocs-1)
+        z_offset = int(top.izproc == top.nzprocs-1)
+        # (x/y/z_offset is 1 if the extra cell is included, and 0 otherwise)
+        rho = self._rho[self.nxguardrho:self.nxguardrho+self.nx+x_offset,
+                        self.nyguardrho:self.nyguardrho+self.ny+y_offset,
+                        self.nzguardrho:self.nzguardrho+self.nz+z_offset]
+        phi = self._phi[self.nxguardphi:self.nxguardphi+self.nx+x_offset,
+                        self.nyguardphi:self.nyguardphi+self.ny+y_offset,
+                        self.nzguardphi:self.nzguardphi+self.nz+z_offset]
 
         # Local size of the arrays
-        ilo, ihi = 1, self.nx
-        jlo, jhi = 1, self.ny
-        klo, khi = 1, self.nz
+        ilo, ihi = 1, self.nx + x_offset
+        jlo, jhi = 1, self.ny + y_offset
+        klo, khi = 1, self.nz + z_offset
         # Global size of the arrays
         ilo_rho_gbl, ihi_rho_gbl = ilo, ihi
         jlo_rho_gbl, jhi_rho_gbl = jlo, jhi
@@ -493,6 +501,25 @@ class OpenBC3D(SubcycledPoissonSolver):
             ilo_rho_gbl, ihi_rho_gbl, jlo_rho_gbl, jhi_rho_gbl,
             klo_rho_gbl, khi_rho_gbl, idecomp, nxp, nyp, nzp,
             igfflag, self.ierr)
+
+        # For now, set phi in the guard cell to be equal to the value in
+        # in the last physical cell (this effectively sets E to 0 in the
+        # guard cells)
+        # - Along x
+        self._phi[:self.nxguardphi,:,:] = \
+            (self._phi[self.nxguardphi,:,:])[newaxis,:,:]
+        self._phi[ self.nxguardphi+self.nx+x_offset:,:,: ] = \
+            (self._phi[self.nxguardphi+self.nx+x_offset-1,:,:])[newaxis,:,:]
+        # - Along y
+        self._phi[:,:self.nyguardphi,:] = \
+            (self._phi[:,self.nyguardphi,:])[:,newaxis,:]
+        self._phi[ :,self.nyguardphi+self.ny+y_offset:,: ] = \
+            (self._phi[ :,self.nyguardphi+self.ny+y_offset-1,:])[:,newaxis,:]
+        # - Along z
+        self._phi[:,:,:self.nzguardphi] = \
+            (self._phi[:,:,self.nzguardphi])[:,:,newaxis]
+        self._phi[ :,:,self.nzguardphi+self.nz+z_offset:] = \
+            (self._phi[ :,:,self.nzguardphi+self.nz+z_offset-1])[:,:,newaxis]
 
         # --- Note that the guard cells and upper edge of the domain are not set yet.
         # --- A future fix will be to pass in the entire grid into the solver, including the guard
