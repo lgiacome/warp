@@ -722,8 +722,8 @@ class MeshRefinement(VisualizableClass):
             iit[...] = where(iit==self.blocknumber,-child.blocknumber,iit)
 
             # --- Set interior to positive child number.
-            l = maximum(self.fulllower,child.lower/child.refinement)
-            u = child.upper/child.refinement
+            l = maximum(self.fulllower,(child.lower/child.refinement).astype('l'))
+            u = (child.upper/child.refinement).astype('l')
             # --- Check against the case where only the guard cells of the child
             # --- overlap the parent.
             if (u[0] < l[0] or u[1] < l[1] or u[2] < l[2]): continue
