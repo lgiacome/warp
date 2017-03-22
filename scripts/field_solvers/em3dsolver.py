@@ -2914,6 +2914,8 @@ class EM3D(SubcycledPoissonSolver):
 
         particleboundaries3d(top.pgroup,-1,False)
 
+        self.solve2ndhalf()
+
         # --- call beforeloadrho functions
         if isinstalledbeforeloadrho(self.solve2ndhalf):
             uninstallbeforeloadrho(self.solve2ndhalf)
@@ -2922,8 +2924,6 @@ class EM3D(SubcycledPoissonSolver):
 #        self.loadsource()
         self.loadrho()
         self.loadj()
-
-        self.solve2ndhalf()
 
         self.getconductorobject()
 
