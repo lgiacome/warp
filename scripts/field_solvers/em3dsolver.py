@@ -1978,8 +1978,9 @@ class EM3D(SubcycledPoissonSolver):
         self.exchange_e(dir=-1)
         if self.l_verbose:print 'solve 1st half done'
 
-    def push_e(self,dir=1.):
+    def push_e(self,dir=1.,l_half=False):
         dt = dir*top.dt/self.ntsub
+        if l_half:dt*=0.5
         if self.novercycle==1:
             if dir>0.:
                 doit=True
@@ -2774,7 +2775,7 @@ class EM3D(SubcycledPoissonSolver):
                 if self.block.zrbnd==em3d.otherproc:oz=1
             return g[f.nxguard:-f.nxguard-ox,f.nzguard:-f.nzguard-oz,:]
 
-    def step(self,n=1,freq_print=10,lallspecl=0):
+    def step(self,n=1,freq_print=10,lallspecl=0,l_alawarpx=False):
         for i in range(n):
             if top.it%freq_print==0:print 'it = %g time = %g'%(top.it,top.time)
             if lallspecl:
@@ -2788,7 +2789,10 @@ class EM3D(SubcycledPoissonSolver):
                     l_last=1
                 else:
                     l_last=0
-            self.onestep(l_first,l_last)
+            if l_alawarpx:
+                self.onestep_alawarpx(l_first,l_last)
+            else:
+                self.onestep(l_first,l_last)
 
     def onestep(self,l_first,l_last):
         # --- call beforestep functions
@@ -2846,6 +2850,102 @@ class EM3D(SubcycledPoissonSolver):
         # --- call afterstep functions
         callafterstepfuncs.callfuncsinlist()
 
+    def onestep_alawarpx(self,l_first,l_last):
+        if self.ntsub<1.:
+            self.novercycle = nint(1./self.ntsub)
+            self.icycle = (top.it-1)%self.novercycle
+        else:
+            self.novercycle = 1
+            self.icycle = 0
+
+        # --- call beforestep functions
+        callbeforestepfuncs.callfuncsinlist()
+
+        # --- push by half step if first step (where all are synchronized)
+        if l_first:
+            if not self.solveroff:
+                self.allocatedataarrays()
+                self.push_e(l_half=True)
+                self.exchange_e()
+            for js in range(top.pgroup.ns):
+                self.push_positions(js,dtmult=0.5)
+
+        if not self.solveroff:
+            for i in range(int(self.ntsub)-1):
+                self.push_b_full()
+                if self.l_pushf:self.exchange_f()
+                self.exchange_b()
+                self.push_e_full(i)
+                self.exchange_e()
+            self.push_b_part_1()
+
+            if self.pml_method==2:
+                scale_em3d_bnd_fields(self.block,top.dt,self.l_pushf,self.l_pushg)
+
+            if self.l_pushf:self.exchange_f()
+            self.exchange_b()
+            self.setebp()
+
+            if not self.l_nodalgrid and top.efetch[0] != 4:
+                if self.l_fieldcenterK:
+                    self.fieldcenterK()
+                else:
+                    self.yee2node3d()
+            if self.l_nodalgrid and top.efetch[0] == 4:
+                self.fields.l_nodecentered=True
+                self.node2yee3d()
+            if self.l_smooth_particle_fields and any(self.npass_smooth>0):
+                self.smoothfields()
+            if self.l_correct_num_Cherenkov:self.smoothfields_poly()
+
+        top.zgrid+=top.vbeamfrm*top.dt
+        top.zbeam=top.zgrid
+
+        w3d.pgroupfsapi = top.pgroup
+        for js in range(top.pgroup.ns):
+            self.fetcheb(js)
+            self.push_velocity_full(js)
+            self.push_positions(js)
+
+        inject3d(1, top.pgroup)
+
+        # --- call user-defined injection routines
+        userinjection.callfuncsinlist()
+
+        particleboundaries3d(top.pgroup,-1,False)
+
+        # --- call beforeloadrho functions
+        if isinstalledbeforeloadrho(self.solve2ndhalf):
+            uninstallbeforeloadrho(self.solve2ndhalf)
+        beforeloadrho.callfuncsinlist()
+
+#        self.loadsource()
+        self.loadrho()
+        self.loadj()
+
+        self.solve2ndhalf()
+
+        self.getconductorobject()
+
+        if l_last:
+            for js in range(top.pgroup.ns):
+                self.push_positions(js,dtmult=-0.5)
+            if not self.solveroff:self.push_e(l_half=True)
+        else:
+            if not self.solveroff:
+                self.push_e()
+                self.exchange_e()
+
+        # --- update time, time counter
+        top.time+=top.dt
+        if top.it%top.nhist==0:
+#           zmmnt()
+           minidiag(top.it,top.time,top.lspecial)
+        top.it+=1
+
+        # --- call afterstep functions
+        callafterstepfuncs.callfuncsinlist()
+        
     def fetcheb(self,js,pg=None):
         if self.l_verbose:print me,'enter fetcheb'
         if pg is None:
@@ -2966,7 +3066,7 @@ class EM3D(SubcycledPoissonSolver):
 
         if self.l_verbose:print me,'exit push_ions_velocity_second_half'
 
-    def push_positions(self,js,pg=None):
+    def push_positions(self,js,pg=None,dtmult=1.):
         if self.l_verbose:print me,'enter push_ions_positions'
         if pg is None:
             pg = top.pgroup
@@ -2974,9 +3074,10 @@ class EM3D(SubcycledPoissonSolver):
         if np==0:return
         il = pg.ins[js]-1
         iu = il+pg.nps[js]
+        dt = top.dt*dtmult
         xpush3d(np,pg.xp[il:iu],pg.yp[il:iu],pg.zp[il:iu],
                        pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
-                       pg.gaminv[il:iu],top.dt)
+                       pg.gaminv[il:iu],dt)
 
         if self.l_verbose:print me,'exit push_ions_positions'
 
