@@ -3427,6 +3427,9 @@ class EMMRBlock(MeshRefinement,EM3D):
                             if cmax_in is None: cmax = max(cmax,maxnd(dataslice))
             if cmin_in is None: cmin = globalmin(cmin)
             if cmax_in is None: cmax = globalmax(cmax)
+            gridscale = kw.get('gridscale',None)
+            if cmin is not None and gridscale is not None: cmin *= gridscale
+            if cmax is not None and gridscale is not None: cmax *= gridscale
         return slice,cmin,cmax
 
     def pfex(self,l_children=1,guards=0,**kw):
