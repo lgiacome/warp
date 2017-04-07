@@ -265,7 +265,7 @@ class GaussianSTCProfile( object ):
             x(dw) = zeta * dw
 
         beta: float (in radian.second)
-            The amount of spatial chirp, at focus (in the lab frame)
+            The amount of angular dispersion, at focus (in the lab frame)
             Namely, a wave packet centered on the frequency (w0 + dw) has
             its wavefronts tilted by an angle theta(dw) = beta*dw
             with respect to the normal of the plane of the antenna.
