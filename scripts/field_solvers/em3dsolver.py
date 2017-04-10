@@ -2809,10 +2809,12 @@ class EM3D(SubcycledPoissonSolver):
         if l_first:
             for js in range(top.pgroup.ns):
                 self.push_velocity_second_half(js)
+                self.record_old_positions(js)
                 self.push_positions(js)
         else:
             for js in range(top.pgroup.ns):
                 self.push_velocity_full(js)
+                self.record_old_positions(js)
                 self.push_positions(js)
 
         inject3d(1, top.pgroup)
@@ -2905,6 +2907,7 @@ class EM3D(SubcycledPoissonSolver):
         for js in range(top.pgroup.ns):
             self.fetcheb(js)
             self.push_velocity_full(js)
+            self.record_old_positions(js)
             self.push_positions(js)
 
         inject3d(1, top.pgroup)
@@ -2929,6 +2932,7 @@ class EM3D(SubcycledPoissonSolver):
 
         if l_last:
             for js in range(top.pgroup.ns):
+                self.record_old_positions(js)
                 self.push_positions(js,dtmult=-0.5)
             if not self.solveroff:self.push_e(l_half=True)
         else:
@@ -3050,7 +3054,7 @@ class EM3D(SubcycledPoissonSolver):
         # --- update gamma
         self.set_gamma(js,pg)
 
-        if self.l_verbose:print me,'exit push_ions_velocity_second_half'
+        if self.l_verbose:print me,'exit push_velocity_second_half'
 
     def set_gamma(self,js,pg=None):
         if self.l_verbose:print me,'enter set_gamma'
@@ -3064,10 +3068,10 @@ class EM3D(SubcycledPoissonSolver):
         gammaadv(np,pg.gaminv[il:iu],pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
                  top.gamadv,top.lrelativ)
 
-        if self.l_verbose:print me,'exit push_ions_velocity_second_half'
+        if self.l_verbose:print me,'exit set_gamma'
 
     def push_positions(self,js,pg=None,dtmult=1.):
-        if self.l_verbose:print me,'enter push_ions_positions'
+        if self.l_verbose:print me,'enter push_positions'
         if pg is None:
             pg = top.pgroup
         np = pg.nps[js]
@@ -3079,7 +3083,25 @@ class EM3D(SubcycledPoissonSolver):
                        pg.uxp[il:iu],pg.uyp[il:iu],pg.uzp[il:iu],
                        pg.gaminv[il:iu],dt)
 
-        if self.l_verbose:print me,'exit push_ions_positions'
+        if self.l_verbose:print me,'exit push_positions'
+
+    def record_old_positions(self,js,pg=None,dtmult=1.):
+        if self.l_verbose:print me,'enter record_old_positions'
+        if pg is None:
+            pg = top.pgroup
+        np = pg.nps[js]
+        if np==0:return
+        il = pg.ins[js]-1
+        iu = il+pg.nps[js]
+        dt = top.dt*dtmult
+        if top.xoldpid>0:pg.pid[il:iu,top.xoldpid-1] = pg.xp[il:iu].copy()
+        if top.yoldpid>0:pg.pid[il:iu,top.yoldpid-1] = pg.yp[il:iu].copy()
+        if top.zoldpid>0:pg.pid[il:iu,top.zoldpid-1] = pg.zp[il:iu].copy()
+        if top.vxoldpid>0:pg.pid[il:iu,top.vxoldpid-1] = pg.uxp[il:iu].copy()
+        if top.vyoldpid>0:pg.pid[il:iu,top.vyoldpid-1] = pg.uyp[il:iu].copy()
+        if top.vzoldpid>0:pg.pid[il:iu,top.vzoldpid-1] = pg.uzp[il:iu].copy()
+
+        if self.l_verbose:print me,'exit record_old_positions'
 
     def apply_bndconditions(self,js,pg=None):
         if self.l_verbose:print me,'enter apply_ions_bndconditions'
