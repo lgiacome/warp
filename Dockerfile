@@ -37,7 +37,6 @@ RUN conda install -c conda-forge --yes \
     gcc \
     mpi4py \
     h5py \
-    pytest \
     dateutil \
     && conda clean --all
 
@@ -53,9 +52,7 @@ RUN cd warp/pywarp90 \
     && echo "   library_dirs += ['/home/warp_user/miniconda2/lib/']" >> setup.local.py \
     && echo "   libraries = fcompiler.libs + ['mpichf90', 'mpich', 'opa', 'mpl']" >> setup.local.py \
     && make install \
-    && make pinstall \
-    && make clean \
-    && make pclean
+    && make pinstall
 
 # Install pygist
 RUN git clone https://bitbucket.org/dpgrote/pygist.git \
