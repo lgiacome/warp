@@ -2949,7 +2949,7 @@ class EM3D(SubcycledPoissonSolver):
 
         # --- call afterstep functions
         callafterstepfuncs.callfuncsinlist()
-        
+
     def fetcheb(self,js,pg=None):
         if self.l_verbose:print me,'enter fetcheb'
         if pg is None:
@@ -3097,9 +3097,9 @@ class EM3D(SubcycledPoissonSolver):
         if top.xoldpid>0:pg.pid[il:iu,top.xoldpid-1] = pg.xp[il:iu].copy()
         if top.yoldpid>0:pg.pid[il:iu,top.yoldpid-1] = pg.yp[il:iu].copy()
         if top.zoldpid>0:pg.pid[il:iu,top.zoldpid-1] = pg.zp[il:iu].copy()
-        if top.vxoldpid>0:pg.pid[il:iu,top.vxoldpid-1] = pg.uxp[il:iu].copy()
-        if top.vyoldpid>0:pg.pid[il:iu,top.vyoldpid-1] = pg.uyp[il:iu].copy()
-        if top.vzoldpid>0:pg.pid[il:iu,top.vzoldpid-1] = pg.uzp[il:iu].copy()
+        if top.uxoldpid>0:pg.pid[il:iu,top.uxoldpid-1] = pg.uxp[il:iu].copy()
+        if top.uyoldpid>0:pg.pid[il:iu,top.uyoldpid-1] = pg.uyp[il:iu].copy()
+        if top.uzoldpid>0:pg.pid[il:iu,top.uzoldpid-1] = pg.uzp[il:iu].copy()
 
         if self.l_verbose:print me,'exit record_old_positions'
 
