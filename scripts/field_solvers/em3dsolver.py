@@ -5696,7 +5696,12 @@ class EM3D(SubcycledPoissonSolver):
         # Pick either a multigrid, or an openbc solver
         if self.solvergeom == w3d.XYZgeom:
             if w3d.boundxy == openbc:
-                from warp.field_solvers.openbcsolver import OpenBC3D as ESolver
+                try:
+                    # Open BC solver - Note: this requires the installation
+                    # of the openbc_poisson package (separate repository)
+                    from warp.field_solvers.openbcsolver import OpenBC3D as ESolver
+                except:
+                    ESolver = MultiGrid3D
             else:
                 ESolver = MultiGrid3D
         else:
