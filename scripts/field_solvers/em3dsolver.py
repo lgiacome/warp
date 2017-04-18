@@ -5816,19 +5816,23 @@ class EM3D(SubcycledPoissonSolver):
 
         # --- Calculate the static fields.
         top.grid_overlap = 2
+        # Pick either a multigrid, or an openbc solver
         if self.solvergeom == w3d.XYZgeom:
-            ESolver = MultiGrid3D
+            if w3d.boundxy == openbc:
+                from warp.field_solvers.openbcsolver import OpenBC3D as ESolver
+            else:
+                ESolver = MultiGrid3D
         else:
             ESolver = MultiGrid2D
+        # Initialize electrostatic solver
         esolver = ESolver(nxguardphi=self.nxguard+1,
                           nyguardphi=self.nyguard+1,
                           nzguardphi=self.nzguard+1,
                           nxguarde=self.nxguard,
                           nyguarde=self.nyguard,
                           nzguarde=self.nzguard,
-                          mgtol = 1.e-20,
+#                          mgtol = 1.e-20,
                           )
-
         esolver.conductordatalist = self.conductordatalist
         # check if used for calculation of relativistic beam
         if relat_pgroup is not None:
