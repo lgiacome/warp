@@ -62,7 +62,7 @@ c     --- time to save memory.
      &                 bongrid(0:nxlocal,iy,iz,0),
      &                 bongrid(0:nxlocal,iy,iz,1),
      &                 bongrid(0:nxlocal,iy,iz,2),
-     &                 ex,ey,ez,1.,1.,bendres,bendradi,1.,1.)
+     &                 ex,ey,ez,1.,1.,bendres,bendradi,1.)
         enddo
       enddo
 

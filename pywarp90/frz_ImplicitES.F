@@ -56,7 +56,7 @@ c     --- time to save memory.
      &               bongrid(0:nxlocal,iz,0),
      &               bongrid(0:nxlocal,iz,1),
      &               bongrid(0:nxlocal,iz,2),
-     &               ex,ey,ez,1.,1.,bendres,bendradi,1.,1.)
+     &               ex,ey,ez,1.,1.,bendres,bendradi,1.)
       enddo
 
 c     --- Apply the boundary conditions, setting the values in the guard cells.

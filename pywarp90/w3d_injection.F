@@ -627,7 +627,7 @@ c           --- The reusing of variable makes for very confusing naming!
             bendradi = 1.
             if (boost_gamma==1.) then
               call exteb3d(nn,xx,yy,zz,uz,gg,0.,fulldt_s*0.5,bx,by,bz,ex,ey,ez,
-     &                     pgroup%sm(is),pgroup%sq(is),bendres,bendradi,1.,fulldt_s)
+     &                     pgroup%sm(is),pgroup%sq(is),bendres,bendradi,fulldt_s)
             else
               if (boost_gamma>1.) then
                 allocate(exlab(nn),eylab(nn),ezlab(nn))
@@ -661,7 +661,7 @@ c             --- Add in ears and uniform focusing E field pieces
 c             --- Set quad, dipole E and B; All: Bz
               call exteb3d(nn,xx,yy,zlab,uzlab,ginvlab,0.,fulldt_s*0.5,
      &                     bxlab,bylab,bzlab,exlab,eylab,ezlab,
-     &                     pgroup%sm(is),pgroup%sq(is),bendres,bendradi,1.,fulldt_s)
+     &                     pgroup%sm(is),pgroup%sq(is),bendres,bendradi,fulldt_s)
               call seteb_in_boosted_frame(nn,exlab,eylab,ezlab,bxlab,bylab,bzlab,
      &                                    0.,0.,uzboost,boost_gamma)
               ex = ex + exlab
@@ -1700,8 +1700,7 @@ c           --- get E self-field at initial positions
 
 c           --- get external fields at initial positions
             call exteb3d(nn,xx,yy,zz,uz,gg,0.,fulldt_s*0.5,bx,by,bz,ex,ey,ez,
-     &                   pgroup%sm(is),pgroup%sq(is),bendres,bendradi,1.,
-     &                   fulldt_s)
+     &                   pgroup%sm(is),pgroup%sq(is),bendres,bendradi,fulldt_s)
 
 c           --- Now that the B field is gathered, the l_inj_along_B option
 c           --- can be handled.
@@ -1919,7 +1918,7 @@ c           --- calculate new E self-fields
 c           --- Get external fields at current positions.
             if (boost_gamma==1.) then
               call exteb3d(nn,xx,yy,zz,uz,gg,-fulldt_s*0.5,0.,bx,by,bz,ex,ey,ez,
-     &                     pgroup%sm(is),pgroup%sq(is),bendres,bendradi,1.,fulldt_s)
+     &                     pgroup%sm(is),pgroup%sq(is),bendres,bendradi,fulldt_s)
             else
               if (boost_gamma>1.) then
                 allocate(exlab(nn),eylab(nn),ezlab(nn))
@@ -1954,7 +1953,7 @@ c           --- Get external fields at current positions.
 c             --- Set quad, dipole E and B; All: Bz
               call exteb3d(nn,xx,yy,zlab,uzlab,ginvlab,-fulldt_s*0.5,0.,
      &                     bxlab,bylab,bzlab,exlab,eylab,ezlab,
-     &                     pgroup%sm(is),pgroup%sq(is),bendres,bendradi,1.,fulldt_s)
+     &                     pgroup%sm(is),pgroup%sq(is),bendres,bendradi,fulldt_s)
               call seteb_in_boosted_frame(nn,exlab,eylab,ezlab,bxlab,bylab,bzlab,
      &                                     0.,0.,uzboost,boost_gamma)
               ex = ex + exlab
@@ -2504,7 +2503,7 @@ c           --- get E self-field at initial positions
 
 c           --- get external fields at initial positions
             call exteb3d(nn,xx,yy,zz,uz,gg,0.,fulldt_s*0.5,bx,by,bz,ex,ey,ez,
-     &                   pgroup%sm(is),pgroup%sq(is),bendres,bendradi,1.,fulldt_s)
+     &                   pgroup%sm(is),pgroup%sq(is),bendres,bendradi,fulldt_s)
 
 c           --- Now that the B field is gathered, the l_inj_along_B option
 c           --- can be handled.
@@ -2697,7 +2696,7 @@ c           --- calculate new E self-fields
 
 c           --- Get external fields at current positions.
             call exteb3d(nn,xx,yy,zz,uz,gg,-fulldt_s*0.5,0.,bx,by,bz,ex,ey,ez,
-     &                pgroup%sm(is),pgroup%sq(is),bendres,bendradi,1.,fulldt_s)
+     &                pgroup%sm(is),pgroup%sq(is),bendres,bendradi,fulldt_s)
 
 c           --- complete B advance
             call bpusht3d(nn,ux,uy,uz,gg,bx,by,bz,pgroup%sq(is),pgroup%sm(is),

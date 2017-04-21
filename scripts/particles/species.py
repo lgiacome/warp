@@ -695,7 +695,6 @@ class Species(object):
         dtr = +0.5*top.dt
         bendres = ones(self.nps,'d')
         bendradi = ones(self.nps,'d')
-        gammabar = 1.
     # --- getbend not available in Python yet
     # getbend(self.nps,self.nps,
     #         self.zp,self.uzp,self.gaminv,
@@ -712,7 +711,7 @@ class Species(object):
                 self.uzp,self.gaminv,dtl,dtr,
                 self.bx,self.by,self.bz,
                 self.ex,self.ey,self.ez,
-                self.sm,self.sq,bendres,bendradi,gammabar,top.dt)
+                self.sm,self.sq,bendres,bendradi,top.dt)
 
     def addparticles(self,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,js=None,**kw):
         if js is None:

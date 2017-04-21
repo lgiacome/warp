@@ -1021,11 +1021,11 @@ c  Finally, moment diagnostic printout and history storage
       end
 c=============================================================================
       subroutine exteb3d(np,xp,yp,zp,uzp,gaminv,dtl,dtr,
-     &                   bx,by,bz,ex,ey,ez,m,q,bendres,bendradi,gammabar,dt)
+     &                   bx,by,bz,ex,ey,ez,m,q,bendres,bendradi,dt)
       use Subtimersw3d
       use Timers
       integer(ISZ):: np
-      real(kind=8):: dtl,dtr,m,q,gammabar,dt
+      real(kind=8):: dtl,dtr,m,q,dt
       real(kind=8):: xp(np), yp(np), zp(np)
       real(kind=8):: uzp(np), gaminv(np)
       real(kind=8):: bx(np), by(np), bz(np), bendres(np), bendradi(np)
@@ -1877,7 +1877,7 @@ c             --- Set quad, dipole E and B; All: Bz
      &                     gaminv(i1:i2),-halfdt_s,halfdt_s,
      &                     bx(i1:i2),by(i1:i2),bz(i1:i2),
      &                     ex(i1:i2),ey(i1:i2),ez(i1:i2),sm(is),sq(is),
-     &                     bendres,bendradi,gammabar,fulldt_s)
+     &                     bendres,bendradi,fulldt_s)
             else
               uzboost=clight*sqrt(boost_gamma*boost_gamma-1.)
               exlab(1:ip)=0.;eylab(1:ip)=0.;ezlab(1:ip)=0.
@@ -1921,7 +1921,7 @@ c             --- Set quad, dipole E and B; All: Bz
      &                     ginvlab(1),-halfdt_s,halfdt_s,
      &                     bxlab(1),bylab(1),bzlab(1),
      &                     exlab(1),eylab(1),ezlab(1),sm(is),sq(is),
-     &                     bendres,bendradi,gammabar,fulldt_s)
+     &                     bendres,bendradi,fulldt_s)
               call seteb_in_boosted_frame(ip,exlab(1),eylab(1),ezlab(1),
      &                                       bxlab(1),bylab(1),bzlab(1),
      &                                       0.,0.,uzboost,boost_gamma)
@@ -2018,7 +2018,7 @@ c             --- Set quad, dipole E and B; All: Bz
      &                     gaminv(i1:i2),0.,halfdt_s,
      &                     bx(i1:i2),by(i1:i2),bz(i1:i2),
      &                     ex(i1:i2),ey(i1:i2),ez(i1:i2),sm(is),sq(is),
-     &                     bendres,bendradi,gammabar,fulldt_s)
+     &                     bendres,bendradi,fulldt_s)
             else
               uzboost=clight*sqrt(boost_gamma*boost_gamma-1.)
               exlab(1:ip)=0.;eylab(1:ip)=0.;ezlab(1:ip)=0.
@@ -2059,7 +2059,7 @@ c             --- Set quad, dipole E and B; All: Bz
      &                     ginvlab(1),0.,halfdt_s,
      &                     bxlab(1),bylab(1),bzlab(1),
      &                     exlab(1),eylab(1),ezlab(1),sm(is),sq(is),
-     &                     bendres,bendradi,gammabar,fulldt_s)
+     &                     bendres,bendradi,fulldt_s)
               call seteb_in_boosted_frame(ip,exlab(1),eylab(1),ezlab(1),
      &                                       bxlab(1),bylab(1),bzlab(1),
      &                                       0.,0.,uzboost,boost_gamma)
@@ -2228,7 +2228,7 @@ c               --- Set quad, dipole E and B; All: Bz
      &                       gaminv(i1:i2),-halfdt_s,0.,
      &                       bx(i1:i2),by(i1:i2),bz(i1:i2),
      &                       ex(i1:i2),ey(i1:i2),ez(i1:i2),sm(is),sq(is),
-     &                       bendres,bendradi,gammabar,fulldt_s)
+     &                       bendres,bendradi,fulldt_s)
               else
                 uzboost=clight*sqrt(boost_gamma*boost_gamma-1.)
                 exlab(1:ip)=0.;eylab(1:ip)=0.;ezlab(1:ip)=0.
@@ -2269,7 +2269,7 @@ c               --- Set quad, dipole E and B; All: Bz
      &                       ginvlab(1),-halfdt_s,0.,
      &                       bxlab(1),bylab(1),bzlab(1),
      &                       exlab(1),eylab(1),ezlab(1),sm(is),sq(is),
-     &                       bendres,bendradi,gammabar,fulldt_s)
+     &                       bendres,bendradi,fulldt_s)
                 call seteb_in_boosted_frame(ip,exlab(1),eylab(1),ezlab(1),
      &                                      bxlab(1),bylab(1),bzlab(1),
      &                                      0.,0.,uzboost,boost_gamma)
