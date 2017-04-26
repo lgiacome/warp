@@ -6,6 +6,7 @@ import numpy as np
 from scipy.constants import c, m_e, e
 from scipy.interpolate import RegularGridInterpolator
 from scipy.special import genlaguerre
+from scipy.misc import factorial
 import h5py
 # Try importing parallel functions, in order to broadcast
 # the experimental laser file, if required
@@ -402,6 +403,12 @@ class LaguerreGaussianProfile(object):
     Be careful, a new Gouy phase is defined such as :
                 \psi_{LG}  = (2m + n+ 1) \psi_{G}
 
+    In order to keep a normalized energy, it is necessary to divide the LG
+    pulse energy expression by a coefficient alpha (depending on m and n). This
+    coefficient can be found analytically and is equal to n! * L_{mn}[0].
+    To take it into account, we divide the electric field by sqrt(alpha).
+
+
     Note than when n and m are both equal to 0, this function returns the same
     results as GaussianProfile.
     """
@@ -533,6 +540,9 @@ class LaguerreGaussianProfile(object):
         # Generate the Laguerre function via the scipy function
         L_mn = genlaguerre(self.m, self.n)
 
+        # Calculate alpha, the normalisation coefficient (cf docstring)
+        alpha = L_mn(0) * factorial( self.n )
+
         # - Propagation phase at the position of the source
         propag_phase = self.k0*c*( t - self.t_peak ) \
              + self.k0 * r2 / (2*R) \
@@ -552,7 +562,7 @@ class LaguerreGaussianProfile(object):
 
         # - Combine profiles
         profile =  prefactor * long_profile * trans_profile \
-                    * curvature_oscillations
+                    * curvature_oscillations / np.sqrt(alpha)
 
         # Boosted-frame: convert the laser amplitude
         # These formula assume that the antenna is motionless in the lab frame
