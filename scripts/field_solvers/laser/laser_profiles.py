@@ -405,7 +405,7 @@ class LaguerreGaussianProfile(object):
 
     In order to keep a normalized energy, it is necessary to divide the LG
     pulse energy expression by a coefficient alpha (depending on m and n). This
-    coefficient can be found analytically and is equal to n! * L_{mn}[0].
+    coefficient can be found analytically and is equal to (m+n)!/m!.
     To take it into account, we divide the electric field by sqrt(alpha).
 
 
@@ -541,7 +541,7 @@ class LaguerreGaussianProfile(object):
         L_mn = genlaguerre(self.m, self.n)
 
         # Calculate alpha, the normalisation coefficient (cf docstring)
-        alpha = L_mn(0) * factorial( self.n )
+        alpha = factorial( self.n + self.m ) / factorial( self.m )
 
         # - Propagation phase at the position of the source
         propag_phase = self.k0*c*( t - self.t_peak ) \
@@ -550,19 +550,22 @@ class LaguerreGaussianProfile(object):
              - phi * self.n
 
         # - Longitudinal and transverse profile
-        trans_profile = np.exp( - r2 / w**2 )
+        trans_profile = np.exp( - r2 / w**2 ) \
+                        * (r*np.sqrt(2)/w)**self.n * L_mn(2*(r/w)**2)
+
         long_profile = np.exp(
         - ((t - self.t_peak - z_source/c ) * self.inv_tau)**self.temporal_order)
+
         # -Curvature oscillations
         curvature_oscillations = np.cos( propag_phase )
 
         # - Prefactor
-        prefactor = (self.waist/w)**self.geom_coeff \
-                     * (r*np.sqrt(2)/w)**self.n * L_mn(2*(r/w)**2)
+        prefactor = (self.waist/w)**self.geom_coeff / np.sqrt(alpha)
+
 
         # - Combine profiles
         profile =  prefactor * long_profile * trans_profile \
-                    * curvature_oscillations / np.sqrt(alpha)
+                    * curvature_oscillations
 
         # Boosted-frame: convert the laser amplitude
         # These formula assume that the antenna is motionless in the lab frame
