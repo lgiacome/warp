@@ -680,6 +680,110 @@ class Species(object):
         """Fetches the self E field, putting it into the self.pgroup.ex etc arrays."""
         fetche3d(self.pgroup,self.ins,self.nps,self.js+1)
 
+    def iterpgroups(self):
+        if self.pgroups is None:
+            yield self.pgroup
+        else:
+            for pgroup in self.flatten(self.pgroups):
+                yield pgroup
+
+    def xpush3d(self, dt=None):
+        if dt is None:
+            dt = top.dt
+        for pgroup in self.iterpgroups():
+            for js in self.jslist:
+                i1 = pgroup.ins[js] - 1
+                i2 = i1 + pgroup.nps[js]
+                xpush3d(pgroup.nps[js], pgroup.xp[i1:i2], pgroup.yp[i1:i2], pgroup.zp[i1:i2],
+                        pgroup.uxp[i1:i2], pgroup.uyp[i1:i2], pgroup.uzp[i1:i2], pgroup.gaminv[i1:i2], dt)
+
+    def epush3d(self, dt=None):
+        if dt is None:
+            dt = top.dt
+        for pgroup in self.iterpgroups():
+            for js in self.jslist:
+                i1 = pgroup.ins[js] - 1
+                i2 = i1 + pgroup.nps[js]
+                epush3d(pgroup.nps[js], pgroup.uxp[i1:i2], pgroup.uyp[i1:i2], pgroup.uzp[i1:i2],
+                        pgroup.ex[i1:i2], pgroup.ey[i1:i2], pgroup.ez[i1:i2],
+                        pgroup.sq[js], pgroup.sm[js], dt)
+                gammaadv(pgroup.nps[js], pgroup.gaminv[i1:i2], pgroup.uxp[i1:i2], pgroup.uyp[i1:i2], pgroup.uzp[i1:i2],
+                         top.gamadv, top.lrelativ)
+
+    def bpush3d(self, dt=None):
+        if dt is None:
+            dt = top.dt
+        for pgroup in self.iterpgroups():
+            for js in self.jslist:
+                i1 = pgroup.ins[js] - 1
+                i2 = i1 + pgroup.nps[js]
+                bpush3d(pgroup.nps[js], pgroup.uxp[i1:i2], pgroup.uyp[i1:i2], pgroup.uzp[i1:i2], pgroup.gaminv[i1:i2],
+                        pgroup.bx[i1:i2], pgroup.by[i1:i2], pgroup.bz[i1:i2], pgroup.sq[js], pgroup.sm[js], dt, top.ibpush)
+
+    def getselffields(self):
+        for pgroup in self.iterpgroups():
+            for js in self.jslist:
+                i1 = pgroup.ins[js]
+                np = pgroup.nps[js]
+                fetche3d(pgroup, i1, np, js+1)
+
+    def getappliedfields(self, dt=None, dtl=None, dtr=None):
+        if dt is None:
+            dt = top.dt
+
+        for pgroup in self.iterpgroups():
+            for js in self.jslist:
+                i1 = pgroup.ins[js] - 1
+                i2 = i1 + pgroup.nps[js]
+
+                np = pgroup.nps[js]
+                m = pgroup.sm[js]
+                q = pgroup.sq[js]
+                x = pgroup.xp[i1:i2]
+                y = pgroup.yp[i1:i2]
+                z = pgroup.zp[i1:i2]
+                ux = pgroup.uxp[i1:i2]
+                uy = pgroup.uyp[i1:i2]
+                uz = pgroup.uzp[i1:i2]
+                gi = pgroup.gaminv[i1:i2]
+                ex = pgroup.ex[i1:i2]
+                ey = pgroup.ey[i1:i2]
+                ez = pgroup.ez[i1:i2]
+                bx = pgroup.bx[i1:i2]
+                by = pgroup.by[i1:i2]
+                bz = pgroup.bz[i1:i2]
+
+                # --- Handle bends
+                bendres = ones(np)
+                bendradi = ones(np)
+                getbend(np, np, z, uz, gi,  bendres,  bendradi, dtl, dtr, false)
+                # --- Correct Ez_self for warped mesh effect
+                # --- !!! This is fragile since it depends on this being called immediately after
+                # --- !!! fetching the self feilds.
+                bendez3d(np, x, z, ez, bendres, bendradi, top.bends, w3d.bnezflag, top.linbend)
+
+                # --- Add in ears and uniform focusing E field pieces
+                othere3d(np, x, y, z,
+                         top.zbeam, top.zimax, top.zimin, top.straight, top.ifeears, top.eears,
+                         top.eearsofz, top.dzzi, top.nzzarr, top.zzmin,
+                         top.dedr, top.dexdx, top.deydy, top.dbdr, top.dbxdy, top.dbydx,
+                         ex, ey, ez, bx, by, bz)
+
+                # --- Add fields from the lattice elements
+                exteb3d(np, x, y, z, uz, gi, dtl, dtr,
+                        bx, by, bz, ex, ey, ez, m, q,
+                        bendres, bendradi, dt)
+
+    def loadrho(self, lzero=true, lfinalize_rho=True):
+        for pgroup in self.iterpgroups():
+            loadrho3d(pgroup, -1, -1, -1, lzero, lfinalize_rho)
+        if lfinalize_rho:
+            finalizerho()
+
+    def particleboundaries(self, lcallcontrollers=True):
+        for pgroup in self.iterpgroups():
+            particleboundaries3d(pgroup, -1, lcallcontrollers)
+
     def flatten(self,lis):
         """Given a list, possibly nested to any level, return it flattened."""
         new_lis = []
@@ -690,7 +794,7 @@ class Species(object):
                 new_lis.append(item)
         return new_lis
 
-    def getappliedfields(self):
+    def getappliedfieldsold(self):
         dtl = -0.5*top.dt
         dtr = +0.5*top.dt
         bendres = ones(self.nps,'d')
@@ -2134,7 +2238,7 @@ class Species(object):
         of code."""
         if pgroup is None:
             if self.pgroups is not None:
-                for pg in self.pgroups:
+                for pg in self.flatten(self.pgroups):
                     self._callppfunc(ppfunc,pg,**kw)
                 return
             else:
