@@ -328,7 +328,8 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
                  particle_data=["position", "momentum", "weighting", "t"],
                  select=None, write_dir=None, lparallel_output=False,
                  write_metadata_parallel=False, onefile_per_flush=False,
-                 species={"electrons": None},iteration_min=None,iteration_max=None):
+                 species={"electrons": None},iteration_min=None,
+                 iteration_max=None, plane_velocity=None):
         """
         Initialize diagnostics that retrieve the particles crossing a given
         plane.
@@ -345,6 +346,9 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
 
+        plane_velocity : a list of 3 floats
+            Speed of the plane (in x ,y, z) in m/s
+
         See the documentation of ParticleDiagnostic and ParticleAccumulator
         for the other parameters
         """
@@ -354,6 +358,7 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
             write_dir = 'probe_diags'
         self.plane_position = plane_position
         self.plane_normal_vector = plane_normal_vector
+        self.plane_velocity = plane_velocity
 
         # Initialize Particle Accumulator normal attributes
         ParticleAccumulator.__init__(self, period, 1, top, w3d, comm_world,
@@ -373,7 +378,28 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
 
     def init_catcher_object (self):
         self.particle_catcher = ParticleProbeCatcher( self.top, self.plane_position, \
-                                self.plane_normal_vector, self.particle_data )
+                                self.plane_normal_vector,  self.plane_velocity,
+                                self.particle_data )
+    def write( self ):
+        """
+        Redefines the method write of the parent class ParticleDiagnostic
+
+        Should be registered with installafterstep in Warp
+        """
+        if self.plane_velocity is not None:
+            increment = self.plane_velocity * self.top.dt
+            self.plane_position += increment
+            self.particle_catcher.plane_position +=  increment
+
+        if ((self.top.it>=self.iteration_min) and \
+            (self.top.it<=self.iteration_max)):
+            # At each period_diag, store new particles in memory buffers
+            if self.top.it % self.period_diag == 0:
+                self.store_new_particles()
+            # Every self.period, write the buffered slices to disk
+            if (self.top.it % self.period == 0 or \
+                self.top.it==self.iteration_max):
+                self.flush_to_disk()
 
 class ParticleStorer:
     """
@@ -729,7 +755,8 @@ class ParticleProbeCatcher(ParticleCatcher):
     """
     Class that extracts, interpolates and gathers particles
     """
-    def __init__(self, top, plane_position, plane_normal_vector, particle_data ):
+    def __init__(self, top, plane_position, plane_normal_vector, plane_velocity,
+                  particle_data ):
         """
         Initialize the ParticleProbeCatcher object
 
@@ -750,6 +777,7 @@ class ParticleProbeCatcher(ParticleCatcher):
         # Some attributes neccessary for particle selections
         self.plane_position = plane_position
         self.plane_normal_vector = plane_normal_vector
+        self.plane_velocity  = plane_velocity
 
     def get_particle_slice( self, species ):
         """
@@ -789,12 +817,16 @@ class ParticleProbeCatcher(ParticleCatcher):
         # For this snapshot:
         # - check if the particles where before the plane at the previous timestep
         # - check if the particle are beyond the plane at the current timestep
+        if self.plane_velocity is not None:
+            r_old = self.plane_position - self.plane_velocity * self.top.dt
+        else:
+            r_old = self.plane_position
         r = self.plane_position
         n = self.plane_normal_vector
         previous_position_relative_to_plane = \
-              n[0]*(previous_x - r[0]) \
-            + n[1]*(previous_y - r[1]) \
-            + n[2]*(previous_z - r[2])
+              n[0]*(previous_x - r_old[0]) \
+            + n[1]*(previous_y - r_old[1]) \
+            + n[2]*(previous_z - r_old[2])
         current_position_relative_to_plane = \
               n[0]*(current_x - r[0]) \
             + n[1]*(current_y - r[1]) \
