@@ -95,8 +95,7 @@ def addparticlesPXR(self,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,w=None,
                      lmomentum=False,
                      l2symtry=None,l4symtry=None,lrz=None,
                      pidpairs=None,
-                     lnewparticles=True,
-                     pidpairs=None):
+                     lnewparticles=True):
 
     """
     Adds particles to the simulation (this subroutine replaces Warp's
@@ -109,20 +108,12 @@ def addparticlesPXR(self,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,w=None,
             Any that are unsupplied default to zero, except gi, which defaults
             to 1. (gi is 1/gamma, the relatistic parameter)
 
+    - w=1.: particle weight
+            this is only used if top.wpid > 0 and if lnewparticles is true.
+
     - ux, uy, uz: particle momentum instead of vx,vy,vz
             These can be used, passing in momentums. The flag lmomentum will be
             set to true.
-
-    - pid: additional particle information, such as an ID number or weight.
-
-    - pidpairs=None
-            Allows setting specific pid columns. Argument must be a list of
-            lists, each having the format [id,pidvalue].
-            id is the one-based index returned by nextpid.
-            The assigment pid[:,id-1] = pidvalue is done.
-
-    - w=1.: particle weight
-            this is only used if top.wpid > 0 and if lnewparticles is true.
 
     - lallindomain=false:
             Flags whether particles are within the parallel domains.
@@ -141,14 +132,26 @@ def addparticlesPXR(self,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,w=None,
     - zmmin=top.zpminlocal+top.zgrid, zmmax=top.zpmaxlocal+top.zgrid
             z extent of the domain, should only be set in unusual circumstances.
 
-    - l2symtry, l4symtry, lrz: System symmetries
-            default to w3d values
-
     - lmomentum=false:
-           Flags whether momentum or velocities are being input.
-           Set to false when velocities are input as velocities, true when
-           input as massless momentum (as WARP stores them).
-           Only used when top.lrelativ is true.
+            Flags whether momentum or velocities are being input.
+            Set to false when velocities are input as velocities, true when
+            input as massless momentum (as WARP stores them).
+            Only used when top.lrelativ is true.
+
+    - l2symtry, l4symtry, lrz
+            System symmetries default to w3d values
+
+    - pidpairs=None
+            Allows setting specific pid columns. Argument must be a list of
+            lists, each having the format [id,pidvalue].
+            id is the one-based index returned by nextpid.
+            The assigment pid[:,id-1] = pidvalue is done.
+
+    - lnewparticles=true:
+            Flag whether the particles are treated as new. If so, the ssn will be
+            set if needed, and the position saved as the birth location.
+            Set this to false if using addparticles to restore particles.
+
     """
 
     nps0 = x.size
@@ -163,6 +166,15 @@ def addparticlesPXR(self,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,w=None,
             w=np.ones(nps0)
         pids[:,pxr.wpid-1]=w*self.sw0
 
+    # --- Use momentum quantities if specified. These take
+    # --- precedence over vx, vy, and vz.
+    if ux is not None or uy is not None or uz is not None:
+        lmomentum = true
+        if ux is not None: vx = ux
+        if uy is not None: vy = uy
+        if uz is not None: vz = uz
+
+    # --- Convert all to arrays of length maxlen, broadcasting scalars
     x = array(x)*ones(nps0,'d')
     y = array(y)*ones(nps0,'d')
     z = array(z)*ones(nps0,'d')
@@ -262,7 +274,7 @@ def addparticlesPXR(self,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,w=None,
             if top.uxoldpid > 0: pids[:,top.uxoldpid-1] = vx/gi
             if top.uyoldpid > 0: pids[:,top.uyoldpid-1] = vy/gi
             if top.uzoldpid > 0: pids[:,top.uzoldpid-1] = vz/gi
-            
+
     # --- Call to PICSAR function for adding particles
     pxr.py_add_particles_to_species(self.pxr_species_array, nps0,pxr.npid,
                                     x,
