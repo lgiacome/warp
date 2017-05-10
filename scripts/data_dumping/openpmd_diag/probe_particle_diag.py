@@ -336,17 +336,17 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
 
         Parameters
         ----------
-        plane_position: a list of 3 floats (in meters)
+        plane_position: a 1darray containing 3 floats (in meters)
             The position (in x, y, z) of one of the points of the plane
 
-        plane_normal_vector: a list of 3 floats
+        plane_normal_vector: a 1darray containing of 3 floats
             The coordinates (in x, y, z) of one of the vectors of the plane
 
         period: int
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
 
-        plane_velocity : a list of 3 floats
+        plane_velocity : a 1darray containing of 3 floats
             Speed of the plane (in x ,y, z) in m/s
 
         See the documentation of ParticleDiagnostic and ParticleAccumulator
@@ -380,6 +380,7 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
         self.particle_catcher = ParticleProbeCatcher( self.top, self.plane_position, \
                                 self.plane_normal_vector,  self.plane_velocity,
                                 self.particle_data )
+
     def write( self ):
         """
         Redefines the method write of the parent class ParticleDiagnostic
@@ -391,15 +392,7 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
             self.plane_position += increment
             self.particle_catcher.plane_position +=  increment
 
-        if ((self.top.it>=self.iteration_min) and \
-            (self.top.it<=self.iteration_max)):
-            # At each period_diag, store new particles in memory buffers
-            if self.top.it % self.period_diag == 0:
-                self.store_new_particles()
-            # Every self.period, write the buffered slices to disk
-            if (self.top.it % self.period == 0 or \
-                self.top.it==self.iteration_max):
-                self.flush_to_disk()
+        ParticleAccumulator.write( self )
 
 class ParticleStorer:
     """
