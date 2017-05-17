@@ -336,17 +336,17 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
 
         Parameters
         ----------
-        plane_position: a 1darray containing 3 floats (in meters)
+        plane_position: a list of 3 floats (in meters)
             The position (in x, y, z) of one of the points of the plane
 
-        plane_normal_vector: a 1darray containing 3 floats
+        plane_normal_vector: a list of 3 floats
             The coordinates (in x, y, z) of one of the vectors of the plane
 
         period: int
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
 
-        plane_velocity : a 1darray containing 3 floats
+        plane_velocity : a list of 3 floats
             Speed of the plane (in x ,y, z) in m/s
 
         See the documentation of ParticleDiagnostic and ParticleAccumulator
@@ -380,7 +380,6 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
         self.particle_catcher = ParticleProbeCatcher( self.top, self.plane_position, \
                                 self.plane_normal_vector,  self.plane_velocity,
                                 self.particle_data )
-
     def write( self ):
         """
         Redefines the method write of the parent class ParticleDiagnostic
@@ -392,7 +391,15 @@ class ProbeParticleDiagnostic(ParticleAccumulator):
             self.plane_position += increment
             self.particle_catcher.plane_position +=  increment
 
-        ParticleAccumulator.write( self )
+        if ((self.top.it>=self.iteration_min) and \
+            (self.top.it<=self.iteration_max)):
+            # At each period_diag, store new particles in memory buffers
+            if self.top.it % self.period_diag == 0:
+                self.store_new_particles()
+            # Every self.period, write the buffered slices to disk
+            if (self.top.it % self.period == 0 or \
+                self.top.it==self.iteration_max):
+                self.flush_to_disk()
 
 class ParticleStorer:
     """
@@ -689,6 +696,73 @@ class ParticleCatcher:
 
         return( quantity_array )
 
+    def get_quantity_pgroup(self, pgroup, quantity, l_prev=False):
+        """
+        Get a given particle quantity when using PICSAR
+
+        Parameters
+        ----------
+        pgroup: a pgroup of Species object of PICSAR
+            Contains the particle data from which the quantity is extracted
+
+        quantity: string
+            Describes which quantity is queried
+            Either "x", "y", "z", "ux", "uy", "uz", "w"
+
+        l_prev: boolean
+            If True, then return the quantities of the previous timestep;
+            else return quantities of the current timestep
+        """
+        # Extract the chosen quantities
+        # At current timestep
+        if not(l_prev):
+            if quantity == "x":
+                quantity_array = pgroup.xp
+            elif quantity == "y":
+                quantity_array = pgroup.yp
+            elif quantity == "z":
+                quantity_array = pgroup.zp
+            elif quantity == "ux":
+                quantity_array = pgroup.uxp
+            elif quantity == "uy":
+                quantity_array = pgroup.uyp
+            elif quantity == "uz":
+                quantity_array = pgroup.uzp
+        # Or at previous timestep
+        else:
+            if quantity == "x":
+                quantity_array = pgroup.pid[:, self.top.xoldpid-1]
+            elif quantity == "y":
+                quantity_array = pgroup.pid[:, self.top.yoldpid-1]
+            elif quantity == "z":
+                quantity_array = pgroup.pid[:, self.top.zoldpid-1]
+            elif quantity == "ux":
+                quantity_array = pgroup.pid[:, self.top.uxoldpid-1]
+            elif quantity == "uy":
+                quantity_array = pgroup.pid[:, self.top.uyoldpid-1]
+            elif quantity == "uz":
+                quantity_array = pgroup.pid[:, self.top.uzoldpid-1]
+
+         # Quantities that do not depend on time step
+        if quantity == "w":
+             quantity_array = pgroup.pid[:, self.top.wpid-1]
+        elif quantity == "id":
+             quantity_array = pgroup.pid[:, self.top.ssnpid-1]
+        elif quantity == "ex":
+            quantity_array = pgroup.ex
+        elif quantity == "ey":
+            quantity_array = pgroup.ey
+        elif quantity == "ez":
+            quantity_array = pgroup.ez
+        elif quantity == "bx":
+            quantity_array = pgroup.bx
+        elif quantity == "by":
+            quantity_array = pgroup.by
+        elif quantity == "bz":
+            quantity_array = pgroup.bz
+
+        return( quantity_array )
+
     def apply_selection(self, select, slice_array):
         """
         Apply the rules of self.select to determine which
@@ -788,22 +862,86 @@ class ParticleProbeCatcher(ParticleCatcher):
             Number of selected particles
         """
         # Quantities at current time step
-        current_x = self.get_quantity( species, "x" )
-        current_y = self.get_quantity( species, "y" )
-        current_z = self.get_quantity( species, "z" )
-        current_ux = self.get_quantity( species, "ux" )
-        current_uy = self.get_quantity( species, "uy" )
-        current_uz = self.get_quantity( species, "uz" )
-        weights = self.get_quantity( species, "w" )
+        if species.pgroups is None:
+            current_x = self.get_quantity( species, "x" )
+            current_y = self.get_quantity( species, "y" )
+            current_z = self.get_quantity( species, "z" )
+            current_ux = self.get_quantity( species, "ux" )
+            current_uy = self.get_quantity( species, "uy" )
+            current_uz = self.get_quantity( species, "uz" )
 
-        # Quantities at previous time step
-        previous_x = self.get_quantity( species, "x", l_prev=True )
-        previous_y = self.get_quantity( species, "y", l_prev=True )
-        previous_z = self.get_quantity( species, "z", l_prev=True )
-        previous_ux = self.get_quantity( species, "ux", l_prev=True )
-        previous_uy = self.get_quantity( species, "uy", l_prev=True )
-        previous_uz = self.get_quantity( species, "uz", l_prev=True )
+            # Quantities at previous time step
+            previous_x = self.get_quantity( species, "x", l_prev=True )
+            previous_y = self.get_quantity( species, "y", l_prev=True )
+            previous_z = self.get_quantity( species, "z", l_prev=True )
+            previous_ux = self.get_quantity( species, "ux", l_prev=True )
+            previous_uy = self.get_quantity( species, "uy", l_prev=True )
+            previous_uz = self.get_quantity( species, "uz", l_prev=True )
 
+            if self.top.wpid:
+                weights = self.get_quantity( species, "w" )
+            if self.top.ssnpid:
+                pid = self.get_quantity( species, "id" )
+
+        # If pgroups - PICSAR
+        else:
+            # Initialize empty list for each variable
+            list_current_x  = []; list_previous_x  = []
+            list_current_y  = []; list_previous_y  = []
+            list_current_z  = []; list_previous_z  = []
+            list_current_ux = []; list_previous_ux = []
+            list_current_uy = []; list_previous_uy = []
+            list_current_uz = []; list_previous_uz = []
+
+            if self.top.wpid:
+                list_w = []
+            if self.top.ssnpid:
+                list_id = []
+
+            # Import the variable for each pgroup
+            for pgroup in species.flatten(species.pgroups):
+                list_current_x.append(self.get_quantity_pgroup( pgroup, "x" ))
+                list_current_y.append(self.get_quantity_pgroup( pgroup, "y" ))
+                list_current_z.append(self.get_quantity_pgroup( pgroup, "z" ))
+                list_current_ux.append(self.get_quantity_pgroup( pgroup, "ux" ))
+                list_current_uy.append(self.get_quantity_pgroup( pgroup, "uy" ))
+                list_current_uz.append(self.get_quantity_pgroup( pgroup, "uz" ))
+
+                # Quantities at previous time step
+                list_previous_x.append(self.get_quantity_pgroup( pgroup, "x", l_prev=True ))
+                list_previous_y.append(self.get_quantity_pgroup( pgroup, "y", l_prev=True ))
+                list_previous_z.append(self.get_quantity_pgroup( pgroup, "z", l_prev=True ))
+                list_previous_ux.append(self.get_quantity_pgroup( pgroup, "ux", l_prev=True ))
+                list_previous_uy.append(self.get_quantity_pgroup( pgroup, "uy", l_prev=True ))
+                list_previous_uz.append(self.get_quantity_pgroup( pgroup, "uz", l_prev=True ))
+
+                if self.top.wpid:
+                    list_w.append(self.get_quantity_pgroup( pgroup, "w" ))
+                if self.top.ssnpid:
+                    list_id.append(self.get_quantity_pgroup( pgroup, "id" ))
+
+            # Concatenate the different lists
+            current_x = np.concatenate(list_current_x)
+            current_y = np.concatenate(list_current_y)
+            current_z = np.concatenate(list_current_z)
+            current_ux = np.concatenate(list_current_ux)
+            current_uy = np.concatenate(list_current_uy)
+            current_uz = np.concatenate(list_current_uz)
+
+            previous_x = np.concatenate(list_previous_x)
+            previous_y = np.concatenate(list_previous_y)
+            previous_z = np.concatenate(list_previous_z)
+            previous_ux = np.concatenate(list_previous_ux)
+            previous_uy = np.concatenate(list_previous_uy)
+            previous_uz = np.concatenate(list_previous_uz)
+
+            if self.top.wpid:
+                weights  = np.concatenate(list_w)
+
+            if self.top.ssnpid:
+                pid = np.concatenate(list_id)
+
+        # Then it is common for WARP and PICSAR
         # A particle array for mapping purposes
         particle_indices = np.arange( len(current_z) )
 
@@ -833,9 +971,9 @@ class ParticleProbeCatcher(ParticleCatcher):
         ## Select the particle quantities that satisfy the
         ## aforementioned condition
         self.mass = species.mass
-        self.captured_quantities['w'] = np.take(weights, selected_indices)
-        if self.top.wpid != 0:
-            pid = self.get_quantity( species, "id", l_prev=True )
+        if self.top.wpid:
+            self.captured_quantities['w'] = np.take(weights, selected_indices)
+        if self.top.ssnpid:
             self.captured_quantities['id'] = np.take( pid, selected_indices)
 
         current_x = np.take(current_x, selected_indices)
