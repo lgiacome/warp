@@ -854,8 +854,10 @@ class ParticleProbeCatcher(ParticleCatcher):
         num_part: int
             Number of selected particles
         """
-        # Quantities at current time step
+
+        # If not pgroups - WARP only
         if species.pgroups is None:
+            # Quantities at current time step
             current_x = self.get_quantity( species, "x" )
             current_y = self.get_quantity( species, "y" )
             current_z = self.get_quantity( species, "z" )
@@ -871,12 +873,13 @@ class ParticleProbeCatcher(ParticleCatcher):
             previous_uy = self.get_quantity( species, "uy", l_prev=True )
             previous_uz = self.get_quantity( species, "uz", l_prev=True )
 
+            # Quantities non related to the time
             if self.top.wpid:
                 weights = self.get_quantity( species, "w" )
             if self.top.ssnpid:
                 pid = self.get_quantity( species, "id" )
 
-        # If pgroups - PICSAR
+        # If pgroups - WARP + PICSAR
         else:
             # Initialize empty list for each variable
             list_current_x  = []; list_previous_x  = []
@@ -893,6 +896,7 @@ class ParticleProbeCatcher(ParticleCatcher):
 
             # Import the variable for each pgroup
             for pgroup in species.flatten(species.pgroups):
+                # Quantities at current time step
                 list_current_x.append(self.get_quantity_pgroup( pgroup, "x" ))
                 list_current_y.append(self.get_quantity_pgroup( pgroup, "y" ))
                 list_current_z.append(self.get_quantity_pgroup( pgroup, "z" ))
@@ -901,13 +905,20 @@ class ParticleProbeCatcher(ParticleCatcher):
                 list_current_uz.append(self.get_quantity_pgroup( pgroup, "uz" ))
 
                 # Quantities at previous time step
-                list_previous_x.append(self.get_quantity_pgroup( pgroup, "x", l_prev=True ))
-                list_previous_y.append(self.get_quantity_pgroup( pgroup, "y", l_prev=True ))
-                list_previous_z.append(self.get_quantity_pgroup( pgroup, "z", l_prev=True ))
-                list_previous_ux.append(self.get_quantity_pgroup( pgroup, "ux", l_prev=True ))
-                list_previous_uy.append(self.get_quantity_pgroup( pgroup, "uy", l_prev=True ))
-                list_previous_uz.append(self.get_quantity_pgroup( pgroup, "uz", l_prev=True ))
+                list_previous_x.append(
+                          self.get_quantity_pgroup( pgroup, "x", l_prev=True ))
+                list_previous_y.append(
+                          self.get_quantity_pgroup( pgroup, "y", l_prev=True ))
+                list_previous_z.append(
+                          self.get_quantity_pgroup( pgroup, "z", l_prev=True ))
+                list_previous_ux.append(
+                          self.get_quantity_pgroup( pgroup, "ux", l_prev=True ))
+                list_previous_uy.append(
+                          self.get_quantity_pgroup( pgroup, "uy", l_prev=True ))
+                list_previous_uz.append(
+                          self.get_quantity_pgroup( pgroup, "uz", l_prev=True ))
 
+                # Quantities non related to the time
                 if self.top.wpid:
                     list_w.append(self.get_quantity_pgroup( pgroup, "w" ))
                 if self.top.ssnpid:
@@ -934,7 +945,7 @@ class ParticleProbeCatcher(ParticleCatcher):
             if self.top.ssnpid:
                 pid = np.concatenate(list_id)
 
-        # Then it is common for WARP and PICSAR
+        # This part is then common for WARP or WARP + PICSAR
         # A particle array for mapping purposes
         particle_indices = np.arange( len(current_z) )
 
@@ -961,14 +972,14 @@ class ParticleProbeCatcher(ParticleCatcher):
 
         num_part = np.shape(selected_indices)[0]
 
-        ## Select the particle quantities that satisfy the
-        ## aforementioned condition
         self.mass = species.mass
         if self.top.wpid:
             self.captured_quantities['w'] = np.take(weights, selected_indices)
         if self.top.ssnpid:
             self.captured_quantities['id'] = np.take( pid, selected_indices)
 
+        ## Select the particle quantities that satisfy the
+        ## aforementioned condition
         current_x = np.take(current_x, selected_indices)
         current_y = np.take(current_y, selected_indices)
         current_z = np.take(current_z, selected_indices)
