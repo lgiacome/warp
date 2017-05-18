@@ -689,7 +689,7 @@ class ParticleCatcher:
 
         return( quantity_array )
 
-    def get_quantity_pgroup(self, pgroup, quantity, l_prev=False):
+    def get_quantity_pgroup(self, pgroup, il, iu, quantity, l_prev=False):
         """
         Get a given particle quantity when using PICSAR
 
@@ -697,6 +697,9 @@ class ParticleCatcher:
         ----------
         pgroup: a pgroup of Species object of PICSAR
             Contains the particle data from which the quantity is extracted
+
+        il, iu: int
+            Index min and max for the quantity array
 
         quantity: string
             Describes which quantity is queried
@@ -754,7 +757,7 @@ class ParticleCatcher:
         elif quantity == "bz":
             quantity_array = pgroup.bz
 
-        return( quantity_array )
+        return( quantity_array[il:iu] )
 
     def apply_selection(self, select, slice_array):
         """
@@ -893,36 +896,33 @@ class ParticleProbeCatcher(ParticleCatcher):
                 list_w = []
             if self.top.ssnpid:
                 list_id = []
+            js = species.jslist[0]
 
             # Import the variable for each pgroup
             for pgroup in species.flatten(species.pgroups):
-                # Quantities at current time step
-                list_current_x.append(self.get_quantity_pgroup( pgroup, "x" ))
-                list_current_y.append(self.get_quantity_pgroup( pgroup, "y" ))
-                list_current_z.append(self.get_quantity_pgroup( pgroup, "z" ))
-                list_current_ux.append(self.get_quantity_pgroup( pgroup, "ux" ))
-                list_current_uy.append(self.get_quantity_pgroup( pgroup, "uy" ))
-                list_current_uz.append(self.get_quantity_pgroup( pgroup, "uz" ))
+                # Index min and max for particle arrays
+                il = pgroup.ins[js] - 1
+                iu = il + pgroup.nps[js]
+
+                list_current_x.append(self.get_quantity_pgroup( pgroup, il, iu, "x" ))
+                list_current_y.append(self.get_quantity_pgroup( pgroup, il, iu, "y" ))
+                list_current_z.append(self.get_quantity_pgroup( pgroup, il, iu, "z" ))
+                list_current_ux.append(self.get_quantity_pgroup( pgroup, il, iu, "ux" ))
+                list_current_uy.append(self.get_quantity_pgroup( pgroup, il, iu, "uy" ))
+                list_current_uz.append(self.get_quantity_pgroup( pgroup, il, iu, "uz" ))
 
                 # Quantities at previous time step
-                list_previous_x.append(
-                          self.get_quantity_pgroup( pgroup, "x", l_prev=True ))
-                list_previous_y.append(
-                          self.get_quantity_pgroup( pgroup, "y", l_prev=True ))
-                list_previous_z.append(
-                          self.get_quantity_pgroup( pgroup, "z", l_prev=True ))
-                list_previous_ux.append(
-                          self.get_quantity_pgroup( pgroup, "ux", l_prev=True ))
-                list_previous_uy.append(
-                          self.get_quantity_pgroup( pgroup, "uy", l_prev=True ))
-                list_previous_uz.append(
-                          self.get_quantity_pgroup( pgroup, "uz", l_prev=True ))
+                list_previous_x.append(self.get_quantity_pgroup( pgroup, il, iu, "x", l_prev=True ))
+                list_previous_y.append(self.get_quantity_pgroup( pgroup, il, iu, "y", l_prev=True ))
+                list_previous_z.append(self.get_quantity_pgroup( pgroup, il, iu, "z", l_prev=True ))
+                list_previous_ux.append(self.get_quantity_pgroup( pgroup, il, iu, "ux", l_prev=True ))
+                list_previous_uy.append(self.get_quantity_pgroup( pgroup, il, iu, "uy", l_prev=True ))
+                list_previous_uz.append(self.get_quantity_pgroup( pgroup, il, iu, "uz", l_prev=True ))
 
-                # Quantities non related to the time
                 if self.top.wpid:
-                    list_w.append(self.get_quantity_pgroup( pgroup, "w" ))
+                    list_w.append(self.get_quantity_pgroup( pgroup, il, iu, "w" ))
                 if self.top.ssnpid:
-                    list_id.append(self.get_quantity_pgroup( pgroup, "id" ))
+                    list_id.append(self.get_quantity_pgroup( pgroup, il, iu, "id" ))
 
             # Concatenate the different lists
             current_x = np.concatenate(list_current_x)
