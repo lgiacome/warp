@@ -18,6 +18,8 @@ stencil   = 0
 top.lautodecomp   = 1 # Particles
 top.lfsautodecomp = 1 # fields
 top.nhist = top.nt
+top.lprntpara = false
+top.lpsplots = false
 
 # Time and spatial steps
 N_step = 800
