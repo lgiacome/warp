@@ -904,6 +904,7 @@ class ParticleProbeCatcher(ParticleCatcher):
                 il = pgroup.ins[js] - 1
                 iu = il + pgroup.nps[js]
 
+                # Quantities at current time step
                 list_current_x.append(self.get_quantity_pgroup( pgroup, il, iu, "x" ))
                 list_current_y.append(self.get_quantity_pgroup( pgroup, il, iu, "y" ))
                 list_current_z.append(self.get_quantity_pgroup( pgroup, il, iu, "z" ))
@@ -919,6 +920,7 @@ class ParticleProbeCatcher(ParticleCatcher):
                 list_previous_uy.append(self.get_quantity_pgroup( pgroup, il, iu, "uy", l_prev=True ))
                 list_previous_uz.append(self.get_quantity_pgroup( pgroup, il, iu, "uz", l_prev=True ))
 
+                # Quantities non related to the time
                 if self.top.wpid:
                     list_w.append(self.get_quantity_pgroup( pgroup, il, iu, "w" ))
                 if self.top.ssnpid:
