@@ -418,6 +418,8 @@ class Species(object):
     - charge_state=0: charge_state of the ion or molecule
     - weight=None: simulation weight, will be obtained automatically from
                    other input
+    - lvariableweights=False: When true, each particle is given its own weight
+                              (top.wpid is set)
     - name='': species name
     - nautodt=1: number of species to setup for automatic subcycling.
                  The slowest will have dt = 2**(nautodt-1)*top.dt.
@@ -432,7 +434,7 @@ class Species(object):
     """
     def __init__(self,js=None,pgroup=None,pgroups=None,
                       type=None,charge=echarge,mass=emass,charge_state=0,
-                      weight=None,name='',nautodt=1,
+                      weight=None,lvariableweights=False,name='',nautodt=1,
                       efetch=None,fselfb=None,limplicit=None,
                       color='fg',marker='\1',msize=1.0):
         assert type is None or isinstance(type,Particle),'type must be one of either an elementary particle, an element, or one of the predefined molecules'
@@ -441,6 +443,10 @@ class Species(object):
         # --- set the values in pgroup already, in which case they should not
         # --- be overwritten here unless the inputs are explicitly set.
         self.jslist=[]
+        # --- Setup the pid for particles weights. Do it early in the routine so that
+        # --- the pid array gets allocated appropriately.
+        if lvariableweights:
+            top.wpid = top.nextpid()
         # --- If pgroup is not passed in, top.pgroup is used. But, note that
         # --- a reference to top.pgroup isn't actually saved. The pgroup
         # --- property would always returns top.pgroup in that case.
@@ -450,7 +456,7 @@ class Species(object):
                 pgroup.gchange()
         self.pgroups = pgroups
         self.type=type
-        self.add_group(js,charge=charge,mass=mass,charge_state=charge_state,weight=weight)
+        self.add_group(charge=charge,mass=mass,charge_state=charge_state,weight=weight,js=js)
         self.charge=self.pgroup.sq[self.jslist[0]]
         self.mass=self.pgroup.sm[self.jslist[0]]
         if type is None or type.__class__ is not Particle:
@@ -462,7 +468,7 @@ class Species(object):
         if fselfb is not None: self.pgroup.fselfb[self.jslist[-1]] = fselfb
         if limplicit is not None: self.pgroup.limplicit[self.jslist[-1]] = limplicit
         for i in range(nautodt-1):
-            self.add_group(weight=weight)
+            self.add_group(charge=self.charge,mass=self.mass,charge_state=self.charge_state,weight=weight)
             self.pgroup.ndts[self.jslist[-1]]=2*self.pgroup.ndts[self.jslist[-2]]
             if efetch is not None: top.efetch[self.jslist[-1]] = efetch
             if fselfb is not None: self.pgroup.fselfb[self.jslist[-1]] = fselfb
@@ -489,7 +495,7 @@ class Species(object):
         if self not in listofallspecies:
             listofallspecies.append(self)
 
-    def add_group(self,js=None,charge=None,mass=None,charge_state=None,weight=None):
+    def add_group(self,charge,mass,charge_state,weight,js=None):
         if js is None:
             # --- If there are no species defined or if ns is 1 (the default) and
             # --- the first species has already been setup, then a new species needs
@@ -507,8 +513,6 @@ class Species(object):
             self.pgroup.sid[js] = js
         self.jslist.append(js)
         type = self.type
-        if charge is None: charge = self.charge
-        if mass is None: mass = self.mass
         # --- set the charge
         try:
             # --- Try type.charge first, which is the charge of the fundemental
@@ -517,7 +521,6 @@ class Species(object):
         except:
             # --- If that doesn't work...
             if type is not None and type.__class__ is not Particle:
-                if charge_state is None: charge_state = self.charge_state
                 self.pgroup.sq[js] = echarge*charge_state
             else:
                 self.pgroup.sq[js] = charge
