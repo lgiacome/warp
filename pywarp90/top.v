@@ -2943,7 +2943,6 @@ zgapcorr(np:integer,zp(np):real,xp(np):real,uzp(np):real,gaminv(np):real,
 acclbfrm(zcorrection)
             subroutine # Gets the acceleration residence correction for
                        # the beam frame
-species()   subroutine # Sets species related arrays.
 logicalsheath(nionslost:integer,ionslost(nionslost):integer,
               nelectronslost:integer,electronslost(nelectronslost):integer,
               nz:integer,lostgrid(0:nz):integer,zmin:real,zmax:real,
