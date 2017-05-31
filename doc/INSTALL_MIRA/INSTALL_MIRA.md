@@ -370,7 +370,7 @@ ${PYTHON} setup.py install  2>&1 | tee linecache2.log.mira
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 package in site-packages
 
-## Install unitest2
+## Install unittest2
 
 - In your `$HOME` directory download the pbr package by typing the following command:
 `wget --no-check-certificate
@@ -388,7 +388,7 @@ export PYTHON=${PYTHONHOME}/bin/python
 buildir=build
 
 rm -rf ${builddir}
-${PYTHON} setup.py install  2>&1 | tee linecache2.log.mira
+${PYTHON} setup.py install  2>&1 | tee unittest2.log.mira
 ```
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 package in site-packages
@@ -411,7 +411,7 @@ export PYTHON=${PYTHONHOME}/bin/python
 buildir=build
 
 rm -rf ${builddir}
-${PYTHON} setup.py install  2>&1 | tee linecache2.log.mira
+${PYTHON} setup.py install  2>&1 | tee python-dateutil.log.mira
 ```
 - Finally type `chmod 700 install_mira; ./install_mira` to install the python
 
