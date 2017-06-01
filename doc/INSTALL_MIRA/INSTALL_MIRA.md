@@ -111,6 +111,8 @@ completion of the following steps:
 - Edit files `do-configure-hdf5`, `do-make-hdf5`, `do-make-final-hdf5` and modify the second line by adding your email to '-M' option and your allocation to the -A option. This will be required
 by the job scheduling system (e.g if you are a user of the PICSSAR INCITE project, use "-A PICSSAR_INCITE").
 
+- Apply the patch in `INSTALL_MIRA/file-lock-removal.diff` by typing `patch -p0 < file-lock-removal.diff`
+
 - Configure HDF5 lib by typing: `qsub do-configure-hdf5`
 
 - Build HDF5 lib by typing: `qsub do-make-final-hdf5`
