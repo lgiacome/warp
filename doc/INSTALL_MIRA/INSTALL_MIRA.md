@@ -113,7 +113,7 @@ by the job scheduling system (e.g if you are a user of the PICSSAR INCITE projec
 
 - Configure HDF5 lib by typing: `qsub do-configure-hdf5`
 
-- Build HDF5 lib by typing: `qsub do-make-final-hdf5`
+- Build HDF5 lib by typing: `qsub do-make-hdf5`
 
 - Finalize install by typing: `qsub do-make-final-hdf5`  
 
