@@ -3032,51 +3032,200 @@ class EMMRBlock(MeshRefinement,EM3D):
                         nguarddepos=nguarddepos,
                         children=children,**kw)
 
-    def dosolve(self,iwhich=0,*args):
-        # --- Make sure that the final setup was done.
-        self.finalize()
-
-        # --- Wait until all of the parents have called here until actually
-        # --- doing the solve. This ensures that the potential in all of the parents
-        # --- which is needed on the boundaries will be up to date.
-        if not self.islastcall(): return
-
-        self.getconductors()
-        if self.solveroff:return
-        if any(top.fselfb != 0.):raise Exception('Error:EM solver does not work if fselfb != 0.')
-        if top.dt != self.dtinit:raise Exception('Time step has been changed since initialization of EM3D.')
-        self.push_e()
-        self.exchange_e()
-        self.push_eb_subcycle()
-        self.push_b_part_1()
-        self.exchange_f()
-        self.exchange_b()
-        if top.efetch[0] != 4:self.node2yee3d()
-        self.setebp()
-        if top.efetch[0] != 4:self.yee2node3d()
-        self.addsubstractfieldfromparent()
-        self.smoothfields()
-        # --- for fields that are overcycled, they need to be pushed backward every ntsub
-        self.push_b_part_1(dir=-1)
-        self.exchange_f(dir=-1)
-        self.exchange_b(dir=-1)
-        self.push_e(dir=-1)
-        self.exchange_e(dir=-1)
-
     def solve2ndhalf(self):
         self.allocatedataarrays()
         if self.solveroff:return
-        if any(top.fselfb != 0.):raise Exception('Error:EM solver does not work if fselfb != 0.')
+        if self.fields.spectral:
+            self.move_window_fields()
+            return
+        if self.mode==2:
+            self.solve2ndhalfmode2()
+            return
+        if self.l_verbose:print 'solve 2nd half',self
         if top.dt != self.dtinit:raise Exception('Time step has been changed since initialization of EM3D.')
         self.push_b_part_2()
-        self.exchange_f()
+        if self.l_pushf:self.exchange_f()
         self.exchange_b()
         self.move_window_fields()
+        if self.l_verbose:print 'solve 2nd half done'
 
-    def push_e(self,dir=1):
+    def dosolve(self,iwhich=0,*args):
+        self.getconductorobject()
+        if self.solveroff:return
+        if self.ntsub<1.:
+            self.novercycle = nint(1./self.ntsub)
+            self.icycle = (top.it-1)%self.novercycle
+        else:
+            self.novercycle = 1
+            self.icycle = 0
+        if self.mode==2:
+            self.dosolvemode2()
+            return
+        if any(top.fselfb != 0.):raise Exception('Error:EM solver does not work if fselfb != 0.')
+        if self.l_verbose:print 'solve 1st half'
+        if top.dt != self.dtinit:raise Exception('Time step has been changed since initialization of EM3D.')
+        if self.fields.spectral:
+#            self.move_window_fields()
+            self.push_spectral_psaotd()
+        else:
+            self.push_e()
+            self.exchange_e()
+            for i in range(int(self.ntsub)-1):
+                self.push_b_full()
+                if self.l_pushf:self.exchange_f()
+                self.exchange_b()
+                self.push_e_full(i)
+                self.exchange_e()
+            self.push_b_part_1()
+        if self.pml_method==2:
+            scale_em3d_bnd_fields(self.block,top.dt,self.l_pushf,self.l_pushg)
+        if self.fields.spectral:
+            self.exchange_e()
+        if self.l_pushf:self.exchange_f()
+        self.exchange_b()
+        self.setebp()
+        if not self.l_nodalgrid and top.efetch[0] != 4:
+            if self.l_fieldcenterK:
+                self.fieldcenterK()
+            else:
+                self.yee2node3d()
+        if self.l_nodalgrid and top.efetch[0] == 4:
+            self.fields.l_nodecentered=True
+            self.node2yee3d()
+        if self.l_smooth_particle_fields and any(self.npass_smooth>0):
+            self.smoothfields()
+        self.addsubstractfieldfromparent()
+        if self.l_correct_num_Cherenkov:self.smoothfields_poly()
+        # --- for fields that are overcycled, they need to be pushed backward every ntsub
+        self.push_e(dir=-1)
+        self.exchange_e(dir=-1)
+        if self.l_verbose:print 'solve 1st half done'
+
+
+    def step(self,n=1,freq_print=10,lallspecl=0,l_alawarpx=False):
+        for i in range(n):
+            if top.it%freq_print==0:print 'it = %g time = %g'%(top.it,top.time)
+            if lallspecl:
+                l_first=l_last=1
+            else:
+                if i==0:
+                    l_first=1
+                else:
+                    l_first=0
+                if i==n-1:
+                    l_last=1
+                else:
+                    l_last=0
+            if l_alawarpx:
+                self.onestep_alawarpx(l_first,l_last)
+            else:
+                self.onestep(l_first,l_last)
+
+    def onestep_alawarpx(self,l_first,l_last):
+        if self.ntsub<1.:
+            self.novercycle = nint(1./self.ntsub)
+            self.icycle = (top.it-1)%self.novercycle
+        else:
+            self.novercycle = 1
+            self.icycle = 0
+        self.__class__.__bases__[1].novercycle=self.novercycle
+        self.__class__.__bases__[1].icycle=self.icycle
+        
+        # --- call beforestep functions
+        callbeforestepfuncs.callfuncsinlist()
+
+        # --- push by half step if first step (where all are synchronized)
+        if l_first:
+            if not self.solveroff:
+                self.allocatedataarrays()
+                self.push_e(l_half=True)
+                self.exchange_e()
+            for js in range(top.pgroup.ns):
+                self.push_positions(js,dtmult=0.5)
+
+        if not self.solveroff:
+            for i in range(int(self.ntsub)-1):
+                self.push_b_full()
+                if self.l_pushf:self.exchange_f()
+                self.exchange_b()
+                self.push_e_full(i)
+                self.exchange_e()
+            self.push_b_part_1()
+
+            if self.pml_method==2:
+                scale_em3d_bnd_fields(self.block,top.dt,self.l_pushf,self.l_pushg)
+
+            if self.l_pushf:self.exchange_f()
+            self.exchange_b()
+            self.setebp()
+
+            if not self.l_nodalgrid and top.efetch[0] != 4:
+                if self.l_fieldcenterK:
+                    self.fieldcenterK()
+                else:
+                    self.yee2node3d()
+            if self.l_nodalgrid and top.efetch[0] == 4:
+                self.fields.l_nodecentered=True
+                self.node2yee3d()
+            if self.l_smooth_particle_fields and any(self.npass_smooth>0):
+                self.smoothfields()
+            self.addsubstractfieldfromparent()
+            if self.l_correct_num_Cherenkov:self.smoothfields_poly()
+
+        top.zgrid+=top.vbeamfrm*top.dt
+        top.zbeam=top.zgrid
+
+        w3d.pgroupfsapi = top.pgroup
+        for js in range(top.pgroup.ns):
+            self.fetcheb(js)
+            self.push_velocity_full(js)
+            self.record_old_positions(js)
+            self.push_positions(js)
+
+        inject3d(1, top.pgroup)
+
+        # --- call user-defined injection routines
+        userinjection.callfuncsinlist()
+
+        particleboundaries3d(top.pgroup,-1,False)
+
+        self.solve2ndhalf()
+
+        # --- call beforeloadrho functions
+        if isinstalledbeforeloadrho(self.solve2ndhalf):
+            uninstallbeforeloadrho(self.solve2ndhalf)
+        beforeloadrho.callfuncsinlist()
+
+#        self.loadsource()
+        self.loadrho()
+        self.loadj()
+
+        self.getconductorobject()
+
+        if l_last:
+            for js in range(top.pgroup.ns):
+                self.record_old_positions(js)
+                self.push_positions(js,dtmult=-0.5)
+            if not self.solveroff:self.push_e(l_half=True)
+        else:
+            if not self.solveroff:
+                self.push_e()
+                self.exchange_e()
+
+        # --- update time, time counter
+        top.time+=top.dt
+        if top.it%top.nhist==0:
+#           zmmnt()
+           minidiag(top.it,top.time,top.lspecial)
+        top.it+=1
+
+        # --- call afterstep functions
+        callafterstepfuncs.callfuncsinlist()
+        
+    def push_e(self,dir=1,l_half=False):
         for child in self.children:
-            child.push_e(dir)
-        self.__class__.__bases__[1].push_e(self,dir)
+            child.push_e(dir,l_half)
+        self.__class__.__bases__[1].push_e(self,dir,l_half)
 
     def exchange_e(self,dir=1.):
         for child in self.children:
