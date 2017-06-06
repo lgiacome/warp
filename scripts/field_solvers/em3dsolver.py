@@ -2144,7 +2144,7 @@ class EM3D(SubcycledPoissonSolver):
                         slice=self.ny/2
                 yslice = w3d.ymmin+slice*w3d.dy
                 selfslice = nint((yslice-self.block.ymin)/self.block.dy)
-                if self.l_2dxz:slice=0
+                if self.l_2dxz:slice=selfslice=0
                 if selfslice<0 or selfslice>nyd-1:
                     dataslice=None
                 else:
