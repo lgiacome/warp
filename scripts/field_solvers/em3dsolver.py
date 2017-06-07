@@ -2171,6 +2171,9 @@ class EM3D(SubcycledPoissonSolver):
                       niso=None,isomin=None,isomax=None,isos=None,opacity=0.5,
                       cscale=1.,l_csym=0,
                       procs=None,
+                      xmmin=None,xmmax=None,
+                      ymmin=None,ymmax=None,
+                      zmmin=None,zmmax=None,
                       **kw):
         if direction is None and not l_opyndx:direction=2
         if self.l_2dxz:direction=1
@@ -2201,6 +2204,7 @@ class EM3D(SubcycledPoissonSolver):
                 nzd=shape(data)[0]
             elif self.l_2dxz:
                 nyd = 1
+                if len(shape(data))==3:data=data[:,0,:]
                 nxd,nzd=shape(data)
             else:
                 nxd,nyd,nzd=shape(data)
@@ -2244,10 +2248,22 @@ class EM3D(SubcycledPoissonSolver):
                     xmin=xmax=ymin=ymax=0.
                 else:
                     if l_transpose:
-                        xmin=self.block.zmin+self.zgrid
-                        xmax=self.block.zmax+self.zgrid
-                        ymin=self.block.xmin
-                        ymax=self.block.xmax
+                        if zmmin is None:
+                            xmin=self.block.zmin+self.zgrid
+                        else:
+                            xmin=zmmin
+                        if zmmax is None:
+                            xmax=self.block.zmax+self.zgrid
+                        else:
+                            xmax=zmmax
+                        if xmmin is None:
+                            ymin=self.block.xmin
+                        else:
+                            ymin=xmmin
+                        if xmmax is None:
+                            ymax=self.block.xmax
+                        else:
+                            ymax=xmmax
                     else:
                         xmin=self.block.xmin
                         xmax=self.block.xmax
@@ -2740,7 +2756,7 @@ class EM3D(SubcycledPoissonSolver):
         # Return the global array
         return(datag)
 
-    def getarray(self,g,guards=0,overlap=0):
+    def getarray(self,g,guards=0,overlap=0,guardMR=[0,0,0]):
         if guards:
             return g
         else:
@@ -2751,11 +2767,14 @@ class EM3D(SubcycledPoissonSolver):
                 if self.block.yrbnd==em3d.otherproc:oy=1
                 if self.block.zrbnd==em3d.otherproc:oz=1
             if self.l_1dz:
-                return g[0,0,f.nzguard:-f.nzguard-oz]
+                return g[0,0,f.nzguard+guardMR[2]:-f.nzguard-oz-guardMR[2]]
             elif self.l_2dxz:
-                return g[f.nxguard:-f.nxguard-ox,0,f.nzguard:-f.nzguard-oz]
+                return g[f.nxguard+guardMR[0]:-f.nxguard-ox-guardMR[0],0, \
+                         f.nzguard+guardMR[2]:-f.nzguard-oz-guardMR[2]]
             else:
-                return g[f.nxguard:-f.nxguard-ox,f.nyguard:-f.nyguard-oy,f.nzguard:-f.nzguard-oz]
+                return g[f.nxguard+guardMR[0]:-f.nxguard-ox-guardMR[0], \
+                         f.nyguard+guardMR[1]:-f.nyguard-oy-guardMR[1], \
+                         f.nzguard+guardMR[2]:-f.nzguard-oz-guardMR[2]]
 
     def getarray_circ(self,g,guards=0,overlap=0):
         if guards:

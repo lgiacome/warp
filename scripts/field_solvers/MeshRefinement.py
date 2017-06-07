@@ -3563,6 +3563,7 @@ class EMMRBlock(MeshRefinement,EM3D):
         if cmax_in is not None: cmax = cmax_in
         if cmin_in is None or cmax_in is None:
             data = getattr(self,dataname)(guards,overlap)
+            if self.l_2dxz and guards:data=data[:,0,:]
             slice,dataslice = self.getdataatslice(data,direction,slice,l_abs)
             if cmin_in is None: cmin = minnd(dataslice)
             if cmax_in is None: cmax = maxnd(dataslice)
@@ -3571,6 +3572,7 @@ class EMMRBlock(MeshRefinement,EM3D):
                     for c in self.blocklists[i]:
                         if c.isactive:
                             data = getattr(c,dataname)(guards,overlap)
+                            if self.l_2dxz and guards:data=data[:,0,:]
                             slice,dataslice = c.getdataatslice(data,direction,slice,l_abs)
                             if cmin_in is None: cmin = min(cmin,minnd(dataslice))
                             if cmax_in is None: cmax = max(cmax,maxnd(dataslice))
@@ -3586,12 +3588,26 @@ class EMMRBlock(MeshRefinement,EM3D):
         kw['cmin'] = cmin
         kw['cmax'] = cmax
         kw['slice'] = slice
+            
         self.genericpfem3d(self.getarray(self.fields.Exp,guards,overlap=True),'E_x',**kw)
         if l_children:
             for i in range(1,len(self.blocklists)):
                 for c in self.blocklists[i]:
                     if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Exp,guards,overlap=True),'E_x',**kw)
+                        if guards:
+                            guardMR=array([0,0,0])
+                        else:
+                            guardMR=c.nguard*c.refinement
+                        xmin = c.block.xmin+guardMR[0]*c.block.dx
+                        xmax = c.block.xmax-guardMR[0]*c.block.dx
+                        ymin = c.block.ymin+guardMR[1]*c.block.dy
+                        ymax = c.block.ymax-guardMR[1]*c.block.dy
+                        zmin = c.block.zmin+guardMR[2]*c.block.dz
+                        zmax = c.block.zmax-guardMR[2]*c.block.dz
+                        c.genericpfem3d(c.getarray(c.fields.Exp,guards,overlap=True,guardMR=guardMR), \
+                        'E_x',xmmin=xmin,xmmax=xmax,\
+                        ymmin=ymin,ymmax=ymax,\
+                        zmmin=zmin,zmmax=zmax,**kw)
                     else:
                         c.genericpfem3d(None,'E_x',**kw)
 
