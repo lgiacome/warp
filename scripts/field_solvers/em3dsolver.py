@@ -2220,17 +2220,25 @@ class EM3D(SubcycledPoissonSolver):
                     data=None
                     xmin=xmax=ymin=ymax=0.
                 else:
-                    if l_transpose:
-                        xmin=self.block.zmin+self.zgrid
-                        xmax=self.block.zmax+self.zgrid
-                        ymin=self.block.ymin
-                        ymax=self.block.ymax
-                    else:
+                    if ymmin is None:
                         xmin=self.block.ymin
+                    else:
+                        xmin=ymmin
+                    if ymmax is None:
                         xmax=self.block.ymax
+                    else:
+                        xmax=ymmax
+                    if zmmin is None:
                         ymin=self.block.zmin+self.zgrid
+                    else:
+                        ymin=zmmin
+                    if zmmax is None:
                         ymax=self.block.zmax+self.zgrid
+                    else:
+                        ymax=zmmax
                     if l_transpose:
+                        xmin,ymin=ymin,xmin
+                        xmax,ymax=ymax,xmax
                         data=transpose(data[selfslice,:,:])
                     else:
                         data=data[selfslice,:,:]
@@ -2247,28 +2255,25 @@ class EM3D(SubcycledPoissonSolver):
                     data=None
                     xmin=xmax=ymin=ymax=0.
                 else:
-                    if l_transpose:
-                        if zmmin is None:
-                            xmin=self.block.zmin+self.zgrid
-                        else:
-                            xmin=zmmin
-                        if zmmax is None:
-                            xmax=self.block.zmax+self.zgrid
-                        else:
-                            xmax=zmmax
-                        if xmmin is None:
-                            ymin=self.block.xmin
-                        else:
-                            ymin=xmmin
-                        if xmmax is None:
-                            ymax=self.block.xmax
-                        else:
-                            ymax=xmmax
-                    else:
+                    if xmmin is None:
                         xmin=self.block.xmin
+                    else:
+                        xmin=xmmin
+                    if xmmax is None:
                         xmax=self.block.xmax
+                    else:
+                        xmax=xmmax
+                    if zmmin is None:
                         ymin=self.block.zmin+self.zgrid
+                    else:
+                        ymin=zmmin
+                    if zmmax is None:
                         ymax=self.block.zmax+self.zgrid
+                    else:
+                        ymax=zmmax
+                    if l_transpose:
+                        xmin,ymin=ymin,xmin
+                        xmax,ymax=ymax,xmax
                     if self.l_2dxz:
                         if l_transpose and not self.l_1dz:
                             data=transpose(data)
@@ -2285,17 +2290,25 @@ class EM3D(SubcycledPoissonSolver):
                     data=None
                     xmin=xmax=ymin=ymax=0.
                 else:
-                    if l_transpose:
-                        xmin=self.block.ymin
-                        xmax=self.block.ymax
-                        ymin=self.block.xmin
-                        ymax=self.block.xmax
-                    else:
+                    if xmmin is None:
                         xmin=self.block.xmin
+                    else:
+                        xmin=xmmin
+                    if xmmax is None:
                         xmax=self.block.xmax
+                    else:
+                        xmax=xmmax
+                    if ymmin is None:
                         ymin=self.block.ymin
+                    else:
+                        ymin=ymmin
+                    if ymmax is None:
                         ymax=self.block.ymax
+                    else:
+                        ymax=ymmax
                     if l_transpose:
+                        xmin,ymin=ymin,xmin
+                        xmax,ymax=ymax,xmax
                         data=transpose(data[:,:,selfslice])
                     else:
                         data=data[:,:,selfslice]
@@ -2756,7 +2769,7 @@ class EM3D(SubcycledPoissonSolver):
         # Return the global array
         return(datag)
 
-    def getarray(self,g,guards=0,overlap=0,guardMR=[0,0,0]):
+    def getarray(self,g,guards=0,overlap=0):
         if guards:
             return g
         else:
@@ -2767,14 +2780,11 @@ class EM3D(SubcycledPoissonSolver):
                 if self.block.yrbnd==em3d.otherproc:oy=1
                 if self.block.zrbnd==em3d.otherproc:oz=1
             if self.l_1dz:
-                return g[0,0,f.nzguard+guardMR[2]:-f.nzguard-oz-guardMR[2]]
+                return g[0,0,f.nzguard:-f.nzguard-oz]
             elif self.l_2dxz:
-                return g[f.nxguard+guardMR[0]:-f.nxguard-ox-guardMR[0],0, \
-                         f.nzguard+guardMR[2]:-f.nzguard-oz-guardMR[2]]
+                return g[f.nxguard:-f.nxguard-ox,0,f.nzguard:-f.nzguard-oz]
             else:
-                return g[f.nxguard+guardMR[0]:-f.nxguard-ox-guardMR[0], \
-                         f.nyguard+guardMR[1]:-f.nyguard-oy-guardMR[1], \
-                         f.nzguard+guardMR[2]:-f.nzguard-oz-guardMR[2]]
+                return g[f.nxguard:-f.nxguard-ox,f.nyguard:-f.nyguard-oy,f.nzguard:-f.nzguard-oz]
 
     def getarray_circ(self,g,guards=0,overlap=0):
         if guards:

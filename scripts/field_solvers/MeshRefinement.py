@@ -3583,18 +3583,21 @@ class EMMRBlock(MeshRefinement,EM3D):
             if cmax is not None and gridscale is not None: cmax *= gridscale
         return slice,cmin,cmax
 
-    def pfex(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getex',l_children,guards,kw)
+    def genericpfem3dMR(self,title='',dataname='',l_children=1,guards=0,guardMR=0,**kw):
+        overlap=True
+        slice,cmin,cmax = self.fetchcmincmax(dataname,l_children,guards,kw)
         kw['cmin'] = cmin
         kw['cmax'] = cmax
         kw['slice'] = slice
-            
-        self.genericpfem3d(self.getarray(self.fields.Exp,guards,overlap=True),'E_x',**kw)
+
+        data = getattr(self,dataname)(guards,overlap)
+        self.genericpfem3d(data,title,**kw)
+
         if l_children:
             for i in range(1,len(self.blocklists)):
                 for c in self.blocklists[i]:
                     if c.isactive:
-                        if guards:
+                        if guardMR:
                             guardMR=array([0,0,0])
                         else:
                             guardMR=c.nguard*c.refinement
@@ -3604,250 +3607,150 @@ class EMMRBlock(MeshRefinement,EM3D):
                         ymax = c.block.ymax-guardMR[1]*c.block.dy
                         zmin = c.block.zmin+guardMR[2]*c.block.dz
                         zmax = c.block.zmax-guardMR[2]*c.block.dz
-                        c.genericpfem3d(c.getarray(c.fields.Exp,guards,overlap=True,guardMR=guardMR), \
-                        'E_x',xmmin=xmin,xmmax=xmax,\
+                        data = getattr(c,dataname)(guards,overlap,guardMR)
+                        c.genericpfem3d(data, \
+                        title,xmmin=xmin,xmmax=xmax,\
                         ymmin=ymin,ymmax=ymax,\
                         zmmin=zmin,zmmax=zmax,**kw)
                     else:
-                        c.genericpfem3d(None,'E_x',**kw)
+                        c.genericpfem3d(None,title,**kw)
 
-    def pfey(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getey',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Eyp,guards,overlap=True),'E_y',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Eyp,guards,overlap=True),'E_y',**kw)
-                    else:
-                        c.genericpfem3d(None,'E_y',**kw)
 
-    def pfez(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getez',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Ezp,guards,overlap=True),'E_z',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Ezp,guards,overlap=True),'E_z',**kw)
-                    else:
-                        c.genericpfem3d(None,'E_z',**kw)
+    def getarray(self,g,guards=0,overlap=0,guardMR=[0,0,0]):
+        if guards:
+            return g
+        else:
+            f=self.fields
+            ox=oy=oz=0
+            if not overlap:
+                if self.block.xrbnd==em3d.otherproc:ox=1
+                if self.block.yrbnd==em3d.otherproc:oy=1
+                if self.block.zrbnd==em3d.otherproc:oz=1
+            if self.l_1dz:
+                return g[0,0,f.nzguard+guardMR[2]:-f.nzguard-oz-guardMR[2]]
+            elif self.l_2dxz:
+                return g[f.nxguard+guardMR[0]:-f.nxguard-ox-guardMR[0],0, \
+                         f.nzguard+guardMR[2]:-f.nzguard-oz-guardMR[2]]
+            else:
+                return g[f.nxguard+guardMR[0]:-f.nxguard-ox-guardMR[0], \
+                         f.nyguard+guardMR[1]:-f.nyguard-oy-guardMR[1], \
+                         f.nzguard+guardMR[2]:-f.nzguard-oz-guardMR[2]]
 
-    def pfbx(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getbx',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Bxp,guards,overlap=True),'B_x',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Bxp,guards,overlap=True),'B_x',**kw)
-                    else:
-                        c.genericpfem3d(None,'B_x',**kw)
+    def getex(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Exp,guards,overlap,guardMR)
 
-    def pfby(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getby',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Byp,guards,overlap=True),'B_y',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Byp,guards,overlap=True),'B_y',**kw)
-                    else:
-                        c.genericpfem3d(None,'B_y',**kw)
+    def getey(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Eyp,guards,overlap,guardMR)
 
-    def pfbz(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getbz',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Bzp,guards,overlap=True),'B_z',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Bzp,guards,overlap=True),'B_z',**kw)
-                    else:
-                        c.genericpfem3d(None,'B_z',**kw)
+    def getez(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Ezp,guards,overlap,guardMR)
 
-    def pfexp(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getexg',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Ex,guards,overlap=True),'Ep_x',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Ex,guards,overlap=True),'Ep_x',**kw)
-                    else:
-                        c.genericpfem3d(None,'Ep_x',**kw)
+    def getbx(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Bxp,guards,overlap,guardMR)
 
-    def pfeyp(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('geteyg',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Ey,guards,overlap=True),'Ep_y',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Ey,guards,overlap=True),'Ep_y',**kw)
-                    else:
-                        c.genericpfem3d(None,'Ep_y',**kw)
+    def getby(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Byp,guards,overlap,guardMR)
 
-    def pfezp(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getezg',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Ez,guards,overlap=True),'Ep_z',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Ez,guards,overlap=True),'Ep_z',**kw)
-                    else:
-                        c.genericpfem3d(None,'Ep_z',**kw)
+    def getbz(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Bzp,guards,overlap,guardMR)
 
-    def pfbxp(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getbxg',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Bx,guards,overlap=True),'Bp_x',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Bx,guards,overlap=True),'Bp_x',**kw)
-                    else:
-                        c.genericpfem3d(None,'Bp_x',**kw)
+    def getexg(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Ex,guards,overlap,guardMR)
 
-    def pfbyp(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getbyg',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.By,guards,overlap=True),'Bp_y',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.By,guards,overlap=True),'Bp_y',**kw)
-                    else:
-                        c.genericpfem3d(None,'Bp_y',**kw)
+    def geteyg(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Ey,guards,overlap,guardMR)
 
-    def pfbzp(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getbzg',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Bz,guards,overlap=True),'Bp_z',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Bz,guards,overlap=True),'Bp_z',**kw)
-                    else:
-                        c.genericpfem3d(None,'Bp_z',**kw)
+    def getezg(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Ez,guards,overlap,guardMR)
 
-    def pfjx(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getjx',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Jx,guards,overlap=True),'J_x',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Jx,guards,overlap=True),'J_x',**kw)
-                    else:
-                        c.genericpfem3d(None,'J_x',**kw)
+    def getbxg(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Bx,guards,overlap,guardMR)
 
-    def pfjy(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getjy',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Jy,guards,overlap=True),'J_y',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Jy,guards,overlap=True),'J_y',**kw)
-                    else:
-                        c.genericpfem3d(None,'J_y',**kw)
+    def getbyg(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.By,guards,overlap,guardMR)
 
-    def pfjz(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getjz',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Jz,guards,overlap=True),'J_z',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Jz,guards,overlap=True),'J_z',**kw)
-                    else:
-                        c.genericpfem3d(None,'J_z',**kw)
+    def getbzg(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Bz,guards,overlap,guardMR)
 
-    def pfrho(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getrho',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.Rho,guards,overlap=True),'Rho',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.Rho,guards,overlap=True),'Rho',**kw)
-                    else:
-                        c.genericpfem3d(None,'Rho',**kw)
+    def getjx(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Jx,guards,overlap,guardMR)
 
-    def pff(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getf',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getarray(self.fields.F,guards,overlap=True),'F',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getarray(c.fields.F,guards,overlap=True),'F',**kw)
-                    else:
-                        c.genericpfem3d(None,'F',**kw)
+    def getjy(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Jy,guards,overlap,guardMR)
 
-    def pfdive(self,l_children=1,guards=0,**kw):
-        slice,cmin,cmax = self.fetchcmincmax('getdive',l_children,guards,kw)
-        kw['cmin'] = cmin
-        kw['cmax'] = cmax
-        kw['slice'] = slice
-        self.genericpfem3d(self.getdive(guards,overlap=True),'div(E)',**kw)
-        if l_children:
-            for i in range(1,len(self.blocklists)):
-                for c in self.blocklists[i]:
-                    if c.isactive:
-                        c.genericpfem3d(c.getdive(guards,overlap=True),'div(E)',**kw)
-                    else:
-                        c.genericpfem3d(None,'div(E)',**kw)
+    def getjz(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Jz,guards,overlap,guardMR)
+
+    def getrho(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.Rho,guards,overlap,guardMR)
+
+    def getf(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        return self.getarray(self.fields.F,guards,overlap,guardMR)
+
+    def getdive(self,guards=0,overlap=0,guardMR=[0,0,0]):
+        dive = zeros(shape(self.fields.Ex),'d')
+        f = self.fields
+        if top.efetch[0] != 4:node2yee3d(f)
+        getdive(f.Ex,f.Ey,f.Ez,dive,f.dx,f.dy,f.dz,
+                f.nx,f.ny,f.nz,f.nxguard,f.nyguard,f.nzguard,
+                f.xmin,
+                self.l_2dxz,self.l_2drz,self.l_nodalgrid)
+        if top.efetch[0] != 4:yee2node3d(f)
+        return self.getarray(dive,guards,overlap,guardMR)
+
+    def pfex(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('E_x','getex',l_children,guards,guardMR,**kw)
+
+    def pfey(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('E_y','getey',l_children,guards,guardMR,**kw)
+
+    def pfez(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('E_z','getez',l_children,guards,guardMR,**kw)
+
+    def pfbx(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('B_x','getbx',l_children,guards,guardMR,**kw)
+
+    def pfby(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('B_y','getby',l_children,guards,guardMR,**kw)
+
+    def pfbz(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('B_z','getbz',l_children,guards,guardMR,**kw)
+
+    def pfexg(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('E_x','getexg',l_children,guards,guardMR,**kw)
+
+    def pfeyg(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('E_y','geteyg',l_children,guards,guardMR,**kw)
+
+    def pfezg(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('E_z','getezg',l_children,guards,guardMR,**kw)
+
+    def pfbxg(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('B_x','getbxg',l_children,guards,guardMR,**kw)
+
+    def pfbyg(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('B_y','getbyg',l_children,guards,guardMR,**kw)
+
+    def pfbzg(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('B_z','getbzg',l_children,guards,guardMR,**kw)
+
+    def pfjx(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('J_x','getjx',l_children,guards,guardMR,**kw)
+
+    def pfjy(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('J_y','getjy',l_children,guards,guardMR,**kw)
+
+    def pfjz(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('J_z','getjz',l_children,guards,guardMR,**kw)
+
+    def pfrho(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('Rho','getrho',l_children,guards,guardMR,**kw)
+
+    def pff(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('F','getf',l_children,guards,guardMR,**kw)
+
+    def pfdive(self,l_children=1,guards=0,guardMR=0,**kw):
+        self.genericpfem3dMR('Div E','getdive',l_children,guards,guardMR,**kw)
 
 # --- This can only be done after MRBlock3D is defined.
 try:
