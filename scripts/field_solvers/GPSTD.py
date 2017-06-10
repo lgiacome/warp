@@ -1649,14 +1649,18 @@ class PSATD_Maxwell(GPSTD):
 
         return mymat.mat
 
-    def getmaxwellmat_galilean(self,kxpn,kypn,kzpn,kxmn,kymn,kzmn,dt,cdt,V_galilean=np.array([0.,0.,0.])):
+    def getmaxwellmat_galilean(self,kxpn,kypn,kzpn,kxmn,kymn,kzmn,dt,cdt,
+                V_galilean=np.array([0.,0.,0.]), theta_with_modif_k=True):
 
         j = 1j
         V0 = np.linalg.norm(V_galilean)
         c=self.clight
         C=self.coswdt
         S=self.sinwdt
-        kV=self.kx_unmod*V_galilean[0]+self.ky_unmod*V_galilean[1]+self.kz_unmod*V_galilean[2]
+        if theta_with_modif_k:
+            kV = self.kxp*V_galilean[0] + self.kyp*V_galilean[1] + self.kzp*V_galilean[2]
+        else:
+            kV=self.kx_unmod*V_galilean[0]+self.ky_unmod*V_galilean[1]+self.kz_unmod*V_galilean[2]
         Theta=T=np.exp(j*kV*dt)
         CT = C*Theta
         ST = S*Theta
