@@ -11,6 +11,7 @@ class EM3DFFT(EM3D):
                       'boris_cor':0, # flag for correction of fields verify Gauss' Law (i.e. Boris correction; not needed if spectral_current=1 or spectral_current=1)
                       'spectral_mix':0.,'Jmult':False,
                       'l_spectral_staggered':False,
+                      'l_theta_with_modif_k':True,
                       'sigmab_x':0.,'sigmab_y':0.,'sigmab_z':0.}
 
     def __init__(self,**kw):
@@ -105,6 +106,7 @@ class EM3DFFT(EM3D):
                 self.GPSTDMaxwell = GPSTD_Maxwell(yf=self.fields,
                                                   eps0=eps0,
                                                   bc_periodic=bc_periodic,
+                                                  l_theta_with_modif_k=self.l_theta_with_modif_k,
                                                   **kwGPSTD)
 
             self.FSpace = self.GPSTDMaxwell

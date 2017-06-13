@@ -1200,7 +1200,8 @@ class GPSTD_Maxwell(GPSTD):
                       'clight':299792458.0,
                       'eps0':8.854187817620389e-12,
                       'V_galilean':np.array([0.,0.,0.]),
-                      'V_pseudogalilean':np.array([0.,0.,0.])}
+                      'V_pseudogalilean':np.array([0.,0.,0.]),
+                      'l_theta_with_modif_k':True}
 
     def __init__(self,**kw):
         try:
@@ -1298,7 +1299,7 @@ class GPSTD_Maxwell(GPSTD):
         else:
             self.mymat = self.getmaxwellmat_galilean(axp,ayp,azp,axm,aym,azm,dt,cdt,m0,m1,\
                          self.kx_unmod,self.ky_unmod,self.kz_unmod,l_matref=0,matcompress=matcompress,
-                         V_galilean=self.V_galilean)
+                         V_galilean=self.V_galilean,l_theta_with_modif_k=self.l_theta_with_modif_k)
 
     def getmaxwellmat(self,axp,ayp,azp,axm,aym,azm,dt,cdt,m0,m1,
                       kx_unmod,ky_unmod,kz_unmod,l_matref=0,
