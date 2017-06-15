@@ -2594,6 +2594,54 @@ class EM3DPXR(EM3DFFT):
 
         return nbptot[0]
 
+    def get_quantity( self, js, quantity, gather=1, bcast=None, **kw ):
+        """
+            Return the given pxr array of the given quantity.
+
+            Parameters:
+            -----------
+
+            quantity: String
+                must be choosen as like 'x', 'ux', 'xold', 'w' etc...
+
+            js: Species
+
+        """
+        nb = numpy.zeros(1,dtype=numpy.int64)
+        pxr.get_local_number_of_particles_from_species(js, nb )
+
+        l_pid = False
+        if   quantity ==  'x': quantity_id = 1
+        elif quantity ==  'y': quantity_id = 2
+        elif quantity ==  'z': quantity_id = 3
+        elif quantity == 'ux': quantity_id = 4
+        elif quantity == 'uy': quantity_id = 5
+        elif quantity == 'uz': quantity_id = 6
+
+        # Quantity which needs pid:
+        else:
+            l_pid = True
+            if   quantity ==  'xold': quantity_pid =  top.xoldpid
+            elif quantity ==  'yold': quantity_pid =  top.yoldpid
+            elif quantity ==  'zold': quantity_pid =  top.zoldpid
+            elif quantity == 'uxold': quantity_pid = top.uxoldpid
+            elif quantity == 'uyold': quantity_pid = top.uyoldpid
+            elif quantity == 'uzold': quantity_pid = top.uzoldpid
+            elif quantity ==  'w': quantity_pid = top.wpid
+            elif quantity == 'id': quantity_pid = top.ssnpid
+
+        quantity_array = numpy.zeros(nb, dtype=numpy.float64, order='F')
+
+        if l_pid:
+            pxr.getquantity_pid(js, quantity_pid, nb, quantity_array)
+        else:
+            pxr.getquantity(js, quantity_id, nb, quantity_array)
+
+        if lparallel and gather:
+            return gatherarray(quantity_array,bcast=bcast)
+        else:
+            return quantity_array
+
     def get_kinetic_energy(self,sp,**kw):
         """
         Get the total kinetic energy of the species sp using PICSAR fortran subroutines
