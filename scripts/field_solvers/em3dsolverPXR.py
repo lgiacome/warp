@@ -329,6 +329,70 @@ def aliasparticlearrays():
             pg.bz = pxr.partbz
         pxr.set_are_tiles_reallocated(i+1, pxr.ntilex,pxr.ntiley,pxr.ntilez,zeros((pxr.ntilex,pxr.ntiley,pxr.ntilez),dtype=dtype('i8')))
 
+def get_quantity_pxr( self, quantity, gather=1, bcast=None, **kw ):
+    """
+        Rewrite the method get_quantity of the class Species when pxr is loaded.
+        Return the given pxr array for a given 'quantity'.
+
+        Parameters:
+        -----------
+        self: Species
+            Be careful, here self is not relative to EM3DPXR but is used by
+            the class Species.
+
+        quantity: String
+            must be choosen as like 'x', 'ux', 'xold', 'w' etc...
+
+    """
+
+    quantity_dict = dict(x=1, y=2, z=3, ux=4, uy=5, uz=6)
+
+    quantity_pid_dict = dict()
+    if top.xoldpid is not None:
+        quantity_pid_dict['xold'] = top.xoldpid
+    if top.yoldpid is not None:
+        quantity_pid_dict['yold'] = top.yoldpid
+    if top.zoldpid is not None:
+        quantity_pid_dict['zold'] = top.zoldpid
+    if top.uxoldpid is not None:
+        quantity_pid_dict['uxold'] = top.uxoldpid
+    if top.uyoldpid is not None:
+        quantity_pid_dict['uyold'] = top.uyoldpid
+    if top.uzoldpid is not None:
+        quantity_pid_dict['uzold'] = top.uzoldpid
+    if top.ssnpid is not None:
+        quantity_pid_dict['id'] = top.ssnpid
+    if top.wpid is not None:
+        quantity_pid_dict['w'] = top.wpid
+
+    js = self.jslist[0]+1
+    nb = numpy.zeros(1,dtype=numpy.int64)
+    pxr.get_local_number_of_particles_from_species(js, nb )
+
+    quantity_array = numpy.zeros(nb, dtype=numpy.float64, order='F')
+
+    # Usual variables such as position or momentum
+    if  quantity in quantity_dict:
+        pxr.getquantity(js, quantity_dict[quantity], nb,
+                        quantity_array)
+
+    # Pid variables such as old variables or weight
+    elif quantity in quantity_pid_dict:
+        pxr.getquantity_pid(js, quantity_pid_dict[quantity], nb,
+                            quantity_array)
+
+    else:
+        return "Error in get_quantity, key '%s' undefined or top.pid=None. \
+               Please set something among 'x', 'y', 'z', 'ux', 'uy', 'uz', \
+               'w', 'id', 'xold', 'yold', 'zold', 'uxold', 'uyold', \
+               'uzold' or define top.pid."%quantity
+
+    if lparallel and gather:
+        return gatherarray(quantity_array,bcast=bcast)
+    else:
+        return quantity_array
+
+
 class EM3DPXR(EM3DFFT):
 
     __em3dpxrinputs__ = []
@@ -369,27 +433,6 @@ class EM3DPXR(EM3DFFT):
         except KeyError:
             pass
 
-        # Define 2 dictionaries used for the function get_quantity()
-        self.quantity_dict = dict(x=1, y=2, z=3, ux=4, uy=5, uz=6)
-
-        self.quantity_pid_dict = dict()
-        if top.xoldpid is not None:
-            self.quantity_pid_dict['xold'] = top.xoldpid
-        if top.yoldpid is not None:
-            self.quantity_pid_dict['yold'] = top.yoldpid
-        if top.zoldpid is not None:
-            self.quantity_pid_dict['zold'] = top.zoldpid
-        if top.uxoldpid is not None:
-            self.quantity_pid_dict['uxold'] = top.uxoldpid
-        if top.uyoldpid is not None:
-            self.quantity_pid_dict['uyold'] = top.uyoldpid
-        if top.uzoldpid is not None:
-            self.quantity_pid_dict['uzold'] = top.uzoldpid
-        if top.ssnpid is not None:
-            self.quantity_pid_dict['id'] = top.ssnpid
-        if top.wpid is not None:
-            self.quantity_pid_dict['w'] = top.wpid
-
         self.processdefaultsfromdict(EM3DPXR.__flaginputs__,kw)
 
         if (self.l_debug):
@@ -413,6 +456,9 @@ class EM3DPXR(EM3DFFT):
           EM3D.finalize(self)
           self.allocatefieldarraysFFT()
           self.allocatefieldarraysPXR()
+          
+          # Rewrite the get_quantity methods to the class species for pxr
+          Species.get_quantity_pxr = get_quantity_pxr
         else:
           EM3DFFT.finalize(self)
 
@@ -2613,42 +2659,6 @@ class EM3DPXR(EM3DFFT):
         pxr.get_tot_number_of_particles(nbptot)
 
         return nbptot[0]
-
-    def get_quantity( self, js, quantity, gather=1, bcast=None, **kw ):
-        """
-            Return the given pxr array of the given quantity.
-
-            Parameters:
-            -----------
-
-            quantity: String
-                must be choosen as like 'x', 'ux', 'xold', 'w' etc...
-
-            js: Species
-
-        """
-        nb = numpy.zeros(1,dtype=numpy.int64)
-        pxr.get_local_number_of_particles_from_species(js, nb )
-
-        quantity_array = numpy.zeros(nb, dtype=numpy.float64, order='F')
-
-        # Usual variables such as position or momentum
-        if  quantity in self.quantity_dict:
-            pxr.getquantity(js, self.quantity_dict[quantity], nb,
-                           quantity_array)
-
-        # Pid variables such as old variables or weight
-        elif quantity in self.quantity_pid_dict:
-            pxr.getquantity_pid(js, self.quantity_pid_dict[quantity], nb,
-                                    quantity_array)
-
-        else:
-            return 'Wrong input, please set an existing quantity. '
-
-        if lparallel and gather:
-            return gatherarray(quantity_array,bcast=bcast)
-        else:
-            return quantity_array
 
     def get_kinetic_energy(self,sp,**kw):
         """
