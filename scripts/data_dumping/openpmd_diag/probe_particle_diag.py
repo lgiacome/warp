@@ -689,76 +689,6 @@ class ParticleCatcher:
 
         return( quantity_array )
 
-    def get_quantity_pgroup(self, pgroup, il, iu, quantity, l_prev=False):
-        """
-        Get a given particle quantity when using PICSAR
-
-        Parameters
-        ----------
-        pgroup: a pgroup of Species object of PICSAR
-            Contains the particle data from which the quantity is extracted
-
-        il, iu: int
-            Index min and max for the quantity array
-
-        quantity: string
-            Describes which quantity is queried
-            Either "x", "y", "z", "ux", "uy", "uz", "w"
-
-        l_prev: boolean
-            If True, then return the quantities of the previous timestep;
-            else return quantities of the current timestep
-        """
-        # Extract the chosen quantities
-        # At current timestep
-        if not(l_prev):
-            if quantity == "x":
-                quantity_array = pgroup.xp
-            elif quantity == "y":
-                quantity_array = pgroup.yp
-            elif quantity == "z":
-                quantity_array = pgroup.zp
-            elif quantity == "ux":
-                quantity_array = pgroup.uxp
-            elif quantity == "uy":
-                quantity_array = pgroup.uyp
-            elif quantity == "uz":
-                quantity_array = pgroup.uzp
-        # Or at previous timestep
-        else:
-            if quantity == "x":
-                quantity_array = pgroup.pid[:, self.top.xoldpid-1]
-            elif quantity == "y":
-                quantity_array = pgroup.pid[:, self.top.yoldpid-1]
-            elif quantity == "z":
-                quantity_array = pgroup.pid[:, self.top.zoldpid-1]
-            elif quantity == "ux":
-                quantity_array = pgroup.pid[:, self.top.uxoldpid-1]
-            elif quantity == "uy":
-                quantity_array = pgroup.pid[:, self.top.uyoldpid-1]
-            elif quantity == "uz":
-                quantity_array = pgroup.pid[:, self.top.uzoldpid-1]
-
-         # Quantities that do not depend on time step
-        if quantity == "w":
-             quantity_array = pgroup.pid[:, self.top.wpid-1]
-        elif quantity == "id":
-             quantity_array = pgroup.pid[:, self.top.ssnpid-1]
-        elif quantity == "ex":
-            quantity_array = pgroup.ex
-        elif quantity == "ey":
-            quantity_array = pgroup.ey
-        elif quantity == "ez":
-            quantity_array = pgroup.ez
-        elif quantity == "bx":
-            quantity_array = pgroup.bx
-        elif quantity == "by":
-            quantity_array = pgroup.by
-        elif quantity == "bz":
-            quantity_array = pgroup.bz
-
-        return( quantity_array[il:iu] )
-
     def apply_selection(self, select, slice_array):
         """
         Apply the rules of self.select to determine which
@@ -884,68 +814,26 @@ class ParticleProbeCatcher(ParticleCatcher):
 
         # If pgroups - WARP + PICSAR
         else:
-            # Initialize empty list for each variable
-            list_current_x  = []; list_previous_x  = []
-            list_current_y  = []; list_previous_y  = []
-            list_current_z  = []; list_previous_z  = []
-            list_current_ux = []; list_previous_ux = []
-            list_current_uy = []; list_previous_uy = []
-            list_current_uz = []; list_previous_uz = []
+            current_x  = species.get_quantity_pxr(  "x", gather=0, bcast=0 )
+            current_y  = species.get_quantity_pxr(  "y", gather=0, bcast=0 )
+            current_z  = species.get_quantity_pxr(  "z", gather=0, bcast=0 )
+            current_ux = species.get_quantity_pxr( "ux", gather=0, bcast=0 )
+            current_uy = species.get_quantity_pxr( "uy", gather=0, bcast=0 )
+            current_uz = species.get_quantity_pxr( "uz", gather=0, bcast=0 )
 
+            # Quantities at previous time step
+            previous_x  = species.get_quantity_pxr(  "xold", gather=0, bcast=0 )
+            previous_y  = species.get_quantity_pxr(  "yold", gather=0, bcast=0 )
+            previous_z  = species.get_quantity_pxr(  "zold", gather=0, bcast=0 )
+            previous_ux = species.get_quantity_pxr( "uxold", gather=0, bcast=0 )
+            previous_uy = species.get_quantity_pxr( "uyold", gather=0, bcast=0 )
+            previous_uz = species.get_quantity_pxr( "uzold", gather=0, bcast=0 )
+
+            # Quantities non related to the time
             if self.top.wpid:
-                list_w = []
+                weights = species.get_quantity_pxr( "w", gather=0, bcast=0 )
             if self.top.ssnpid:
-                list_id = []
-            js = species.jslist[0]
-
-            # Import the variable for each pgroup
-            for pgroup in species.flatten(species.pgroups):
-                # Index min and max for particle arrays
-                il = pgroup.ins[js] - 1
-                iu = il + pgroup.nps[js]
-
-                # Quantities at current time step
-                list_current_x.append(self.get_quantity_pgroup( pgroup, il, iu, "x" ))
-                list_current_y.append(self.get_quantity_pgroup( pgroup, il, iu, "y" ))
-                list_current_z.append(self.get_quantity_pgroup( pgroup, il, iu, "z" ))
-                list_current_ux.append(self.get_quantity_pgroup( pgroup, il, iu, "ux" ))
-                list_current_uy.append(self.get_quantity_pgroup( pgroup, il, iu, "uy" ))
-                list_current_uz.append(self.get_quantity_pgroup( pgroup, il, iu, "uz" ))
-
-                # Quantities at previous time step
-                list_previous_x.append(self.get_quantity_pgroup( pgroup, il, iu, "x", l_prev=True ))
-                list_previous_y.append(self.get_quantity_pgroup( pgroup, il, iu, "y", l_prev=True ))
-                list_previous_z.append(self.get_quantity_pgroup( pgroup, il, iu, "z", l_prev=True ))
-                list_previous_ux.append(self.get_quantity_pgroup( pgroup, il, iu, "ux", l_prev=True ))
-                list_previous_uy.append(self.get_quantity_pgroup( pgroup, il, iu, "uy", l_prev=True ))
-                list_previous_uz.append(self.get_quantity_pgroup( pgroup, il, iu, "uz", l_prev=True ))
-
-                # Quantities non related to the time
-                if self.top.wpid:
-                    list_w.append(self.get_quantity_pgroup( pgroup, il, iu, "w" ))
-                if self.top.ssnpid:
-                    list_id.append(self.get_quantity_pgroup( pgroup, il, iu, "id" ))
-
-            # Concatenate the different lists
-            current_x = np.concatenate(list_current_x)
-            current_y = np.concatenate(list_current_y)
-            current_z = np.concatenate(list_current_z)
-            current_ux = np.concatenate(list_current_ux)
-            current_uy = np.concatenate(list_current_uy)
-            current_uz = np.concatenate(list_current_uz)
-
-            previous_x = np.concatenate(list_previous_x)
-            previous_y = np.concatenate(list_previous_y)
-            previous_z = np.concatenate(list_previous_z)
-            previous_ux = np.concatenate(list_previous_ux)
-            previous_uy = np.concatenate(list_previous_uy)
-            previous_uz = np.concatenate(list_previous_uz)
-
-            if self.top.wpid:
-                weights  = np.concatenate(list_w)
-
-            if self.top.ssnpid:
-                pid = np.concatenate(list_id)
+                pid = species.get_quantity_pxr( "id", gather=0, bcast=0 )
 
         # This part is then common for WARP or WARP + PICSAR
         # A particle array for mapping purposes
