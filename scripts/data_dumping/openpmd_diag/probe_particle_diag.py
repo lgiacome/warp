@@ -814,6 +814,7 @@ class ParticleProbeCatcher(ParticleCatcher):
 
         # If pgroups - WARP + PICSAR
         else:
+            # Quantities at current time step
             current_x  = species.get_quantity_pxr(  "x", gather=0, bcast=0 )
             current_y  = species.get_quantity_pxr(  "y", gather=0, bcast=0 )
             current_z  = species.get_quantity_pxr(  "z", gather=0, bcast=0 )
