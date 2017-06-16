@@ -369,6 +369,26 @@ class EM3DPXR(EM3DFFT):
         except KeyError:
             pass
 
+        # Define 2 dictionaries used for the function get_quantity()
+        self.quantity_dict = dict(x=1, y=2, z=3, ux=4, uy=5, uz=6)
+
+        self.quantity_pid_dict = dict()
+        if top.xoldpid is not None:
+            self.quantity_pid_dict['xold'] = top.xoldpid
+        if top.yoldpid is not None:
+            self.quantity_pid_dict['yold'] = top.yoldpid
+        if top.zoldpid is not None:
+            self.quantity_pid_dict['zold'] = top.zoldpid
+        if top.uxoldpid is not None:
+            self.quantity_pid_dict['uxold'] = top.uxoldpid
+        if top.uyoldpid is not None:
+            self.quantity_pid_dict['uyold'] = top.uyoldpid
+        if top.uzoldpid is not None:
+            self.quantity_pid_dict['uzold'] = top.uzoldpid
+        if top.ssnpid is not None:
+            self.quantity_pid_dict['id'] = top.ssnpid
+        if top.wpid is not None:
+            self.quantity_pid_dict['w'] = top.wpid
 
         self.processdefaultsfromdict(EM3DPXR.__flaginputs__,kw)
 
@@ -2610,32 +2630,20 @@ class EM3DPXR(EM3DFFT):
         nb = numpy.zeros(1,dtype=numpy.int64)
         pxr.get_local_number_of_particles_from_species(js, nb )
 
-        l_pid = False
-        if   quantity ==  'x': quantity_id = 1
-        elif quantity ==  'y': quantity_id = 2
-        elif quantity ==  'z': quantity_id = 3
-        elif quantity == 'ux': quantity_id = 4
-        elif quantity == 'uy': quantity_id = 5
-        elif quantity == 'uz': quantity_id = 6
-
-        # Quantity which needs pid:
-        else:
-            l_pid = True
-            if   quantity ==  'xold': quantity_pid =  top.xoldpid
-            elif quantity ==  'yold': quantity_pid =  top.yoldpid
-            elif quantity ==  'zold': quantity_pid =  top.zoldpid
-            elif quantity == 'uxold': quantity_pid = top.uxoldpid
-            elif quantity == 'uyold': quantity_pid = top.uyoldpid
-            elif quantity == 'uzold': quantity_pid = top.uzoldpid
-            elif quantity ==  'w': quantity_pid = top.wpid
-            elif quantity == 'id': quantity_pid = top.ssnpid
-
         quantity_array = numpy.zeros(nb, dtype=numpy.float64, order='F')
 
-        if l_pid:
-            pxr.getquantity_pid(js, quantity_pid, nb, quantity_array)
+        # Usual variables such as position or momentum
+        if  quantity in self.quantity_dict:
+            pxr.getquantity(js, self.quantity_dict[quantity], nb,
+                           quantity_array)
+
+        # Pid variables such as old variables or weight
+        elif quantity in self.quantity_pid_dict:
+            pxr.getquantity_pid(js, self.quantity_pid_dict[quantity], nb,
+                                    quantity_array)
+
         else:
-            pxr.getquantity(js, quantity_id, nb, quantity_array)
+            return 'Wrong input, please set an existing quantity. '
 
         if lparallel and gather:
             return gatherarray(quantity_array,bcast=bcast)
