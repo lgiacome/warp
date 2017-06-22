@@ -7,7 +7,7 @@ class PlasmaInjector( object ):
     def __init__(self, elec, ions, w3d, top, dim, p_nx, p_ny, p_nz,
                  p_zmin, p_zmax, p_xmax, p_ymax, dens_func=None,
                  ux_m=0., uy_m=0., uz_m=0., ux_th=0., uy_th=0., uz_th=0.,
-                 ncells_from_edge=2 ):
+                 ncells_from_edge=2, p_xmin=None, p_ymin=None ):
         """
         Initialize an injector for the plasma.
 
@@ -79,18 +79,25 @@ class PlasmaInjector( object ):
         self.uy_th = uy_th
         self.uz_th = uz_th
 
+        # Set p_xmin default value to -p_xmax if argument not present
+        if p_xmin is None:
+            p_xmin = -p_xmax
+        # Same for p_ymin
+        if p_ymin is None:
+            p_ymin = -p_ymax
+
         # Get the 1d arrays of evenly-spaced positions for the particles
         # - Positions along x, in one given slice
         dx = w3d.dx / p_nx  # Spacing between particles
         nx_local = (w3d.xmmaxlocal - w3d.xmminlocal) / dx
         x_reg = w3d.xmminlocal + dx*( np.arange( nx_local ) + 0.5 )
-        self.x_reg = x_reg[ (x_reg>=-p_xmax) & (x_reg<=p_xmax) ]
+        self.x_reg = x_reg[ (x_reg>=p_xmin) & (x_reg<=p_xmax) ]
         # - Positions along y, in the 3d case
         if dim == "3d":
             dy = w3d.dy / p_ny
             ny_local = (w3d.ymmaxlocal - w3d.ymminlocal) / dy
             y_reg = w3d.ymminlocal + dy*( np.arange( ny_local ) + 0.5 )
-            self.y_reg = y_reg[ (y_reg>=-p_ymax) & (y_reg<=p_ymax) ]
+            self.y_reg = y_reg[ (y_reg>=p_ymin) & (y_reg<=p_ymax) ]
         # - Angular positions, in the circ case
         elif dim == "circ":
             dtheta = 2*np.pi / p_ny
