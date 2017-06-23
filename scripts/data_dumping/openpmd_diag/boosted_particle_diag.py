@@ -702,23 +702,17 @@ class ParticleCatcher:
         # Or at previous timestep
         else:
             if quantity == "x":
-                quantity_array = species.getpid( id=self.top.xoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getxold( gather=False )
             elif quantity == "y":
-                quantity_array = species.getpid( id=self.top.yoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getyold( gather=False )
             elif quantity == "z":
-                quantity_array = species.getpid( id=self.top.zoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getzold( gather=False )
             elif quantity == "ux":
-                quantity_array = species.getpid( id=self.top.uxoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getuxold( gather=False )
             elif quantity == "uy":
-                quantity_array = species.getpid( id=self.top.uyoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getuyold( gather=False )
             elif quantity == "uz":
-                quantity_array = species.getpid( id=self.top.uzoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getuzold( gather=False )
 
         return( quantity_array )
 

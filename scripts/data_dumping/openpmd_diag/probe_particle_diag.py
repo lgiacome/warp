@@ -650,23 +650,17 @@ class ParticleCatcher:
         # Or at previous timestep
         else:
             if quantity == "x":
-                quantity_array = species.getpid( id=self.top.xoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getxold( gather=False )
             elif quantity == "y":
-                quantity_array = species.getpid( id=self.top.yoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getyold( gather=False )
             elif quantity == "z":
-                quantity_array = species.getpid( id=self.top.zoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getzold( gather=False )
             elif quantity == "ux":
-                quantity_array = species.getpid( id=self.top.uxoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getuxold( gather=False )
             elif quantity == "uy":
-                quantity_array = species.getpid( id=self.top.uyoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getuyold( gather=False )
             elif quantity == "uz":
-                quantity_array = species.getpid( id=self.top.uzoldpid-1,
-                    gather=0, bcast=0)
+                quantity_array = species.getuzold( gather=False )
 
          # Quantities that do not depend on time step
         if quantity == "w":
@@ -788,53 +782,27 @@ class ParticleProbeCatcher(ParticleCatcher):
             Number of selected particles
         """
 
-        # If not pgroups - WARP only
-        if species.pgroups is None:
-            # Quantities at current time step
-            current_x = self.get_quantity( species, "x" )
-            current_y = self.get_quantity( species, "y" )
-            current_z = self.get_quantity( species, "z" )
-            current_ux = self.get_quantity( species, "ux" )
-            current_uy = self.get_quantity( species, "uy" )
-            current_uz = self.get_quantity( species, "uz" )
+        # Quantities at current time step
+        current_x = self.get_quantity( species, "x" )
+        current_y = self.get_quantity( species, "y" )
+        current_z = self.get_quantity( species, "z" )
+        current_ux = self.get_quantity( species, "ux" )
+        current_uy = self.get_quantity( species, "uy" )
+        current_uz = self.get_quantity( species, "uz" )
 
-            # Quantities at previous time step
-            previous_x = self.get_quantity( species, "x", l_prev=True )
-            previous_y = self.get_quantity( species, "y", l_prev=True )
-            previous_z = self.get_quantity( species, "z", l_prev=True )
-            previous_ux = self.get_quantity( species, "ux", l_prev=True )
-            previous_uy = self.get_quantity( species, "uy", l_prev=True )
-            previous_uz = self.get_quantity( species, "uz", l_prev=True )
+        # Quantities at previous time step
+        previous_x = self.get_quantity( species, "x", l_prev=True )
+        previous_y = self.get_quantity( species, "y", l_prev=True )
+        previous_z = self.get_quantity( species, "z", l_prev=True )
+        previous_ux = self.get_quantity( species, "ux", l_prev=True )
+        previous_uy = self.get_quantity( species, "uy", l_prev=True )
+        previous_uz = self.get_quantity( species, "uz", l_prev=True )
 
-            # Quantities non related to the time
-            if self.top.wpid:
-                weights = self.get_quantity( species, "w" )
-            if self.top.ssnpid:
-                pid = self.get_quantity( species, "id" )
-
-        # If pgroups - WARP + PICSAR
-        else:
-            # Quantities at current time step
-            current_x  = species.get_quantity_pxr(  "x", gather=0, bcast=0 )
-            current_y  = species.get_quantity_pxr(  "y", gather=0, bcast=0 )
-            current_z  = species.get_quantity_pxr(  "z", gather=0, bcast=0 )
-            current_ux = species.get_quantity_pxr( "ux", gather=0, bcast=0 )
-            current_uy = species.get_quantity_pxr( "uy", gather=0, bcast=0 )
-            current_uz = species.get_quantity_pxr( "uz", gather=0, bcast=0 )
-
-            # Quantities at previous time step
-            previous_x  = species.get_quantity_pxr(  "xold", gather=0, bcast=0 )
-            previous_y  = species.get_quantity_pxr(  "yold", gather=0, bcast=0 )
-            previous_z  = species.get_quantity_pxr(  "zold", gather=0, bcast=0 )
-            previous_ux = species.get_quantity_pxr( "uxold", gather=0, bcast=0 )
-            previous_uy = species.get_quantity_pxr( "uyold", gather=0, bcast=0 )
-            previous_uz = species.get_quantity_pxr( "uzold", gather=0, bcast=0 )
-
-            # Quantities non related to the time
-            if self.top.wpid:
-                weights = species.get_quantity_pxr( "w", gather=0, bcast=0 )
-            if self.top.ssnpid:
-                pid = species.get_quantity_pxr( "id", gather=0, bcast=0 )
+        # Quantities non related to the time
+        if self.top.wpid:
+            weights = self.get_quantity( species, "w" )
+        if self.top.ssnpid:
+            pid = self.get_quantity( species, "id" )
 
         # This part is then common for WARP or WARP + PICSAR
         # A particle array for mapping purposes
