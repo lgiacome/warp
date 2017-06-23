@@ -337,15 +337,15 @@ def get_quantity_pxr( self, quantity, gather=1, bcast=None, **kw ):
         Parameters:
         -----------
         self: Species
-            Be careful, here self is not relative to EM3DPXR but is used by
+            Be careful, here 'self' is not relative to EM3DPXR but is used by
             the class Species.
 
         quantity: String
-            must be choosen as like 'x', 'ux', 'xold', 'w' etc...
+            must be choosen as like 'x', 'ux', 'xold', 'w', 'ex' etc...
 
     """
-
     quantity_dict = dict(x=1, y=2, z=3, ux=4, uy=5, uz=6)
+    quantity_field_dict = dict(ex=1, ey=2, ez=3, bx=4, by=5, bz=6)
 
     quantity_pid_dict = dict()
     if top.xoldpid is not None:
@@ -366,10 +366,10 @@ def get_quantity_pxr( self, quantity, gather=1, bcast=None, **kw ):
         quantity_pid_dict['w'] = top.wpid
 
     js = self.jslist[0]+1
-    nb = numpy.zeros(1,dtype=numpy.int64)
+    nb = numpy.empty(1,dtype=numpy.int64)
     pxr.get_local_number_of_particles_from_species(js, nb )
 
-    quantity_array = numpy.zeros(nb, dtype=numpy.float64, order='F')
+    quantity_array = numpy.empty(nb[0], dtype=numpy.float64, order='F')
 
     # Usual variables such as position or momentum
     if  quantity in quantity_dict:
@@ -381,16 +381,87 @@ def get_quantity_pxr( self, quantity, gather=1, bcast=None, **kw ):
         pxr.getquantity_pid(js, quantity_pid_dict[quantity], nb,
                             quantity_array)
 
+    # Field variables such as 'ex' or 'by'
+    elif quantity in quantity_field_dict:
+        pxr.getquantity_field(js, quantity_field_dict[quantity], nb,
+                            quantity_array)
+
     else:
         return "Error in get_quantity, key '%s' undefined or top.pid=None. \
-               Please set something among 'x', 'y', 'z', 'ux', 'uy', 'uz', \
-               'w', 'id', 'xold', 'yold', 'zold', 'uxold', 'uyold', \
-               'uzold' or define top.pid."%quantity
+           Please set something among 'x', 'y', 'z', 'ux', 'uy', 'uz', \
+           'w', 'id', 'xold', 'yold', 'zold', 'uxold', 'uyold', \
+           'uzold' or define top.pid."%quantity
 
     if lparallel and gather:
         return gatherarray(quantity_array,bcast=bcast)
     else:
         return quantity_array
+
+def getx(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('x', gather=gather, bcast=bcast, **kw)
+
+def gety(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('y', gather=gather, bcast=bcast, **kw)
+
+def getz(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('z', gather=gather, bcast=bcast, **kw)
+
+def getux(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('ux', gather=gather, bcast=bcast, **kw)
+
+def getuy(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('uy', gather=gather, bcast=bcast, **kw)
+
+def getuz(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('uz', gather=gather, bcast=bcast, **kw)
+
+def getxold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('xold', gather=gather, bcast=bcast, **kw)
+
+def getyold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('yold', gather=gather, bcast=bcast, **kw)
+
+def getzold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('zold', gather=gather, bcast=bcast, **kw)
+
+def getuxold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('uxold', gather=gather, bcast=bcast, **kw)
+
+def getuyold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('uyold', gather=gather, bcast=bcast, **kw)
+
+def getuzold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('uzold', gather=gather, bcast=bcast, **kw)
+
+def getssn(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('id', gather=gather, bcast=bcast, **kw)
+
+def getw(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('w', gather=gather, bcast=bcast, **kw)
+
+def getex(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('ex', gather=gather, bcast=bcast, **kw)
+
+def getey(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('ey', gather=gather, bcast=bcast, **kw)
+
+def getez(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('ez', gather=gather, bcast=bcast, **kw)
+
+def getbx(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('bx', gather=gather, bcast=bcast, **kw)
+
+def getby(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('by', gather=gather, bcast=bcast, **kw)
+
+def getbz(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('bz', gather=gather, bcast=bcast, **kw)
+
+def getn(self, gather=1, bcast=None, **kw ):
+    js = self.jslist[0]+1
+    nb = numpy.empty(1,dtype=numpy.int64)
+    pxr.get_local_number_of_particles_from_species(js, nb )
+    return nb[0]
 
 
 class EM3DPXR(EM3DFFT):
@@ -456,9 +527,32 @@ class EM3DPXR(EM3DFFT):
           EM3D.finalize(self)
           self.allocatefieldarraysFFT()
           self.allocatefieldarraysPXR()
-          
+
           # Rewrite the get_quantity methods to the class species for pxr
           Species.get_quantity_pxr = get_quantity_pxr
+          Species.getx             = getx
+          Species.gety             = gety
+          Species.getz             = getz
+          Species.getux            = getux
+          Species.getuy            = getuy
+          Species.getuz            = getuz
+          Species.getxold          = getxold
+          Species.getyold          = getyold
+          Species.getzold          = getzold
+          Species.getuxold         = getuxold
+          Species.getuyold         = getuyold
+          Species.getuzold         = getuzold
+          Species.getssn           = getssn
+          Species.getweights       = getw
+          Species.getex            = getex
+          Species.getey            = getey
+          Species.getez            = getez
+          Species.getbx            = getbx
+          Species.getby            = getby
+          Species.getbz            = getbz
+          Species.getn             = getn
+          Species.get_plane_particles = get_plane_particles
+          
         else:
           EM3DFFT.finalize(self)
 
