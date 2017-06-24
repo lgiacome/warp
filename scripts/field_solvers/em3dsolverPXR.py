@@ -365,7 +365,7 @@ def get_quantity_pxr( self, quantity, gather=1, bcast=None, **kw ):
     if top.wpid is not None:
         quantity_pid_dict['w'] = top.wpid
 
-    js = self.jslist[0]+1
+    js = self.pxr_species_array
     nb = numpy.empty(1,dtype=numpy.int64)
     pxr.get_local_number_of_particles_from_species(js, nb )
 
@@ -552,7 +552,7 @@ class EM3DPXR(EM3DFFT):
           Species.getbz            = getbz
           Species.getn             = getn
           Species.get_plane_particles = get_plane_particles
-          
+
         else:
           EM3DFFT.finalize(self)
 
