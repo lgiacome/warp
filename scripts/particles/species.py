@@ -2583,9 +2583,11 @@ class Species(object):
         try:
             return self._pgroup
         except AttributeError:
-            # --- If the _pgroup attribute was not defined, then always use
-            # --- top.pgroup.
-            return top.pgroup
+            if self.pgroups is not None:
+                return self.flatten(self.pgroups)[0]
+            else:
+                # --- If not otherwise specified, top.pgroup is the default.
+                return top.pgroup
     pgroup = property(getpgroup)
 
     # --- Note that this will only work reliably if there is only one js
