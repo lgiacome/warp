@@ -64,6 +64,16 @@ echo "INSTALLOPTIONS = --user" >> Makefile.local
 echo "FCOMP = -F gfortran --fcompexec=mpif90" > Makefile.local.pympi
 echo "INSTALLOPTIONS = --user" >> Makefile.local.pympi
 ```
+
+For the parallel version, the linking needs to be told about the parallel fortran libraries. Do the following command
+to create the setup.local.py file which has that information.
+
+```
+echo "if parallel:\
+    library_dirs += ['/usr/tce/packages/mvapich2/mvapich2-2.2-gcc-4.9.3/lib']\
+    libraries += ['mpich', 'mpifort']" > setup.local.py
+```
+
 Finally, **warp** can be built and installed with (build both serial and parallel versions):
 ```
 make -j install
