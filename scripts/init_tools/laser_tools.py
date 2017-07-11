@@ -92,7 +92,7 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
     source_v = 0.
     inv_c = 1./c
     tau = ctau * inv_c
-    t_peak = - z0 * inv_c
+    t_peak = (source_z - z0) * inv_c
     if zf is None:
         focal_length = source_z - z0
     else:
