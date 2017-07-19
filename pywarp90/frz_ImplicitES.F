@@ -866,7 +866,6 @@ c       --- Make a print out.
 
       if (lfrztimesubs) timemgsolveimplicites2d = timemgsolveimplicites2d +
      &                                         wtime() - substarttime
-      call flush()
 
       return
       end
