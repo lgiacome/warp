@@ -62,7 +62,7 @@ class PlasmaInjector( object ):
            For injection_direction = 1: plasma is continuously 
            injected at the right end 
            of the simulation box. 
-           For injection_direction = 1: plasma is continuously 
+           For injection_direction = -1: plasma is continuously 
            injected at the left end
         """
         # Register the species to be injected
@@ -133,9 +133,6 @@ class PlasmaInjector( object ):
         self.v_plasma = c * uz_m * self.gamma_inv_m
 
         # Inject particles between up to self.z_end_plasma
-        print( 'Loading', max(p_zmin, w3d.zmminlocal + top.zgrid), 
-                          min(p_zmax, w3d.zmmaxlocal + top.zgrid), 
-                          self.z_end_plasma )
         self.load_plasma( self.z_end_plasma,
                           max(p_zmin, w3d.zmminlocal + top.zgrid),
                           min(p_zmax, w3d.zmmaxlocal + top.zgrid) )
