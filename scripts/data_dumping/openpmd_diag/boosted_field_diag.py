@@ -16,6 +16,7 @@ from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
 from parallel import gather
+import pdb
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
@@ -212,7 +213,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
             else:
                 # Parallel simulation
-
                 # Gather objects into lists (one element per proc)
                 field_array_list = gather( field_array, comm=self.comm_world )
                 iz_min_list = gather( iz_min, comm=self.comm_world )
@@ -229,6 +229,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
                     # If there are no slices, set global quantities to None
                     if no_slices:
+                        print "no slice"
                         global_field_array = None
                         global_iz_min = None
                         global_iz_max = None
@@ -238,6 +239,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                         global_field_array, global_iz_min, global_iz_max = \
                           self.gather_slices(
                               field_array_list, iz_min_list, iz_max_list )
+
 
             # Write the gathered slices to disk
             if (self.rank == 0) and (global_field_array is not None):
@@ -265,7 +267,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         global_iz_min = min([n for n in iz_min_list if n is not None])
         global_iz_max = max([n for n in iz_max_list if n is not None])
 
-        # Allocate a the global field array, with the proper size
+        # Allocate the global field array, with the proper size
         nslice = global_iz_max - global_iz_min
         # Circ case
         if self.dim == "circ":
@@ -525,7 +527,7 @@ class LabSnapshot:
         # Reverse the order of the slices when stacking the array,
         # since the slices where registered for right to left
         try:
-            field_array = np.stack( self.buffered_slices[::-1], axis=-1 )
+            field_array = np.sack( self.buffered_slices[::-1], axis=-1 )
         except AttributeError:
             # If the version of numpy is older than 1.10, stack does
             # not exist. In this case, do it by hand:
