@@ -331,6 +331,9 @@ c               default: injection rate is shifted Maxwellian
                 enddo
               endif
 
+              if (l_inj_addtempz_abs) then
+                  uzt(ip) = abs(uzt(ip))
+              endif
 
 c             --- Initialize positions as rectangular or elliptical depending on linj_rectangle
               if(linj_rectangle) then
@@ -406,7 +409,7 @@ c                 --- calculate injection surface axial location exactly
 
 c             --- Only save particle if it is within the injection region.
               if (.not. l_inj_zmminmmaxglobal) then
-                if (vzinj > 0. .or. l_inj_user_particles) then
+                if (vzinj > 0. .or. uzt(ip) > 0. .or. l_inj_user_particles) then
 c                 --- Note that normally, particles are allowed to be exactly
 c                 --- aligned to the lower extent of the grid but not the upper extent.
                   if (zpminlocal+zgrid > zs+zinj .or.
@@ -418,7 +421,7 @@ c                 --- the grid boundary or they will never be accelerated.
      &                zs+zinj > zpmaxlocal+zgrid) cycle
                 endif
               else
-                if (vzinj > 0.) then
+                if (vzinj > 0. .or. uzt(ip) > 0.) then
                   if (zpmin+zgrid > zs+zinj .or. zs+zinj >= zpmax+zgrid) cycle
                 else
                   if (zpmin+zgrid >= zs+zinj .or. zs+zinj > zpmax+zgrid) cycle
@@ -444,11 +447,7 @@ c             --- Save the particle data
                 vty = vzinj*0.5*emity_s(jsid+1)*binji + vthperp_s(jsid+1)
                 pgroup%uxp(ii) = vzinj*(apinj*pgroup%xp(ii)*ainji + xpinj) + vtx*uxt(ip)
                 pgroup%uyp(ii) = vzinj*(bpinj*pgroup%yp(ii)*binji + ypinj) + vty*uyt(ip)
-                if(l_inj_addtempz_abs) then
-                  pgroup%uzp(ii) = vzinj + abs(vthz_s(jsid+1)*uzt(ip))
-                else
-                  pgroup%uzp(ii) = vzinj + vthz_s(jsid+1)*uzt(ip)
-                endif
+                pgroup%uzp(ii) = vzinj + vthz_s(jsid+1)*uzt(ip)
               endif
 
 c             --- Save the particle weight
