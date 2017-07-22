@@ -16,7 +16,6 @@ from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
 from parallel import gather
-import pdb
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
@@ -206,7 +205,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
             if (self.comm_world is None) or (self.comm_world.size == 1):
                 # Serial simulation
-
                 global_field_array = field_array
                 global_iz_min = iz_min
                 global_iz_max = iz_max
@@ -229,7 +227,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
                     # If there are no slices, set global quantities to None
                     if no_slices:
-                        print "no slice"
                         global_field_array = None
                         global_iz_min = None
                         global_iz_max = None
@@ -527,7 +524,7 @@ class LabSnapshot:
         # Reverse the order of the slices when stacking the array,
         # since the slices where registered for right to left
         try:
-            field_array = np.sack( self.buffered_slices[::-1], axis=-1 )
+            field_array = np.stack( self.buffered_slices[::-1], axis=-1 )
         except AttributeError:
             # If the version of numpy is older than 1.10, stack does
             # not exist. In this case, do it by hand:
