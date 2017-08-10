@@ -2583,7 +2583,7 @@ class Species(object):
         try:
             return self._pgroup
         except AttributeError:
-            if self.pgroups is not None:
+            if self.pgroups is not None and len(self.pgroups) > 0:
                 return self.flatten(self.pgroups)[0]
             else:
                 # --- If not otherwise specified, top.pgroup is the default.
