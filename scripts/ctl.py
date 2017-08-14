@@ -32,15 +32,15 @@ restored (since the calling code is not returned to).
     global _controlCrecieved
     if _controlCrecieved:
         if reset:
-            oldsignal = signal.signal(signal.SIGINT, _defaultcontrolC)
+            signal.signal(signal.SIGINT, _defaultcontrolC)
         _controlCrecieved = False
         raise KeyboardInterrupt("Interrupt requested")
 
 
 def setinterrupt():
-    global _controlCrecieved, _defaultcontrolC
+    global _controlCrecieved
     _controlCrecieved = False
-    _defaultcontrolC = signal.signal(signal.SIGINT, _handlecontrolC)
+    signal.signal(signal.SIGINT, _handlecontrolC)
 
 
 def _getcommand(ext1, ext2):
