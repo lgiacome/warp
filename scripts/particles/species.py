@@ -841,7 +841,7 @@ class Species(object):
                 self.ex, self.ey, self.ez,
                 self.sm, self.sq, bendres, bendradi, top.dt)
 
-    def addparticles(self, x=0., y=0., z=0., vx=0., vy=0., vz=0., gi=1., js=None, **kw):
+    def addparticles(self, x=0., y=0., z=0., vx=0., vy=0., vz=0., gi=1., js=None, w=None, **kw):
         if js is None:
             js = self.jslist[0]
 
@@ -858,7 +858,7 @@ class Species(object):
             except KeyError:
                 pass
 
-        return addparticles(x, y, z, vx, vy, vz, gi=gi, js=js, **kw)
+        return addparticles(x, y, z, vx, vy, vz, gi=gi, js=js, w=w, **kw)
 
     addpart = addparticles
 
@@ -1364,7 +1364,7 @@ class Species(object):
 
     def add_gaussian_dist(self, np, deltax, deltay, deltaz, vthx=0., vthy=0., vthz=0.,
                           xmean=0., ymean=0., zmean=0., vxmean=0., vymean=0., vzmean=0.,
-                          zdist='random', nz=1000, fourfold=0, js=None, lmomentum=0, **kw):
+                          zdist='random', rdist='linear', nz=1000, fourfold=0, js=None, lmomentum=0, **kw):
         """
     Add particles with a Gaussian distribution.
      - np: total number of particles to load
@@ -1374,6 +1374,8 @@ class Species(object):
      - vxmean, vymean, vzmean: directed velocity, defaults to 0.
      - zdist='random': type of random distribution along z, possible values are
                        'random' and 'regular'
+     - rdist='linear': type of random distribution along r, possible values are
+                       'linear' and 'flat'
      - nz=1000: number of data points to use along z
      - fourfold=False: whether to use four fold symmetry.
      - js: particle species number, don't set it unless you mean it
@@ -1386,8 +1388,19 @@ class Species(object):
             np = nint(float(np)/4)
         kw['lmomentum'] = lmomentum
         if zdist == 'random':
-            x = SpRandom(0., deltax, np)
-            y = SpRandom(0., deltay, np)
+            if rdist == 'linear': # for uniform noise in XY.
+                x = SpRandom(0., deltax, np)
+                y = SpRandom(0., deltay, np)
+                w = 1.
+            else: # rdist = flat, for uniform noise in R, need to adjust weight accordingly.
+                rmax = 4.
+                r = rmax*random.random(np)
+                t = 2*pi*random.random(np)
+                x = r*cos(t)*deltax
+                y = r*sin(t)*deltay
+                w = rmax*r*exp(-0.5*r**2)
+                if top.wpid==0:top.wpid=nextpid()
+                
             z = SpRandom(0., deltaz, np)
             vx = SpRandom(0., vthx, np)
             vy = SpRandom(0., vthy, np)
@@ -1410,7 +1423,7 @@ class Species(object):
                         gi = 1./sqrt(1. + (vxa*vxa + vya*vya + vza*vza)/clight**2)
                     else:
                         gi = 1.
-                    self.addparticles(xa, ya, za, vxa, vya, vza, gi=gi, js=js, **kw)
+                    self.addparticles(xa, ya, za, vxa, vya, vza, gi=gi, js=js, w=w, **kw)
         if zdist == 'regular':
             dz = 16.*deltaz/nz
             zmin = -(float(nz/2) - 0.5)*dz
@@ -1422,8 +1435,19 @@ class Species(object):
                 else:
                     Nadd = int(Nadd)
                 if Nadd > 0:
-                    x = SpRandom(0., deltax, Nadd)
-                    y = SpRandom(0., deltay, Nadd)
+                    if rdist == 'linear': # for uniform noise in XY.
+                        x = SpRandom(0., deltax, Nadd)
+                        y = SpRandom(0., deltay, Nadd)
+                        w = 1.
+                    else: # rdist = flat, for uniform noise in R, need to adjust weight accordingly.
+                        rmax = 4.*sqrt(max(0.,(1.-(zadd/(pi*deltaz))**2)))
+                        r = (arange(Nadd)+0.5)*rmax/Nadd
+                        t = 2*pi*random.random(Nadd)
+                        x = r*cos(t)*deltax
+                        y = r*sin(t)*deltay
+                        w = rmax*r*exp(-0.5*r**2)
+                        if top.wpid==0:top.wpid=nextpid()
+
                     z = zadd + dz*(random.random(Nadd) - 0.5)
                     vx = SpRandom(0., vthx, Nadd)
                     vy = SpRandom(0., vthy, Nadd)
@@ -1446,7 +1470,8 @@ class Species(object):
                                 gi = 1./sqrt(1. + (vxa*vxa + vya*vya + vza*vza)/clight**2)
                             else:
                                 gi = 1.
-                            self.addparticles(xa, ya, za, vxa, vya, vza, gi=gi, js=js, **kw)
+                            self.addparticles(xa, ya, za, vxa, vya, vza, gi=gi, js=js, \
+                                              w=w, **kw)
 
     def gather_zmmnts_locs(self):
         get_zmmnts_stations(len(self.jslist),
