@@ -1556,7 +1556,7 @@ def getvzrange(kwdict={}):
 #-------------------------------------------------------------------------
 #-------------------------------------------------------------------------
 def add_particles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
-                 pid=0.,w=1.,ux=None,uy=None,uz=None,
+                 pid=None,w=None,ux=None,uy=None,uz=None,
                  js=0,species_number=None,sid=None,
                  lallindomain=None,unique_particles=None,
                  xmmin=None,xmmax=None,
@@ -1637,6 +1637,12 @@ def add_particles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
 
     if pgroup is None: pgroup = top.pgroup
 
+    # --- Keep track if pid was input. If not, set it to the default value.
+    # --- This is needed to fix a possible conflict with the w input argument
+    pid_unset = (pid is None)
+    if pid is None:
+        pid = 0.
+
     # --- Check if this is a new species
     if species_number is not None:
         js = species_number
@@ -1715,6 +1721,11 @@ def add_particles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
             pid[:,top.tbirthpid-1] = top.time
 
         # --- Set weights
+        # --- The weights can be set either by passing in a pid array or by the w argument.
+        # --- The w argument takes precedence. If neither are supplied, a default value
+        # --- of 1 is used.
+        if pid_unset and w is None:
+            w = 1.
         if w is not None and top.wpid > 0:
             pid[:,top.wpid-1] = array(w)*ones(maxlen,'d')
         # --- Note that ssn is set in addpart
@@ -1802,8 +1813,8 @@ def add_particles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
             # --- and new data compressed to the bottom of the arrays.
             nn = nafter - nbefore
             if lfields:
-                return (x[:nn],y[:nn],z[:nn],vx[:nn],vy[:nn],vz[:nn],gi[:nn],pid[:nn],ex[:nn],ey[:nn],ez[:nn],bx[:nn],by[:nn],bz[:nn])
+                return (x[:nn],y[:nn],z[:nn],vx[:nn],vy[:nn],vz[:nn],gi[:nn],pid[:nn,:],ex[:nn],ey[:nn],ez[:nn],bx[:nn],by[:nn],bz[:nn])
             else:
-                return (x[:nn],y[:nn],z[:nn],vx[:nn],vy[:nn],vz[:nn],gi[:nn],pid[:nn])
+                return (x[:nn],y[:nn],z[:nn],vx[:nn],vy[:nn],vz[:nn],gi[:nn],pid[:nn,:])
 
 addparticles = add_particles
