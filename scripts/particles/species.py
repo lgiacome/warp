@@ -3065,6 +3065,7 @@ class Species(object):
     lostpars = property(*_gettopjsidattribute('lostpars'))
 
     # Win_Moments
+    npsim = property(*_gettopjsidattribute('npsim'))
     pnum = property(*_gettopjsidattribute('pnum'))
     xbar = property(*_gettopjsidattribute('xbar'))
     ybar = property(*_gettopjsidattribute('ybar'))
@@ -3120,6 +3121,7 @@ class Species(object):
     zmmntsm = property(*_gettopjsid1dattribute('zmmntsm'))
     zmmntsw = property(*_gettopjsid1dattribute('zmmntsw'))
     zmomentscalculated = property(*_gettopjsid1dattribute('zmomentscalculated'))
+    npsimz = property(*_gettopjsidattribute('npsimz'))
     pnumz = property(*_gettopjsidattribute('pnumz'))
     xbarz = property(*_gettopjsidattribute('xbarz'))
     ybarz = property(*_gettopjsidattribute('ybarz'))
@@ -3194,6 +3196,7 @@ class Species(object):
     # Lab_Moments
     ilabwn = property(*_gettopjsidattribute('ilabwn'))
     timelw = property(*_gettoplabmomattribute('timelw'))
+    npsimlw = property(*_gettoplabmomattribute('npsimlw'))
     pnumlw = property(*_gettoplabmomattribute('pnumlw'))
     xbarlw = property(*_gettoplabmomattribute('xbarlw'))
     ybarlw = property(*_gettoplabmomattribute('ybarlw'))
@@ -3275,6 +3278,7 @@ class Species(object):
     hepsnr = property(*_gettopjsidhistattribute('hepsnr'))
     hepsng = property(*_gettopjsidhistattribute('hepsng'))
     hepsnh = property(*_gettopjsidhistattribute('hepsnh'))
+    hnpsim = property(*_gettopjsidhistattribute('hnpsim'))
     hpnum = property(*_gettopjsidhistattribute('hpnum'))
     hxbar = property(*_gettopjsidhistattribute('hxbar'))
     hybar = property(*_gettopjsidhistattribute('hybar'))
@@ -3308,6 +3312,7 @@ class Species(object):
     hvxvzbar = property(*_gettopjsidhistattribute('hvxvzbar'))
     hvyvzbar = property(*_gettopjsidhistattribute('hvyvzbar'))
     hcurrz = property(*_gettopjsidhistattribute('hcurrz'))
+    hnpsimz = property(*_gettopjsidhistattribute('hnpsimz'))
     hpnumz = property(*_gettopjsidhistattribute('hpnumz'))
     hepsxz = property(*_gettopjsidhistattribute('hepsxz'))
     hepsyz = property(*_gettopjsidhistattribute('hepsyz'))
