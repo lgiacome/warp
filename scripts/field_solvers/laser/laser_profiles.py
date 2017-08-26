@@ -20,7 +20,7 @@ except ImportError:
 class ExperimentalProfile( object ):
     """Class that calculates the laser from a data file."""
 
-    def __init__( self, k0, laser_file, laser_file_energy, boost=None, source_v=0 ):
+    def __init__( self, k0, laser_file, laser_file_energy, dim, boost=None, source_v=0 ):
 
         # The first processor loads the file and sends it to the others
         # (This prevents all the processors from accessing the same file,
@@ -28,22 +28,38 @@ class ExperimentalProfile( object ):
         
         self.v_antenna = source_v
         self.boost = boost
+        self.dim = dim
         
         if me==0:
             with h5py.File(laser_file) as f:
-                x = f['x'][:]
-                y = f['y'][:]
                 t = f['t'][:]
-                Ereal = f['Ereal'][:,:]
-                Eimag = f['Eimag'][:,:]
-                r = np.sqrt(x**2+y**2)
+                x = f['x'][:]
+                if self.dim == '2d':
+                    Ereal = f['Ereal'][:,:]
+                    Eimag = f['Eimag'][:,:]
+                elif self.dim == 'circ':
+                    y = f['y'][:]
+                    r = sqrt( x**2 + y**2 )
+                    Ereal = f['Ereal'][:,:]
+                    Eimag = f['Eimag'][:,:]
+                elif self.dim == '3d':
+                    y = f['y'][:]
+                    Ereal = f['Ereal'][:,:,:]
+                    Eimag = f['Eimag'][:,:,:]
         else:
-            r = None
+            x = None
+            y = None
             t = None
             Ereal = None
             Eimag = None
         # Broadcast the data to all procs
-        r = mpibcast( r )
+        if self.dim == '2d':
+            x = mpibcast( x )
+        elif self.dim == 'circ':
+            r = mpibcast( r )
+        elif self.dim == '3d':
+            x = mpibcast( x )
+            y = mpibcast( y )
         t = mpibcast( t )
         Ereal = mpibcast( Ereal )
         Eimag = mpibcast( Eimag )
@@ -60,8 +76,15 @@ class ExperimentalProfile( object ):
         self.k0 = k0
 
         # Interpolation object
-        self.interp_func = RegularGridInterpolator( (t, r), E_data.T,
-                            bounds_error=False, fill_value=0. )
+        if self.dim == '2d':
+            self.interp_func = RegularGridInterpolator( (t, x), E_data,
+                                bounds_error=False, fill_value=0. )
+        elif self.dim == 'circ':
+            self.interp_func = RegularGridInterpolator( (t, r), E_data,
+                                bounds_error=False, fill_value=0. )
+        if self.dim == '3d':
+            self.interp_func = RegularGridInterpolator( (t, x, y), E_data,
+                                bounds_error=False, fill_value=0. )
 
     def __call__( self, x, y, t_modified ):
         """
@@ -109,16 +132,20 @@ class ExperimentalProfile( object ):
             # The line below is to compensate the fact that the laser
             # amplitude is multiplied by (1-v_antenna/c) in em3dsolver.py
             conversion_factor *= 1./(1. - self.v_antenna/c)
-                    
-        # Calculate the array of radius
-        r = np.sqrt( x**2 + y**2 )
-
-        # Interpolate to find the complex amplitude
-        Ecomplex = self.interp_func( (t, r) )
-
+            
+        if self.dim == '2d':
+            # Interpolate to find the complex amplitude
+            Ecomplex = self.interp_func( (t, x) )
+        elif self.dim == 'circ':
+            r = sqrt(x**2 + y**2)
+            # Interpolate to find the complex amplitude
+            Ecomplex = self.interp_func( (t, r) )
+        elif self.dim == '3d':
+            # Interpolate to find the complex amplitude
+            Ecomplex = self.interp_func( (t, x, y) )
         # Add laser oscillations
         Eosc = ( Ecomplex * np.exp( -1.j*self.k0*c*t ) ).real
-
+        
         return( Eosc * conversion_factor )
 
 class GaussianProfile( object ):

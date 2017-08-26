@@ -129,7 +129,7 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
     # - Case of an experimental profile
     else:
         # Create a laser profile object
-        laser_profile = ExperimentalProfile( k0, laser_file, laser_file_energy,
+        laser_profile = ExperimentalProfile( k0, laser_file, laser_file_energy, dim,
                                    boost=boost, source_v=source_v )
 
     # Link its profile function the em object
