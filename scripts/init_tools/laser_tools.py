@@ -105,17 +105,16 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
     # problem of the EM solver not being picklable if laser_func were an
     # instance method, which is not picklable.
 
+    # When running a simulation in boosted frame, convert these parameters
+    boost = None
+    if (gamma_boost is not None):
+        boost = BoostConverter( gamma_boost )
+        source_z, = boost.copropag_length([ source_z ],
+                                          beta_object=source_v/c)
+        source_v, = boost.velocity([ source_v ])
+
     # - Case of a Gaussian pulse
     if laser_file is None:
-
-        # When running a simulation in boosted frame, convert these parameters
-        boost = None
-        if (gamma_boost is not None):
-            boost = BoostConverter( gamma_boost )
-            source_z, = boost.copropag_length([ source_z ],
-                                              beta_object=source_v/c)
-            source_v, = boost.velocity([ source_v ])
-
         # Create a laser profile object to store these parameters
         if (beta == 0) and (zeta == 0) and (phi2 == 0):
             # Without spatio-temporal correlations
@@ -129,15 +128,9 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
 
     # - Case of an experimental profile
     else:
-
-        # Reject boosted frame
-        if (gamma_boost is not None) and (gamma_boost != 1.):
-            raise ValueError('Boosted frame not implemented for '
-                             'arbitrary laser profile.')
-
         # Create a laser profile object
-        laser_profile = ExperimentalProfile( k0, laser_file,
-                                             laser_file_energy )
+        laser_profile = ExperimentalProfile( k0, laser_file, laser_file_energy,
+                                   boost=boost, source_v=source_v )
 
     # Link its profile function the em object
     em.laser_func = laser_profile

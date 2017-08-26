@@ -20,11 +20,15 @@ except ImportError:
 class ExperimentalProfile( object ):
     """Class that calculates the laser from a data file."""
 
-    def __init__( self, k0, laser_file, laser_file_energy ):
+    def __init__( self, k0, laser_file, laser_file_energy, boost=None, source_v=0 ):
 
         # The first processor loads the file and sends it to the others
         # (This prevents all the processors from accessing the same file,
         # which can substantially slow down the simulation)
+        
+        self.v_antenna = source_v
+        self.boost = boost
+        
         if me==0:
             with h5py.File(laser_file) as f:
                 x = f['x'][:]
@@ -32,6 +36,7 @@ class ExperimentalProfile( object ):
                 t = f['t'][:]
                 Ereal = f['Ereal'][:,:]
                 Eimag = f['Eimag'][:,:]
+                r = np.sqrt(x**2+y**2)
         else:
             r = None
             t = None
@@ -55,10 +60,10 @@ class ExperimentalProfile( object ):
         self.k0 = k0
 
         # Interpolation object
-        self.interp_func = RegularGridInterpolator( (t, r), E_data,
+        self.interp_func = RegularGridInterpolator( (t, r), E_data.T,
                             bounds_error=False, fill_value=0. )
 
-    def __call__( self, x, y, t ):
+    def __call__( self, x, y, t_modified ):
         """
         Return the transverse profile of the laser at the position
         of the antenna
@@ -73,7 +78,38 @@ class ExperimentalProfile( object ):
 
         t: float
             Time in seconds
+
+        boost: a BoostConverter object
+            If not None, the laser is emitted in the corresponding boosted-frame
+            (even though all parameters are passed in the lab frame)
+
+        source_v: float (meters/second)
+            The speed of the antenna in the direction normal to its plane
         """
+        # Get the true time
+        # (The top.time has been multiplied by (1-v_antenna/c)
+        # in em3dsolver.py, before calling the present function)        
+        t = t_modified/(1.-self.v_antenna/c)
+        # Get the position of the antenna at this time
+        z_source = self.v_antenna * t
+        # When running in the boosted frame, convert these position to
+        # the lab frame, so as to use the lab-frame formula of the laser
+        if self.boost is not None:
+            zlab_source = self.boost.gamma0*( z_source + self.boost.beta0*c*t )
+            tlab_source = self.boost.gamma0*( t + self.boost.beta0*z_source/c )
+            # Overwrite boosted frame values, within the scope of this function
+            z_source = zlab_source
+            t = tlab_source
+            
+        # Boosted-frame: convert the laser amplitude
+        # These formula assume that the antenna is motionless in the lab frame
+        conversion_factor = 1.
+        if self.boost is not None:
+            conversion_factor = 1./self.boost.gamma0
+            # The line below is to compensate the fact that the laser
+            # amplitude is multiplied by (1-v_antenna/c) in em3dsolver.py
+            conversion_factor *= 1./(1. - self.v_antenna/c)
+                    
         # Calculate the array of radius
         r = np.sqrt( x**2 + y**2 )
 
@@ -83,7 +119,7 @@ class ExperimentalProfile( object ):
         # Add laser oscillations
         Eosc = ( Ecomplex * np.exp( -1.j*self.k0*c*t ) ).real
 
-        return( Eosc )
+        return( Eosc * conversion_factor )
 
 class GaussianProfile( object ):
     """Class that calculates a Gaussian laser pulse."""
