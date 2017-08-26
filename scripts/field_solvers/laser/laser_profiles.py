@@ -20,7 +20,8 @@ except ImportError:
 class ExperimentalProfile( object ):
     """Class that calculates the laser from a data file."""
 
-    def __init__( self, k0, laser_file, laser_file_energy, dim, boost=None, source_v=0 ):
+    def __init__( self, k0, laser_file, laser_file_energy, dim, tau=1., phi2=0., 
+                  boost=None, source_v=0 ):
 
         # The first processor loads the file and sends it to the others
         # (This prevents all the processors from accessing the same file,
@@ -29,7 +30,9 @@ class ExperimentalProfile( object ):
         self.v_antenna = source_v
         self.boost = boost
         self.dim = dim
-        
+        self.tau = tau
+        self.b = - 2*phi2/(tau**4+4*phi2**2)
+                
         if me==0:
             with h5py.File(laser_file) as f:
                 t = f['t'][:]
@@ -66,7 +69,9 @@ class ExperimentalProfile( object ):
 
         # Recover the complex field
         E_data = Ereal + 1.j*Eimag
-
+        self.tpeak = np.sum(t.reshape(1,1,t.shape[0])*np.abs(E_data**2))/np.sum(np.abs(E_data**2))
+        print('$$$$$$$$$$$$$$$$$$$$')
+        print(self.tpeak)
         # Change the value of the field (by default it is 1J)
         E_norm = np.sqrt( laser_file_energy )
         E_data = E_data*E_norm
@@ -143,9 +148,12 @@ class ExperimentalProfile( object ):
         elif self.dim == '3d':
             # Interpolate to find the complex amplitude
             Ecomplex = self.interp_func( (t, x, y) )
-        # Add laser oscillations
-        Eosc = ( Ecomplex * np.exp( -1.j*self.k0*c*t ) ).real
-        
+        # Add laser oscillations and temporal chirp
+
+        Eosc = ( Ecomplex * np.exp( -1.j*self.k0*c*t
+                                    +1.j*self.b*(t-self.tpeak)**2./2.)
+               ).real
+
         return( Eosc * conversion_factor )
 
 class GaussianProfile( object ):
