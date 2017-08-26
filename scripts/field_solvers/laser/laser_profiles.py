@@ -70,8 +70,6 @@ class ExperimentalProfile( object ):
         # Recover the complex field
         E_data = Ereal + 1.j*Eimag
         self.tpeak = np.sum(t.reshape(1,1,t.shape[0])*np.abs(E_data**2))/np.sum(np.abs(E_data**2))
-        print('$$$$$$$$$$$$$$$$$$$$')
-        print(self.tpeak)
         # Change the value of the field (by default it is 1J)
         E_norm = np.sqrt( laser_file_energy )
         E_data = E_data*E_norm
