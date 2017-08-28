@@ -1668,13 +1668,16 @@ def add_particles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
     lenvy = size(vy)
     lenvz = size(vz)
     lengi = size(gi)
-    lenpid = size(pid)
     lenex = size(ex)
     leney = size(ey)
     lenez = size(ez)
     lenbx = size(bx)
     lenby = size(by)
     lenbz = size(bz)
+    try:
+       lenpid = len(pid)
+    except TypeError:
+       lenpid = 1
 
     # --- If any of the inputs are arrays that are zero length, then return
     if (lenx == 0 or leny == 0 or lenz == 0 or lenvx == 0 or lenvy == 0 or lenvz == 0 or
@@ -1691,13 +1694,13 @@ def add_particles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
     assert lenvy==maxlen or lenvy==1,"Length of vy doesn't match len of others"
     assert lenvz==maxlen or lenvz==1,"Length of vz doesn't match len of others"
     assert lengi==maxlen or lengi==1,"Length of gi doesn't match len of others"
-    assert lenpid==maxlen or lenpid==1,"Length of pid doesn't match len of others"
     assert lenex==maxlen or lenex==1,"Length of ex doesn't match len of others"
     assert leney==maxlen or leney==1,"Length of ey doesn't match len of others"
     assert lenez==maxlen or lenez==1,"Length of ez doesn't match len of others"
     assert lenbx==maxlen or lenbx==1,"Length of bx doesn't match len of others"
     assert lenby==maxlen or lenby==1,"Length of by doesn't match len of others"
     assert lenbz==maxlen or lenbz==1,"Length of bz doesn't match len of others"
+    assert lenpid==maxlen or lenpid==1,"Length of pid doesn't match len of others"
 
     # --- Convert all to arrays of length maxlen, broadcasting scalars
     x = array(x)*ones(maxlen,'d')
@@ -1707,13 +1710,13 @@ def add_particles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
     vy = array(vy)*ones(maxlen,'d')
     vz = array(vz)*ones(maxlen,'d')
     gi = array(gi)*ones(maxlen,'d')
-    pid = array(pid)*ones([maxlen,top.npid],'d')
     ex = array(ex)*ones(maxlen,'d')
     ey = array(ey)*ones(maxlen,'d')
     ez = array(ez)*ones(maxlen,'d')
     bx = array(bx)*ones(maxlen,'d')
     by = array(by)*ones(maxlen,'d')
     bz = array(bz)*ones(maxlen,'d')
+    pid = array(pid)*ones([maxlen,top.npid],'d')
 
     if lnewparticles:
         # --- Set time of creation
