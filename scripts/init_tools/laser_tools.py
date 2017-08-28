@@ -130,7 +130,8 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
     else:
         # Create a laser profile object
         laser_profile = ExperimentalProfile( k0, laser_file, laser_file_energy, dim,
-                                   tau=tau, phi2=phi2, boost=boost, source_v=source_v )
+                                             boost=boost, source_v=source_v 
+                                           )
 
     # Link its profile function the em object
     em.laser_func = laser_profile
@@ -145,7 +146,6 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
     em.laser_depos_order_x=1
     em.laser_depos_order_y=1
     em.laser_depos_order_z=1
-
 
 #===============================================================================
 def retropropagation(em, w3d, negative_propagation=False):
