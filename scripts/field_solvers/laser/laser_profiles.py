@@ -22,7 +22,7 @@ class ExperimentalProfile( object ):
 
     def __init__( self, k0, laser_file, laser_file_energy, dim, boost=None, source_v=0 ):
 
-    """
+        """
         k0: float (rad/m)
             wavenumber of the laser
            
@@ -49,7 +49,7 @@ class ExperimentalProfile( object ):
 
         source_v: float (meters/second)
             The speed of the antenna in the direction normal to its plane    
-    """
+        """
 
         # The first processor loads the file and sends it to the others
         # (This prevents all the processors from accessing the same file,
