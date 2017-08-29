@@ -22,6 +22,35 @@ class ExperimentalProfile( object ):
 
     def __init__( self, k0, laser_file, laser_file_energy, dim, boost=None, source_v=0 ):
 
+    """
+        k0: float (rad/m)
+            wavenumber of the laser
+           
+        laser_file: string
+            name of the hdf5 file containing the data. The file objects names should be:
+            - x <vector> for 2d or 3d, r coordinate for circ
+            - y <vector> for 3d
+            - t <vector> time vector
+            - Ereal <2d or 3d matrix> real part of the envelope of the laser field:
+                2d matrix (t, x) in 2d
+                2d matrix (t, r) in circles
+                3d matrix (t, x, y) in 3d
+            - Eimag: same as Ereal with the imaginary part of E
+
+        laser_file_energy: float (J)
+            pulse energy (in Joules). The laser field is rescaled using this factor
+            
+        dim: string '2d', '3d' or 'circ'
+            geometry used for the simulation
+
+        boost: a BoostConverter object
+            If not None, the laser is emitted in the corresponding boosted-frame
+            (even though all parameters are passed in the lab frame)
+
+        source_v: float (meters/second)
+            The speed of the antenna in the direction normal to its plane    
+    """
+
         # The first processor loads the file and sends it to the others
         # (This prevents all the processors from accessing the same file,
         # which can substantially slow down the simulation)
@@ -101,12 +130,10 @@ class ExperimentalProfile( object ):
         t: float
             Time in seconds
 
-        boost: a BoostConverter object
-            If not None, the laser is emitted in the corresponding boosted-frame
-            (even though all parameters are passed in the lab frame)
-
-        source_v: float (meters/second)
-            The speed of the antenna in the direction normal to its plane
+        t_modified: float
+            Time in seconds, multiplied by (1-v_antenna/c)
+            This multiplication is done in em3dsolver.py, when
+            calling the present function.
         """
         # Get the true time
         # (The top.time has been multiplied by (1-v_antenna/c)
