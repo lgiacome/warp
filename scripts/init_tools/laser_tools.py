@@ -7,8 +7,8 @@ from warp import openbc
 
 def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
                theta_pol=0., source_z=0., zeta=0, beta=0, phi2=0,
-               gamma_boost=None, laser_file=None, laser_file_energy=None, 
-               cep=0. ):
+               gamma_boost=None, cep=0., 
+               laser_file=None, laser_file_energy=None):
     """
     Add a linearly-polarized, Gaussian laser pulse in the em object,
     by setting the correct laser_func, laser_emax, laser_source_z
@@ -76,17 +76,24 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
         When initializing the laser in a boosted frame, set the value of
         `gamma_boost` to the corresponding Lorentz factor. All the other
         quantities (ctau, zf, source_z, etc.) are to be given in the lab frame.
+        
+    cep: float (in rad), optional
+        Carrier-Envelope Phase
 
-    laser_file: str or None
-       If None, the laser will be initialized as Gaussian
-       Otherwise, the laser_file should point to a standardized HDF5 file
-       which contains the following datasets:
-       - 't' and 'r': 1D datasets of coordinates, in SI
-       - 'Ereal' and 'Eimag': 2D datasets in SI, so that the laser energy is 1J
+    laser_file: string, optional
+        name of the hdf5 file containing the data. The file objects names should be:
+        - x <vector> for 2d and 3d
+        - y <vector> for 3d
+        - r <vector> for circ
+        - t <vector> time vector
+        - Ereal <2d or 3d matrix> real part of the envelope of the laser field:
+            2d matrix (t, x) in 2d
+            2d matrix (t, r) in circles
+            3d matrix (t, x, y) in 3d
+        - Eimag: same as Ereal with the imaginary part of E
 
-    laser_file_energy: float or None
-       *Used only if a laser_file is provided*
-       Total energy of the pulse, in Joules
+    laser_file_energy: float (in J), optional
+        pulse energy (in Joules). The laser field is rescaled using this factor
     """
     # Wavevector and speed of the antenna
     k0 = 2*np.pi/lambda0
