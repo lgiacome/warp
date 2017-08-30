@@ -85,11 +85,11 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
         - x <vector> for 2d and 3d
         - y <vector> for 3d
         - r <vector> for circ
-        - t <vector> time vector
+        - t <vector> time vector for 2d, 3d and circ
         - Ereal <2d or 3d matrix> real part of the envelope of the laser field:
-            2d matrix (t, x) in 2d
-            2d matrix (t, r) in circles
-            3d matrix (t, x, y) in 3d
+            2d matrix (t, x) for 2d
+            2d matrix (t, r) for circles
+            3d matrix (t, x, y) for 3d
         - Eimag: same as Ereal with the imaginary part of E
 
     laser_file_energy: float (in J), optional
