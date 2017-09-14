@@ -61,7 +61,7 @@ class ExperimentalProfile( object ):
         self.dim = dim
                 
         if me==0:
-            with h5py.File(laser_file) as f:
+            with h5py.File(laser_file, 'r') as f:
                 if self.dim == '2d':
                     t = f['t'][:]
                     x = f['x'][:]
