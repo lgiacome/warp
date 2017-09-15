@@ -37,6 +37,12 @@ class ExperimentalProfile( object ):
                 2d matrix (t, r) for circles
                 3d matrix (t, x, y) for 3d
             - Eimag: same as Ereal with the imaginary part of E
+            
+            Note that the longitudinal coordinate used here is time, so the front of the 
+            pulse is in the first elements of Ereal and Eimag along the first dimension.
+            
+            To calculate the laser field from this envelope, we use the '+' convention: 
+            E(t) = ( Ereal + i*Eimag ) * exp( +i*omega0*t )
 
         laser_file_energy: float (in J)
             pulse energy (in Joules). The laser field is rescaled using this factor
