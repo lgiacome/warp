@@ -194,7 +194,7 @@ class ExperimentalProfile( object ):
             Ecomplex = self.interp_func( (t, x, y) )
         # Add laser oscillations and temporal chirp
 
-        Eosc = ( Ecomplex * np.exp( -1.j*self.k0*c*t ) ).real
+        Eosc = ( Ecomplex * np.exp( 1.j*self.k0*c*t ) ).real
 
         return( Eosc * conversion_factor )
 
