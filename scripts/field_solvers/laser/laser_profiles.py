@@ -445,8 +445,8 @@ class JincGaussianAngleProfile( object ):
             z_source = zlab_source
             t = tlab_source
         # Rotated coordinate, to allow for propagation angle
-        xi = x*np.cos(self.theta_zx) - c*t*np.sin(self.theta_zx)
-        tau = t*np.cos(self.theta_zx) + x/c * np.sin(self.theta_zx)
+        xi = x*np.cos(self.theta_zx) + c*t*np.sin(self.theta_zx)
+        tau = t*np.cos(self.theta_zx) - x/c * np.sin(self.theta_zx)
 
         # Define spatio-temporal profile
         r = np.maximum(np.sqrt(xi**2+y**2), self.waist*1.e-8)
