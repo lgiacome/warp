@@ -343,7 +343,8 @@ class GaussianProfile( object ):
         return( E0 * profile.real )
 
 class JincGaussianAngleProfile( object ):
-    """Class that calculates a Gaussian laser pulse."""
+    """Class that calculates a laser pulse with transverse Jinc profile, longitudinal
+       Gaussian profile and propagating at an arbitrary angle with respect to z."""
 
     def __init__( self, k0, waist, tau, t_peak, a0, dim,
         temporal_order=2, boost=None, source_v=0, theta_zx=0., x_center=0. ):
@@ -352,6 +353,9 @@ class JincGaussianAngleProfile( object ):
         supergaussian function longitudinally. The antenna is orthogonal to z, but 
         this profile supports a non-zero angle in the (z, x) plane, and is compatible
         with the boosted frame and a moving window.
+        
+        The focal plane is the plane of the antenna. No general analytical formula exist 
+        otherwise.
 
         This object can then be passed to the `EM3D` class, as the argument
         `laser_func`, in order to have a Gaussian laser emitted by the antenna.
