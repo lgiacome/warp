@@ -354,8 +354,9 @@ class JincGaussianAngleProfile( object ):
         this profile supports a non-zero angle in the (z, x) plane, and is compatible
         with the boosted frame and a moving window.
         
-        The focal plane is the plane of the antenna. No general analytical formula exist 
-        otherwise.
+        Note 1: The focal plane is the plane of the antenna. No general analytical formula 
+        exist otherwise.
+        Note2: This profile only works for small angles theta_zx.
 
         This object can then be passed to the `EM3D` class, as the argument
         `laser_func`, in order to have a Gaussian laser emitted by the antenna.
@@ -453,16 +454,27 @@ class JincGaussianAngleProfile( object ):
             # Overwrite boosted frame values, within the scope of this function
             z_source = zlab_source
             t = tlab_source
-        # Rotated coordinate, to allow for propagation angle
-        xi = (x-self.x_center)*np.cos(self.theta_zx) + c*t*np.sin(self.theta_zx)
-        tau = t*np.cos(self.theta_zx) - (x-self.x_center)/c * np.sin(self.theta_zx)
+#         Rotated coordinate, to allow for propagation angle
+#         x_rotated = (x-self.x_center)*np.cos(self.theta_zx) + c*t*np.sin(self.theta_zx)
+#         t_rotated = t*np.cos(self.theta_zx) - (x-self.x_center)/c * np.sin(self.theta_zx)
+#         Define spatio-temporal profile
+#         r = np.maximum(np.sqrt(x_rotated**2+y**2), self.waist*1.e-8)
+#         space_profile = 2*j1(r/self.waist) / (r/self.waist)
+#         time_profile  = np.exp(-((t_rotated - self.t_peak - z_source/c ) * self.inv_tau)
+#                                       **self.temporal_order)
+#         phase         = self.k0*c*(t_rotated-self.t_peak-z_source/c )
 
+        # Rotated coordinate, to allow for propagation angle
+        x_rotated = (x-self.x_center)*np.cos(self.theta_zx) + \
+                     c*(t-self.t_peak-z_source/c)*np.sin(self.theta_zx)
+        t_rotated = (t-self.t_peak-z_source/c)*np.cos(self.theta_zx) -\
+                    (x-self.x_center)/c * np.sin(self.theta_zx)
         # Define spatio-temporal profile
-        r = np.maximum(np.sqrt(xi**2+y**2), self.waist*1.e-8)
+        r = np.maximum(np.sqrt(x_rotated**2+y**2), self.waist*1.e-8)
         space_profile = 2*j1(r/self.waist) / (r/self.waist)
-        time_profile  = np.exp(-((tau - self.t_peak - z_source/c ) * self.inv_tau)
+        time_profile  = np.exp(-(t_rotated * self.inv_tau)
                                       **self.temporal_order)
-        phase         = self.k0*c*(tau-self.t_peak-z_source/c )
+        phase         = self.k0*c*t_rotated
         
         # Boosted-frame: convert the laser amplitude
         # These formula assume that the antenna is motionless in the lab frame
