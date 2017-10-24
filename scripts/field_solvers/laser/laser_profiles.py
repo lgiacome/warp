@@ -346,7 +346,7 @@ class JincGaussianAngleProfile( object ):
     """Class that calculates a Gaussian laser pulse."""
 
     def __init__( self, k0, waist, tau, t_peak, a0, dim,
-        temporal_order=2, boost=None, source_v=0, theta_zx=0. ):
+        temporal_order=2, boost=None, source_v=0, theta_zx=0., x_center=0. ):
         """
         Define a laser profile with is a Jinc function transversely and a 
         supergaussian function longitudinally. The antenna is orthogonal to z, but 
@@ -393,6 +393,10 @@ class JincGaussianAngleProfile( object ):
             For instance, 
               theta_zx = 0: along +z
               theta_zx = pi/2: along +x
+              
+        x_center: float (m)
+            Laser centroid position in the transverse direction x.
+            Used to inject a laser pulse off-axis.
         """
         # Set a number of parameters for the laser
         E0 = a0*m_e*c**2*k0/e
@@ -407,6 +411,7 @@ class JincGaussianAngleProfile( object ):
         self.boost = boost
         self.temporal_order = temporal_order
         self.theta_zx = theta_zx
+        self.x_center = x_center
 
         # Geometric coefficient (for the evolution of the amplitude)
         self.geom_coeff = get_geometric_coeff( dim )
@@ -445,8 +450,8 @@ class JincGaussianAngleProfile( object ):
             z_source = zlab_source
             t = tlab_source
         # Rotated coordinate, to allow for propagation angle
-        xi = x*np.cos(self.theta_zx) + c*t*np.sin(self.theta_zx)
-        tau = t*np.cos(self.theta_zx) - x/c * np.sin(self.theta_zx)
+        xi = (x-self.x_center)*np.cos(self.theta_zx) + c*t*np.sin(self.theta_zx)
+        tau = t*np.cos(self.theta_zx) - (x-self.x_center)/c * np.sin(self.theta_zx)
 
         # Define spatio-temporal profile
         r = np.maximum(np.sqrt(xi**2+y**2), self.waist*1.e-8)
