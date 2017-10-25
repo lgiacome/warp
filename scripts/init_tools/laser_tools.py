@@ -3,7 +3,7 @@ from scipy.constants import c, m_e, e
 from .boost_tools import BoostConverter
 # Import laser antenna and laser profiles
 from ..field_solvers.laser.laser_profiles import *
-from warp import openbc
+from warp import openbc, w3d
 
 def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
                theta_pol=0., source_z=0., zeta=0, beta=0, phi2=0,
