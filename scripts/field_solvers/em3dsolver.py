@@ -420,6 +420,9 @@ class EM3D(SubcycledPoissonSolver):
 #     if self.ymmin>w3d.ymmaxlocal or self.ymmax<w3d.ymminlocal:return
 #   if self.zmmin>w3d.zmmaxlocal or self.zmmax<w3d.zmminlocal:return
 
+        # --- Handle laser inputs
+        self.setuplaser()
+
         self.initializeconductors()
 
         # ---- install 2nd part of field solve (only for root)
@@ -511,9 +514,6 @@ class EM3D(SubcycledPoissonSolver):
 
         # --- Create field and source arrays and other arrays.
         self.allocatefieldarrays()
-
-        # --- Handle laser inputs
-        self.setuplaser()
 
         w3d.lfinalizerhofsapi=True
 
