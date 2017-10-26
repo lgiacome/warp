@@ -1281,9 +1281,9 @@ def printtimers(file=None,lminmax=0,mintime=0.,icontrollers=2):
         _doprint('Moments time',       top.momentstime, 1)
         _doprint('Field Solve time',   top.fstime,      1)
         _doprint('Load rho time',      top.lrtime,      1)
+        _doprint('Applied field time', top.latticetime, 1)
         _doprint('Depose time',        top.deposetime,  0)
         _doprint('Gather time',        top.gathertime,  0)
-        _doprint('Applied field time', top.latticetime, 1)
         _doprint('Dump time',          top.dumptime,    0)
 
     # --- Print the subroutine timers

@@ -11,6 +11,7 @@ class EM3DFFT(EM3D):
                       'boris_cor':0, # flag for correction of fields verify Gauss' Law (i.e. Boris correction; not needed if spectral_current=1 or spectral_current=1)
                       'spectral_mix':0.,'Jmult':False,
                       'l_spectral_staggered':False,
+                      'l_theta_with_modif_k':True, # Whether to use the modified (finite-order) k in the Galilean Theta coefficients
                       'sigmab_x':0.,'sigmab_y':0.,'sigmab_z':0.}
 
     def __init__(self,**kw):
@@ -92,9 +93,9 @@ class EM3DFFT(EM3D):
                     f.gchange()
 
                 self.GPSTDMaxwell = PSATD_Maxwell(yf=self.fields,
-                                                  eps0=eps0,
-                                                  bc_periodic=bc_periodic,
-                                                  **kwGPSTD)
+                            eps0=eps0, bc_periodic=bc_periodic,
+                            l_theta_with_modif_k=self.l_theta_with_modif_k,
+                            **kwGPSTD)
             else:
                 if self.l_pushf and not self.l_getrho:
                     self.l_getrho = True
@@ -105,6 +106,7 @@ class EM3DFFT(EM3D):
                 self.GPSTDMaxwell = GPSTD_Maxwell(yf=self.fields,
                                                   eps0=eps0,
                                                   bc_periodic=bc_periodic,
+                                                  l_theta_with_modif_k=self.l_theta_with_modif_k,
                                                   **kwGPSTD)
 
             self.FSpace = self.GPSTDMaxwell
@@ -291,7 +293,7 @@ class EM3DFFT(EM3D):
 #                                   LASER
 ################################################################################
 
-    def depose_rho_old_laser(self,f):
+    def depose_rho_old_laser(self,f, laser_antenna_i):
         for q in [1.,-1.]:# q represents the sign of the charged macroparticles
             # The antenna is made of two types of fictious particles : positive
             # and negative
@@ -311,14 +313,14 @@ class EM3DFFT(EM3D):
 
             if self.l_2dxz:
                 depose_rhoold_n_2dxz(
-                        self.fields.Rhoold_local,self.laser_antenna.nn,
-                        self.laser_antenna.xx + q*self.laser_antenna.xdx,
-                        self.laser_antenna.zz + q*self.laser_antenna.zdz,
-                        self.laser_antenna.vx + q*self.laser_antenna.ux,
-                        self.laser_antenna.vy + q*self.laser_antenna.uy,
-                        self.laser_antenna.vz + q*self.laser_antenna.uz,
-                        self.laser_antenna.gi,
-                        self.laser_antenna.weights, q,
+                        self.fields.Rhoold_local,laser_antenna_i.nn,
+                        laser_antenna_i.xx + q*laser_antenna_i.xdx,
+                        laser_antenna_i.zz + q*laser_antenna_i.zdz,
+                        laser_antenna_i.vx + q*laser_antenna_i.ux,
+                        laser_antenna_i.vy + q*laser_antenna_i.uy,
+                        laser_antenna_i.vz + q*laser_antenna_i.uz,
+                        laser_antenna_i.gi,
+                        laser_antenna_i.weights, q,
                         f.xmin-dxgal, f.zmin+self.zgrid-dzgal,
                         top.dt,
                         f.dx,f.dz,
@@ -329,15 +331,15 @@ class EM3DFFT(EM3D):
                         l_particles_weight, w3d.l4symtry)
             else:
                 depose_rhoold_n_3d(
-                        self.fields.Rhoold_local,self.laser_antenna.nn,
-                        self.laser_antenna.xx + q*self.laser_antenna.xdx,
-                        self.laser_antenna.yy + q*self.laser_antenna.ydy,
-                        self.laser_antenna.zz + q*self.laser_antenna.zdz,
-                        self.laser_antenna.vx + q*self.laser_antenna.ux,
-                        self.laser_antenna.vy + q*self.laser_antenna.uy,
-                        self.laser_antenna.vz + q*self.laser_antenna.uz,
-                        self.laser_antenna.gi,
-                        self.laser_antenna.weights, q,
+                        self.fields.Rhoold_local,laser_antenna_i.nn,
+                        laser_antenna_i.xx + q*laser_antenna_i.xdx,
+                        laser_antenna_i.yy + q*laser_antenna_i.ydy,
+                        laser_antenna_i.zz + q*laser_antenna_i.zdz,
+                        laser_antenna_i.vx + q*laser_antenna_i.ux,
+                        laser_antenna_i.vy + q*laser_antenna_i.uy,
+                        laser_antenna_i.vz + q*laser_antenna_i.uz,
+                        laser_antenna_i.gi,
+                        laser_antenna_i.weights, q,
                         f.xmin-dxgal,f.ymin-dygal,f.zmin+self.zgrid-dzgal,
                         top.dt,
                         f.dx,f.dy,f.dz,
@@ -462,8 +464,9 @@ class EM3DFFT(EM3D):
         # --- add slices
         self.add_source_ndts_slices()
         self.aftersetsourcep()
-        # -- add laser
-        self.add_laser(self.block.core.yf)
+        # -- add laser, loop on the different antennas
+        for i in range(len(self.laser_antenna)):
+            self.add_laser(self.block.core.yf, self.laser_antenna[i])
         if not self.spectral_current:self.Jyee2node3d()
         if self.spectral_current:self.getcurrent_spectral()
         # --- smooth current density

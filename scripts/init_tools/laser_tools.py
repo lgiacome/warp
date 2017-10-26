@@ -3,11 +3,13 @@ from scipy.constants import c, m_e, e
 from .boost_tools import BoostConverter
 # Import laser antenna and laser profiles
 from ..field_solvers.laser.laser_profiles import *
-from warp import openbc
+from ..field_solvers.laser.laser_antenna import LaserAntenna
+from warp import openbc, w3d
 
 def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
                theta_pol=0., source_z=0., zeta=0, beta=0, phi2=0,
-               gamma_boost=None, laser_file=None, laser_file_energy=None ):
+               gamma_boost=None, cep=0.,
+               laser_file=None, laser_file_energy=None):
     """
     Add a linearly-polarized, Gaussian laser pulse in the em object,
     by setting the correct laser_func, laser_emax, laser_source_z
@@ -76,23 +78,36 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
         `gamma_boost` to the corresponding Lorentz factor. All the other
         quantities (ctau, zf, source_z, etc.) are to be given in the lab frame.
 
-    laser_file: str or None
-       If None, the laser will be initialized as Gaussian
-       Otherwise, the laser_file should point to a standardized HDF5 file
-       which contains the following datasets:
-       - 't' and 'r': 1D datasets of coordinates, in SI
-       - 'Ereal' and 'Eimag': 2D datasets in SI, so that the laser energy is 1J
+    cep: float (in rad), optional
+        Carrier-Envelope Phase
 
-    laser_file_energy: float or None
-       *Used only if a laser_file is provided*
-       Total energy of the pulse, in Joules
+    laser_file: string, optional
+        name of the hdf5 file containing the data. The file objects names should be:
+        - x <vector> for 2d and 3d
+        - y <vector> for 3d
+        - r <vector> for circ
+        - t <vector> time vector for 2d, 3d and circ
+        - Ereal <2d or 3d matrix> real part of the envelope of the laser field:
+            2d matrix (t, x) for 2d
+            2d matrix (t, r) for circles
+            3d matrix (t, x, y) for 3d
+        - Eimag: same as Ereal with the imaginary part of E
+
+        Note that the longitudinal coordinate used here is time, so the front of the
+        pulse is in the first elements of Ereal and Eimag along the first dimension.
+
+        To calculate the laser field from this envelope, we use the '+' convention:
+        E(t) = ( Ereal + i*Eimag ) * exp( +i*omega0*t )
+
+    laser_file_energy: float (in J), optional
+        pulse energy (in Joules). The laser field is rescaled using this factor
     """
     # Wavevector and speed of the antenna
     k0 = 2*np.pi/lambda0
     source_v = 0.
     inv_c = 1./c
     tau = ctau * inv_c
-    t_peak = - z0 * inv_c
+    t_peak = (source_z - z0) * inv_c
     if zf is None:
         focal_length = source_z - z0
     else:
@@ -104,22 +119,21 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
     # problem of the EM solver not being picklable if laser_func were an
     # instance method, which is not picklable.
 
+    # When running a simulation in boosted frame, convert these parameters
+    boost = None
+    if (gamma_boost is not None):
+        boost = BoostConverter( gamma_boost )
+        source_z, = boost.copropag_length([ source_z ],
+                                          beta_object=source_v/c)
+        source_v, = boost.velocity([ source_v ])
+
     # - Case of a Gaussian pulse
     if laser_file is None:
-
-        # When running a simulation in boosted frame, convert these parameters
-        boost = None
-        if (gamma_boost is not None):
-            boost = BoostConverter( gamma_boost )
-            source_z, = boost.copropag_length([ source_z ],
-                                              beta_object=source_v/c)
-            source_v, = boost.velocity([ source_v ])
-
         # Create a laser profile object to store these parameters
         if (beta == 0) and (zeta == 0) and (phi2 == 0):
             # Without spatio-temporal correlations
             laser_profile = GaussianProfile( k0, w0, tau, t_peak, a0, dim,
-                focal_length=focal_length, boost=boost, source_v=source_v )
+                focal_length=focal_length, boost=boost, source_v=source_v, cep=cep )
         else:
             # With spatio-temporal correlations
             laser_profile = GaussianSTCProfile( k0, w0, tau, t_peak, a0, zeta,
@@ -128,29 +142,79 @@ def add_laser( em, dim, a0, w0, ctau, z0, zf=None, lambda0=0.8e-6,
 
     # - Case of an experimental profile
     else:
-
-        # Reject boosted frame
-        if (gamma_boost is not None) and (gamma_boost != 1.):
-            raise ValueError('Boosted frame not implemented for '
-                             'arbitrary laser profile.')
-
         # Create a laser profile object
-        laser_profile = ExperimentalProfile( k0, laser_file,
-                                             laser_file_energy )
-
-    # Link its profile function the em object
-    em.laser_func = laser_profile
-
-    # Link the rest of the parameters to the em objects
-    em.laser_emax = laser_profile.E0
-    em.laser_source_z = source_z
-    em.laser_source_v = source_v
-    em.laser_polangle = theta_pol
+        laser_profile = ExperimentalProfile( k0, laser_file, laser_file_energy, dim,
+                                             boost=boost, source_v=source_v
+                                           )
 
     # Additional parameters for the order of deposition of the laser
     em.laser_depos_order_x=1
     em.laser_depos_order_y=1
     em.laser_depos_order_z=1
+
+    # Add laser thanks to add_extra_antenna
+    add_extra_antenna(em, w3d, dim, laser_profile,
+                      laser_emax=laser_profile.E0, laser_source_z=source_z,
+                      laser_source_v=source_v, laser_polangle=theta_pol)
+
+
+#===============================================================================
+def add_extra_antenna(em, w3d, dim, laser_func, laser_polvector=None,
+                      laser_vector=np.array([0.,0.,1.]), laser_spot=None,
+                      laser_emax=None, laser_source_z=None,
+                      laser_source_v=np.array([0., 0., 0.]),
+                      laser_polangle=None):
+    """
+    Add an extra antenna to the EM3D class.
+    The user is free to use one of the two different paradigms to introduce a
+    laser :
+         - laser_func, laser_vector, laser_polvector, laser_spot, laser_emax
+         - laser_func, laser_source_z, laser_polangle, laser_emax
+    within or without an antenna velocity.
+
+    In a case where both options are used, the second overwrites the first one.
+
+    Parameters
+    ----------
+    em : an EM3D object
+       The structure that contains the fields of the simulation
+
+    dim: str
+       Either "2d", "3d" or "circ"
+
+    laser_func : a laser profile object
+        Fonction of (x, y, t) which defines the laser amplitude
+        Typically one of the profiles defined in laser_profiles.py
+
+    laser_polvector : 1darray of floats (unitless), of shape 3, optional
+        Laser polarization vector
+
+    laser_vector : 1darray of floats (unitless), of shape 3, optional
+        Laser directional vector
+        Default: [0.,0.,1.]
+
+    laser_spot : 1darray of floats (in meter), of shape 3, optional
+        Initial position of the laser centroid
+
+    laser_emax : floats (in V/m), optional
+        Maximal expected amplitude generated by the antenna
+
+    laser_source_z : float (in meters), optional
+       The position of the antenna that launches the laser
+
+    laser_source_v : 1darray of floats (m/s), of shape 3, optional
+       The velocity of the antenna that launches the laser
+       Default: [0.,0.,0.]
+
+    laser_polangle : float (in rad), optional
+       The angle of polarization with respect to the x axis
+    """
+
+    laser_antenna = LaserAntenna(laser_func, laser_vector,
+                                 laser_polvector, laser_spot,
+                                 laser_emax, laser_source_z, laser_source_v,
+                                 laser_polangle, w3d, dim, em.circ_m)
+    em.laser_antenna.append( laser_antenna )
 
 
 #===============================================================================
