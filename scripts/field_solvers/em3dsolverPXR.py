@@ -344,8 +344,8 @@ def get_quantity_pxr( self, quantity, gather=1, bcast=None, **kw ):
             must be choosen as like 'x', 'ux', 'xold', 'w', 'ex' etc...
 
     """
-    quantity_dict = dict(x=1, y=2, z=3, ux=4, uy=5, uz=6)
-    quantity_field_dict = dict(ex=1, ey=2, ez=3, bx=4, by=5, bz=6)
+    quantity_dict = dict(x=1, y=2, z=3, ux=4, uy=5, uz=6, ex=7, ey=8,
+                         ez=9, bx=10, by=11, bz=12)
 
     quantity_pid_dict = dict()
     if top.xoldpid is not None:
@@ -371,7 +371,7 @@ def get_quantity_pxr( self, quantity, gather=1, bcast=None, **kw ):
 
     quantity_array = numpy.empty(nb[0], dtype=numpy.float64, order='F')
 
-    # Usual variables such as position or momentum
+    # Usual variables such as positionn, momentum or field
     if  quantity in quantity_dict:
         pxr.getquantity(js, quantity_dict[quantity], nb,
                         quantity_array)
@@ -381,16 +381,11 @@ def get_quantity_pxr( self, quantity, gather=1, bcast=None, **kw ):
         pxr.getquantity_pid(js, quantity_pid_dict[quantity], nb,
                             quantity_array)
 
-    # Field variables such as 'ex' or 'by'
-    elif quantity in quantity_field_dict:
-        pxr.getquantity_field(js, quantity_field_dict[quantity], nb,
-                            quantity_array)
-
     else:
         return "Error in get_quantity, key '%s' undefined or top.pid=None. \
-           Please set something among 'x', 'y', 'z', 'ux', 'uy', 'uz', \
-           'w', 'id', 'xold', 'yold', 'zold', 'uxold', 'uyold', \
-           'uzold' or define top.pid."%quantity
+           Please choose something among 'x', 'y', 'z', 'ux', 'uy', 'uz', \
+           'ex', 'ey', 'ez', 'bx', 'by', 'bz' 'w', 'id', 'xold', 'yold', \
+           'zold', 'uxold', 'uyold', 'uzold' or define top.pid."%quantity
 
     if lparallel and gather:
         return gatherarray(quantity_array,bcast=bcast)
@@ -544,6 +539,7 @@ class EM3DPXR(EM3DFFT):
           Species.getuzold         = getuzold
           Species.getssn           = getssn
           Species.getweights       = getw
+          Species.getw             = getw
           Species.getex            = getex
           Species.getey            = getey
           Species.getez            = getez
