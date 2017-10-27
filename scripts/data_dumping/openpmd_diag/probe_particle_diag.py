@@ -669,17 +669,17 @@ class ParticleCatcher:
              quantity_array = \
              (np.rint( species.getssn(gather=False) )).astype('uint64')
         elif quantity == "ex":
-                quantity_array = species.getex( gather=False )
+            quantity_array = species.getex( gather=False )
         elif quantity == "ey":
-                quantity_array = species.getey( gather=False )
+            quantity_array = species.getey( gather=False )
         elif quantity == "ez":
-                quantity_array = species.getez( gather=False )
+            quantity_array = species.getez( gather=False )
         elif quantity == "bx":
-                quantity_array = species.getbx( gather=False )
+            quantity_array = species.getbx( gather=False )
         elif quantity == "by":
-                quantity_array = species.getby( gather=False )
+            quantity_array = species.getby( gather=False )
         elif quantity == "bz":
-                quantity_array = species.getbz( gather=False )
+            quantity_array = species.getbz( gather=False )
 
         return( quantity_array )
 
