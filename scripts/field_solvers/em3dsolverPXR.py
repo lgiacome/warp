@@ -547,7 +547,6 @@ class EM3DPXR(EM3DFFT):
           Species.getby            = getby
           Species.getbz            = getbz
           Species.getn             = getn
-          Species.get_plane_particles = get_plane_particles
 
         else:
           EM3DFFT.finalize(self)
