@@ -29,7 +29,8 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                  Ntot_snapshots_lab, gamma_boost, period,
                  em, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting"],
-                 select=None, write_dir=None, species={"electrons": None}):
+                 select=None, write_dir=None,
+                 species={"electrons": None}, boost_dir=1 ):
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -37,7 +38,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
         Note: In the current implementation, these diagnostics do not
         use parallel HDF5 output. Rank 0 creates and writes all the files.
-        
+
         Parameters
         ----------
         zmin_lab, zmax_lab: floats (meters)
@@ -57,6 +58,10 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
 
+        boost_dir: int (1 or -1)
+            The direction of the Lorentz transformation from the lab frame
+            to the boosted frame (along the z axis)
+
         See the documentation of ParticleDiagnostic for the other parameters
         """
         # Do not leave write_dir as None, as this may conflict with
@@ -71,10 +76,14 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             write_dir=write_dir, lparallel_output=False)
         # Note: The boosted frame diagnostics cannot use parallel HDF5 output
 
+        # Check user input
+        boost_dir = int(boost_dir)
+        assert boost_dir in [1,-1]
+        
         # Register the boost quantities
         self.gamma_boost = gamma_boost
         self.inv_gamma_boost = 1./gamma_boost
-        self.beta_boost = np.sqrt(1. - self.inv_gamma_boost**2)
+        self.beta_boost = np.sqrt(1. - self.inv_gamma_boost**2) * boost_dir
         self.inv_beta_boost = 1./self.beta_boost
 
         # Create the list of LabSnapshot objects
