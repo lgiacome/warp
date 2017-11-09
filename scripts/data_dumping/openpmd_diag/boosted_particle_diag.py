@@ -76,6 +76,10 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             write_dir=write_dir, lparallel_output=False)
         # Note: The boosted frame diagnostics cannot use parallel HDF5 output
 
+        # Check user input
+        boost_dir = int(boost_dir)
+        assert boost_dir in [1,-1]
+        
         # Register the boost quantities
         self.gamma_boost = gamma_boost
         self.inv_gamma_boost = 1./gamma_boost
