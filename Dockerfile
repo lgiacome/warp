@@ -58,7 +58,7 @@ RUN cd warp/pywarp90 \
 RUN pip install pygist
 
 # Install the openPMD-viewer (mainly for tests)
-RUN pip install openPMD-viewer
+RUN pip install openPMD-viewer matplotlib
 
 # Prepare the run directory
 RUN mkdir run/
