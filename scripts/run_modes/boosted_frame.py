@@ -192,7 +192,10 @@ to be lifted in the future.
     w3d.l_inj_user_particles_dt = true
     w3d.l_inj_zmminmmaxglobal = true
 #    installuserparticlesinjection(self.add_boosted_species)
-    if len(self.pgroups)==1:installbeforestep(self.add_boosted_species_multigroups)
+#    if len(self.pgroups)==1:installbeforestep(self.add_boosted_species_multigroups)
+    if len(self.pgroups)==1:
+        installbeforestep(self.add_boosted_species_multigroups)
+        installbeforeloadrho(self.transferparticlestopicsar)
     if l_deprho:
       self.depos=top.depos.copy()
       top.depos='none'
@@ -302,6 +305,30 @@ to be lifted in the future.
     self.hn.append(getn())
     self.hinj.append(globalsum(w3d.npgrp))
     self.hbf.append(globalsum(self.pgroup.nps[0]))
+
+  def transferparticlestopicsar(self):
+      try:
+          from warp.field_solvers.em3dsolverPXR import EM3DPXR
+          if getregisteredsolver().__class__ is EM3DPXR:
+               for sp in self.list_species:
+                   js = sp.jslist[0]
+                   x = getx(js=js)
+                   y = gety(js=js)
+                   z = getz(js=js)
+                   ux = getux(js=js)
+                   uy = getuy(js=js)
+                   uz = getuz(js=js)
+                   gi = getgaminv(js=js)
+                   if top.npid==0:
+                       pidpairs=None
+                   else:
+                       pidpairs = []
+                       for i in range(top.npid):
+                           pidpairs.append([i+1,getpid(js=js,id=i)])
+                   sp.addpart(x=x,y=y,z=z,ux=ux,uy=uy,uz=uz,gi=gi,pidpairs=pidpairs,lmomentum=True,lallindomain=True)
+                   top.pgroup.nps[js]=0
+      except:
+          pass
         
   def pln(self):
     pla(self.hn)
