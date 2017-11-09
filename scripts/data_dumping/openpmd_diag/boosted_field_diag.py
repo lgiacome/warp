@@ -30,7 +30,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period, em, top, w3d,
                  comm_world=None, fieldtypes=["rho", "E", "B", "J"],
-                 z_subsampling=1, write_dir=None ) :
+                 z_subsampling=1, write_dir=None, boost_dir=1 ) :
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -83,15 +83,20 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             self.global_indices_list = gather( self.global_indices,
                                                comm=self.comm_world )
 
+        # Check user input
+        boost_dir = int(boost_dir)
+        assert boost_dir in [1,-1]
+
         # Register the boost quantities
         self.gamma_boost = gamma_boost
+        self.boost_dir = boost_dir
         self.inv_gamma_boost = 1./gamma_boost
-        self.beta_boost = np.sqrt( 1. - self.inv_gamma_boost**2 )
+        self.beta_boost = np.sqrt( 1. - self.inv_gamma_boost**2 ) * boost_dir
         self.inv_beta_boost = 1./self.beta_boost
 
         # Find the z resolution and size of the diagnostic *in the lab frame*
         # (Needed to initialize metadata in the openPMD file)
-        dz_lab = c*self.top.dt * self.inv_beta_boost*self.inv_gamma_boost
+        dz_lab = np.abs(c*self.top.dt * self.inv_beta_boost*self.inv_gamma_boost)
         Nz = int( (zmax_lab - zmin_lab)/dz_lab )
         # In case of subsampling along z, increase dz and reduce Nz
         if z_subsampling > 1:
@@ -112,7 +117,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             snapshot = LabSnapshot( t_lab,
                                     zmin_lab + v_lab*t_lab,
                                     zmax_lab + v_lab*t_lab,
-                                    self.write_dir, i, self.rank)
+                                    self.write_dir, i, self.rank, self.boost_dir)
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
             if self.rank == 0:
@@ -398,7 +403,8 @@ class LabSnapshot:
     Class that stores data relative to one given snapshot
     in the lab frame (i.e. one given *time* in the lab frame)
     """
-    def __init__(self, t_lab, zmin_lab, zmax_lab, write_dir, i, rank):
+    def __init__(self, t_lab, zmin_lab, zmax_lab, write_dir, i, rank,
+                 boost_dir):
         """
         Initialize a LabSnapshot
 
@@ -438,6 +444,8 @@ class LabSnapshot:
         # Buffered field slice and corresponding array index in z
         self.buffered_slices = []
         self.buffer_z_indices = []
+
+        self.boost_dir = boost_dir
 
     def update_current_output_positions( self, t_boost, inv_gamma, inv_beta ):
         """
@@ -514,7 +522,7 @@ class LabSnapshot:
         # of inv_dz_lab.)
         iz_old = self.buffer_z_indices[0]
         for iz in self.buffer_z_indices[1:]:
-            if iz != iz_old - 1:
+            if iz != iz_old - self.boost_dir:
                 raise UserWarning('In the boosted frame diagnostic, '
                         'the buffered slices are not contiguous in z.\n'
                         'The boosted frame diagnostics may be inaccurate.')
@@ -522,23 +530,38 @@ class LabSnapshot:
             iz_old = iz
 
         # Pack the different slices together
-        # Reverse the order of the slices when stacking the array,
-        # since the slices where registered for right to left
-        try:
-            field_array = np.stack( self.buffered_slices[::-1], axis=-1 )
-        except AttributeError:
-            # If the version of numpy is older than 1.10, stack does
-            # not exist. In this case, do it by hand:
-            index  = np.array(np.shape( self.buffered_slices[::-1] ))
-            rolled_index = np.roll(index, -1)
-            field_array = np.dstack( self.buffered_slices[::-1] )
-            field_array = field_array.reshape( (rolled_index), order="F" )
+        if self.boost_dir == 1:
+            # Reverse the order of the slices when stacking the array,
+            # since the slices where registered for right to left
+            try:
+                field_array = np.stack( self.buffered_slices[::-1], axis=-1 )
+            except AttributeError:
+                # If the version of numpy is older than 1.10, stack does
+                # not exist. In this case, do it by hand:
+                index  = np.array(np.shape( self.buffered_slices[::-1] ))
+                rolled_index = np.roll(index, -1)
+                field_array = np.dstack( self.buffered_slices[::-1] )
+                field_array = field_array.reshape( (rolled_index), order="F" )
+        elif self.boost_dir == -1:
+            try:
+                field_array = np.stack( self.buffered_slices, axis=-1 )
+            except AttributeError:
+                # If the version of numpy is older than 1.10, stack does
+                # not exist. In this case, do it by hand:
+                index  = np.array(np.shape( self.buffered_slices ))
+                rolled_index = np.roll(index, -1)
+                field_array = np.dstack( self.buffered_slices )
+                field_array = field_array.reshape( (rolled_index), order="F" )
 
         # Get the first and last index in z
         # (Following Python conventions, iz_min is inclusive,
         # iz_max is exclusive)
-        iz_min = self.buffer_z_indices[-1]
-        iz_max = self.buffer_z_indices[0] + 1
+        if self.boost_dir == 1:
+            iz_min = self.buffer_z_indices[-1]
+            iz_max = self.buffer_z_indices[0] + 1
+        elif self.boost_dir == -1:
+            iz_min = self.buffer_z_indices[0]
+            iz_max = self.buffer_z_indices[-1] + 1
 
         return( field_array, iz_min, iz_max )
 

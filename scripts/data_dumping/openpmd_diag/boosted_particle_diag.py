@@ -29,7 +29,8 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                  Ntot_snapshots_lab, gamma_boost, period,
                  em, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting"],
-                 select=None, write_dir=None, species={"electrons": None}):
+                 select=None, write_dir=None, species={"electrons": None},
+                 boost_dir = 1):
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -37,7 +38,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
         Note: In the current implementation, these diagnostics do not
         use parallel HDF5 output. Rank 0 creates and writes all the files.
-        
+
         Parameters
         ----------
         zmin_lab, zmax_lab: floats (meters)
@@ -74,7 +75,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         # Register the boost quantities
         self.gamma_boost = gamma_boost
         self.inv_gamma_boost = 1./gamma_boost
-        self.beta_boost = np.sqrt(1. - self.inv_gamma_boost**2)
+        self.beta_boost = np.sqrt(1. - self.inv_gamma_boost**2) * boost_dir
         self.inv_beta_boost = 1./self.beta_boost
 
         # Create the list of LabSnapshot objects
