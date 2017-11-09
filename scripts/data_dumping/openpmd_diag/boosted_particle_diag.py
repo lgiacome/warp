@@ -29,8 +29,8 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                  Ntot_snapshots_lab, gamma_boost, period,
                  em, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting"],
-                 select=None, write_dir=None, species={"electrons": None},
-                 boost_dir = 1):
+                 select=None, write_dir=None,
+                 species={"electrons": None}, boost_dir=1 ):
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -57,6 +57,10 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         period: int
             Number of iterations for which the data is accumulated in memory,
             before finally writing it to the disk.
+
+        boost_dir: int (1 or -1)
+            The direction of the Lorentz transformation from the lab frame
+            to the boosted frame (along the z axis)
 
         See the documentation of ParticleDiagnostic for the other parameters
         """

@@ -62,6 +62,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             A factor which is applied on the resolution of the lab frame
             reconstruction.
 
+        boost_dir: int (1 or -1)
+            The direction of the Lorentz transformation from the lab frame
+            to the boosted frame (along the z axis)
+
         See the documentation of FieldDiagnostic for the other parameters
         """
         # Do not leave write_dir as None, as this may conflict with
@@ -117,7 +121,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             snapshot = LabSnapshot( t_lab,
                                     zmin_lab + v_lab*t_lab,
                                     zmax_lab + v_lab*t_lab,
-                                    self.write_dir, i, self.rank, self.boost_dir)
+                                    self.write_dir, i, self.rank, boost_dir)
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
             if self.rank == 0:
@@ -403,8 +407,9 @@ class LabSnapshot:
     Class that stores data relative to one given snapshot
     in the lab frame (i.e. one given *time* in the lab frame)
     """
-    def __init__(self, t_lab, zmin_lab, zmax_lab, write_dir, i, rank,
-                 boost_dir):
+
+    def __init__(self, t_lab, zmin_lab, zmax_lab,
+                 write_dir, i, rank, boost_dir):
         """
         Initialize a LabSnapshot
 
@@ -425,6 +430,10 @@ class LabSnapshot:
 
         rank: int
             Index number of the processor
+
+        boost_dir: int (1 or -1)
+            The direction of the Lorentz transformation from the lab frame
+            to the boosted frame (along the z axis)
         """
         # Deduce the name of the filename where this snapshot writes
         if rank == 0:
@@ -435,6 +444,7 @@ class LabSnapshot:
         self.zmin_lab = zmin_lab
         self.zmax_lab = zmax_lab
         self.t_lab = t_lab
+        self.boost_dir = boost_dir
 
         # Positions where the fields are to be registered
         # (Change at every iteration)
