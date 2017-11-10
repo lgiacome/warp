@@ -329,7 +329,7 @@ def aliasparticlearrays():
             pg.bz = pxr.partbz
         pxr.set_are_tiles_reallocated(i+1, pxr.ntilex,pxr.ntiley,pxr.ntilez,zeros((pxr.ntilex,pxr.ntiley,pxr.ntilez),dtype=dtype('i8')))
 
-def get_quantity_pxr( self, quantity, gather=1, bcast=None, **kw ):
+def get_quantity_pxr( self, quantity, gather=True, bcast=False, **kw ):
     """
         Rewrite the method get_quantity of the class Species when pxr is loaded.
         Return the given pxr array for a given 'quantity'.
@@ -343,6 +343,14 @@ def get_quantity_pxr( self, quantity, gather=1, bcast=None, **kw ):
         quantity: String
             must be choosen as like 'x', 'ux', 'xold', 'w', 'ex' etc...
 
+        gather: bool
+            If False: this function returns the particles from the local procs
+            If True: this functions returns the gathered particles on all procs
+
+        bcast: bool
+            Only used when gather is True
+            If bcast=False: only proc 0 gathers and returns the particles
+            If bcast=False: all proc gather and return the particles
     """
     quantity_dict = dict(x=1, y=2, z=3, ux=4, uy=5, uz=6, ex=7, ey=8,
                          ez=9, bx=10, by=11, bz=12)
