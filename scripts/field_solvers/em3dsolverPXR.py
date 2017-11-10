@@ -1585,10 +1585,6 @@ class EM3DPXR(EM3DFFT):
             tendpart=MPI.Wtime()
             self.time_stat_loc_array[10] += (tendpart-tdebpart)
 
-        # --- call beforeloadrho functions
-        if (self.l_debug): print("Call beforeloadrho functions")
-        beforeloadrho.callfuncsinlist()
-
 
         pgroups = []
         for i,s in enumerate(self.listofallspecies):
@@ -1597,6 +1593,8 @@ class EM3DPXR(EM3DFFT):
 #        self.loadsource(pgroups=pgroups)
         #tdebpart=MPI.Wtime()
 
+        inject3d(1, top.pgroup)
+        
         # Call user-defined injection routines
         if (self.l_debug): print("Call user-defined injection routines")
         userinjection.callfuncsinlist()
@@ -1609,6 +1607,10 @@ class EM3DPXR(EM3DFFT):
             pxr.pxr_move_sim_boundaries(xgrid,ygrid,zgrid)
             pxr.particle_bcs()
             aliasparticlearrays()
+
+        # --- call beforeloadrho functions
+        if (self.l_debug): print("Call beforeloadrho functions")
+        beforeloadrho.callfuncsinlist()
 
         if (self.l_debug): print("Call loadrho")
         self.loadrho(pgroups=pgroups)

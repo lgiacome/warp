@@ -3,6 +3,7 @@
 # with contributions from I. Dornmair, V. Hanus, S. Jalas, M. Kirchen
 
 from warp import *
+from warp.field_solvers.em3dsolverPXR import EM3DPXR as EM3DPXRBF
 import string
 try:
   import h5py
@@ -308,10 +309,11 @@ to be lifted in the future.
 
   def transferparticlestopicsar(self):
       try:
-          from warp.field_solvers.em3dsolverPXR import EM3DPXR
-          if getregisteredsolver().__class__ is EM3DPXR:
+          if getregisteredsolver().__class__ is EM3DPXRBF:
                for sp in self.list_species:
                    js = sp.jslist[0]
+                   n = getn(js=js)
+                   if n==0:return
                    x = getx(js=js)
                    y = gety(js=js)
                    z = getz(js=js)
@@ -325,8 +327,8 @@ to be lifted in the future.
                        pidpairs = []
                        for i in range(top.npid):
                            pidpairs.append([i+1,getpid(js=js,id=i)])
-                   sp.addpart(x=x,y=y,z=z,ux=ux,uy=uy,uz=uz,gi=gi,pidpairs=pidpairs,lmomentum=True,lallindomain=True)
                    top.pgroup.nps[js]=0
+                   sp.addpart(x=x,y=y,z=z,ux=ux,uy=uy,uz=uz,gi=gi,pidpairs=pidpairs,lmomentum=True,lallindomain=False)
       except:
           pass
         
