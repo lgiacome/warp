@@ -15,7 +15,8 @@ from scipy.constants import c
 from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
-from parallel import gather
+from parallel import gather, me, mpiallgather
+from mpi4py import MPI
 
 class BoostedFieldDiagnostic(FieldDiagnostic):
     """
@@ -211,50 +212,63 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             snapshot.buffer_z_indices = []
 
             # Gather the compacted slices from several proc
-
             if (self.comm_world is None) or (self.comm_world.size == 1):
                 # Serial simulation
                 global_field_array = field_array
                 global_iz_min = iz_min
                 global_iz_max = iz_max
-
             else:
-                # Parallel simulation
-                # Gather objects into lists (one element per proc)
-                mpi_comm = self.comm_world
-                field_array_list = mpi_comm.gather( field_array )
-                iz_min_list = mpi_comm.gather( iz_min )
-                iz_max_list = mpi_comm.gather( iz_max )
-
+                # Create new communicator with procs that have non-empty data to send
+                in_list = 0
+                if (field_array is not None) or (me == 0):
+                    in_list = me
+                ranks_group_list = mpiallgather( in_list )
+                ranks_group_list = list(set(ranks_group_list))
+                mpi_group = self.comm_world.Get_group()
+                self.ranks_group_list = ranks_group_list
+                newgroup = mpi_group.Incl(ranks_group_list)
+                dump_comm = self.comm_world.Create(newgroup)
+                # Gather data on proc 0 into this communicator
+                if dump_comm != MPI.COMM_NULL:
+                    field_array_list_comm = dump_comm.gather( field_array )
+                    iz_min_list_comm = dump_comm.gather( iz_min )
+                    iz_max_list_comm = dump_comm.gather( iz_max )
+                
                 # First proc: merge the field arrays from each proc
                 if self.rank == 0:
-
                     # Check whether any processor had some slices
                     no_slices = True
-                    for i_proc in xrange(self.top.nprocs):
-                        if field_array_list[i_proc] is not None:
+                    for i_proc in xrange(dump_comm.Get_size()):
+                        if field_array_list_comm[i_proc] is not None:
                             no_slices = False
-
                     # If there are no slices, set global quantities to None
                     if no_slices:
                         global_field_array = None
                         global_iz_min = None
                         global_iz_max = None
-
                     # If there are some slices, gather them
                     else:
                         global_field_array, global_iz_min, global_iz_max = \
-                          self.gather_slices(
-                              field_array_list, iz_min_list, iz_max_list )
+                          self.gather_slices(field_array_list_comm, 
+                              iz_min_list_comm, iz_max_list_comm, dump_comm.Get_size())
 
+                # Free the dump communicator
+                mpi_group.Free()
+                newgroup.Free()
+                if dump_comm != MPI.COMM_NULL:
+                    dump_comm.Free()
 
             # Write the gathered slices to disk
             if (self.rank == 0) and (global_field_array is not None):
                 self.write_slices( global_field_array, global_iz_min,
                 global_iz_max, snapshot, self.slice_handler.field_to_index )
 
+            # Free gathered arrays
+            field_array_list_comm = []
+            iz_min_list_comm = []
+            iz_max_list_comm = []
 
-    def gather_slices( self, field_array_list, iz_min_list, iz_max_list ):
+    def gather_slices( self, field_array_list, iz_min_list, iz_max_list, size_list ):
         """
         Merge the arrays in field_array_list (one array per proc) into
         a single array
@@ -289,17 +303,19 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         # Loop through all the processors
         # Fit the field arrays one by one into the global_array
-        for i_proc in xrange(self.top.nprocs):
+        for i_proc in xrange(size_list):
+
+            i_proc_commworld = self.ranks_group_list[ i_proc ]
 
             # If this proc has no data, skip it
             if field_array_list[ i_proc ] is None:
                 continue
 
             # Find the indices where the array will be fitted
-            ix_min = self.global_indices_list[ i_proc ][0,0]
-            ix_max = self.global_indices_list[ i_proc ][1,0]
-            iy_min = self.global_indices_list[ i_proc ][0,1]
-            iy_max = self.global_indices_list[ i_proc ][1,1]
+            ix_min = self.global_indices_list[ i_proc_commworld ][0,0]
+            ix_max = self.global_indices_list[ i_proc_commworld ][1,0]
+            iy_min = self.global_indices_list[ i_proc_commworld ][0,1]
+            iy_max = self.global_indices_list[ i_proc_commworld ][1,1]
             # Longitudinal indices within the array global_array
             s_min = iz_min_list[ i_proc ] - global_iz_min
             s_max = iz_max_list[ i_proc ] - global_iz_min
