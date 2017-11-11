@@ -42,7 +42,6 @@ Class for generating particles from impact ionization
     self.zmin=zmin
     self.zmax=zmax
     self.l_init_grid=False
-    self.init_grid()
     self.l_verbose=l_verbose
     self.stride=stride
     self.inter={}
@@ -69,7 +68,8 @@ Class for generating particles from impact ionization
     self.install()
 
   def init_grid(self):
-    if w3d.nzlocal==0:return
+    if self.l_init_grid: return
+    self.l_init_grid=True
     self.nx = int(where(self.nx is None,w3d.nxlocal,self.nx))
     self.ny = int(where(self.ny is None,w3d.nylocal,self.ny))
     self.nz = int(where(self.nz is None,w3d.nzlocal,self.nz))
@@ -90,8 +90,13 @@ Class for generating particles from impact ionization
       self.dy=(self.ymax-self.ymin)/self.ny
     self.ndensc=fzeros((self.nx+1,self.ny+1,self.nz+1),'d')
     self.invvol=1./(self.dx*self.dy*self.dz)
-    self.l_init_grid=True
-    
+
+    for dd in self.target_dens.values():
+      if dd['ndens'] == 'uninitialized':
+        dd['ndens'] = fzeros((self.nx+1,self.ny+1,self.nz+1),'d')
+      if dd['target_fluidvel'] == 'uninitialized':
+        dd['target_fluidvel'] = fzeros((self.nx+1,self.ny+1,self.nz+1,3),'d')
+
   def setupcross_section(self,incident_species,emitted_species,cross_section,target_species):
     """If the cross section was specified, this method does nothing. Otherwise
 it setups up one of several cross section functions, depending on which
@@ -138,9 +143,6 @@ a value given a velocity. This returns the Appropriate value.
           emitted_energy0=None,emitted_energy_sigma=None,
           incident_pgroup=top.pgroup,target_pgroup=top.pgroup,emitted_pgroup=top.pgroup,
           l_remove_incident=None,l_remove_target=None,emitted_tag=None):
-    self.init_grid()
-    if not self.l_init_grid:
-        raise GridNotInitialized('Error in ionization: add() must be called after Warp generate().')
     if incident_species not in self.inter:
         self.inter[incident_species]={}
         for key in ['target_species','emitted_species','cross_section','ndens','target_fluidvel',
@@ -217,8 +219,8 @@ a value given a velocity. This returns the Appropriate value.
         self.target_dens[target_species]={}
         for key in ['ndens','ndens_updated']:
           self.target_dens[target_species][key]=[]
-        self.target_dens[target_species]['ndens']           =fzeros((self.nx+1,self.ny+1,self.nz+1),'d')
-        self.target_dens[target_species]['target_fluidvel'] =fzeros((self.nx+1,self.ny+1,self.nz+1,3),'d')
+        self.target_dens[target_species]['ndens']           ='uninitialized'
+        self.target_dens[target_species]['target_fluidvel'] ='uninitialized'
         self.target_dens[target_species]['ndens_updated']   =0
 
     for e in e_species:
@@ -498,7 +500,7 @@ velocity of the incident particle.
 #printall(io,l_cgm=1)
 
   def generate(self,dt=None):
-    if not self.l_init_grid:self.init_grid()
+    self.init_grid()
     if dt is None:dt=top.dt
     if self.l_timing:t1 = time.clock()
     for target_species in self.target_dens:
