@@ -461,7 +461,7 @@ def getbz(self, gather=1, bcast=None, **kw ):
     return self.get_quantity_pxr('bz', gather=gather, bcast=bcast, **kw)
 
 def getn(self, gather=1, bcast=None, **kw ):
-    js = self.jslist[0]+1
+    js = self.pxr_species_array
     nb = numpy.empty(1,dtype=numpy.int64)
     pxr.get_local_number_of_particles_from_species(js, nb )
     return nb[0]
