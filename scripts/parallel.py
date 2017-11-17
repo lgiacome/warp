@@ -1,39 +1,54 @@
 #
 # Python file with some parallel operations
 #
+import warpoptions
 from numpy import *
-# --- Try import mpi (pyMPI)
-#     - if not found, try to from mpi4py import MPI as mpi (mpi4py)
-#     - if not found then run in serial mode
-# --- Note that:
-# --- mpi.COMM_WORLD is same as MPI_COMM_WORLD
-# --- mpi.WORLD is a duplicate of MPI_COMM_WORLD (pyMPI)
-# --- mpi.COMM_WORLD is directly used for mpi4py (mpi4py)
-# --- comm_world is used for most communications (and defaults to mpi.WORLD)
-try:
-    #Try to import pyMPI
-    import mpi
-    me = mpi.rank
-    npes = mpi.procs
-    comm_world = mpi.WORLD
-    lpyMPIactive = True
-    lmpi4pyactive = False
-except:
+
+if warpoptions.options is not None:
+    serial = warpoptions.options.serial
+else:
+    serial = False
+
+if not serial:
+    # --- Try import mpi (pyMPI)
+    #     - if not found, try to from mpi4py import MPI as mpi (mpi4py)
+    #     - if not found then run in serial mode
+    # --- Note that:
+    # --- mpi.COMM_WORLD is same as MPI_COMM_WORLD
+    # --- mpi.WORLD is a duplicate of MPI_COMM_WORLD (pyMPI)
+    # --- mpi.COMM_WORLD is directly used for mpi4py (mpi4py)
+    # --- comm_world is used for most communications (and defaults to mpi.WORLD)
     try:
-        #Try to import mpi4py
-        from mpi4py import MPI as mpi
-        comm_world = mpi.COMM_WORLD
-        me = comm_world.Get_rank()
-        npes = comm_world.Get_size()
-        lmpi4pyactive = True
-        lpyMPIactive = False
-    except ImportError:
-        #Single core version of WARP
-        me = 0
-        npes = 1
-        comm_world = None
-        lpyMPIactive = False
+        #Try to import pyMPI
+        import mpi
+        me = mpi.rank
+        npes = mpi.procs
+        comm_world = mpi.WORLD
+        lpyMPIactive = True
         lmpi4pyactive = False
+    except:
+        try:
+            #Try to import mpi4py
+            from mpi4py import MPI as mpi
+            comm_world = mpi.COMM_WORLD
+            me = comm_world.Get_rank()
+            npes = comm_world.Get_size()
+            lmpi4pyactive = True
+            lpyMPIactive = False
+        except ImportError:
+            #Single core version of WARP
+            me = 0
+            npes = 1
+            comm_world = None
+            lpyMPIactive = False
+            lmpi4pyactive = False
+else:
+    #Single core version of WARP
+    me = 0
+    npes = 1
+    comm_world = None
+    lpyMPIactive = False
+    lmpi4pyactive = False
 
 lparallel = (npes > 1)
 
