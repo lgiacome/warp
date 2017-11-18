@@ -181,7 +181,8 @@ cd $SLURM_SUBMIT_DIR
 cp ./* $mydir/.
 cd $mydir
 
-srun -n 16 -c 4 shifter python warp_script.py -p 4 1 4
+setenv OMP_NUM_THREADS 1
+srun -n 32 -c 2 shifter python warp_script.py -p 4 1 8
 ```
 Note that the options `--image=docker:rlehe/warp:latest`, `--
 volume=<your$SCRATCH>:/home/warp_user/run` and `-launcher ssh` are essential
