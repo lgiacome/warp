@@ -168,7 +168,6 @@ example of a typical submission script.
 #SBATCH -e test_cori_shifter.err
 #SBATCH -o test_cori_shifter.out
 #SBATCH -C haswell
-#SBATCH --account=m558
 #SBATCH --image=docker:rlehe/warp:latest
 #SBATCH --volume=/global/cscratch1/sd/rlehe:/home/warp_user/run
 
