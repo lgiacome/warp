@@ -102,7 +102,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # Find the z resolution and size of the diagnostic *in the lab frame*
         # (Needed to initialize metadata in the openPMD file)
         dz_lab = np.abs(c*self.top.dt * self.inv_beta_boost*self.inv_gamma_boost)
-        Nz = int( (zmax_lab - zmin_lab)/dz_lab )
+        Nz = int(round( (zmax_lab - zmin_lab)/dz_lab ))
         # In case of subsampling along z, increase dz and reduce Nz
         if z_subsampling > 1:
             dz_lab = dz_lab * z_subsampling
@@ -510,7 +510,7 @@ class LabSnapshot:
             Inverse of the grid spacing in z, *in the lab frame*
         """
         # Find the index of the slice in the lab frame
-        iz_lab = int( (self.current_z_lab - self.zmin_lab)*inv_dz_lab )
+        iz_lab = int(round( (self.current_z_lab - self.zmin_lab)*inv_dz_lab ))
 
         # Store the slice, if it was not already previously stored
         # (when dt is small and dz is large, this can happen)
