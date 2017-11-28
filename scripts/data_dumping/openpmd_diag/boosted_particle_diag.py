@@ -14,7 +14,11 @@ import time
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
 from parallel import gatherarray, me, mpiallgather
-from mpi4py import MPI
+try:
+    from mpi4py import MPI
+except ImportError:
+    MPI = None
+    pass
 
 class BoostedParticleDiagnostic(ParticleDiagnostic):
     """
