@@ -169,9 +169,9 @@ example of a typical submission script.
 #SBATCH -o test_cori_shifter.out
 #SBATCH -C haswell
 #SBATCH --image=docker:rlehe/warp:latest
-#SBATCH --volume=/global/cscratch1/sd/rlehe:/home/warp_user/run
+#SBATCH --volume=<your$SCRATCH>:/home/warp_user/run
 
-setenv mydir "$SCRATCH/test_warp/test_cori_shifter"
+setenv mydir "$SCRATCH/test_simulation"
 rm -fr $mydir
 mkdir -p $mydir
 
@@ -183,8 +183,8 @@ cd $mydir
 setenv OMP_NUM_THREADS 1
 srun -n 32 -c 2 shifter python warp_script.py -p 4 1 8
 ```
-Note that the options `--image=docker:rlehe/warp:latest`, `--
-volume=<your$SCRATCH>:/home/warp_user/run` and `-launcher ssh` are essential
+Note that the options `--image=docker:rlehe/warp:latest` and `--
+volume=<your$SCRATCH>:/home/warp_user/run` are essential
 and should be copied exactly (**do not** replace `warp_user` or
 `rlehe` by your username), with the exception of `<your$SCRATCH>`,
 which should be replaced by the full path to your SCRATCH directory.
