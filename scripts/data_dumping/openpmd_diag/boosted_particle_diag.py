@@ -13,7 +13,7 @@ import numpy as np
 import time
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
-from parallel import gatherarray, me, mpiallgather
+from parallel import me, mpiallgather
 try:
     from mpi4py import MPI
 except ImportError:
@@ -199,10 +199,18 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                     # Gather data on proc 0 into this communicator
                     if dump_comm != MPI.COMM_NULL:
                         list_part_array = dump_comm.gather( particle_array )
+                    # Free the dump communicator
+                    mpi_group.Free()
+                    newgroup.Free()
+                    if dump_comm != MPI.COMM_NULL:
+                        dump_comm.Free()
+
+                    # Rank 0 concatenates all lists into an array with all particles
                     if self.rank == 0:
                         p_array = np.concatenate(list_part_array, axis=1)
                 else:
                     p_array = particle_array
+                    
                 # Write this array to disk (if this snapshot has new slices)
                 if self.rank == 0 and p_array.size:
                     self.write_slices(p_array, species_name, snapshot,
