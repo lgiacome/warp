@@ -7,19 +7,19 @@ from warp.field_solvers.em3dsolverPXR import EM3DPXR as EM3DPXRBF
 import string
 try:
   import h5py
-  l_h5py=1 
+  l_h5py=1
 except:
   l_h5py=0
 
 class Boosted_Frame(object):
   """
-Class transforming particle distribution from lab frame to boosted frame. 
-Boosted particles can optionally be injected through a plane. In this case, the 
-boosted particles are moved from the main top.pgroup to a separate particle group, 
-drift at velocity top.vbeam until they reach the injection plane though which 
+Class transforming particle distribution from lab frame to boosted frame.
+Boosted particles can optionally be injected through a plane. In this case, the
+boosted particles are moved from the main top.pgroup to a separate particle group,
+drift at velocity top.vbeam until they reach the injection plane though which
 they are injected using Warp's injection routines.
-In the current implementation, the distribution needs to fit entirely in the 
-simulation zone, which is too restrictive for some applications and will need 
+In the current implementation, the distribution needs to fit entirely in the
+simulation zone, which is too restrictive for some applications and will need
 to be lifted in the future.
   """
   def __init__(self,gammaframe,direction=1.,l_setselfb=1):
@@ -97,7 +97,7 @@ to be lifted in the future.
       self.pgroup.ins[jspr]=ilpr+1
       self.pgroup.nps[jspr]=getn(pgroup=pg,js=js,bcast=0,gather=0)
       if l_inject_plane:
-       if getn(pgroup=pg,js=js,bcast=0,gather=0)>0: 
+       if getn(pgroup=pg,js=js,bcast=0,gather=0)>0:
         z=getz(pgroup=pg,js=js,bcast=0,gather=0)
        else:
         z=array([])
@@ -108,7 +108,7 @@ to be lifted in the future.
        vz = getvz(pgroup=pg,js=js,bcast=0,gather=0)
        self.betabeam_lab = globalave(vz)/clight
        self.vbeams.append(clight*(self.betabeam_lab-self.betaframe)/(1.-self.betabeam_lab*self.betaframe))
-       if getn(pgroup=pg,js=js,bcast=0,gather=0)>0: 
+       if getn(pgroup=pg,js=js,bcast=0,gather=0)>0:
         gaminvbeam_lab = getgaminv(pgroup=pg,js=js,bcast=0,gather=0)
         betabeam_lab  = sqrt(1.-gaminvbeam_lab*gaminvbeam_lab)
         betabeam_frame = (betabeam_lab-self.betaframe)/(1.-betabeam_lab*self.betaframe)
@@ -138,7 +138,7 @@ to be lifted in the future.
         zpr=array([])
        if top.boost_z0==0.:
          top.boost_z0 = -globalmax(zpr)
-       if getn(pgroup=pg,js=js,bcast=0,gather=0)>0: 
+       if getn(pgroup=pg,js=js,bcast=0,gather=0)>0:
         fact = 1./(1.-self.betaframe*vz/clight)
         vxpr = vx*fact/self.gammaframe
         vypr = vy*fact/self.gammaframe
@@ -148,7 +148,7 @@ to be lifted in the future.
         zpr = zpr - self.vbeams[-1]*tpr
 #        zpr = zcopy*top.gammabar_lab/top.gammabar
         # --- make sure that z<=0
-#        zpr += top.boost_z0 
+#        zpr += top.boost_z0
         # --- sets location of beam center at t=0 in boosted frame
         gammapr = 1./sqrt(1.-(vxpr*vxpr+vypr*vypr+vzpr*vzpr)/clight**2)
         self.pgroup.uxp[ilpr:iupr]=vxpr*gammapr
@@ -211,12 +211,12 @@ to be lifted in the future.
 #        pg.fselfb[js]=(pg.fselfb[js]-self.betaframe*clight)/(1.-pg.fselfb[js]*self.betaframe/clight)
       il=top.pgroup.ins[js]-1
       iu=il+top.pgroup.nps[js]
-      if getn(pgroup=pg,js=js,bcast=0,gather=0)>0: 
+      if getn(pgroup=pg,js=js,bcast=0,gather=0)>0:
         z=getz(pgroup=pg,js=js,bcast=0,gather=0)
       else:
         z=0.
       zmean=globalave(z)
-      if getn(pgroup=pg,js=js,bcast=0,gather=0)>0: 
+      if getn(pgroup=pg,js=js,bcast=0,gather=0)>0:
         uzfrm = self.gammaframe*self.betaframe*clight
         tpr =  self.gammaframe*top.time-uzfrm*top.pgroup.zp[il:iu]/clight**2
         top.pgroup.zp[il:iu] = self.gammaframe*top.pgroup.zp[il:iu]-uzfrm*top.time
@@ -241,14 +241,14 @@ to be lifted in the future.
         if top.uzoldpid>0:top.pgroup.pid[il:iu,top.uzoldpid-1]=top.pgroup.uzp[il:iu]
    if not lallindomain:particleboundaries3d(top.pgroup,-1,False)
    print 'exit boost',top.pgroup.nps
-   
+
   def add_boosted_species_multigroups(self):
       do_inject = 0
       w3d.npgrp = 0
       for self.ipgrp,self.pgroup in enumerate(self.pgroups):
           self.vbeam = self.vbeams[self.ipgrp]
           self.species = self.list_species[self.ipgrp]
-          # --- check whether pid arrays need to be reshaped 
+          # --- check whether pid arrays need to be reshaped
           if self.pgroup.npid != top.pgroup.npid:
               self.pgroup.npid = top.pgroup.npid
               self.pgroup.gchange()
@@ -269,7 +269,7 @@ to be lifted in the future.
               gchange("Setpwork3d")
               top.inject=0
 #        uninstallbeforestep(self.add_boosted_species)
-                    
+
   def add_boosted_species(self):
     nps = parallelsum(self.pgroup.nps)
 #    top.finject[0][1:]=0.
@@ -300,7 +300,7 @@ to be lifted in the future.
         for ipid in range(top.npid):
           w3d.pidt[:,ipid] = take(self.pgroup.pid[:,ipid],ii)
 #        gi=getgaminv(pgroup=self.pgroup,js=js,bcast=0,gather=0)
-        put(self.pgroup.gaminv,ii,0.)     
+        put(self.pgroup.gaminv,ii,0.)
         npo = self.pgroup.nps[0]
         processlostpart(self.pgroup,js+1,top.clearlostpart,top.time+top.dt*self.pgroup.ndts[js],top.zbeam)
     self.hn.append(getn())
@@ -331,7 +331,7 @@ to be lifted in the future.
                    sp.addpart(x=x,y=y,z=z,ux=ux,uy=uy,uz=uz,gi=gi,pidpairs=pidpairs,lmomentum=True,lallindomain=False)
       except:
           pass
-        
+
   def pln(self):
     pla(self.hn)
     pla(self.hinj,color=red)
@@ -418,7 +418,7 @@ to be lifted in the future.
     n1 = self.species.getn()
     n2 = getn(pgroup=self.pgroup)
     return n1+n2
-    
+
   def getx(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -431,7 +431,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-    
+
   def gety(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -444,7 +444,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-    
+
   def getz(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -457,7 +457,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-    
+
   def getgaminv(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -470,7 +470,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-        
+
   def getux(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -483,7 +483,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-    
+
   def getuy(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -496,7 +496,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-    
+
   def getuz(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -509,7 +509,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-    
+
   def getvx(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -522,7 +522,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-    
+
   def getvy(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -535,7 +535,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-    
+
   def getvz(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -548,7 +548,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-    
+
   def getke(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -561,7 +561,7 @@ to be lifted in the future.
     else:
       z2 = array([])
     return concatenate([z1,z2])
-    
+
   def getpid(self,**kw):
     n1 = self.species.getn(**kw)
     if n1>0:
@@ -735,9 +735,9 @@ to be lifted in the future.
         density[...] = parallelsum(density)
         if dens is None: return density
 
-  def create_lab_snapshots(self,n_lab_snapshots, 
-                                datatypes, 
-                                l_restart=False, 
+  def create_lab_snapshots(self,n_lab_snapshots,
+                                datatypes,
+                                l_restart=False,
                                 output_dir='data',
                                 field_snapshot_divider = 1,
                                 elec_snapshot_divider  = 1,
@@ -748,7 +748,7 @@ to be lifted in the future.
                                 momentum_threshold_low = 5,
                                 momentum_threshold_high= 100,
                                 gamma_threshold_lab    = 1.,
-                                l_transverse_profile = 0, 
+                                l_transverse_profile = 0,
                                 plasma_long_profile = None,
                                 plasma_trans_profile = None,
                                 window_velocity_lab  = 0.,
@@ -788,41 +788,41 @@ to be lifted in the future.
       self.l_beam = l_beam
       self.runid = runid
       self.l_collapse = l_collapse
-      
+
       if not top.xoldpid:top.xoldpid=nextpid()
       if not top.yoldpid:top.yoldpid=nextpid()
       if not top.zoldpid:top.zoldpid=nextpid()
       if not top.uxoldpid:top.uxoldpid=nextpid()
       if not top.uyoldpid:top.uyoldpid=nextpid()
       if not top.uzoldpid:top.uzoldpid=nextpid()
-              
+
       if me==0:os.system('rm -fr '+output_dir)
       self.create_paths(output_dir)
       self.snapshots = {}
       for datatype in datatypes:
-          self.snapshots[datatype] = self.create_lab_snapshots_datatype(n_lab_snapshots, 
-                                                         datatypes, 
-                                                         datatype, 
+          self.snapshots[datatype] = self.create_lab_snapshots_datatype(n_lab_snapshots,
+                                                         datatypes,
+                                                         datatype,
                                                          l_restart,
                                                          )
 
       installafterstep(self.boosted_output_method)  #backtransforms boosted frame data to lab frame and writes output into lab files
-      
+
   def create_lab_snapshots_datatype(self,tn, datatypes, datatype, l_restart):
     """Creates files for backtransformed lab frame data output for a given datatype (elec, field, beam)."""
-    
+
     if w3d.solvergeom == w3d.XYZgeom:dim="3d"
     if w3d.solvergeom in [w3d.XZgeom,w3d.RZgeom]:dim="2d"
     if w3d.solvergeom == w3d.Zgeom:dim="1d"
-    
+
     len_zlab = self.zmax_window_lab-self.zmin_window_lab
 
-    snapshots = [None]*(tn+1)        #Creates empty array for tn snapshots 
-        
+    snapshots = [None]*(tn+1)        #Creates empty array for tn snapshots
+
     for i in numpy.arange(0,tn+1,1): #iterates over snapshots
-        
+
         if me == 0:                  #create files only on process 0
-            
+
             if datatype == 'elec_lab' and i % self.elec_snapshot_divider != 0: continue    #checks if there are less snapshots (elec_snapshot_divider > 1) for elec output and skips iteration
             if datatype == 'field_lab' and i % self.field_snapshot_divider != 0: continue  #checks if there are less snapshots (field_snapshot_divider > 1) for field output and skips iteration
 
@@ -836,11 +836,11 @@ to be lifted in the future.
             snapshots[i] = f #writes the file into the snapshot array at the correct position
 
             for dataset in datatypes[datatype]: #iterates over all dataset entries in the dictionary "datatype" for the current datatype (elec, field, beam)
-                
+
                 if datatype == 'field_lab':
                         #creates datasets for fields for 2d or 3d case. Chunks = True ensures higher performance and less i/o rates.
-                        array_shape = (w3d.nx/self.downsample_rate_lab_x+1, 
-                                       w3d.ny/self.downsample_rate_lab_y+1, 
+                        array_shape = (w3d.nx/self.downsample_rate_lab_x+1,
+                                       w3d.ny/self.downsample_rate_lab_y+1,
                                        int((len_zlab/abs(self.z_lab(top.dt,0,tn)))/self.downsample_rate_lab_z))  #shape of the dataset for the 3d case, longitudinal size = length of the simulation box in lab frame divided by zlab_delta (self.z_lab_(top.dt...))
                         if dim == '2d':
                             shape2d = (int(array_shape[0]), 1, int(array_shape[2]))                         #reduced shape for 2d case
@@ -855,7 +855,7 @@ to be lifted in the future.
                 if datatype == 'elec_lab':
                     #creates datasets for density and phase spaces for 2d or 3d case. Chunks = True ensures higher performance and less i/o rates.
                     array_shape = (w3d.nx/self.downsample_rate_lab_x+1, w3d.ny/self.downsample_rate_lab_y+1, int((len_zlab/abs(self.z_lab(top.dt,0,tn)))/self.downsample_rate_lab_z))
-                    
+
                     if dataset == 'ne':
                         if dim == '2d':
                             shape2d = (int(array_shape[0]), 1, int(array_shape[2]))                         #reduced shape for 2d case
@@ -865,11 +865,11 @@ to be lifted in the future.
                             dset = snapshots[i].require_dataset(dataset, shape2d, dtype=numpy.float32, chunks=True, exact=False)
                         else:
                             dset = snapshots[i].require_dataset(dataset, array_shape, dtype=numpy.float32, chunks=True, exact=False) #3d shape
-                
+
                     if dataset == 'phase_space' or dataset == 'phase_space_low':
                         shape_phase_space = (self.momentum_resolution, 1, int(array_shape[2])) #shape for phasespace
-                        dset = snapshots[i].require_dataset(dataset, shape_phase_space, chunks=True, dtype=numpy.float64, exact=False) 
-                
+                        dset = snapshots[i].require_dataset(dataset, shape_phase_space, chunks=True, dtype=numpy.float64, exact=False)
+
                 if datatype == 'beam_lab':
                         #creates datasets for beam files
                         if l_restart:
@@ -878,14 +878,14 @@ to be lifted in the future.
                           dset = snapshots[i].create_dataset(dataset, (0,), maxshape=(None,), chunks=True, dtype=numpy.float32) #1D resizable array
 
     return snapshots
-    
+
   def boosted_output_method(self):
     """Called after every step. Transforms back data from boosted frame to lab frame and fills lab frame files with slabs of data."""
-    
+
     if w3d.solvergeom == w3d.XYZgeom:dim="3d"
     if w3d.solvergeom in [w3d.XZgeom,w3d.RZgeom]:dim="2d"
     if w3d.solvergeom == w3d.Zgeom:dim="1d"
-    
+
     elec=self.elec
     if self.l_beam:
       beam=self.beam
@@ -893,11 +893,11 @@ to be lifted in the future.
     gammafrm = self.gammaframe
     betafrm = self.betaframe
     plasma_long_profile = self.plasma_long_profile
-    
+
     n_lab_snapshots = self.n_lab_snapshots
     snapshots = self.snapshots
     datatypes = self.datatypes
-    
+
     #NOTE: Boosted Output Method uses python map() several times to iterate over all snapshots.
 
     #dataset_list defines all output datasets available
@@ -907,18 +907,18 @@ to be lifted in the future.
 
     tn = n_lab_snapshots #number of snapshots defined in warp_run
     t = top.time #time in boosted frame
-    
+
     if not top.it % self.downsample_rate_lab_z == 0: return #if downsamplerate_z > 1 => skips iteration
 
     i = numpy.array(numpy.arange(0,tn+1,1))     #create array with len(n_lab_snapshots)
 
     zlab         = self.z_lab(t,i,tn)
     zlabo         = self.z_lab(t-top.dt*self.downsample_rate_lab_z,i,tn)
-  
+
     #get array of accessible lab positions for current timestep and all snapshots
-     
+
     zlab_delta   = abs(self.z_lab(top.dt,0,tn))      #distance that zlab moves every top.dt
-   
+
     zboost       = self.z_boost(t,i,tn)
     zboosto       = self.z_boost(t-top.dt*self.downsample_rate_lab_z,i,tn)#get array of accessible boosted frame positions for current timestep and all snapshots
     zboost_delta = abs(self.z_boost(top.dt,0,tn))    #distance that zboost moves every top.dt
@@ -927,7 +927,7 @@ to be lifted in the future.
     zlab_min     = self.zlab_position(i, tn)[0]      #lower boundary of simulation box if simulation would be in lab frame
     zlab_max     = self.zlab_position(i, tn)[1]      #upper boundary of simulation box if simulation would be in lab frame
 
-    zlab_n       = (zlab - zlab_min)/zlab_delta #index of zlab with respect to the snapshot 
+    zlab_n       = (zlab - zlab_min)/zlab_delta #index of zlab with respect to the snapshot
     zlab_n       = zlab_n/self.downsample_rate_lab_z #index correction if donwsamplerate_z > 1
 
     z_win_min    = w3d.zmmin+top.time*top.vbeamfrm
@@ -935,14 +935,14 @@ to be lifted in the future.
 
     access = []  #array to store indices of currently accessible snapshots
 
-    for jjj in numpy.arange(0,tn+1,1): 
+    for jjj in numpy.arange(0,tn+1,1):
       if zlab[jjj] > zlab_min[jjj] and zlab[jjj] < zlab_max[jjj]: #check if currently accessible self.z_lab position lies within boundaries of simulation box in lab frame
         access.append(jjj) #add to access array
 
     ix       = access
-    ix_field = [f_snap for f_snap in ix if f_snap in i[::self.field_snapshot_divider]] #filter ix (access) if there should be less field snapshots 
+    ix_field = [f_snap for f_snap in ix if f_snap in i[::self.field_snapshot_divider]] #filter ix (access) if there should be less field snapshots
     ix_elec  = [e_snap for e_snap in ix if e_snap in i[::self.elec_snapshot_divider]]  #filter ix if there should be less elec snapshots
-    
+
     ia       = numpy.arange(len(ix))       #create array of len(ix) for iteration purposes
     ia_field = numpy.arange(len(ix_field)) #same for field snapshots
     ia_elec  = numpy.arange(len(ix_elec))  #same for elec snapshots
@@ -954,14 +954,14 @@ to be lifted in the future.
     xa        = elec.getx(gather = 0, bcast = 0)
     ya        = elec.gety(gather = 0, bcast = 0)
     za        = elec.getz(gather = 0, bcast = 0)
-    
+
     uxa       = elec.getux(gather = 0, bcast = 0)
     uya       = elec.getuy(gather = 0, bcast = 0)
     uza       = elec.getuz(gather = 0, bcast = 0)
-    
+
     gammainva = elec.getgaminv(gather = 0, bcast = 0)
     wa        = elec.getweights(gather = 0, bcast = 0)
-    
+
     if self.l_collapse:
         xao        = elec.getpid(id=top.xoldpid-1, gather = 0, bcast = 0)
         yao        = elec.getpid(id=top.yoldpid-1, gather = 0, bcast = 0)
@@ -969,7 +969,7 @@ to be lifted in the future.
         uxao        = elec.getpid(id=top.uxoldpid-1, gather = 0, bcast = 0)
         uyao        = elec.getpid(id=top.uyoldpid-1, gather = 0, bcast = 0)
         uzao        = elec.getpid(id=top.uzoldpid-1, gather = 0, bcast = 0)
-    
+
     z_preva = za - gammainva*uza*top.dt*self.downsample_rate_lab_z
     iia          = numpy.arange(len(za))
     # find particles that crossed the output plane
@@ -977,49 +977,49 @@ to be lifted in the future.
                                        numpy.logical_and(numpy.less_equal(zboost[x],za),numpy.less_equal(z_preva,zboost_prev[x])),
                                        numpy.logical_and(numpy.less_equal(za,zboost[x]),numpy.less_equal(zboost_prev[x],z_preva))
                                                         ),iia)), ix)
-    
+
     #create array of len(za) for filtering process
     #Filter particle data and create array with particle data for each snapshot
-    
-    x        = numpy.array(map(lambda x: xa[ii[x]], ia)) 
+
+    x        = numpy.array(map(lambda x: xa[ii[x]], ia))
     y        = numpy.array(map(lambda x: ya[ii[x]], ia))
     z        = numpy.array(map(lambda x: za[ii[x]], ia))
     w        = numpy.array(map(lambda x: wa[ii[x]], ia))
-    ux       = numpy.array(map(lambda x: uxa[ii[x]], ia)) 
+    ux       = numpy.array(map(lambda x: uxa[ii[x]], ia))
     uy       = numpy.array(map(lambda x: uya[ii[x]], ia))
     uz       = numpy.array(map(lambda x: uza[ii[x]], ia))
-            
-    
+
+
     if self.l_collapse:
-        
-                xo        = numpy.array(map(lambda x: xao[ii[x]], ia)) 
+
+                xo        = numpy.array(map(lambda x: xao[ii[x]], ia))
                 yo        = numpy.array(map(lambda x: yao[ii[x]], ia))
                 zo        = numpy.array(map(lambda x: zao[ii[x]], ia))
-                uxo       = numpy.array(map(lambda x: uxao[ii[x]], ia)) 
+                uxo       = numpy.array(map(lambda x: uxao[ii[x]], ia))
                 uyo       = numpy.array(map(lambda x: uyao[ii[x]], ia))
                 uzo       = numpy.array(map(lambda x: uzao[ii[x]], ia))
-        
+
     gammainv = numpy.array(map(lambda x: gammainva[ii[x]], ia))
     gammainvo    = numpy.array(map(lambda x: 1./sqrt(1.+(uxo[x]**2+uyo[x]**2+uzo[x]**2)/clight**2), ia))
     uzfrm    = -betafrm*gammafrm*clight
     #-- Conversion to the lab frame, zo, to, uxo, uyo, uzo
-    map(lambda x: setu_in_uzboosted_frame3d(shape(zo[x])[0], 
+    map(lambda x: setu_in_uzboosted_frame3d(shape(zo[x])[0],
                                                                                             uxo[x],
-                                                                                            uyo[x], 
-                                                                                            uzo[x], 
+                                                                                            uyo[x],
+                                                                                            uzo[x],
                                                                                             gammainvo[x],
                                                                                             uzfrm, gammafrm), ia) #back transformation of velocities to lab frame
-        #Conversion to the lab frame, z, t ux, uy, uz 
-    map(lambda x: setu_in_uzboosted_frame3d(shape(z[x])[0], 
+        #Conversion to the lab frame, z, t ux, uy, uz
+    map(lambda x: setu_in_uzboosted_frame3d(shape(z[x])[0],
                                                                                             ux[x],
-                                                                                            uy[x], 
-                                                                                            uz[x], 
+                                                                                            uy[x],
+                                                                                            uz[x],
                                                                                             gammainv[x],
                                                                                             uzfrm, gammafrm), ia) #back transformation of velocities to lab frame
-                                                                                            
+
     t           = numpy.array(map(lambda x: gammafrm*top.time*numpy.ones(shape(z[x])[0])-uzfrm*z[x]/clight**2,ia))
     to         = numpy.array(map(lambda x: gammafrm*(top.time-top.dt)*numpy.ones(shape(z[x])[0])-uzfrm*zo[x]/clight**2,ia))
-    z        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(z[x]-zboost[x+ix[0]]) + zlab[x+ix[0]], ia)) #back transformation 
+    z        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(z[x]-zboost[x+ix[0]]) + zlab[x+ix[0]], ia)) #back transformation
     zo        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(zo[x]-zboosto[x+ix[0]]) + zlabo[x+ix[0]], ia))
     vx       = numpy.array(map(lambda x: ux[x]*gammainv[x], ia))
     vy       = numpy.array(map(lambda x: uy[x]*gammainv[x], ia))
@@ -1032,7 +1032,7 @@ to be lifted in the future.
     tlab   = numpy.array(map(lambda x : (numpy.average(t[x]+to[x])/2), ia))
     #print "tlab", tlab
     #Interpolation
-        
+
     if True:
       x      = numpy.array(map(lambda xx : xo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+x[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
       y      = numpy.array(map(lambda xx : yo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+y[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
@@ -1049,10 +1049,10 @@ to be lifted in the future.
 
     #FIELDS
     if dim == '2d':
-      #Get fields with em.gatherXX(). 
-      #Fields are directly sliced in z during the gathering process. 
+      #Get fields with em.gatherXX().
+      #Fields are directly sliced in z during the gathering process.
       #Slices are taken at the z_boost position corresponding to the correct self.z_lab position of each snapshot.
-      field_data = map(lambda x: [em.gatherex(direction = 2, slice = int(zboost_n[x])), 
+      field_data = map(lambda x: [em.gatherex(direction = 2, slice = int(zboost_n[x])),
                                   em.gatherey(direction = 2, slice = int(zboost_n[x])),
                                   em.gatherez(direction = 2, slice = int(zboost_n[x])),
                                   em.gatherbx(direction = 2, slice = int(zboost_n[x])),
@@ -1063,51 +1063,51 @@ to be lifted in the future.
 
       if me == 0:
         #Fields are transformed to lab frame
-        map(lambda x: seteb_in_boosted_frame(shape(field_data[x,0])[0], 
-                                             field_data[x,0], 
-                                             field_data[x,1], 
-                                             field_data[x,2], 
-                                             field_data[x,3], 
-                                             field_data[x,4], 
-                                             field_data[x,5], 
+        map(lambda x: seteb_in_boosted_frame(shape(field_data[x,0])[0],
+                                             field_data[x,0],
+                                             field_data[x,1],
+                                             field_data[x,2],
+                                             field_data[x,3],
+                                             field_data[x,4],
+                                             field_data[x,5],
                                              0., 0., -gammafrm*betafrm*clight, gammafrm), ia_field)
         #write data to array field_data for writing process
-        field_data = numpy.array([field_data[:,0], 
-                                  field_data[:,1], 
-                                  field_data[:,2], 
-                                  field_data[:,3], 
-                                  field_data[:,4], 
+        field_data = numpy.array([field_data[:,0],
+                                  field_data[:,1],
+                                  field_data[:,2],
+                                  field_data[:,3],
+                                  field_data[:,4],
                                   field_data[:,5]])
 
     else:
-      #Get fields with em.gatherXX(). Fields are directly sliced in z during the gathering process. 
-      #Slices are taken at the z_boost position corresponding to the correct self.z_lab position of each snapshot. 
+      #Get fields with em.gatherXX(). Fields are directly sliced in z during the gathering process.
+      #Slices are taken at the z_boost position corresponding to the correct self.z_lab position of each snapshot.
       #In 3D case, the arrays are reshaped to 1D arrays.
-      field_data = map(lambda x: [numpy.ravel(em.gatherex(direction = 2, slice = int(zboost_n[x]))), 
-                                  numpy.ravel(em.gatherey(direction = 2, slice = int(zboost_n[x]))), 
-                                  numpy.ravel(em.gatherez(direction = 2, slice = int(zboost_n[x]))), 
-                                  numpy.ravel(em.gatherbx(direction = 2, slice = int(zboost_n[x]))), 
-                                  numpy.ravel(em.gatherby(direction = 2, slice = int(zboost_n[x]))), 
+      field_data = map(lambda x: [numpy.ravel(em.gatherex(direction = 2, slice = int(zboost_n[x]))),
+                                  numpy.ravel(em.gatherey(direction = 2, slice = int(zboost_n[x]))),
+                                  numpy.ravel(em.gatherez(direction = 2, slice = int(zboost_n[x]))),
+                                  numpy.ravel(em.gatherbx(direction = 2, slice = int(zboost_n[x]))),
+                                  numpy.ravel(em.gatherby(direction = 2, slice = int(zboost_n[x]))),
                                   numpy.ravel(em.gatherbz(direction = 2, slice = int(zboost_n[x])))], ix_field)
 
       field_data = numpy.array(field_data)
 
       if me == 0:
         #Fields are transformed to lab frame
-        map(lambda x: seteb_in_boosted_frame(shape(field_data[x,0])[0], 
-                                             field_data[x,0], 
-                                             field_data[x,1], 
-                                             field_data[x,2], 
-                                             field_data[x,3], 
-                                             field_data[x,4], 
-                                             field_data[x,5], 
+        map(lambda x: seteb_in_boosted_frame(shape(field_data[x,0])[0],
+                                             field_data[x,0],
+                                             field_data[x,1],
+                                             field_data[x,2],
+                                             field_data[x,3],
+                                             field_data[x,4],
+                                             field_data[x,5],
                                              0., 0., -gammafrm*betafrm*clight, gammafrm), ia_field)
         #write data to array field_data for writing process
-        field_data = numpy.array([field_data[:,0], 
-                                  field_data[:,1], 
-                                  field_data[:,2], 
-                                  field_data[:,3], 
-                                  field_data[:,4], 
+        field_data = numpy.array([field_data[:,0],
+                                  field_data[:,1],
+                                  field_data[:,2],
+                                  field_data[:,3],
+                                  field_data[:,4],
                                   field_data[:,5]])
 
     def get_lab_rho(x):
@@ -1115,8 +1115,8 @@ to be lifted in the future.
           return (1/echarge)*(gammafrm*(rho[x]+jz[x]*(betafrm/clight)))
     #DENSITY
     if dim == '2d':
-      #Get rho (charge density) and jz (current density) with em.gatherXX(). 
-      #Quantities are directly sliced in z during the gathering process. 
+      #Get rho (charge density) and jz (current density) with em.gatherXX().
+      #Quantities are directly sliced in z during the gathering process.
       #Slices are taken at the z_boost position corresponding to the correct self.z_lab position of each snapshot.
       dens = []
       rho  = numpy.array(map(lambda x: numpy.array(em.gatherrho(direction = 2, slice = zboost_n[x])), ix_elec))
@@ -1126,22 +1126,22 @@ to be lifted in the future.
       if self.l_transverse_profile == 0:
         if me == 0:
           #Calculates the lab density from the backtransformed charge density and sets correct initial background density with plasma_long_profile.
-          dens = numpy.array(map(lambda x: plasma_long_profile(numpy.ones(size(rho[x])), 
+          dens = numpy.array(map(lambda x: plasma_long_profile(numpy.ones(size(rho[x])),
                                                                numpy.ones(size(rho[x]))*zlab[x*self.elec_snapshot_divider+ix_elec[0]]/gammafrm)*self.density/gammafrm-get_lab_rho(x), ia_elec))
-      
+
       else:
         #If there is also a transverse density profile we also need to apply plasma_trans_profile.
         if me == 0:
           xm   = numpy.arange(w3d.xmmin, w3d.xmmax, (w3d.xmmax-w3d.xmmin)/(w3d.nx+1)) #Array with transverse positions.
           #Calculates the lab density from the backtransformed charge density and sets correct initial background density with plasma_long_profile and plasma_trans_profile.
-          dens = numpy.array(map(lambda x: plasma_trans_profile(plasma_long_profile(numpy.ones(size(rho[x])), 
-                                                                                    numpy.ones(size(rho[x]))*zlab[x*self.elec_snapshot_divider+ix_elec[0]]/gammafrm), 
-                                                                sqrt(xm**2), 
+          dens = numpy.array(map(lambda x: plasma_trans_profile(plasma_long_profile(numpy.ones(size(rho[x])),
+                                                                                    numpy.ones(size(rho[x]))*zlab[x*self.elec_snapshot_divider+ix_elec[0]]/gammafrm),
+                                                                sqrt(xm**2),
                                                                 numpy.ones(size(rho[x]))*zlab[x*self.elec_snapshot_divider+ix_elec[0]]/gammafrm)*density/gammafrm-get_lab_rho(x), ia_elec))
 
     else:
-      #Get rho (charge density) and jz (current density) with em.gatherXX(). 
-      #Quantities are directly sliced in z during the gathering process. 
+      #Get rho (charge density) and jz (current density) with em.gatherXX().
+      #Quantities are directly sliced in z during the gathering process.
       #Slices are taken at the z_boost position corresponding to the correct self.z_lab position of each snapshot.
       #In 3D case, the arrays are reshaped to 1D arrays.
       dens = []
@@ -1152,30 +1152,30 @@ to be lifted in the future.
       if self.l_transverse_profile == 0:
         if me == 0:
           #Calculates the lab density from the backtransformed charge density and sets correct initial background density with plasma_long_profile.
-          dens   = numpy.array(map(lambda x: plasma_long_profile(numpy.ones(size(rho[x])), 
+          dens   = numpy.array(map(lambda x: plasma_long_profile(numpy.ones(size(rho[x])),
                                                                numpy.ones(size(rho[x]))*zlab[x*self.elec_snapshot_divider+ix_elec[0]]/gammafrm)*density/gammafrm-get_lab_rho(x), ia_elec))
-      
+
       else:
         if me == 0:
           #If there is also a transverse density profile we also need to apply plasma_trans_profile.
           xm, ym = meshgrid(numpy.arange(w3d.xmmin,w3d.xmmax,(w3d.xmmax-w3d.xmmin)/(w3d.nx+1)), # 1D Arrays with transverse positions.
                             numpy.arange(w3d.ymmin,w3d.ymmax,(w3d.ymmax-w3d.ymmin)/(w3d.ny+1)))
           #Calculates the lab density from the backtransformed charge density and sets correct initial background density with plasma_long_profile and plasma_trans_profile.
-          dens   = numpy.array(map(lambda x: plasma_trans_profile(plasma_long_profile(numpy.ones(size(rho[x])), 
+          dens   = numpy.array(map(lambda x: plasma_trans_profile(plasma_long_profile(numpy.ones(size(rho[x])),
                                                                                       numpy.ones(size(rho[x]))*zlab[x*self.elec_snapshot_divider+ix_elec[0]]/gammafrm),
-                                                                  numpy.ravel(sqrt(xm**2+ym**2)), 
+                                                                  numpy.ravel(sqrt(xm**2+ym**2)),
                                                                   numpy.ones(size(rho[x]))*zlab[x*self.elec_snapshot_divider+ix_elec[0]]/gammafrm)*density/gammafrm-get_lab_rho(x), ia_elec))
-      
+
     #PHASESPACEHIGH
     #Get phasespace by taking the parallel sum of a histogram of uzn at the current self.z_lab position of each snapshot.
-    phasespace    = map(lambda x: parallelsum(numpy.histogram(uzn[x*self.elec_snapshot_divider], 
+    phasespace    = map(lambda x: parallelsum(numpy.histogram(uzn[x*self.elec_snapshot_divider],
                                                               bins = self.momentum_resolution,
                                                               range = (-self.momentum_threshold_high, self.momentum_threshold_high),
                                                               weights = w[x*self.elec_snapshot_divider])[0]), ia_elec)
-    
+
     #PHASESPACELOW
     #Get phasespace by taking the parallel sum of a histogram of uzn at the current self.z_lab position of each snapshot.
-    phasespacelow = map(lambda x: parallelsum(numpy.histogram(uzn[x*self.elec_snapshot_divider], 
+    phasespacelow = map(lambda x: parallelsum(numpy.histogram(uzn[x*self.elec_snapshot_divider],
                                                               bins = self.momentum_resolution,
                                                               range = (-self.momentum_threshold_low, self.momentum_threshold_low),
                                                               weights = w[x*self.elec_snapshot_divider])[0]), ia_elec)
@@ -1199,8 +1199,8 @@ to be lifted in the future.
       vz    = map(lambda x: numpy.array(gatherarray(vz[x][jj[x]])), ia)
 
       gamma = map(lambda x: numpy.array(gatherarray(gamma[x][jj[x]])), ia)
-      
-      
+
+
     #EXTERNAL BEAM
     if self.l_beam == 1:
 
@@ -1208,21 +1208,21 @@ to be lifted in the future.
       xb        = beam.getx(gather = 0, bcast = 0).copy()
       yb        = beam.gety(gather = 0, bcast = 0).copy()
       zb        = beam.getz(gather = 0, bcast = 0).copy()
-      
+
       uxb       = beam.getux(gather = 0, bcast = 0).copy()
       uyb       = beam.getuy(gather = 0, bcast = 0).copy()
       uzb       = beam.getuz(gather = 0, bcast = 0).copy()
-      
+
       gammainvb = beam.getgaminv(gather = 0, bcast = 0)
       wb        = beam.getweights(gather = 0, bcast = 0)
-      
+
       if self.l_collapse:
                     xbo        = beam.getpid(id=top.xoldpid-1, gather = 0, bcast = 0)
                     ybo        = beam.getpid(id=top.yoldpid-1, gather = 0, bcast = 0)
                     zbo        = beam.getpid(id=top.zoldpid-1, gather = 0, bcast = 0)
                     uxbo        = beam.getpid(id=top.uxoldpid-1, gather = 0, bcast = 0)
                     uybo        = beam.getpid(id=top.uyoldpid-1, gather = 0, bcast = 0)
-                    uzbo        = beam.getpid(id=top.uzoldpid-1, gather = 0, bcast = 0)    
+                    uzbo        = beam.getpid(id=top.uzoldpid-1, gather = 0, bcast = 0)
       iib = numpy.arange(len(zb))
       # calculate z positions one timestep earlier
       #z_prevb = zb - gammainvb*uzb*top.dt*self.downsample_rate_lab_z
@@ -1230,52 +1230,52 @@ to be lifted in the future.
 
       # find particles that crossed the output plane
       ii = map((lambda x: numpy.compress(numpy.logical_or(numpy.logical_and(numpy.less_equal(zboost[x],zb),numpy.less_equal(zbo,zboost_prev[x])),numpy.logical_and(numpy.less_equal(zb,zboost[x]),numpy.less_equal(zboost_prev[x],zbo))),iib)), ix)
-        
+
       #Filter particle data and create array with particle data for each snapshot
-      x        = numpy.array(map(lambda x: xb[ii[x]], ia)) 
+      x        = numpy.array(map(lambda x: xb[ii[x]], ia))
       y        = numpy.array(map(lambda x: yb[ii[x]], ia))
       z        = numpy.array(map(lambda x: zb[ii[x]], ia))
 
-      ux       = numpy.array(map(lambda x: uxb[ii[x]], ia)) 
+      ux       = numpy.array(map(lambda x: uxb[ii[x]], ia))
       uy       = numpy.array(map(lambda x: uyb[ii[x]], ia))
       uz       = numpy.array(map(lambda x: uzb[ii[x]], ia))
-    
+
       if self.l_collapse:
-        
-        xo        = numpy.array(map(lambda x: xbo[ii[x]], ia)) 
+
+        xo        = numpy.array(map(lambda x: xbo[ii[x]], ia))
         yo        = numpy.array(map(lambda x: ybo[ii[x]], ia))
         zo        = numpy.array(map(lambda x: zbo[ii[x]], ia))
-        uxo       = numpy.array(map(lambda x: uxbo[ii[x]], ia)) 
+        uxo       = numpy.array(map(lambda x: uxbo[ii[x]], ia))
         uyo       = numpy.array(map(lambda x: uybo[ii[x]], ia))
         uzo       = numpy.array(map(lambda x: uzbo[ii[x]], ia))
-                
+
       gammainv = numpy.array(map(lambda x: gammainvb[ii[x]], ia))
       gammainvo    = numpy.array(map(lambda x: 1./sqrt(1.+(uxo[x]**2+uyo[x]**2+uzo[x]**2)/clight**2), ia))
 
       w        = numpy.array(map(lambda x: wb[ii[x]], ia))
       uzfrm    = -betafrm*gammafrm*clight
-        
+
       #-- Conversion to the lab frame, zo, to, uxo, uyo, uzo
-      map(lambda x: setu_in_uzboosted_frame3d(shape(zo[x])[0], 
+      map(lambda x: setu_in_uzboosted_frame3d(shape(zo[x])[0],
                                                                                             uxo[x],
-                                                                                            uyo[x], 
-                                                                                            uzo[x], 
+                                                                                            uyo[x],
+                                                                                            uzo[x],
                                                                                             gammainvo[x],
                                                                                             uzfrm, gammafrm), ia) #back transformation of velocities to lab frame
-     
-      #Conversion to the lab frame, z, t ux, uy, uz 
-      map(lambda x: setu_in_uzboosted_frame3d(shape(z[x])[0], 
+
+      #Conversion to the lab frame, z, t ux, uy, uz
+      map(lambda x: setu_in_uzboosted_frame3d(shape(z[x])[0],
                                                                                             ux[x],
-                                                                                            uy[x], 
-                                                                                            uz[x], 
+                                                                                            uy[x],
+                                                                                            uz[x],
                                                                                             gammainv[x],
                                                                                             uzfrm, gammafrm), ia) #back transformation of velocities to lab frame
-     
+
       t           = numpy.array(map(lambda x: gammafrm*top.time*numpy.ones(shape(z[x])[0])-uzfrm*z[x]/clight**2,ia))
       to         = numpy.array(map(lambda x: gammafrm*(top.time-top.dt)*numpy.ones(shape(z[x])[0])-uzfrm*zo[x]/clight**2,ia))
-      z        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(z[x]-zboost[x+ix[0]]) + zlab[x+ix[0]], ia)) #back transformation 
+      z        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(z[x]-zboost[x+ix[0]]) + zlab[x+ix[0]], ia)) #back transformation
       zo        = numpy.array(map(lambda x: zlab_delta/zboost_delta*(zo[x]-zboosto[x+ix[0]]) + zlabo[x+ix[0]], ia))
-        
+
       vx       = numpy.array(map(lambda x: ux[x]*gammainv[x], ia))
       vy       = numpy.array(map(lambda x: uy[x]*gammainv[x], ia))
       vz       = numpy.array(map(lambda x: uz[x]*gammainv[x], ia))
@@ -1286,7 +1286,7 @@ to be lifted in the future.
       #print "to", to
       tlab   = numpy.array(map(lambda x : (numpy.average(t[x]+to[x])/2), ia))
       #print "tlab", tlab
-        
+
       #Interpolation
       if True:
         x      = numpy.array(map(lambda xx : xo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+x[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
@@ -1298,10 +1298,10 @@ to be lifted in the future.
         z      = numpy.array(map(lambda xx : zo[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+z[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
         t      = numpy.array(map(lambda xx : to[xx]*(t[xx]-tlab[xx])/(t[xx]-to[xx])+t[xx]*(tlab[xx]-to[xx])/(t[xx]-to[xx]),ia))
 
-        
+
                 #print "t_new", t
                 #print "***t_lab***", tlab
-            
+
         gamma    = numpy.array(map(lambda x: sqrt(1.+(ux[x]**2+uy[x]**2+uz[x]**2)/clight**2), ia))
         uzn      = numpy.array(map(lambda x: uz[x]/clight, ia))
 
@@ -1324,11 +1324,11 @@ to be lifted in the future.
     def write_data(x):
       #Mappable function which writes the lab data slices to the corresponding position of the h5 datasets.
       if me == 0:
-        #Checks if current self.z_lab position lies within boundaries of the virtual lab frame simulation box. 
-        if zlab[x] > zlab_min[x] and zlab[x] < zlab_max[x]: 
+        #Checks if current self.z_lab position lies within boundaries of the virtual lab frame simulation box.
+        if zlab[x] > zlab_min[x] and zlab[x] < zlab_max[x]:
 
           if 'field_lab' in datatypes and x in ix_field:
-            
+
             f = snapshots['field_lab'][x] #get snapshot file
 
             for dataset in datatypes['field_lab']:
@@ -1346,9 +1346,9 @@ to be lifted in the future.
                   else:
                       #Full 3D Output
                       dset[:,:,zlab_n[x]-1] = reshape(field_data[dataset_list['field_lab'].index(dataset)][(x-ix_field[0])/self.field_snapshot_divider],(w3d.nx+1, w3d.ny+1),'F')[::self.downsample_rate_lab_x,::self.downsample_rate_lab_y]
-          
+
           if 'elec_lab' in datatypes and x in ix_elec:
-                        
+
             f = snapshots['elec_lab'][x] #get snapshot file
 
             for dataset in datatypes['elec_lab']:
@@ -1372,7 +1372,7 @@ to be lifted in the future.
                     dset[:,0,zlab_n[x]-1] = elec_data[dataset_list['elec_lab'].index(dataset)][(x-ix_elec[0])/self.elec_snapshot_divider]
 
           if 'beam_lab' in datatypes:
-                      
+
             f = snapshots['beam_lab'][x] #get snapshot file
 
             for dataset in datatypes['beam_lab']:
@@ -1425,18 +1425,18 @@ to be lifted in the future.
 
     zmin = self.window_velocity_lab*i*self.simulation_time_lab/tn + self.zmin_window_lab
     zmax = self.window_velocity_lab*i*self.simulation_time_lab/tn + self.zmax_window_lab
-    
+
     return zmin, zmax
-    
+
   def time_of_snapshot_lab(self,i,tn):
       return i*self.simulation_time_lab/tn
-        
+
   def set_common_attrs_snapshots(self,h5file,i,tn,datatype):
    """
    Stores in h5file some values that can be useful during data visualization
    These parameters here are lab frame values calculated for the lab frame dump in boosted frame simulations
    """
-  
+
    for dataset in h5file:
 
     # one can use also syntax: str(dataset)
@@ -1446,7 +1446,7 @@ to be lifted in the future.
     h5file['%s' %(dataset)].attrs['xmax'] = w3d.xmmax
     h5file['%s' %(dataset)].attrs['ymax'] = w3d.ymmax
     h5file['%s' %(dataset)].attrs['zmax'] = self.zlab_position(i,tn)[1]
-    
+
     h5file['%s' %(dataset)].attrs['runid']  = self.runid
     h5file['%s' %(dataset)].attrs['time']   = i*self.simulation_time_lab/tn
     h5file['%s' %(dataset)].attrs['dt']     = top.dt
@@ -1463,7 +1463,7 @@ to be lifted in the future.
 
     if dataset == 'phase_space_low':
       h5file['%s' %(dataset)].attrs['phase_space_min'] = -self.momentum_threshold_low
-      h5file['%s' %(dataset)].attrs['phase_space_max'] = self.momentum_threshold_low 
+      h5file['%s' %(dataset)].attrs['phase_space_max'] = self.momentum_threshold_low
 
     if datatype == 'beam_lab':
       h5file['%s' %(dataset)].attrs['gamma_threshold'] = self.gamma_threshold_lab
@@ -1477,15 +1477,15 @@ to be lifted in the future.
 
    tn = self.n_lab_snapshots
 
-   if me == 0:  
-  
+   if me == 0:
+
     for i in numpy.arange(0,tn+1,1):
 
       for datatype in self.datatypes:
 
         if datatype == 'elec_lab' and i % self.elec_snapshot_divider != 0: continue
         if datatype == 'field_lab' and i % self.field_snapshot_divider != 0: continue
-                
+
         f = self.snapshots[datatype][i]
         self.set_common_attrs_snapshots(f,i,tn,datatype)
-        f.close()              
+        f.close()
