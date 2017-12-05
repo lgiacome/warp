@@ -282,7 +282,7 @@ class PlasmaInjector( object ):
         # Add slices filled with plasma
         if self.injection_direction > 0:
             zmmax = self.w3d.zmmax + self.top.zgrid
-            nslices = int(round((zmmax-self.z_end_plasma)/self.w3d.dz))
+            nslices = int((zmmax-self.z_end_plasma)/self.w3d.dz)
             if nslices>0:
                 # Add slices
                 self.load_plasma( self.z_end_plasma + nslices*self.w3d.dz,
