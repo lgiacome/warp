@@ -13,7 +13,12 @@ import numpy as np
 import time
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
-from parallel import gatherarray
+from parallel import me, mpiallgather
+try:
+    from mpi4py import MPI
+except ImportError:
+    MPI = None
+    pass
 
 class BoostedParticleDiagnostic(ParticleDiagnostic):
     """
@@ -176,54 +181,40 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             # Compact the successive slices that have been buffered
             # over time into a single array
             for species_name in self.species_dict:
-
                 particle_array = snapshot.compact_slices(species_name)
-
                 if self.comm_world is not None:
-                    # In MPI mode: gather and an array containing the number
-                    # of particles on each process
-                    n_rank = self.comm_world.allgather(
-                        np.shape(particle_array)[1])
+                    # Create a communicator containing ranks that have
+                    # particles to dump
+                    in_list = 0
+                    if (np.shape(particle_array)[1] != 0) or (me == 0):
+                        in_list = me
+                    ranks_group_list = mpiallgather( in_list )
+                    ranks_group_list = list(set(ranks_group_list))
+                    mpi_group = self.comm_world.Get_group()
+                    self.ranks_group_list = ranks_group_list
+                    # Create group
+                    newgroup = mpi_group.Incl(ranks_group_list)
+                    # Create communicator
+                    dump_comm = self.comm_world.Create(newgroup)
+                    # Gather data on proc 0 into this communicator
+                    if dump_comm != MPI.COMM_NULL:
+                        list_part_array = dump_comm.gather( particle_array )
+                    # Free the dump communicator
+                    mpi_group.Free()
+                    newgroup.Free()
+                    if dump_comm != MPI.COMM_NULL:
+                        dump_comm.Free()
 
-                    # Note that gatherarray routine in parallel.py only works
-                    # with 1D array. Here we flatten the 2D particle arrays
-                    # before gathering.
-                    g_curr = gatherarray(particle_array.flatten(), root=0,
-                        comm=self.comm_world)
-
+                    # Rank 0 concatenates all lists into an array with all particles
                     if self.rank == 0:
-                        # Get the number of quantities
-                        nquant = np.shape(
-                            self.particle_catcher.particle_to_index.keys())[0]
-
-                        # Prepare an empty array for reshaping purposes. The
-                        # final shape of the array is (8, total_num_particles)
-                        p_array = np.empty((nquant, 0))
-
-                        # Index needed in reshaping process
-                        n_ind = 0
-
-                        # Loop over all the processors, if the processor
-                        # contains particles, we reshape the gathered_array
-                        # and reconstruct by concatenation
-                        for i in xrange(self.top.nprocs):
-
-                            if n_rank[i] != 0:
-                                p_array = np.concatenate((p_array, np.reshape(
-                                    g_curr[n_ind:n_ind+nquant*n_rank[i]],
-                                    (nquant,n_rank[i]))),axis=1)
-
-                                # Update the index
-                                n_ind += nquant*n_rank[i]
-
+                        p_array = np.concatenate(list_part_array, axis=1)
                 else:
                     p_array = particle_array
-
+                    
                 # Write this array to disk (if this snapshot has new slices)
                 if self.rank == 0 and p_array.size:
                     self.write_slices(p_array, species_name, snapshot,
                         self.particle_catcher.particle_to_index)
-
                 # Erase the buffers
                 snapshot.buffered_slices[species_name] = []
 
