@@ -391,8 +391,8 @@ def get_quantity_pxr( self, quantity, gather=True, bcast=False, **kw ):
 
     else:
         return "Error in get_quantity, key '%s' undefined or top.pid=None. \
-           Please choose something among 'x', 'y', 'z', 'ux', 'uy', 'uz', \
-           'ex', 'ey', 'ez', 'bx', 'by', 'bz' 'w', 'id', 'xold', 'yold', \
+           Please choose something among 'x', 'y', 'z', 'ux', 'uy', 'uz', \
+           'ex', 'ey', 'ez', 'bx', 'by', 'bz' 'w', 'id', 'xold', 'yold', \
            'zold', 'uxold', 'uyold', 'uzold' or define top.pid."%quantity
 
     if lparallel and gather:
