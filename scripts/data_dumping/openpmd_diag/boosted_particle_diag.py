@@ -33,7 +33,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period,
                  em, top, w3d, comm_world=None,
-                 particle_data=["position", "momentum", "weighting", "id"],
+                 particle_data=["position", "momentum", "weighting"],
                  select=None, write_dir=None,
                  species={"electrons": None}, boost_dir=1 ):
         """
