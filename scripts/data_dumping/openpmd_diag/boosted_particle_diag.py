@@ -33,7 +33,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period,
                  em, top, w3d, comm_world=None,
-                 particle_data=["position", "momentum", "weighting"],
+                 particle_data=["position", "momentum", "weighting", "id"],
                  select=None, write_dir=None,
                  species={"electrons": None}, boost_dir=1 ):
         """
@@ -282,6 +282,12 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                data = particle_array[ p2i[ quantity ] ]
                self.write_boosted_dataset(species_grp, path, data, quantity)
 
+            elif particle_var == "id":
+               quantity= "id"
+               path = 'id'
+               data = particle_array[ p2i[ quantity ] ]
+               self.write_boosted_dataset(species_grp, path, data, quantity)
+
         # Close the file
         f.close()
 
@@ -424,7 +430,7 @@ class ParticleCatcher:
         # Create a dictionary that contains the correspondance
         # between the particles quantity and array index
         self.particle_to_index = {'x':0, 'y':1, 'z':2, 'ux':3,
-                'uy':4, 'uz':5, 'w':6, 'gamma':7, 't':8}
+                'uy':4, 'uz':5, 'w':6, 'gamma':7, 't':8, 'id':9}
 
     def get_particle_slice( self, species, prev_z_boost, current_z_boost ):
         """
@@ -456,6 +462,7 @@ class ParticleCatcher:
         current_uy = self.get_quantity( species, "uy" )
         current_uz = self.get_quantity( species, "uz" )
         current_weights = self.get_quantity( species, "w" )
+        current_id = self.get_quantity( species, "id" )
 
         # Quantities at previous time step
         previous_x = self.get_quantity( species, "x", l_prev=True )
@@ -492,6 +499,7 @@ class ParticleCatcher:
         self.w_captured = np.take(current_weights, selected_indices)
         self.gamma_captured = np.sqrt(1. + (self.ux_captured**2+\
             self.uy_captured**2 + self.uz_captured**2)/c**2)
+        self.id_captured = np.take(current_id, selected_indices)
 
         self.x_prev_captured = np.take(previous_x, selected_indices)
         self.y_prev_captured = np.take(previous_y, selected_indices)
@@ -589,6 +597,8 @@ class ParticleCatcher:
             ar = np.array(self.w_captured)
         elif quantity == "gamma":
             ar = np.array(self.gamma_captured)
+        elif quantity == "id":
+            ar = np.array(self.id_captured)
         return ar
 
     def extract_slice(self, species, select, prev_z_boost,
@@ -677,7 +687,7 @@ class ParticleCatcher:
 
         quantity: string
             Describes which quantity is queried
-            Either "x", "y", "z", "ux", "uy", "uz" or "w"
+            Either "x", "y", "z", "ux", "uy", "uz", "w" or "id"
 
         l_prev: boolean
             If True, then return the quantities of the previous timestep;
@@ -701,6 +711,8 @@ class ParticleCatcher:
                 quantity_array = species.getuz( gather=False )
             elif quantity == "w":
                 quantity_array = species.getweights( gather=False )
+            elif quantity == "id":
+                quantity_array = species.getssn( gather=False )
 
         # Or at previous timestep
         else:
