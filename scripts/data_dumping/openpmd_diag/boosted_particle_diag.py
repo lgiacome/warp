@@ -430,8 +430,9 @@ class ParticleCatcher:
         # Create a dictionary that contains the correspondance
         # between the particles quantity and array index
         self.particle_to_index = {'x':0, 'y':1, 'z':2, 'ux':3,
-                'uy':4, 'uz':5, 'w':6, 'gamma':7, 't':8, 'id':9}
-
+                'uy':4, 'uz':5, 'w':6, 'gamma':7, 't':8}
+        if self.top.ssnpid > 0:
+            self.particle_to_index['id'] = 9
     def get_particle_slice( self, species, prev_z_boost, current_z_boost ):
         """
         Select the particles for the current slice, and extract their
@@ -462,7 +463,8 @@ class ParticleCatcher:
         current_uy = self.get_quantity( species, "uy" )
         current_uz = self.get_quantity( species, "uz" )
         current_weights = self.get_quantity( species, "w" )
-        current_id = self.get_quantity( species, "id" )
+        if self.top.ssnpid > 0:
+            current_id = self.get_quantity( species, "id" )
 
         # Quantities at previous time step
         previous_x = self.get_quantity( species, "x", l_prev=True )
@@ -499,7 +501,8 @@ class ParticleCatcher:
         self.w_captured = np.take(current_weights, selected_indices)
         self.gamma_captured = np.sqrt(1. + (self.ux_captured**2+\
             self.uy_captured**2 + self.uz_captured**2)/c**2)
-        self.id_captured = np.take(current_id, selected_indices)
+        if self.top.ssnpid > 0:
+            self.id_captured = np.take(current_id, selected_indices)
 
         self.x_prev_captured = np.take(previous_x, selected_indices)
         self.y_prev_captured = np.take(previous_y, selected_indices)
