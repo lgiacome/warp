@@ -29,7 +29,7 @@ Open a new terminal and make sure that the default `python` is the Anaconda vers
 
 Run 
 ```
-conda install -c conda-forge numpy scipy h5py gcc mpi4py
+conda install -c conda-forge numpy scipy h5py dateutil gcc mpi4py
 ```
 
 ## Installing Forthon
