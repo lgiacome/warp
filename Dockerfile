@@ -39,6 +39,15 @@ RUN conda install -c conda-forge --yes \
     h5py \
     dateutil \
     && conda clean --all
+    
+# Install pygist
+RUN git clone https://bitbucket.org/dpgrote/pygist.git \
+    && cd pygist \
+    && python setup.py config \
+    && python setup.py install
+
+# Install the openPMD-viewer (mainly for tests)
+RUN pip install openPMD-viewer matplotlib
 
 # Install Forthon
 RUN pip install --upgrade pip \
@@ -53,12 +62,6 @@ RUN cd warp/pywarp90 \
     && echo "   libraries = fcompiler.libs + ['mpichf90', 'mpich', 'opa', 'mpl']" >> setup.local.py \
     && make install \
     && make pinstall
-
-# Install pygist
-RUN pip install pygist
-
-# Install the openPMD-viewer (mainly for tests)
-RUN pip install openPMD-viewer matplotlib
 
 # Prepare the run directory
 RUN mkdir run/
