@@ -44,7 +44,9 @@ RUN conda install -c conda-forge --yes \
 RUN git clone https://bitbucket.org/dpgrote/pygist.git \
     && cd pygist \
     && python setup.py config \
-    && python setup.py install
+    && python setup.py install \
+    && cd ../ \
+    && rm -rf pygist
 
 # Install the openPMD-viewer (mainly for tests)
 RUN pip install openPMD-viewer matplotlib
@@ -61,7 +63,8 @@ RUN cd warp/pywarp90 \
     && echo "   library_dirs += ['/home/warp_user/miniconda2/lib/']" >> setup.local.py \
     && echo "   libraries = fcompiler.libs + ['mpichf90', 'mpich', 'opa', 'mpl']" >> setup.local.py \
     && make install \
-    && make pinstall
+    && make pinstall \
+    && make cleanall
 
 # Prepare the run directory
 RUN mkdir run/
