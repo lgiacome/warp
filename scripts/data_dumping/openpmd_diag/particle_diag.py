@@ -383,6 +383,7 @@ class ParticleDiagnostic(OpenPMDDiagnostic) :
             # Setup the attributes of the top level of the file
             self.setup_openpmd_file( f, iteration, time, dt )
             # Setup the meshes group (contains all the particles)
+            f.attrs["particlesPath"] = np.string_("particles/")
             particle_path = "/data/%d/particles/" %iteration
             particle_grp = f.require_group(particle_path)
             # Loop through all particle species

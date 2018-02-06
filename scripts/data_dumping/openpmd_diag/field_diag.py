@@ -182,6 +182,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         f = self.open_file( fullpath, parallel_open=self.lparallel_output )
         # (f is None if this processor does not participate in writing data)
         if f is not None:
+            f.attrs["meshesPath"] = np.string_("fields/")
             field_path = "/data/%d/fields/" %iteration
             field_grp = f[field_path]
         else:
