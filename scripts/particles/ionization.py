@@ -84,12 +84,19 @@ Class for generating particles from impact ionization
       self.ymax=self.xmax
       self.dy=self.dx
       self.ny=self.nx
+      self.invvol=1./(self.dx*self.dy*self.dz)
+    elif w3d.solvergeom == w3d.XZgeom:
+      self.ymin=self.xmin
+      self.ymax=self.xmax
+      self.dy=0.  # This is only used when generating new particles.
+      self.ny=0
+      self.invvol=1./(self.dx*1.*self.dz)
     else:
       self.ymin = float(where(self.ymin is None,w3d.ymmin,self.ymin))
       self.ymax = float(where(self.ymax is None,w3d.ymmax,self.ymax))
       self.dy=(self.ymax-self.ymin)/self.ny
+      self.invvol=1./(self.dx*self.dy*self.dz)
     self.ndensc=fzeros((self.nx+1,self.ny+1,self.nz+1),'d')
-    self.invvol=1./(self.dx*self.dy*self.dz)
 
     for dd in self.target_dens.values():
       if dd['ndens'] == 'uninitialized':
@@ -641,6 +648,9 @@ velocity of the incident particle.
             if w3d.solvergeom==w3d.RZgeom:
               ri=sqrt(xi*xi+yi*yi)
               dp=where((ri>=xmin) & (ri<=xmax) & \
+                       (zi>=zmin) & (zi<=zmax),dp,0.)
+            elif w3d.solvergeom==w3d.XZgeom:
+              dp=where((xi>=xmin) & (xi<=xmax) & \
                        (zi>=zmin) & (zi<=zmax),dp,0.)
             else:
               dp=where((xi>=xmin) & (xi<=xmax) & \
