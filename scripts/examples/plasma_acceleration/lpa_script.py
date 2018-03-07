@@ -345,4 +345,4 @@ if interactive==0:
         
 # Interactive mode
 elif interactive==1:
-    print '<<< To execute n steps, type "step(n)" at the prompt >>>'
+    print('<<< To execute n steps, type "step(n)" at the prompt >>>')
