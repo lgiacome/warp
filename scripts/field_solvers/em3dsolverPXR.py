@@ -500,6 +500,22 @@ class EM3DPXR(EM3DFFT):
                       'offset_x_part_grid':[0.,0.],
                       'offset_y_part_grid':[0.,0.],
                       'offset_z_part_grid':[0.,0.],
+		      'full_pxr': False,
+	              'fftw_hybrid':False,
+		      'fftw_with_mpi':False,
+		      'fftw_mpi_transpose':False,
+		      'p3dfft_flag':False,
+		      'p3dfft_stride':False,
+		      'absorbing_bcs':False,
+		      'nb_group_x':0,
+		      'nb_group_y':0,
+		      'nb_group_z':0,
+		      'nyg_group':0,
+		      'nzg_group':0,
+		      'nx_pml':0,
+		      'ny_pml':0,
+		      'nz_pml':0,
+                      'g_spectral':False,
                       }
 
     def __init__(self,**kw):
@@ -531,8 +547,14 @@ class EM3DPXR(EM3DFFT):
         if self.finalized and not lforce: return
         if self.l_pxr:
           EM3D.finalize(self)
-          self.allocatefieldarraysFFT()
-          self.allocatefieldarraysPXR()
+	  if(self.full_pxr == False):
+            self.allocatefieldarraysFFT()
+            self.allocatefieldarraysPXR()
+          else: 
+            self.allocatefieldarraysPXR()
+	    pxr.init_plans_blocks()
+	    if(pxr.absorbing_bcs):
+	      pxr.init_pml_arrays()
 
           # Rewrite the get_quantity methods to the class species for pxr
           Species.get_quantity_pxr = get_quantity_pxr
@@ -603,6 +625,12 @@ class EM3DPXR(EM3DFFT):
                 for ix in range(-1,2):
                     indtoproc=self.convertindtoproc(ixcpu+ix,iycpu+iy,izcpu+iz,pxr.nprocx,pxr.nprocy,pxr.nprocz)
                     pxr.neighbour[ix+1,iy+1,iz+1]=indtoproc
+        pxr.proc_x_max =  pxr.neighbour[1,0,0 ]
+	pxr.proc_x_min =  pxr.neighbour[-1,0,0]
+	pxr.proc_y_max =  pxr.neighbour[0,1,0 ]
+	pxr.proc_y_min =  pxr.neighbour[0,-1,0]
+        pxr.proc_z_max =  pxr.neighbour[0,0,1 ]
+        pxr.proc_z_min =  pxr.neighbour[0,0,-1]
 
         if (ixcpu==0):
             pxr.x_min_boundary=1
@@ -846,9 +874,37 @@ class EM3DPXR(EM3DFFT):
         pxr.mpi_minimal_init_python(top.fsdecomp.mpi_comm)
 
         # allocate grid quantities
+        if(self.full_pxr):
+          self.l_pxr = True
+	  pxr.l_spectral = True
+	  pxr.g_spectral = self.g_spectral
+	  pxr.fftw_with_mpi = self.fftw_with_mpi
+	  pxr.fftw_mpi_transpose = self.fftw_mpi_transpose
+	  pxr.fftw_hybrid = self.fftw_hybrid
+	  pxr.nxg_group = self.nxguard
+	  pxr.nyg_group = self.nyg_group
+          pxr.nzg_group = self.nzg_group
+          pxr.nb_group_z = self.nb_group_z
+	  pxr.nb_group_y = self.nb_group_y
+	  pxr.absorbing_bcs = self.absorbing_bcs
+          if(pxr.fftw_with_mpi):
+	    if(pxr.fftw_hybrid):
+	      pxr.setup_groups()
+              pxr.get2D_intersection_group_mpi()
+	    else:
+              pxr.adjust_grid_mpi_global()
+          if(pxr.absorbing_bcs==True):
+	    w3d.bound0  = w3d.boundnz = periodic
+	    w3d.boundxy = periodic
+	    pxr.g_spectral = True
+            pxr.get_non_periodic_mpi_bcs()
+
         if (self.l_debug): print(" Allocate grid quantities in PXR")
         pxr.allocate_grid_quantities()
         pxr.compute_simulation_axis()
+	if(self.full_pxr):
+	  if(pxr.absorbing_bcs):
+	    pxr.init_splitted_fields_random()
 
         # set time step
         pxr.dt = top.dt
@@ -901,6 +957,9 @@ class EM3DPXR(EM3DFFT):
         pxr.jx = self.fields.Jx
         pxr.jy = self.fields.Jy
         pxr.jz = self.fields.Jz
+	if(self.full_pxr):
+	  pxr.rho = self.fields.Rho
+	  pxr.rhoold = self.fields.Rhoold
 
         pxr.ex_p = self.fields.Exp
         pxr.ey_p = self.fields.Eyp
@@ -1582,6 +1641,54 @@ class EM3DPXR(EM3DFFT):
         self.time_stat_loc_array[6] += (t1-t0)
 
 
+    def solve_maxwell_full_pxr(self):
+
+        """ full Maxwell push in pxr"""
+        if(self.l_pxr):
+          tdebcell=MPI.Wtime()
+	print("aaa",self.time_stat_loc_array.size)
+	pxr.rho =self.fields.Rho
+	pxr.rhoold = self.fields.Rhoold
+
+        if(pxr.absorbing_bcs):
+          pxr.field_damping_bcs()
+	  print("aaaaaabbb")
+        print'kkaaaaaaaaaa',(self.fields.Rho.shape)
+        print'kmmmm',(pxr.rho.shape)
+
+
+        #pxr.push_psatd_ebfield()
+	#pxr.multiply_mat_vector(1)
+	pxr.get_ffields()
+	print'ccc'
+	pxr.multiply_mat_vector(1)
+	print'pppp'
+
+	pxr.get_fields()
+	print'mmmm'
+	pxr.efield_bcs()
+#	self.exchange_e()
+	print'kkkkk'
+	pxr.bfield_bcs()
+#	self.exchange_b()
+     #   pxr.efield_bcs()
+     #   pxr.bfield_bcs()
+	print'ddd'
+        if(pxr.absorbing_bcs):
+          pxr.field_damping_bcs()
+          pxr.merge_fields()
+	print("eee")
+        pxr.rhoold=pxr.rho.copy()
+	print('tttt')
+	xxxx=sum(abs(pxr.ez))
+	print("sum rho %5.3f",xxxx)
+#        if(self.l_pxr):
+#          tendcell=MPI.Wtime()
+#          pxr.local_time_cell=pxr.local_time_cell+(tendcell-tdebcell)
+#
+#          self.time_stat_loc_array[7] += (tendcell-tdebcell)
+	print("fin solve max")
+
     def step(self,n=1,freq_print=10,lallspecl=0):
       """
       This function performs a range of Particle-In-Cell iterations
@@ -1794,8 +1901,10 @@ class EM3DPXR(EM3DFFT):
         # Current deposition + Maxwell
 
         if (self.l_debug): print("Call dosolve")
-        self.dosolve()
-
+	if(self.full_pxr == False):
+          self.dosolve()
+        else:
+	  self.solve_maxwell_full_pxr()
         #tendcell=MPI.Wtime()
         #pxr.local_time_cell=pxr.local_time_cell+(tendcell-tdebcell)
 
