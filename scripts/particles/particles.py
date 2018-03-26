@@ -1675,9 +1675,9 @@ def add_particles(x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,gi=1.,
     lenby = size(by)
     lenbz = size(bz)
     try:
-       lenpid = len(pid)
+        lenpid = len(pid)
     except TypeError:
-       lenpid = 1
+        lenpid = 1
 
     # --- If any of the inputs are arrays that are zero length, then return
     if (lenx == 0 or leny == 0 or lenz == 0 or lenvx == 0 or lenvy == 0 or lenvz == 0 or

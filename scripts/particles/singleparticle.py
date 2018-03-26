@@ -294,8 +294,8 @@ class TraceParticle(object):
         if not self.savedata: return
         # --- set top.allspecl to true to ensure that v and x are synchronized at next time step
         if (top.it+1 - self.startit) % self.savedata == 0:
-           self.allspecl = top.allspecl
-           top.allspecl = 1
+            self.allspecl = top.allspecl
+            top.allspecl = 1
 
         if (top.it - self.startit) % self.savedata != 0: return
         top.allspecl = self.allspecl
@@ -869,8 +869,8 @@ class SingleParticle:
         if not self.savedata: return
         # --- set top.allspecl to true to ensure that v and x are synchronized at next time step
         if (top.it+1 - self.startit) % self.savedata == 0:
-           self.allspecl = top.allspecl
-           top.allspecl = 1
+            self.allspecl = top.allspecl
+            top.allspecl = 1
 
         if (top.it - self.startit) % self.savedata != 0: return
         top.allspecl = self.allspecl
