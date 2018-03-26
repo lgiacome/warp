@@ -1695,7 +1695,6 @@ class EM3DPXR(EM3DFFT):
                   l_last=1
               else:
                   l_last=0
-
           self.onestep(l_first,l_last)
 
           if(l_pxr & (top.it%stdout_stat==0) & (pxr.rank==0)):
@@ -1852,11 +1851,11 @@ class EM3DPXR(EM3DFFT):
         xgrid=w3d.xmmin-pxr.xmin
         ygrid=w3d.ymmin-pxr.ymin
         zgrid=w3d.zmmin-pxr.zmin
-
-        if (xgrid != 0. or ygrid!=0. or zgrid !=0.):
-            pxr.pxr_move_sim_boundaries(xgrid,ygrid,zgrid)
-            pxr.particle_bcs()
-            aliasparticlearrays()
+        if(self.full_pxr == False):
+          if (xgrid != 0. or ygrid!=0. or zgrid !=0.):
+              pxr.pxr_move_sim_boundaries(xgrid,ygrid,zgrid)
+              pxr.particle_bcs()
+              aliasparticlearrays()
 
         # --- call beforeloadrho functions
         if (self.l_debug): print("Call beforeloadrho functions")
