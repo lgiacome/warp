@@ -887,6 +887,7 @@ class EM3DPXR(EM3DFFT):
           pxr.nb_group_z = self.nb_group_z
 	  pxr.nb_group_y = self.nb_group_y
 	  pxr.absorbing_bcs = self.absorbing_bcs
+	  pxr.get_neighbours_python()
           if(pxr.fftw_with_mpi):
 	    if(pxr.fftw_hybrid):
 	      pxr.setup_groups()
@@ -1646,48 +1647,24 @@ class EM3DPXR(EM3DFFT):
         """ full Maxwell push in pxr"""
         if(self.l_pxr):
           tdebcell=MPI.Wtime()
-	print("aaa",self.time_stat_loc_array.size)
 	pxr.rho =self.fields.Rho
 	pxr.rhoold = self.fields.Rhoold
-
         if(pxr.absorbing_bcs):
           pxr.field_damping_bcs()
-	  print("aaaaaabbb")
-        print'kkaaaaaaaaaa',(self.fields.Rho.shape)
-        print'kmmmm',(pxr.rho.shape)
 
-
-        #pxr.push_psatd_ebfield()
-	#pxr.multiply_mat_vector(1)
 	pxr.get_ffields()
-	print'ccc'
 	pxr.multiply_mat_vector(1)
-	print'pppp'
-
 	pxr.get_fields()
-	print'mmmm'
 	pxr.efield_bcs()
-#	self.exchange_e()
-	print'kkkkk'
 	pxr.bfield_bcs()
-#	self.exchange_b()
-     #   pxr.efield_bcs()
-     #   pxr.bfield_bcs()
-	print'ddd'
         if(pxr.absorbing_bcs):
           pxr.field_damping_bcs()
           pxr.merge_fields()
-	print("eee")
         pxr.rhoold=pxr.rho.copy()
-	print('tttt')
-	xxxx=sum(abs(pxr.ez))
-	print("sum rho %5.3f",xxxx)
-#        if(self.l_pxr):
-#          tendcell=MPI.Wtime()
-#          pxr.local_time_cell=pxr.local_time_cell+(tendcell-tdebcell)
-#
-#          self.time_stat_loc_array[7] += (tendcell-tdebcell)
-	print("fin solve max")
+        tendcell=MPI.Wtime()
+        pxr.local_time_cell=pxr.local_time_cell+(tendcell-tdebcell)
+
+        self.time_stat_loc_array[7] += (tendcell-tdebcell)
 
     def step(self,n=1,freq_print=10,lallspecl=0):
       """
