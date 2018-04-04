@@ -551,10 +551,17 @@ class EM3DPXR(EM3DFFT):
             self.allocatefieldarraysFFT()
             self.allocatefieldarraysPXR()
           else: 
+	    self.allocatefieldarraysFFT()
             self.allocatefieldarraysPXR()
 	    pxr.init_plans_blocks()
+	    #for ii in range(1,pxr.nmatrixes):
+	    #  print(ii)
+	    #  print('ooo',pxr.nmatrixes)
+	    pxr.deallocate_mat_block()
 	    if(pxr.absorbing_bcs):
+	      print("init pml arrays")
 	      pxr.init_pml_arrays()
+	      print("end init pml arrays")
 
           # Rewrite the get_quantity methods to the class species for pxr
           Species.get_quantity_pxr = get_quantity_pxr
@@ -625,12 +632,12 @@ class EM3DPXR(EM3DFFT):
                 for ix in range(-1,2):
                     indtoproc=self.convertindtoproc(ixcpu+ix,iycpu+iy,izcpu+iz,pxr.nprocx,pxr.nprocy,pxr.nprocz)
                     pxr.neighbour[ix+1,iy+1,iz+1]=indtoproc
-        pxr.proc_x_max =  pxr.neighbour[1,0,0 ]
-	pxr.proc_x_min =  pxr.neighbour[-1,0,0]
-	pxr.proc_y_max =  pxr.neighbour[0,1,0 ]
-	pxr.proc_y_min =  pxr.neighbour[0,-1,0]
-        pxr.proc_z_max =  pxr.neighbour[0,0,1 ]
-        pxr.proc_z_min =  pxr.neighbour[0,0,-1]
+      #  pxr.proc_x_max =  pxr.neighbour[1,0,0 ]
+      #  pxr.proc_x_min =  pxr.neighbour[-1,0,0]
+      #  pxr.proc_y_max =  pxr.neighbour[0,1,0 ]
+      #  pxr.proc_y_min =  pxr.neighbour[0,-1,0]
+      #  pxr.proc_z_max =  pxr.neighbour[0,0,1 ]
+      #  pxr.proc_z_min =  pxr.neighbour[0,0,-1]
 
         if (ixcpu==0):
             pxr.x_min_boundary=1
@@ -891,7 +898,7 @@ class EM3DPXR(EM3DFFT):
           if(pxr.fftw_with_mpi):
 	    if(pxr.fftw_hybrid):
 	      pxr.setup_groups()
-              pxr.get2D_intersection_group_mpi()
+              pxr.get2d_intersection_group_mpi()
 	    else:
               pxr.adjust_grid_mpi_global()
           if(pxr.absorbing_bcs==True):
@@ -902,7 +909,7 @@ class EM3DPXR(EM3DFFT):
 
         if (self.l_debug): print(" Allocate grid quantities in PXR")
         pxr.allocate_grid_quantities()
-        pxr.compute_simulation_axis()
+  #      pxr.compute_simulation_axis()
 	if(self.full_pxr):
 	  if(pxr.absorbing_bcs):
 	    pxr.init_splitted_fields_random()
@@ -1645,16 +1652,27 @@ class EM3DPXR(EM3DFFT):
     def solve_maxwell_full_pxr(self):
 
         """ full Maxwell push in pxr"""
+	if(self.l_debug):print("begin solve maxwell full pxr")
         if(self.l_pxr):
           tdebcell=MPI.Wtime()
 	pxr.rho =self.fields.Rho
 	pxr.rhoold = self.fields.Rhoold
+	print("coo")
         if(pxr.absorbing_bcs):
           pxr.field_damping_bcs()
-
-	pxr.get_ffields()
-	pxr.multiply_mat_vector(1)
-	pxr.get_fields()
+	#pxr.get_ffields()
+	#pxr.multiply_mat_vector(pxr.nmatrixes)
+	if(pxr.fftw_with_mpi):
+          pxr.get_ffields_mpi_lb()
+	else:
+	  pxr.get_ffields()
+	pxr.multiply_mat_vector(pxr.nmatrixes)
+	print("fin multiply mat vec")
+	#pxr.push_psatd_ebfield()
+	if(pxr.fftw_with_mpi):
+          pxr.get_fields_mpi_lb()
+	else:
+	  pxr.get_fields()
 	pxr.efield_bcs()
 	pxr.bfield_bcs()
         if(pxr.absorbing_bcs):
@@ -1663,6 +1681,7 @@ class EM3DPXR(EM3DFFT):
         pxr.rhoold=pxr.rho.copy()
         tendcell=MPI.Wtime()
         pxr.local_time_cell=pxr.local_time_cell+(tendcell-tdebcell)
+	if(self.l_debug):print("end solve maxwell full pxr")
 
         self.time_stat_loc_array[7] += (tendcell-tdebcell)
 
@@ -2997,7 +3016,6 @@ class EM3DPXR(EM3DFFT):
             f.gchange()
 
         if self.spectral:
-
             kwGPSTD = {'l_staggered':s.l_spectral_staggered,\
                      'spectral':s.spectral,\
                      'norderx':s.norderx,\
@@ -3023,8 +3041,8 @@ class EM3DPXR(EM3DFFT):
                     f.nyr = f.ny
                     f.nzr = f.nz
                     f.gchange()
-
-                self.GPSTDMaxwell = gpstd.PSATD_Maxwell(yf=self.fields,
+		if(self.full_pxr == False):
+                  self.GPSTDMaxwell = gpstd.PSATD_Maxwell(yf=self.fields,
                                                   eps0=eps0,
                                                   bc_periodic=bc_periodic,
                                                   **kwGPSTD)
@@ -3035,12 +3053,13 @@ class EM3DPXR(EM3DFFT):
                     f.nyr = f.ny
                     f.nzr = f.nz
                     f.gchange()
-                self.GPSTDMaxwell = gpstd.GPSTD_Maxwell(yf=self.fields,
+		if(self.full_pxr==False):
+                  self.GPSTDMaxwell = gpstd.GPSTD_Maxwell(yf=self.fields,
                                                   eps0=eps0,
                                                   bc_periodic=bc_periodic,
                                                   **kwGPSTD)
-
-            self.FSpace = self.GPSTDMaxwell
+                if(self.full_pxr==False):
+                  self.FSpace = self.GPSTDMaxwell
         else:
             kwFS = {'l_staggered':s.l_spectral_staggered,\
                      'spectral':s.spectral,\
@@ -3178,15 +3197,12 @@ class EM3DPXR(EM3DFFT):
                   emK.add_Sfilter('jx',self.k_source_filter)
                   emK.add_Sfilter('jy',self.k_source_filter)
                   emK.add_Sfilter('jz',self.k_source_filter)
-
         if self.spectral:
             kwPML = kwGPSTD
-
             if s.ntsub==inf:
                 GPSTD_PML = gpstd.PSATD_Maxwell_PML
             else:
                 GPSTD_PML = gpstd.GPSTD_Maxwell_PML
-
             # --- sides
             if b.xlbnd==openbc: s.xlPML = GPSTD_PML(syf=b.sidexl.syf,**kwPML)
             if b.xrbnd==openbc: s.xrPML = GPSTD_PML(syf=b.sidexr.syf,**kwPML)
@@ -3194,7 +3210,6 @@ class EM3DPXR(EM3DFFT):
             if b.yrbnd==openbc: s.yrPML = GPSTD_PML(syf=b.sideyr.syf,**kwPML)
             if b.zlbnd==openbc: s.zlPML = GPSTD_PML(syf=b.sidezl.syf,**kwPML)
             if b.zrbnd==openbc: s.zrPML = GPSTD_PML(syf=b.sidezr.syf,**kwPML)
-
             # --- edges
             if(b.xlbnd==openbc and b.ylbnd==openbc): s.xlylPML = GPSTD_PML(syf=b.edgexlyl.syf,**kwPML)
             if(b.xrbnd==openbc and b.ylbnd==openbc): s.xrylPML = GPSTD_PML(syf=b.edgexryl.syf,**kwPML)
