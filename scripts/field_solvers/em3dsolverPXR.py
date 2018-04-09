@@ -547,21 +547,13 @@ class EM3DPXR(EM3DFFT):
         if self.finalized and not lforce: return
         if self.l_pxr:
           EM3D.finalize(self)
-	  if(self.full_pxr == False):
-            self.allocatefieldarraysFFT()
-            self.allocatefieldarraysPXR()
-          else: 
-	    self.allocatefieldarraysFFT()
-            self.allocatefieldarraysPXR()
+          self.allocatefieldarraysFFT()
+	  self.allocatefieldarraysPXR()
+	  if(self.full_pxr):
 	    pxr.init_plans_blocks()
-	    #for ii in range(1,pxr.nmatrixes):
-	    #  print(ii)
-	    #  print('ooo',pxr.nmatrixes)
-	    pxr.deallocate_mat_block()
+	 #   pxr.deallocate_mat_block()
 	    if(pxr.absorbing_bcs):
-	      print("init pml arrays")
 	      pxr.init_pml_arrays()
-	      print("end init pml arrays")
 
           # Rewrite the get_quantity methods to the class species for pxr
           Species.get_quantity_pxr = get_quantity_pxr
@@ -1595,7 +1587,6 @@ class EM3DPXR(EM3DFFT):
         """
 
         t0 = MPI.Wtime()
-
         if self.novercycle==1:
             if dir>0.:
                 doit=True
@@ -1622,7 +1613,6 @@ class EM3DPXR(EM3DFFT):
         """
         Magnetic field boundary conditions
         """
-
         t0 = MPI.Wtime()
 
         if self.novercycle==1:
@@ -1649,7 +1639,7 @@ class EM3DPXR(EM3DFFT):
         self.time_stat_loc_array[6] += (t1-t0)
 
 
-    def solve_maxwell_full_pxr(self):
+    def solve_maxwell_full_pxr(self,ii=0):
 
         """ full Maxwell push in pxr"""
 	if(self.l_debug):print("begin solve maxwell full pxr")
@@ -1657,18 +1647,23 @@ class EM3DPXR(EM3DFFT):
           tdebcell=MPI.Wtime()
 	pxr.rho =self.fields.Rho
 	pxr.rhoold = self.fields.Rhoold
-	print("coo")
         if(pxr.absorbing_bcs):
           pxr.field_damping_bcs()
-	#pxr.get_ffields()
-	#pxr.multiply_mat_vector(pxr.nmatrixes)
+	pxr.it=pxr.it+1
+	if(pxr.rank==0 and pxr.it==2):
+	  pxr.ey[100,:,100]=1000
 	if(pxr.fftw_with_mpi):
           pxr.get_ffields_mpi_lb()
 	else:
 	  pxr.get_ffields()
-	pxr.multiply_mat_vector(pxr.nmatrixes)
-	print("fin multiply mat vec")
-	#pxr.push_psatd_ebfield()
+	  
+	if(pxr.g_spectral):
+          pxr.multiply_mat_vector(pxr.nmatrixes)
+	else:
+	  if(pxr.c_dim == 2):
+	    pxr.push_psaotd_ebfielfs_2d()
+	  else: 
+	    pxr.push_psaotd_ebfielfs_3d()
 	if(pxr.fftw_with_mpi):
           pxr.get_fields_mpi_lb()
 	else:
@@ -1682,6 +1677,14 @@ class EM3DPXR(EM3DFFT):
         tendcell=MPI.Wtime()
         pxr.local_time_cell=pxr.local_time_cell+(tendcell-tdebcell)
 	if(self.l_debug):print("end solve maxwell full pxr")
+        top.time+=top.dt
+        if top.it%top.nhist==0:
+           minidiag(top.it,top.time,top.lspecial)
+        top.it+=1
+        callafterstepfuncs.callfuncsinlist()
+
+
+
 
         self.time_stat_loc_array[7] += (tendcell-tdebcell)
 
@@ -1930,7 +1933,7 @@ class EM3DPXR(EM3DFFT):
            minidiag(top.it,top.time,top.lspecial)
         top.it+=1
 
-        # Load balance every dlb_freq time step
+        #Load balance every dlb_freq time step
         if (self.l_debug): print("Call Load balance")
         if (l_pxr & (self.dload_balancing & (top.it%self.dlb_freq==0))):
             pxr.mpitime_per_it=pxr.local_time_part+pxr.local_time_cell
@@ -3197,43 +3200,44 @@ class EM3DPXR(EM3DFFT):
                   emK.add_Sfilter('jx',self.k_source_filter)
                   emK.add_Sfilter('jy',self.k_source_filter)
                   emK.add_Sfilter('jz',self.k_source_filter)
-        if self.spectral:
-            kwPML = kwGPSTD
-            if s.ntsub==inf:
-                GPSTD_PML = gpstd.PSATD_Maxwell_PML
-            else:
-                GPSTD_PML = gpstd.GPSTD_Maxwell_PML
-            # --- sides
-            if b.xlbnd==openbc: s.xlPML = GPSTD_PML(syf=b.sidexl.syf,**kwPML)
-            if b.xrbnd==openbc: s.xrPML = GPSTD_PML(syf=b.sidexr.syf,**kwPML)
-            if b.ylbnd==openbc: s.ylPML = GPSTD_PML(syf=b.sideyl.syf,**kwPML)
-            if b.yrbnd==openbc: s.yrPML = GPSTD_PML(syf=b.sideyr.syf,**kwPML)
-            if b.zlbnd==openbc: s.zlPML = GPSTD_PML(syf=b.sidezl.syf,**kwPML)
-            if b.zrbnd==openbc: s.zrPML = GPSTD_PML(syf=b.sidezr.syf,**kwPML)
-            # --- edges
-            if(b.xlbnd==openbc and b.ylbnd==openbc): s.xlylPML = GPSTD_PML(syf=b.edgexlyl.syf,**kwPML)
-            if(b.xrbnd==openbc and b.ylbnd==openbc): s.xrylPML = GPSTD_PML(syf=b.edgexryl.syf,**kwPML)
-            if(b.xlbnd==openbc and b.yrbnd==openbc): s.xlyrPML = GPSTD_PML(syf=b.edgexlyr.syf,**kwPML)
-            if(b.xrbnd==openbc and b.yrbnd==openbc): s.xryrPML = GPSTD_PML(syf=b.edgexryr.syf,**kwPML)
-            if(b.xlbnd==openbc and b.zlbnd==openbc): s.xlzlPML = GPSTD_PML(syf=b.edgexlzl.syf,**kwPML)
-            if(b.xrbnd==openbc and b.zlbnd==openbc): s.xrzlPML = GPSTD_PML(syf=b.edgexrzl.syf,**kwPML)
-            if(b.xlbnd==openbc and b.zrbnd==openbc): s.xlzrPML = GPSTD_PML(syf=b.edgexlzr.syf,**kwPML)
-            if(b.xrbnd==openbc and b.zrbnd==openbc): s.xrzrPML = GPSTD_PML(syf=b.edgexrzr.syf,**kwPML)
-            if(b.ylbnd==openbc and b.zlbnd==openbc): s.ylzlPML = GPSTD_PML(syf=b.edgeylzl.syf,**kwPML)
-            if(b.yrbnd==openbc and b.zlbnd==openbc): s.yrzlPML = GPSTD_PML(syf=b.edgeyrzl.syf,**kwPML)
-            if(b.ylbnd==openbc and b.zrbnd==openbc): s.ylzrPML = GPSTD_PML(syf=b.edgeylzr.syf,**kwPML)
-            if(b.yrbnd==openbc and b.zrbnd==openbc): s.yrzrPML = GPSTD_PML(syf=b.edgeyrzr.syf,**kwPML)
-
-            # --- corners
-            if(b.xlbnd==openbc and b.ylbnd==openbc and b.zlbnd==openbc): s.xlylzlPML = GPSTD_PML(syf=b.cornerxlylzl.syf,**kwPML)
-            if(b.xrbnd==openbc and b.ylbnd==openbc and b.zlbnd==openbc): s.xrylzlPML = GPSTD_PML(syf=b.cornerxrylzl.syf,**kwPML)
-            if(b.xlbnd==openbc and b.yrbnd==openbc and b.zlbnd==openbc): s.xlyrzlPML = GPSTD_PML(syf=b.cornerxlyrzl.syf,**kwPML)
-            if(b.xrbnd==openbc and b.yrbnd==openbc and b.zlbnd==openbc): s.xryrzlPML = GPSTD_PML(syf=b.cornerxryrzl.syf,**kwPML)
-            if(b.xlbnd==openbc and b.ylbnd==openbc and b.zrbnd==openbc): s.xlylzrPML = GPSTD_PML(syf=b.cornerxlylzr.syf,**kwPML)
-            if(b.xrbnd==openbc and b.ylbnd==openbc and b.zrbnd==openbc): s.xrylzrPML = GPSTD_PML(syf=b.cornerxrylzr.syf,**kwPML)
-            if(b.xlbnd==openbc and b.yrbnd==openbc and b.zrbnd==openbc): s.xlyrzrPML = GPSTD_PML(syf=b.cornerxlyrzr.syf,**kwPML)
-            if(b.xrbnd==openbc and b.yrbnd==openbc and b.zrbnd==openbc): s.xryrzrPML = GPSTD_PML(syf=b.cornerxryrzr.syf,**kwPML)
-
+	if(self.full_pxr == False):
+          if self.spectral:
+              kwPML = kwGPSTD
+              if s.ntsub==inf:
+                  GPSTD_PML = gpstd.PSATD_Maxwell_PML
+              else:
+                  GPSTD_PML = gpstd.GPSTD_Maxwell_PML
+              # --- sides
+              if b.xlbnd==openbc: s.xlPML = GPSTD_PML(syf=b.sidexl.syf,**kwPML)
+              if b.xrbnd==openbc: s.xrPML = GPSTD_PML(syf=b.sidexr.syf,**kwPML)
+              if b.ylbnd==openbc: s.ylPML = GPSTD_PML(syf=b.sideyl.syf,**kwPML)
+              if b.yrbnd==openbc: s.yrPML = GPSTD_PML(syf=b.sideyr.syf,**kwPML)
+              if b.zlbnd==openbc: s.zlPML = GPSTD_PML(syf=b.sidezl.syf,**kwPML)
+              if b.zrbnd==openbc: s.zrPML = GPSTD_PML(syf=b.sidezr.syf,**kwPML)
+              # --- edges
+              if(b.xlbnd==openbc and b.ylbnd==openbc): s.xlylPML = GPSTD_PML(syf=b.edgexlyl.syf,**kwPML)
+              if(b.xrbnd==openbc and b.ylbnd==openbc): s.xrylPML = GPSTD_PML(syf=b.edgexryl.syf,**kwPML)
+              if(b.xlbnd==openbc and b.yrbnd==openbc): s.xlyrPML = GPSTD_PML(syf=b.edgexlyr.syf,**kwPML)
+              if(b.xrbnd==openbc and b.yrbnd==openbc): s.xryrPML = GPSTD_PML(syf=b.edgexryr.syf,**kwPML)
+              if(b.xlbnd==openbc and b.zlbnd==openbc): s.xlzlPML = GPSTD_PML(syf=b.edgexlzl.syf,**kwPML)
+              if(b.xrbnd==openbc and b.zlbnd==openbc): s.xrzlPML = GPSTD_PML(syf=b.edgexrzl.syf,**kwPML)
+              if(b.xlbnd==openbc and b.zrbnd==openbc): s.xlzrPML = GPSTD_PML(syf=b.edgexlzr.syf,**kwPML)
+              if(b.xrbnd==openbc and b.zrbnd==openbc): s.xrzrPML = GPSTD_PML(syf=b.edgexrzr.syf,**kwPML)
+              if(b.ylbnd==openbc and b.zlbnd==openbc): s.ylzlPML = GPSTD_PML(syf=b.edgeylzl.syf,**kwPML)
+              if(b.yrbnd==openbc and b.zlbnd==openbc): s.yrzlPML = GPSTD_PML(syf=b.edgeyrzl.syf,**kwPML)
+              if(b.ylbnd==openbc and b.zrbnd==openbc): s.ylzrPML = GPSTD_PML(syf=b.edgeylzr.syf,**kwPML)
+              if(b.yrbnd==openbc and b.zrbnd==openbc): s.yrzrPML = GPSTD_PML(syf=b.edgeyrzr.syf,**kwPML)
+  
+              # --- corners
+              if(b.xlbnd==openbc and b.ylbnd==openbc and b.zlbnd==openbc): s.xlylzlPML = GPSTD_PML(syf=b.cornerxlylzl.syf,**kwPML)
+              if(b.xrbnd==openbc and b.ylbnd==openbc and b.zlbnd==openbc): s.xrylzlPML = GPSTD_PML(syf=b.cornerxrylzl.syf,**kwPML)
+              if(b.xlbnd==openbc and b.yrbnd==openbc and b.zlbnd==openbc): s.xlyrzlPML = GPSTD_PML(syf=b.cornerxlyrzl.syf,**kwPML)
+              if(b.xrbnd==openbc and b.yrbnd==openbc and b.zlbnd==openbc): s.xryrzlPML = GPSTD_PML(syf=b.cornerxryrzl.syf,**kwPML)
+              if(b.xlbnd==openbc and b.ylbnd==openbc and b.zrbnd==openbc): s.xlylzrPML = GPSTD_PML(syf=b.cornerxlylzr.syf,**kwPML)
+              if(b.xrbnd==openbc and b.ylbnd==openbc and b.zrbnd==openbc): s.xrylzrPML = GPSTD_PML(syf=b.cornerxrylzr.syf,**kwPML)
+              if(b.xlbnd==openbc and b.yrbnd==openbc and b.zrbnd==openbc): s.xlyrzrPML = GPSTD_PML(syf=b.cornerxlyrzr.syf,**kwPML)
+              if(b.xrbnd==openbc and b.yrbnd==openbc and b.zrbnd==openbc): s.xryrzrPML = GPSTD_PML(syf=b.cornerxryrzr.syf,**kwPML)
+  
 
 class Sorting:
   """
