@@ -1650,8 +1650,6 @@ class EM3DPXR(EM3DFFT):
         if(pxr.absorbing_bcs):
           pxr.field_damping_bcs()
 	pxr.it=pxr.it+1
-	if(pxr.rank==0 and pxr.it==2):
-	  pxr.ey[100,:,100]=1000
 	if(pxr.fftw_with_mpi):
           pxr.get_ffields_mpi_lb()
 	else:
@@ -1673,15 +1671,14 @@ class EM3DPXR(EM3DFFT):
         if(pxr.absorbing_bcs):
           pxr.field_damping_bcs()
           pxr.merge_fields()
-        pxr.rhoold=pxr.rho.copy()
         tendcell=MPI.Wtime()
         pxr.local_time_cell=pxr.local_time_cell+(tendcell-tdebcell)
 	if(self.l_debug):print("end solve maxwell full pxr")
-        top.time+=top.dt
-        if top.it%top.nhist==0:
-           minidiag(top.it,top.time,top.lspecial)
-        top.it+=1
-        callafterstepfuncs.callfuncsinlist()
+       # top.time+=top.dt
+       # if top.it%top.nhist==0:
+       #    minidiag(top.it,top.time,top.lspecial)
+       # top.it+=1
+       # callafterstepfuncs.callfuncsinlist()
 
 
 
@@ -1899,6 +1896,9 @@ class EM3DPXR(EM3DFFT):
         # Current deposition + Maxwell
 
         if (self.l_debug): print("Call dosolve")
+        #if(pxr.rank==0 and pxr.it==2):
+          #pxr.ey[100,:,100]=1000
+
 	if(self.full_pxr == False):
           self.dosolve()
         else:
