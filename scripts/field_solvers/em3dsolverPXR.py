@@ -889,7 +889,7 @@ class EM3DPXR(EM3DFFT):
             pxr.absorbing_bcs_z = True
           if(w3d.boundxy == openbc):
             pxr.absorbing_bcs_x = True
-            pxr.absorbing_bcs_y = True
+         #   pxr.absorbing_bcs_y = True
           #Set aborbing_bcs flag to true if there is an absorbing bc in any direction
           if(pxr.absorbing_bcs_x or pxr.absorbing_bcs_y or pxr.absorbing_bcs_z):
             pxr.absorbing_bcs=True
@@ -1652,18 +1652,12 @@ class EM3DPXR(EM3DFFT):
 
         """ full Maxwell push in pxr"""
 	if(self.l_debug):print("begin solve maxwell full pxr")
-        if(self.l_pxr):
-          tdebcell=MPI.Wtime()
-	pxr.rho =self.fields.Rho
-	pxr.rhoold = self.fields.Rhoold
         if(pxr.absorbing_bcs):
           pxr.field_damping_bcs()
-	pxr.it=pxr.it+1
 	if(pxr.fftw_with_mpi):
           pxr.get_ffields_mpi_lb()
 	else:
 	  pxr.get_ffields()
-	  
 	if(pxr.g_spectral):
           pxr.multiply_mat_vector(pxr.nmatrixes)
 	else:
@@ -1680,19 +1674,11 @@ class EM3DPXR(EM3DFFT):
         if(pxr.absorbing_bcs):
           pxr.field_damping_bcs()
           pxr.merge_fields()
-        tendcell=MPI.Wtime()
-        pxr.local_time_cell=pxr.local_time_cell+(tendcell-tdebcell)
 	if(self.l_debug):print("end solve maxwell full pxr")
-       # top.time+=top.dt
-       # if top.it%top.nhist==0:
-       #    minidiag(top.it,top.time,top.lspecial)
-       # top.it+=1
-       # callafterstepfuncs.callfuncsinlist()
 
 
 
 
-        self.time_stat_loc_array[7] += (tendcell-tdebcell)
 
     def step(self,n=1,freq_print=10,lallspecl=0):
       """
