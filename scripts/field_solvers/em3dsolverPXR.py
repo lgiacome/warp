@@ -506,7 +506,6 @@ class EM3DPXR(EM3DFFT):
 		      'fftw_mpi_transpose':False,
 		      'p3dfft_flag':False,
 		      'p3dfft_stride':False,
-		      'absorbing_bcs':False,
 		      'nb_group_x':0,
 		      'nb_group_y':0,
 		      'nb_group_z':0,
@@ -545,6 +544,7 @@ class EM3DPXR(EM3DFFT):
 
     def finalize(self,lforce=False):
         if self.finalized and not lforce: return
+	if(self.l_debug): print("begin finalize")
         if self.l_pxr:
           EM3D.finalize(self)
           self.allocatefieldarraysFFT()
@@ -885,23 +885,32 @@ class EM3DPXR(EM3DFFT):
           pxr.nzg_group = self.nzg_group
           pxr.nb_group_z = self.nb_group_z
 	  pxr.nb_group_y = self.nb_group_y
-	  pxr.absorbing_bcs = self.absorbing_bcs
+	  if(w3d.bound0 == openbc or w3d.boundnz==openbc):
+            pxr.absorbing_bcs_z = True
+          if(w3d.boundxy == openbc):
+            pxr.absorbing_bcs_x = True
+            pxr.absorbing_bcs_y = True
+          #Set aborbing_bcs flag to true if there is an absorbing bc in any direction
+          if(pxr.absorbing_bcs_x or pxr.absorbing_bcs_y or pxr.absorbing_bcs_z):
+            pxr.absorbing_bcs=True
 	  pxr.get_neighbours_python()
+          if(pxr.absorbing_bcs==True):
+            #if absorbing_bcs in warp then set warp bcs to periodic to avoid bugs (and useless block inits)
+            w3d.bound0  = w3d.boundnz = periodic
+            w3d.boundxy = periodic
+            pxr.g_spectral = True
+            pxr.get_non_periodic_mpi_bcs()
           if(pxr.fftw_with_mpi):
 	    if(pxr.fftw_hybrid):
 	      pxr.setup_groups()
               pxr.get2d_intersection_group_mpi()
 	    else:
               pxr.adjust_grid_mpi_global()
-          if(pxr.absorbing_bcs==True):
-	    w3d.bound0  = w3d.boundnz = periodic
-	    w3d.boundxy = periodic
-	    pxr.g_spectral = True
-            pxr.get_non_periodic_mpi_bcs()
 
         if (self.l_debug): print(" Allocate grid quantities in PXR")
         pxr.allocate_grid_quantities()
-  #      pxr.compute_simulation_axis()
+	if(self.l_debug): print("Compute simulation axis in PXR")
+        pxr.compute_simulation_axis()
 	if(self.full_pxr):
 	  if(pxr.absorbing_bcs):
 	    pxr.init_splitted_fields_random()
@@ -1896,8 +1905,6 @@ class EM3DPXR(EM3DFFT):
         # Current deposition + Maxwell
 
         if (self.l_debug): print("Call dosolve")
-        #if(pxr.rank==0 and pxr.it==2):
-          #pxr.ey[100,:,100]=1000
 
 	if(self.full_pxr == False):
           self.dosolve()
