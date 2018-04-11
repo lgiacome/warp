@@ -511,9 +511,9 @@ class EM3DPXR(EM3DFFT):
 		      'nb_group_z':0,
 		      'nyg_group':0,
 		      'nzg_group':0,
-		      'nx_pml':0,
-		      'ny_pml':0,
-		      'nz_pml':0,
+		      'nx_pml':4,
+		      'ny_pml':4,
+		      'nz_pml':4,
                       'g_spectral':False,
                       }
 
@@ -889,10 +889,22 @@ class EM3DPXR(EM3DFFT):
             pxr.absorbing_bcs_z = True
           if(w3d.boundxy == openbc):
             pxr.absorbing_bcs_x = True
-         #   pxr.absorbing_bcs_y = True
+            pxr.absorbing_bcs_y = True
+	  
           #Set aborbing_bcs flag to true if there is an absorbing bc in any direction
           if(pxr.absorbing_bcs_x or pxr.absorbing_bcs_y or pxr.absorbing_bcs_z):
             pxr.absorbing_bcs=True
+	    pxr.nx_pml = self.nx_pml
+            pxr.ny_pml = self.ny_pml 
+            pxr.nz_pml = self.nz_pml
+            pxr.offset_grid_part_x_min += pxr.nx_pml 
+            pxr.offset_grid_part_x_max -= pxr.nx_pml
+            pxr.offset_grid_part_y_min += pxr.ny_pml
+            pxr.offset_grid_part_y_max -= pxr.ny_pml
+            pxr.offset_grid_part_z_min += pxr.nz_pml
+            pxr.offset_grid_part_z_max -= pxr.nz_pml
+
+	    print("absorbing_bcs")
 	  pxr.get_neighbours_python()
           if(pxr.absorbing_bcs==True):
             #if absorbing_bcs in warp then set warp bcs to periodic to avoid bugs (and useless block inits)
