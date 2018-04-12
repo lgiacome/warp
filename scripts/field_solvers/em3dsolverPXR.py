@@ -904,7 +904,6 @@ class EM3DPXR(EM3DFFT):
             pxr.offset_grid_part_z_min += pxr.nz_pml
             pxr.offset_grid_part_z_max -= pxr.nz_pml
 
-	    print("absorbing_bcs")
 	  pxr.get_neighbours_python()
           if(pxr.absorbing_bcs==True):
             #if absorbing_bcs in warp then set warp bcs to periodic to avoid bugs (and useless block inits)
