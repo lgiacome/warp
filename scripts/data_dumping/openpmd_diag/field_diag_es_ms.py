@@ -1,3 +1,5 @@
+# This file implements openPMD electrostatic and magnetostatic diagnostics
+# Edits based on code contributed from Christopher Hall and Nathan Cook of RadiaSoft LLC
 import os
 import datetime
 from dateutil.tz import tzlocal
