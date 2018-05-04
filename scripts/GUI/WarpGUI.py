@@ -2,7 +2,8 @@
 #Boa:App:BoaApp
 
 #from wxPython.wx import *
-from wx import *
+#from wx import *
+import wx
 from warp import *
 import WarpRun
 import __main__
