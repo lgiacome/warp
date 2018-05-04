@@ -76,19 +76,11 @@ class StaticDiagnostic(object):
             if self.comm_world.rank == 0:
                 os.makedirs(write_dir)
 
-        step = str(self.top.it)
-        filename = '%s/data%08d.h5' % (write_dir, step)
+        filename = '%s/data%08d.h5' % (write_dir, self.top.it)
 
         if self.comm_world.rank == 0:
-            f = h5.File(filename, 'w')
+            f = h5.File(filename, 'a')
 
-            # for i, v in enumerate(self.mesh):
-            #     f['/data/meshes/mesh/%s' % self.dims[i]] = v
-            # f['/data/meshes/mesh'].attrs['geometry'] = self.geometry
-            # f['/data/meshes/mesh'].attrs['geometryParameters'] = self.geometryParameters
-
-            # from warp.data_dumping.openpmd_diag.generic_diag
-            # This header information is from https://github.com/openPMD/openPMD-standard/blob/latest/STANDARD.md#hierarchy-of-the-data-file
             f.attrs["openPMD"] = np.string_("1.0.0")
             f.attrs["openPMDextension"] = np.uint32(1)
             f.attrs["software"] = np.string_("warp")
