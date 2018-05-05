@@ -89,7 +89,7 @@ class StaticDiagnostic(object):
             f.attrs["softwareVersion"] = np.string_("4")
             f.attrs["date"] = np.string_(
                 datetime.datetime.now(tzlocal()).strftime('%Y-%m-%d %H:%M:%S %z'))
-            f.attrs["meshesPath"] = np.string_("meshes/")
+            f.attrs["meshesPath"] = np.string_("fields/")
             f.attrs["particlesPath"] = np.string_("particles/")
             # Setup the basePath
             f.attrs["basePath"] = np.string_("/data/%T/")
@@ -152,7 +152,7 @@ class ElectrostaticFieldDiagnostic(StaticDiagnostic):
         Test
         Produce an HDF5 file with electric fields and potential .
         File tree:
-        /data/meshes
+        /data/fields
             /mesh
                 /x
                 /y
@@ -216,7 +216,7 @@ class MagnetostaticFieldDiagnostic(StaticDiagnostic):
     """
         Produce an HDF5 file with magnetic fields and vector potential.
         File tree:
-        /data/meshes/
+        /data/fields/
             /mesh
                 /x
                 /y
