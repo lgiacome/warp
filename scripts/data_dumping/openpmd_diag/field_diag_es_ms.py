@@ -134,6 +134,15 @@ class StaticDiagnostic(object):
         else:
             raise Exception("Unknown data shape: %s" % repr(data.shape))
 
+        if self.solver.solvergeom == self.w3d.XYZgeom:
+            self.gridGlobalOffset = [self.solver.xmmin, self.solver.ymmin, self.solver.zmmin+self.top.zgrid]
+        elif self.solver.solvergeom == self.w3d.XZgeom:
+            self.gridGlobalOffset = [self.solver.xmmin, self.solver.zmmin+self.top.zgrid]
+        elif self.solver.solvergeom == self.w3d.RZgeom:
+            self.gridGlobalOffset = [self.solver.xmmin, self.solver.zmmin+self.top.zgrid]
+        else:
+            raise Exception("No handler for geometry type %i" % self.solver.solvergeom)
+
         field.attrs['geometry'] = self.geometry
         field.attrs['geometryParameters'] = self.geometryParameters
         field.attrs['dataOrder'] = 'C'  # C-like order
