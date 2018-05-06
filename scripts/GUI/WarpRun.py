@@ -47,7 +47,7 @@ sys.path=sys.path+[warp_path+'GUI/pype']
 
 # for debugging purpose, output is not redirected in GUI if true
 l_standard_out = 1
-l_PyCrust = 0
+l_PyCrust = 1
 l_pype = 0
 
 if l_pype:import pype
@@ -288,42 +288,44 @@ class WarpRun(wx.Frame):
               'MS Sans Serif'))
         self.doc.SetBackgroundColour(wx.Colour(255, 255, 128))
         wx.EVT_BUTTON(self.doc, wxID_WARPRUNDOC, self.OnDocButton)
+        
+        if 0:
 
-        self.Step = wx.Button(id=wxID_WARPRUNSTEP, label='Step', name='Step',
-              parent=self.panel1, pos=wx.Point(296, 0), size=wx.Size(40, 22),
-              style=0)
-        self.Step.SetBackgroundColour(wx.Colour(128, 0, 64))
-        self.Step.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL, False,
-              'MS Sans Serif'))
-        self.Step.SetForegroundColour(wx.Colour(255, 255, 255))
-        wx.EVT_BUTTON(self.Step, wxID_WARPRUNSTEP, self.OnStepButton)
+            self.Step = wx.Button(id=wxID_WARPRUNSTEP, label='Step', name='Step',
+                  parent=self.panel1, pos=wx.Point(296, 0), size=wx.Size(40, 22),
+                  style=0)
+            self.Step.SetBackgroundColour(wx.Colour(128, 0, 64))
+            self.Step.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL, False,
+                  'MS Sans Serif'))
+            self.Step.SetForegroundColour(wx.Colour(255, 255, 255))
+            wx.EVT_BUTTON(self.Step, wxID_WARPRUNSTEP, self.OnStepButton)
 
-        self.Next = wx.Button(id=wxID_WARPRUNNEXT, label='Next', name='Next',
-              parent=self.panel1, pos=wx.Point(336, 0), size=wx.Size(40, 22),
-              style=0)
-        self.Next.SetBackgroundColour(wx.Colour(128, 0, 64))
-        self.Next.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL, False,
-              'MS Sans Serif'))
-        self.Next.SetForegroundColour(wx.Colour(255, 255, 255))
-        wx.EVT_BUTTON(self.Next, wxID_WARPRUNNEXT, self.OnNextButton)
+            self.Next = wx.Button(id=wxID_WARPRUNNEXT, label='Next', name='Next',
+                  parent=self.panel1, pos=wx.Point(336, 0), size=wx.Size(40, 22),
+                  style=0)
+            self.Next.SetBackgroundColour(wx.Colour(128, 0, 64))
+            self.Next.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL, False,
+                  'MS Sans Serif'))
+            self.Next.SetForegroundColour(wx.Colour(255, 255, 255))
+            wx.EVT_BUTTON(self.Next, wxID_WARPRUNNEXT, self.OnNextButton)
 
-        self.Start = wx.Button(id=wxID_WARPRUNSTART, label='Start', name='Start',
-              parent=self.panel1, pos=wx.Point(256, 0), size=wx.Size(40, 22),
-              style=0)
-        self.Start.SetBackgroundColour(wx.Colour(128, 0, 64))
-        self.Start.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL, False,
-              'MS Sans Serif'))
-        self.Start.SetForegroundColour(wx.Colour(255, 255, 255))
-        wx.EVT_BUTTON(self.Start, wxID_WARPRUNSTART, self.OnStartButton)
+            self.Start = wx.Button(id=wxID_WARPRUNSTART, label='Start', name='Start',
+                  parent=self.panel1, pos=wx.Point(256, 0), size=wx.Size(40, 22),
+                  style=0)
+            self.Start.SetBackgroundColour(wx.Colour(128, 0, 64))
+            self.Start.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL, False,
+                  'MS Sans Serif'))
+            self.Start.SetForegroundColour(wx.Colour(255, 255, 255))
+            wx.EVT_BUTTON(self.Start, wxID_WARPRUNSTART, self.OnStartButton)
 
-        self.Cont = wx.Button(id=wxID_WARPRUNCONT, label='Cont', name='Cont',
-              parent=self.panel1, pos=wx.Point(376, 0), size=wx.Size(40, 22),
-              style=0)
-        self.Cont.SetBackgroundColour(wx.Colour(128, 0, 64))
-        self.Cont.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL, False,
-              'MS Sans Serif'))
-        self.Cont.SetForegroundColour(wx.Colour(255, 255, 255))
-        wx.EVT_BUTTON(self.Cont, wxID_WARPRUNCONT, self.OnContButton)
+            self.Cont = wx.Button(id=wxID_WARPRUNCONT, label='Cont', name='Cont',
+                  parent=self.panel1, pos=wx.Point(376, 0), size=wx.Size(40, 22),
+                  style=0)
+            self.Cont.SetBackgroundColour(wx.Colour(128, 0, 64))
+            self.Cont.SetFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL, False,
+                  'MS Sans Serif'))
+            self.Cont.SetForegroundColour(wx.Colour(255, 255, 255))
+            wx.EVT_BUTTON(self.Cont, wxID_WARPRUNCONT, self.OnContButton)
 
         self.separate = wx.Button(id=wxID_WARPRUNSEPARATE, label='separate',
               name='separate', parent=self.panel1, pos=wx.Point(560, 0),
@@ -422,7 +424,7 @@ class WarpRun(wx.Frame):
             self.launch_pype()
         self.prefix = ''
         # start console
-        if l_PyCrust:
+        if 0:
             def shortcuts():
                 print """
     * Key bindings:
@@ -476,6 +478,12 @@ class WarpRun(wx.Frame):
             __main__.autocomp=self.AutoComp
             __main__.calltip=self.CallTip
             self.CallTip() # turns off calltip
+
+        if l_PyCrust:
+            self.Console = wx.py.shell.Shell(parent = self.splitterWindow1,pos=wx.Point(0, 350), size=wx.Size(604, 300))
+            self.MessageWindow=self.Console
+            self.shell = self.Console
+            self.inter = self.Console
         else:
             self.inter = code.InteractiveConsole(__main__.__dict__)
             self.ConsolePanel = ConsoleClass.ConsoleClass(parent=self.splitterWindow1,inter=self.inter)
@@ -790,7 +798,7 @@ class WarpRun(wx.Frame):
 
     def OnMnuOpenMenu(self, event):
         dlg = wx.FileDialog(self, "Choose a file", ".", "",
-              "PYTHON files (*.py)|*.py|ALL files (*.*)|*.*", wx.OPEN)
+              "PYTHON files (*.py)|*.py|ALL files (*.*)|*.*", wx.FD_OPEN)
         try:
             if dlg.ShowModal() == wx.ID_OK:
                 filename = dlg.GetPath()
@@ -843,14 +851,16 @@ class WarpRun(wx.Frame):
     def OnMnufileExitMenu(self, event):
         self.Close()
 
-    def OnMnufileexecfileMenu1(self, event):
+    def OnMnufileexecfileMenu(self, event):
         if self.FileName is None:
             OnMnufileSaveAsMenu(event)
         self.statusBar1.SetStatusText("Executing file %s"%self.FileName,0)
+        if(not l_standard_out): sys.stdout = newstdout.newstdout(self.Console)
+        if(not l_standard_out): sys.stderr = newstdout.newstdout(self.Console)
         execfile(self.FileName)
         self.statusBar1.SetStatusText("Finished executing file %s"%self.FileName,0)
 
-    def OnMnufileexecfileMenu(self, event):
+    def OnMnufileexecfileMenu2(self, event):
         if self.FileName is None:
             return
         self.Run()
