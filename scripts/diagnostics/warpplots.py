@@ -393,11 +393,11 @@ def winon(winnum=None,dpi=100,prefix=None,suffix=None,xon=1,style='work.gs'):
             # --- The try/except construct takes care of the case where
             # --- the gist package was not compiled with X11.
             try:
-                window(winnum,dpi=dpi,display=os.environ['DISPLAY'],style=style)
+                window(winnum,dpi=dpi,display=os.environ.get('DISPLAY',''),style=style)
             except:
                 window(winnum,dpi=dpi,style=style)
         else:
-            if xon: window(winnum,dpi=dpi,style=style,display=os.environ['DISPLAY'])
+            if xon: window(winnum,dpi=dpi,style=style,display=os.environ.get('DISPLAY',''))
             else:   window(winnum,dpi=dpi,style=style,display='')
     else:
         # --- Get the next winnum if it wasn't passed in.
@@ -420,7 +420,7 @@ def winon(winnum=None,dpi=100,prefix=None,suffix=None,xon=1,style='work.gs'):
             assert winnum not in _matplotwindows,"Cannot redefine a window"
         # --- Open window
         if xon:
-            window(winnum,dpi=dpi,display=os.environ['DISPLAY'],
+            window(winnum,dpi=dpi,display=os.environ.get('DISPLAY',''),
                    dump=1,hcp=pname,style=style)
         else:
             window(winnum,dpi=dpi,display='',
