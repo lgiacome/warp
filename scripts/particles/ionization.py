@@ -608,26 +608,27 @@ class Ionization:
                 target_fluidvel = self.inter[incident_species]['target_fluidvel'][it]
 #              ndens = 1.e23
                 for js in incident_species.jslist:
-                    i1 = ipg.ins[js] - 1 + top.it%self.stride
+                    stride = min(ipg.nps[js], self.stride)
+                    i1 = ipg.ins[js] - 1 + top.it%stride
                     i2 = ipg.ins[js] + ipg.nps[js] - 1
-                    xi = ipg.xp[i1:i2:self.stride]
-                    yi = ipg.yp[i1:i2:self.stride]
-                    zi = ipg.zp[i1:i2:self.stride]
+                    xi = ipg.xp[i1:i2:stride]
+                    yi = ipg.yp[i1:i2:stride]
+                    zi = ipg.zp[i1:i2:stride]
                     ni = shape(xi)[0]
-                    gaminvi = ipg.gaminv[i1:i2:self.stride]
-                    uxi = ipg.uxp[i1:i2:self.stride]
-                    uyi = ipg.uyp[i1:i2:self.stride]
-                    uzi = ipg.uzp[i1:i2:self.stride]
+                    gaminvi = ipg.gaminv[i1:i2:stride]
+                    uxi = ipg.uxp[i1:i2:stride]
+                    uyi = ipg.uyp[i1:i2:stride]
+                    uzi = ipg.uzp[i1:i2:stride]
                     if top.wpid > 0:
                         # --- Save the wpid of the incident particles so that it can be
                         # --- passed to the emitted particles.
-                        wi = ipg.pid[i1:i2:self.stride,top.wpid-1]
+                        wi = ipg.pid[i1:i2:stride,top.wpid-1]
                     else:
                         wi = 1.
                     if top.injdatapid > 0:
                         # --- Save the injdatapid of the incident particles so that it can be
                         # --- passed to the emitted particles.
-                        injdatapid = ipg.pid[i1:i2:self.stride,top.injdatapid-1]
+                        injdatapid = ipg.pid[i1:i2:stride,top.injdatapid-1]
                     else:
                         injdatapid = None
                     # --- get velocity in lab frame if using a boosted frame of reference
@@ -715,7 +716,7 @@ class Ionization:
                     cross_section = self.getcross_section(self.inter[incident_species]['cross_section'][it],vi)
 
                     # --- probability
-                    ncol = dp*cross_section*vi*dt*ipg.ndts[js]*self.stride
+                    ncol = dp*cross_section*vi*dt*ipg.ndts[js]*stride
                     if top.boost_gamma > 1.:
                         ncol *= top.gammabar_lab/top.gammabar
 
@@ -743,7 +744,7 @@ class Ionization:
 
                     if self.inter[incident_species]['remove_incident'][it]:
                         # --- if projectile is modified, then need to delete it
-                        put(ipg.gaminv, array(io)*self.stride + i1, 0.)
+                        put(ipg.gaminv, array(io)*stride + i1, 0.)
 
                     # --- The position of the incident particle is at or near the incident particle
                     xnew = xi
