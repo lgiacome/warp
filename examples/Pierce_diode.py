@@ -15,7 +15,6 @@ setup()
 
 # --- Set the dimensionality
 w3d.solvergeom = w3d.RZgeom
-#w3d.solvergeom = w3d.XYZgeom
 
 # --- Sets method of running
 # ---   Steady state gun mode
@@ -60,10 +59,6 @@ derivqty()
 
 # --- Length of simulation box
 runlen = zplate + 5.*cm
-
-# --- Variables to set symmetry, when using 3D
-#w3d.l4symtry = true
-#w3d.l2symtry = false
 
 # --- Set boundary conditions
 # ---   for field solve

@@ -136,8 +136,8 @@ laser_func = GaussianProfile(k0, laser_waist, tau, t_peak,
 # ------------------------------------------------------------------------------
 
 em = EM3D( laser_func      = laser_func,
-		   laser_vector    = laser_vector,
-		   laser_polvector = laser_polvector,
+           laser_vector    = laser_vector,
+           laser_polvector = laser_polvector,
            laser_spot      = laser_spot,
            laser_emax      = Eamp,
            stencil         = stencil,
