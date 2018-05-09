@@ -341,10 +341,11 @@ def printversion(v):
 
 def versionstext():
     "Returns a string which has the version information of packages loaded."
+    import __version__
     r = '# Warp\n'
-    r += '# Origin date: %s\n'%warpC.origindate
-    r += '# Local date: %s\n'%warpC.localdate
-    r += '# Commit hash: %s\n'%warpC.commithash
+    r += '# Origin date: %s\n'%__version__.__origindate__
+    r += '# Local date: %s\n'%__version__.__localdate__
+    r += '# Commit hash: %s\n'%__version__.__hash__
     r += '# %s\n'%__file__
     try:
         r += '# %s\n'%warpC.__file__

@@ -47,6 +47,13 @@ data_files = glob.glob('*.so')
 os.renames('warpoptions.py', 'warpoptions/__init__.py')
 os.renames('parallel.py', 'parallel/__init__.py')
 
+# --- Write out git versioning information
+with open('__version__.py', 'w') as ff:
+    ff.write('__origindate__ = "%s"\n'%os.popen('git log --branches=master --remotes=origin -n 1 --pretty=%aD').read().strip())
+    ff.write('__localdate__ = "%s"\n'%os.popen('git log -n 1 --pretty=%aD').read().strip())
+    ff.write('__hash__ = "%s"\n'%os.popen('git log -n 1 --pretty=%h').read().strip())
+    ff.write('__fullhash__ = "%s"\n'%os.popen('git log -n 1 --pretty=%H').read().strip())
+
 try:
     setup(name='warp',
           version='3.0',
