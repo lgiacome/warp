@@ -148,16 +148,16 @@ if os.access('setup.local.py', os.F_OK):
         exec(compile(open('setup.local.py').read(), 'setup.local.py', 'exec'))
 
 elif parallel:
-    # --- If parallel, try the "mpif90 --showme" to get the mpi libraries if
+    # --- If parallel, try the "mpif90 --show" to get the mpi libraries if
     # --- setup.local.py was not found.
     if fcompexec is None:
         fcompexec = 'mpif90'
     try:
-        showme = subprocess.check_output([fcompexec, '--showme'], universal_newlines=True)
+        show = subprocess.check_output([fcompexec, '--show'], universal_newlines=True)
     except (FileNotFoundError, subprocess.CalledProcessError):
         pass
     else:
-        for s in showme.split():
+        for s in show.split():
             if s.startswith('-L'):
                 library_dirs += [s[2:]]
             elif s.startswith('-l'):
