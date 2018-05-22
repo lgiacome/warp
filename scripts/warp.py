@@ -63,8 +63,8 @@ del imp
 # --- This also creates a number of routines which are needed for parallel
 # --- data handling. These routines all have sensible default results when
 # --- not running in parallel.
-from parallel import *
-import parallel
+from warp_parallel import *
+import warp_parallel
 
 try:
     import gist
@@ -1162,7 +1162,7 @@ def restart(filename,suffix='',verbose=false,skip=[],
     # --- is only meaningful on PE0. Since all processors must call setup,
     # --- PE0's return value from current_window is broadcast to all
     # --- processors.
-    if parallel.broadcast(current_window()) == -1: setup()
+    if warp_parallel.broadcast(current_window()) == -1: setup()
 
     # --- Call any functions that had been registered to be called after
     # --- the restart.

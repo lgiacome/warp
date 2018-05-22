@@ -272,8 +272,8 @@ def setup(makepsfile=0,prefix=None,cgmlog=1,runcomments='',
 
     # --- Save the plotfile name and number, since its not retreivable
     # --- from gist. They are broadcast to the other processors if needed.
-    setup.pname = parallel.broadcast(pname)
-    setup.pnumb = parallel.broadcast(pnumb)
+    setup.pname = warp_parallel.broadcast(pname)
+    setup.pnumb = warp_parallel.broadcast(pnumb)
 
     # --- Only PE0 (or serial processor) should run the rest of this routine.
     if me > 0: return

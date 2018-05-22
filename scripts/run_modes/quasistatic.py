@@ -963,7 +963,7 @@ class Quasistatic(SubcycledPoissonSolver):
 #      for ip in range(npes-1):
 #        comm_world.send(tosend,ip)
       if self.l_verbose:print me,tosend
-    recved = parallel.broadcast(tosend,npes-1)
+    recved = warp_parallel.broadcast(tosend,npes-1)
     if self.l_verbose:print me,recved
     if me<npes-1:
 #     recved,status = comm_world.recv(npes-1)

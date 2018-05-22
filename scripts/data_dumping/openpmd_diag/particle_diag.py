@@ -6,7 +6,7 @@ import h5py
 import numpy as np
 from scipy import constants
 from .generic_diag import OpenPMDDiagnostic
-from parallel import gatherarray, mpiallgather
+from warp_parallel import gatherarray, mpiallgather
 from .data_dict import macro_weighted_dict, weighting_power_dict, \
      particle_quantity_dict
 
