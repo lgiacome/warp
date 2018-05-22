@@ -74,16 +74,16 @@ cleanall: clean pclean cleandebug pcleandebug
 	rm -rf build* ../scripts/build*
 
 install3:
-	make -f Makefile.Forthon3 install PYTHON=$(PYTHON)
+	make -f Makefile.Forthon3 install
 
 pinstall3:
-	make -f Makefile.Forthon3.pympi install PYTHON=$(PYTHON)
+	make -f Makefile.Forthon3.pympi install
 
 debug3:
-	make -f Makefile.Forthon3 install DEBUG='-g --farg "-O0"' BUILDBASEDIR=build3debug PYTHON=$(PYTHON)
+	make -f Makefile.Forthon3 install DEBUG='-g --farg "-O0"' BUILDBASEDIR=build3debug
 
 pdebug3:
-	make -f Makefile.Forthon3.pympi install DEBUG='-g --farg "-O0"' BUILDBASEDIR=build3paralleldebug PYTHON=$(PYTHON)
+	make -f Makefile.Forthon3.pympi install DEBUG='-g --farg "-O0"' BUILDBASEDIR=build3paralleldebug
 
 clean3:
 	make -f Makefile.Forthon3 clean
