@@ -154,7 +154,7 @@ elif parallel:
         fcompexec = 'mpif90'
     try:
         show = subprocess.check_output([fcompexec, '--show'], universal_newlines=True)
-    except (FileNotFoundError, subprocess.CalledProcessError):
+    except (OSError, subprocess.CalledProcessError):
         pass
     else:
         for s in show.split():

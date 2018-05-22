@@ -56,7 +56,7 @@ with open('__version__.py', 'w') as ff:
 
 try:
     setup(name='warp',
-          version='3.0',
+          version='4.5',
           author='David P. Grote, Jean-Luc Vay, et. al.',
           author_email='dpgrote@lbl.gov',
           description='Warp PIC accelerator code',
@@ -66,7 +66,7 @@ machines that are space-charge dominated.""",
           url='http://warp.lbl.gov',
           platforms='Linux, Unix, Windows (cygwin), Mac OSX',
           packages=['warp', 'warpoptions', 'parallel',
-                    'warp.attic', 
+                    'warp.attic',
                     'warp.data_dumping',
                     'warp.data_dumping.openpmd_diag',
                     'warp.diagnostics',
