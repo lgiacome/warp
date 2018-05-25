@@ -13,7 +13,7 @@ import numpy as np
 import time
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
-from parallel import me, mpiallgather
+from warp_parallel import me, mpiallgather
 try:
     from mpi4py import MPI
 except ImportError:
