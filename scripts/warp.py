@@ -260,8 +260,6 @@ openbc    = top.openbc
 absorb    = top.absorb
 reflect   = top.reflect
 
-from .units import *
-
 # --- Set pgroup
 #top.pgroup = top.pgroupstatic
 top.pgroup = ParticleGroup()
@@ -1400,6 +1398,7 @@ def printtimersordered(file=None,depth=3):
 # --- projections of particles, histories, as well as some line plots.
 # --- Import these here near the end so the functions defined above are
 # --- included in their dictionaries.
+from .units import *
 from .particles.particles import *
 from .field_solvers.fieldsolver import *
 if lparallel:
