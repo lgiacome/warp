@@ -37,6 +37,7 @@
 
 from warp.field_solvers.em3dsolverFFT import *
 from warp.particles.species import *
+from .laser.laser_antenna import LaserAntenna
 
 try:
     from mpi4py import MPI
@@ -306,7 +307,7 @@ def aliasparticlearrays():
             pg.npmax = 0
             pxr.partnmax
             pg.ns=1
-            pg.npid=top.npid
+            pg.npid=pxr.npid
             pg.gchange()
             pg.sq = s.charge
             pg.sm = s.mass
@@ -476,6 +477,17 @@ def initialize_virtual_particles( self, w3d ):
     Initialization of the antenna particles depending on the dimension and
     the laser propagation vector.
     """
+
+    def switch_min_max( x1, x2, u ):
+        """
+        Return x1 or x2 depending on the sign of u
+        """
+        if u >= 0 :
+            return x1
+        else:
+            return x2
+
+    print "Hello from init"
     # Shortcut definition
     x0 = self.spot[0]
     y0 = self.spot[1]
@@ -664,7 +676,7 @@ def initialize_virtual_particles( self, w3d ):
     self.gi_global = np.ones(self.nn_global)
 
     # Calculate the weights
-    self.weights_global = np.ones(self.nn_global) * epsilon_0*self.emax/0.01
+    self.weights_global = np.ones(self.nn_global) * eps0*self.emax/0.01
 
     if self.dim == "2d":
         self.weights_global *= self.Sx
@@ -677,20 +689,23 @@ def initialize_virtual_particles( self, w3d ):
     js_laser_pos = numpy.empty(1,dtype=numpy.int64)
     js_laser_neg = numpy.empty(1,dtype=numpy.int64)
    
-    pxr.init_laser_species_python(self.emax, self.spot, self.vector, polvector1,polvector2, +1., \
-    self.weight_global[0], self.xx_global, self.yy_global, self.zz_global, self.nn_global, js_laser_pos)
+    print "Before loading"
+    pxr.init_laser_species_python(self.emax, self.spot, self.vector, Ux, Uy, +1., \
+    self.weights_global[0], self.xx_global, self.yy_global, self.zz_global, self.nn_global, js_laser_pos)
 
-    pxr.init_laser_species_python(self.emax, self.spot, self.vector, polvector1,polvector2, -1., \
-    self.weight_global[0], self.xx_global, self.yy_global, self.zz_global, self.nn_global, js_laser_neg)
+    pxr.init_laser_species_python(self.emax, self.spot, self.vector, Ux, Uy, -1., \
+    self.weights_global[0], self.xx_global, self.yy_global, self.zz_global, self.nn_global, js_laser_neg)
 
     self.js_pos = js_laser_pos
     self.js_neg = js_laser_neg
+    print "End loading"
 
 def push_virtual_particles(self, top, f, clight ):
     """
     Calculate the motion parameters of the laser antenna at a given
     timestep
     """
+    print "Hello from push"
     
     nb = numpy.empty(1,dtype=numpy.int64)
     pxr.get_local_number_of_particles_from_species(self.js_pos, nb )
@@ -724,7 +739,9 @@ def push_virtual_particles(self, top, f, clight ):
         amplitude_y = coef_ampli * amp * self.polvector[1] * 0.5
         amplitude_z = coef_ampli * amp * self.polvector[2] * 0.5
 
+    print "Before push pxr"
     pxr.laser_pusher_profile(amplitude_x,amplitude_y,amplitude_z,nb)
+    print "End push pxr"
 
 def select_particles_in_local_box(self, w3d, zgrid):
     self.nn = 0
@@ -822,7 +839,7 @@ class EM3DPXR(EM3DFFT):
           LaserAntenna.initialize_virtual_particles  = initialize_virtual_particles 
           LaserAntenna.push_virtual_particles        = push_virtual_particles   
           LaserAntenna.select_particles_in_local_box = select_particles_in_local_box 
-
+	  print "Overwriting done"
 
         else:
           EM3DFFT.finalize(self)
@@ -1258,8 +1275,12 @@ class EM3DPXR(EM3DFFT):
                                                 self.sorting.starts[i],  \
                                                 s.pgroup.ldodepos[i])
             pxr.nspecies+=1
-
-        pxr.npid=top.npid
+        
+        if top.npid < 3:
+            pxr.npid = 3
+            top.npid = 3
+        else:
+            pxr.npid=top.npid
         pxr.ssnpid=top.ssnpid
         pxr.set_tile_split()
         pxr.init_tile_arrays()
@@ -1271,7 +1292,7 @@ class EM3DPXR(EM3DFFT):
             pids[:,top.wpid-1]*=s.sw
             s.sw0=s.sw*1.
             # Add particles of species s to PXR
-            pxr.py_add_particles_to_species(i+1, s.nps,top.npid,
+            pxr.py_add_particles_to_species(i+1, s.nps,pxr.npid,
                                             s.getx(bcast=0,gather=0),
                                             s.gety(bcast=0,gather=0),
                                             s.getz(bcast=0,gather=0),
