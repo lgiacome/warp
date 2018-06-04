@@ -474,6 +474,10 @@ def getn(self, gather=1, bcast=None, **kw ):
 
 def initialize_virtual_particles( self, w3d ):
     """
+    This function overwrites the LaserAntenna class method 
+    initialize_virtual_particles, when using picsar.
+    It creates new antenna macroparticles in picsar.
+
     Initialization of the antenna particles depending on the dimension and
     the laser propagation vector.
     """
@@ -702,6 +706,9 @@ def initialize_virtual_particles( self, w3d ):
 
 def push_virtual_particles(self, top, f, clight ):
     """
+    This function overwrites the LaserAntenna class method 
+    push_virtual_particles, when using picsar.
+
     Calculate the motion parameters of the laser antenna at a given
     timestep
     """
@@ -744,6 +751,16 @@ def push_virtual_particles(self, top, f, clight ):
     print "End push pxr"
 
 def select_particles_in_local_box(self, w3d, zgrid):
+    """
+    This function overwrites the LaserAntenna class method 
+    select_particles_in_local_box, when using picsar.
+
+    Since the particles are exchanged via basic exchange routines,
+    this function is not used anymore.
+
+    The "self.nn = 0" command assures that the current and charge 
+    deposition are not done through warp.
+    """
     self.nn = 0
     return
 
