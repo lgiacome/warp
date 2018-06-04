@@ -474,7 +474,7 @@ def getn(self, gather=1, bcast=None, **kw ):
 
 def initialize_virtual_particles( self, w3d ):
     """
-    This function overwrites the LaserAntenna class method 
+    This function overwrites the LaserAntenna class method
     initialize_virtual_particles, when using picsar.
     It creates new antenna macroparticles in picsar.
 
@@ -491,7 +491,6 @@ def initialize_virtual_particles( self, w3d ):
         else:
             return x2
 
-    print "Hello from init"
     # Shortcut definition
     x0 = self.spot[0]
     y0 = self.spot[1]
@@ -690,78 +689,111 @@ def initialize_virtual_particles( self, w3d ):
         # Laser initialized with particles in a star-pattern
         self.weights_global *= w3d.dx**2 * self.weights_circ
 
+
+    # Create two new antenna species in PICSAR and assign their caracteristics
     js_laser_pos = numpy.empty(1,dtype=numpy.int64)
     js_laser_neg = numpy.empty(1,dtype=numpy.int64)
-   
-    print "Before loading"
-    pxr.init_laser_species_python(self.emax, self.spot, self.vector, Ux, Uy, +1., \
-    self.weights_global[0], self.xx_global, self.yy_global, self.zz_global, self.nn_global, js_laser_pos)
 
-    pxr.init_laser_species_python(self.emax, self.spot, self.vector, Ux, Uy, -1., \
-    self.weights_global[0], self.xx_global, self.yy_global, self.zz_global, self.nn_global, js_laser_neg)
+    pxr.init_laser_species_python(self.emax, self.spot, self.vector, Ux, Uy,
+                                    1., self.weights_global, self.xx_global,
+                                self.yy_global, self.zz_global, self.nn_global,
+                                js_laser_pos)
+
+    #pxr.init_laser_species_python(self.emax, self.spot, self.vector, Ux, Uy,
+    #                                -1., self.weights_global, self.xx_global,
+    #                            self.yy_global, self.zz_global, self.nn_global,
+    #                            js_laser_neg)
 
     self.js_pos = js_laser_pos
     self.js_neg = js_laser_neg
-    print "End loading"
 
 def push_virtual_particles(self, top, f, clight ):
     """
-    This function overwrites the LaserAntenna class method 
+    This function overwrites the LaserAntenna class method
     push_virtual_particles, when using picsar.
 
     Calculate the motion parameters of the laser antenna at a given
     timestep
     """
-    print "Hello from push"
-    
-    nb = numpy.empty(1,dtype=numpy.int64)
-    pxr.get_local_number_of_particles_from_species(self.js_pos, nb )
-
-    quantity_array = numpy.empty(nb[0], dtype=numpy.float64, order='F')
 
     dt = top.dt
 
     # Coordinate of the antenna in the plane (Ux,Uy)
     wpid = top.wpid
-    x = pxr.getquantity_pid(self.js, wpid+1, nb, quantity_array)
-    y = pxr.getquantity_pid(self.js, wpid+2, nb, quantity_array)
-    t = top.time*(1.-self.v/clight)
-    amp = self.laser_func(x,y,t)
 
-    # --- displaces fixed weight particles on "continuous" trajectories
-    dispmax = 0.01*clight
-    coef_ampli = dispmax * (1.-self.v/clight) / self.emax
+    for js in [self.js_pos]:
+        nb = numpy.empty(1,dtype=numpy.int64)
+        pxr.get_local_number_of_particles_from_species(js, nb )
 
-    if isinstance(amp,list): #elliptic polarization
-        amp_x = amp[0]*self.polvector[0] + amp[1]*self.polvector_2[0]
-        amp_y = amp[0]*self.polvector[1] + amp[1]*self.polvector_2[1]
-        amp_z = amp[0]*self.polvector[2] + amp[1]*self.polvector_2[2]
+        quantity_array = numpy.empty(nb[0], dtype=numpy.float64, order='F')
+        pxr.getquantity_pid(js, wpid+1, nb, quantity_array)
+        x = quantity_array
 
-        amplitude_x = coef_ampli * amp_x * 0.5
-        amplitude_y = coef_ampli * amp_y * 0.5
-        amplitude_z = coef_ampli * amp_z * 0.5
+        quantity_array = numpy.empty(nb[0], dtype=numpy.float64, order='F')
+        pxr.getquantity_pid(js, wpid+2, nb, quantity_array)
+        y = quantity_array
 
-    else: #linear polarization
-        amplitude_x = coef_ampli * amp * self.polvector[0] * 0.5
-        amplitude_y = coef_ampli * amp * self.polvector[1] * 0.5
-        amplitude_z = coef_ampli * amp * self.polvector[2] * 0.5
+        t = top.time*(1.-np.dot(self.v, self.vector)/clight)
+        amp = self.laser_func(x,y,t)
 
-    print "Before push pxr"
-    pxr.laser_pusher_profile(amplitude_x,amplitude_y,amplitude_z,nb)
-    print "End push pxr"
+        # --- displaces fixed weight particles on "continuous" trajectories
+        dispmax = 0.01*clight
+        coef_ampli = dispmax * (1.-np.dot(self.v, self.vector)/clight) / self.emax
+
+        if isinstance(amp,list): #elliptic polarization
+            amp_x = amp[0]*self.polvector[0] + amp[1]*self.polvector_2[0]
+            amp_y = amp[0]*self.polvector[1] + amp[1]*self.polvector_2[1]
+            amp_z = amp[0]*self.polvector[2] + amp[1]*self.polvector_2[2]
+
+            amplitude_x = coef_ampli * amp_x
+            amplitude_y = coef_ampli * amp_y
+            amplitude_z = coef_ampli * amp_z
+
+        else: #linear polarization
+            amplitude_x = coef_ampli * amp * self.polvector[0]
+            amplitude_y = coef_ampli * amp * self.polvector[1]
+            amplitude_z = coef_ampli * amp * self.polvector[2]
+
+        pxr.laser_pusher_profile(js, amplitude_x,amplitude_y,amplitude_z, nb)
 
 def select_particles_in_local_box(self, w3d, zgrid):
     """
-    This function overwrites the LaserAntenna class method 
+    This function overwrites the LaserAntenna class method
     select_particles_in_local_box, when using picsar.
 
     Since the particles are exchanged via basic exchange routines,
     this function is not used anymore.
 
-    The "self.nn = 0" command assures that the current and charge 
+    The "self.nn = 0" command assures that the current and charge
     deposition are not done through warp.
     """
     self.nn = 0
+    '''js = self.js_pos
+    nb = numpy.empty(1,dtype=numpy.int64)
+    pxr.get_local_number_of_particles_from_species(js, nb )
+
+    quantity_array = numpy.empty(nb[0], dtype=numpy.float64, order='F')
+    pxr.getquantity(js, 4, nb, quantity_array)
+    ux = quantity_array
+
+    quantity_array = numpy.empty(nb[0], dtype=numpy.float64, order='F')
+    pxr.getquantity(js, 1, nb, quantity_array)
+    x = quantity_array
+
+
+    self.nn = nb
+    self.xx = self.xx_global[:len(x)]
+    self.yy = self.yy_global[:len(x)]
+    self.zz = self.zz_global[:len(x)]
+    self.xdx = self.xx_global[:len(x)] - x
+    self.ydy = np.zeros(self.nn)
+    self.zdz = np.zeros(self.nn)
+    self.ux = ux
+    self.uy = np.zeros(self.nn)
+    self.uz = np.zeros(self.nn)
+    self.gi = self.gi_global[:len(x)]
+    self.weights = self.weights_global[:len(x)]
+    '''
     return
 
 class EM3DPXR(EM3DFFT):
@@ -853,10 +885,13 @@ class EM3DPXR(EM3DFFT):
           Species.getbz            = getbz
           Species.getn             = getn
 
-          LaserAntenna.initialize_virtual_particles  = initialize_virtual_particles 
-          LaserAntenna.push_virtual_particles        = push_virtual_particles   
-          LaserAntenna.select_particles_in_local_box = select_particles_in_local_box 
-	  print "Overwriting done"
+          # Rewrite the LaserAntenna class methods for pxr
+          LaserAntenna.initialize_virtual_particles  = \
+                                                  initialize_virtual_particles
+          LaserAntenna.push_virtual_particles        = push_virtual_particles
+          LaserAntenna.select_particles_in_local_box = \
+                                                 select_particles_in_local_box
+
 
         else:
           EM3DFFT.finalize(self)
@@ -1273,9 +1308,6 @@ class EM3DPXR(EM3DFFT):
         # --- time statistics
         self.time_stat_loc_array = zeros([20])
 
-        # --- species section
-        pxr.nspecies_max=top.pgroup.ns
-
         # --- allocates array of species
         if (self.l_debug): print(" Allocates array of species")
         pxr.init_species_section()
@@ -1292,8 +1324,10 @@ class EM3DPXR(EM3DFFT):
                                                 self.sorting.starts[i],  \
                                                 s.pgroup.ldodepos[i])
             pxr.nspecies+=1
-        
+
         if top.npid < 3:
+            # At least 3 pid columns are need fot the antenna particles (weigth,
+            # 2 components of the relative position to the plane)
             pxr.npid = 3
             top.npid = 3
         else:
@@ -2063,7 +2097,7 @@ class EM3DPXR(EM3DFFT):
         #tdebpart=MPI.Wtime()
 
         inject3d(1, top.pgroup)
-        
+
         # Call user-defined injection routines
         if (self.l_debug): print("Call user-defined injection routines")
         userinjection.callfuncsinlist()
@@ -2918,7 +2952,6 @@ class EM3DPXR(EM3DFFT):
              pxr.jz = self.fields.Jz
 
              if pxr.c_dim == 2:
-
                pxr.pxrdepose_currents_on_grid_jxjyjz_2d()
 
                #pxr.pxrdepose_currents_on_grid_jxjyjz_sub_openmp(f.Jx,f.Jy,f.Jz,pxr.nx,pxr.ny,pxr.nz,pxr.nxjguards,
