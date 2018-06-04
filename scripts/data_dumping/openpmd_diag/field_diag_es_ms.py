@@ -32,8 +32,10 @@ class StaticDiagnostic(object):
         self.comm_world = comm_world
         if self.comm_world is None:
             self.lparallel = 0
+            self.rank = 0
         else:
             self.lparallel = comm_world.Get_size()
+            self.rank = comm_world.rank
 
         self.period = period
         if write_dir is None:
@@ -75,12 +77,12 @@ class StaticDiagnostic(object):
             write_dir = self.write_dir
 
         if not os.path.lexists(write_dir):
-            if self.comm_world.rank == 0:
+            if self.rank == 0:
                 os.makedirs(write_dir)
 
         filename = '%s/data%08d.h5' % (write_dir, self.top.it)
 
-        if self.comm_world.rank == 0:
+        if self.rank == 0:
             f = h5.File(filename, 'a')
 
             f.attrs["openPMD"] = np.string_("1.0.0")
@@ -215,7 +217,7 @@ class ElectrostaticFieldDiagnostic(StaticDiagnostic):
             # the potential, but it's the only way to shoehorn the data into
             # OpenPMD compliance right now.
             self.phi = self.phi[np.newaxis, :, :]
-        if self.comm_world.rank == 0:
+        if self.rank == 0:
             self.writeDataset(self.efield, prefix='%s%sE' % (self.basePath, self.meshPath))
             self.writeDataset(self.phi, prefix='%s%sphi' % (self.basePath, self.meshPath))
             self.file.close()
@@ -277,7 +279,7 @@ class MagnetostaticFieldDiagnostic(StaticDiagnostic):
 
         self.gatherfields()
         self.gathervectorpotential()
-        if self.comm_world.rank == 0:
+        if self.rank == 0:
             self.writeDataset(self.bfield, prefix='%s%sB' % (self.basePath, self.meshPath))
             self.writeDataset(self.a, prefix='%s%svector_potential' % (self.basePath, self.meshPath))
 

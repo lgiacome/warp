@@ -1,11 +1,11 @@
 """
 This is a typical input script that runs a simulation of
-laser-wakefield acceleration in a boosted-frame, using Warp in 2D / Circ / 3D.
+laser-wakefield acceleration using Warp in 2D / Circ / 3D.
 
 Usage
 -----
 - Modify the parameters below to suit your needs
-- Type "python -i lpa_boostedframe_script.py" in a terminal
+- Type "python -i lpa_script.py" in a terminal
 - When the simulation finishes, the python session will *not* quit.
     Therefore the simulation can be continued by running step()
     Otherwise, one can just type exit()
@@ -19,7 +19,7 @@ from warp.init_tools import *
 
 # General parameters
 # ------------------
-# Dimension of simulation ("3d", "circ" or "2d", "1d")
+# Dimension of simulation ("3d", "circ", "2d", "1d")
 dim = "2d"
 # Number of azimuthal modes beyond m=0, for "circ" (not used for "2d" and "3d")
 circ_m = 1
@@ -31,23 +31,23 @@ interactive = 0
 # Simulation box
 # --------------
 # Number of grid cells in the longitudinal direction
-Nz = 800
+Nz = 200
 # Number of grid cells in transverse direction (represents Nr in "circ")
-Nx = 100
+Nx = 50
 # Number of grid cells in the 3rd dimension (not used for "2d" and "circ")
-Ny = 100
+Ny = 50
 # Dimension of the box in longitudinal direction (meters)
-zmin_lab = -15.e-6
-zmax_lab = 5.e-6
+zmin = -15.e-6
+zmax = 5.e-6
 # Dimension of the box in transverse direction (box ranges from -xmax to xmax)
-xmax = 30.e-6
+xmax = 15.e-6
 # Dimension of the box in 3rd direction (not used for "2d" and "circ")
-ymax = 30.e-6
+ymax = 15.e-6
 
 # Field boundary conditions (longitudinal and transverse respectively)
 f_boundz  = openbc
 f_boundxy = openbc
-if dim=="circ":
+if dim == "circ":
     f_boundxy = dirichlet
 # Particles boundary conditions (longitudinal and transverse respectively)
 p_boundz  = absorb
@@ -58,9 +58,6 @@ use_moving_window = 1
 # Speed of the moving window (ignored if use_moving_window = 0)
 v_moving_window = clight
 
-# Boosted frame
-gamma_boost = 10.
-
 # Diagnostics
 # -----------
 # Period of diagnostics (in number of timesteps)
@@ -68,11 +65,7 @@ diag_period = 20
 # Whether to write the fields
 write_fields = 1
 # Whether to write the particles
-write_particles = 0
-# Whether to write the fields in the lab frame
-write_lab_frame = 1
-Ntot_snapshot_lab = 20
-dt_snapshot_lab = 0.5*(zmax_lab-zmin_lab)/clight
+write_particles = 1
 # Whether to write the diagnostics in parallel
 parallel_output = False
 
@@ -90,11 +83,11 @@ particle_pusher = 1
 # Current smoothing parameters
 # ----------------------------
 # Turn current smoothing on or off (0:off; 1:on)
-use_smooth = 1 
+use_smooth = 1
 # Number of passes of smoother and compensator in each direction (x, y, z)
-npass_smooth = array([[ 1 , 0 ], [ 1 , 0 ], [ 1 , 0 ]])
+npass_smooth = array([[ 0 , 0 ], [ 0 , 0 ], [ 1 , 1 ]])
 # Smoothing coefficients in each direction (x, y, z)
-alpha_smooth = array([[ 0.5, 3./2], [ 0.5, 3./2], [0.5, 3./2]])
+alpha_smooth = array([[ 0.5, 3.], [ 0.5, 3.], [0.5, 3./2]])
 # Stride in each direction (x, y, z)
 stride_smooth = array([[ 1 , 1 ], [ 1 , 1 ], [ 1 , 1 ]])
 
@@ -102,22 +95,29 @@ stride_smooth = array([[ 1 , 1 ], [ 1 , 1 ], [ 1 , 1 ]])
 # ----------------
 # Initialize laser (0:off, 1:on)
 use_laser = 1
+# Position of the antenna (meters)
+laser_source_z = 0.e-6
+# Polarization angle with respect to the x axis (rad)
+laser_polangle = pi/2
+
+# Laser file:
+# When using a laser profile that was experimentally
+# measured, provide a string with the path to an HDF5 laser file,
+# otherwise provide None and a Gaussian pulse will be initialized
+laser_file = None
+laser_file_energy = 2. # When using a laser file, energy in Joule of the pulse
+
+# Gaussian pulse:
 # Laser amplitude at focus
 laser_a0 = 1.
 # Waist at focus (meters)
-laser_w0 = 8.e-6
+laser_w0 = 4.e-6
 # Length of the pulse (length from the peak to 1/e of the amplitude ; meters)
 laser_ctau = 3.e-6
 # Initial position of the centroid (meters)
 laser_z0 = -2 * laser_ctau
 # Focal position
-laser_zfoc = 0.e-6
-# Position of the antenna (meters)
-laser_source_z = -0.1e-6
-# Polarization angle with respect to the x axis (rad)
-laser_polangle = 0.
-# Wavelength
-laser_lambda0 = 0.8e-6
+laser_zfoc = 4.5e-05
 
 # Plasma macroparticles
 # ---------------------
@@ -133,8 +133,6 @@ use_ions = 1
 plasma_nx = 2
 plasma_ny = 4
 plasma_nz = 2
-# Momentum of the plasma in the lab frame
-plasma_uz_m = 0.
 
 # Plasma content and profile
 # --------------------------
@@ -147,20 +145,24 @@ rel_dens_preexisting_electrons = 1.
 # q_start is the ionization state of the ions at the beginning of the simulation
 # q_max is the maximum ionization state
 # If q_start is not equal to q_max, ionization between states will be computed.
-ion_states = { 'Hydrogen': {'relative_density':1., 'q_start':1, 'q_max':1} }
+ion_states = { 'Hydrogen': {'relative_density':1., 'q_start':1, 'q_max':1 },
+                 'Helium': {'relative_density':0.25, 'q_start':0, 'q_max':2 } }
 # Positions between which the plasma is initialized
 # (Transversally, the plasma is initialized between -plasma_xmax and
 # plasma_xmax, along x, and -plasma_ymax and plasma_ymax along y)
-plasma_zmin = 5.e-6
-plasma_zmax = 3000.e-6
-plasma_xmax = 25.e-6
-plasma_ymax = 25.e-6
+plasma_zmin = 1.e-6
+plasma_zmax = 1500.e-6
+plasma_xmax = xmax
+plasma_ymax = ymax
 
 # Define your own profile and profile parameters below
+ramp_start = 0.e-6
+ramp_length = 20.e-6
+ramp_plateau = 20.e-6
 def plasma_dens_func( x, y, z ):
     """
     User-defined function: density profile of the plasma
-    
+
     It should return the relative density with respect to n_plasma,
     at the position x, y, z (i.e. return a number between 0 and 1)
 
@@ -175,8 +177,14 @@ def plasma_dens_func( x, y, z ):
     """
     # Allocate relative density
     n = ones_like(z)
-    n = where( z<plasma_zmin, 0., n )
-    n = where( z>plasma_zmax, 0., n )
+    # Make linear ramp
+    n = where( z<ramp_start+ramp_length, (z-ramp_start)/ramp_length, n )
+    # Supress density before the ramp
+    n = where( z<ramp_start, 0., n )
+    # Reduce density by half after the ramp
+    n = where( z> ramp_start+ramp_length+ramp_plateau, 0.5*n, n )
+    # Put the density to 0 later
+    n = where( z> ramp_start+ramp_length+2*ramp_plateau, 0., n )
 
     return(n)
 
@@ -184,10 +192,10 @@ def plasma_dens_func( x, y, z ):
 # -----------------
 # Initialize beam electrons (0:off, 1:on)
 # (Please be aware that initializing a beam in 2D geometry makes very little
-# physical sense, because of the long range of its space-charge fields) 
-use_beam = 1
+# physical sense, because of the long range of its space-charge fields)
+use_beam = 0
 # Longitudinal momentum of the beam
-beam_uz = 1000.
+beam_uz = 100.
 # Beam density
 n_beam = 1.e26
 # Number of macroparticles per cell in each direction
@@ -207,7 +215,7 @@ beam_rmax = beam_xmax
 def beam_dens_func(x, y, z):
     """
     User-defined function: density profile of the beam
-    
+
     It should return the relative density with respect to n_beam,
     at the position x, y, z (i.e. return a number between 0 and 1)
 
@@ -225,29 +233,12 @@ def beam_dens_func(x, y, z):
     # Longitudinal profile: parabolic
     n = n*(z - beam_zmin)*(beam_zmax - z) * 4/(beam_zmax - beam_zmin)**2
     # Transverse profile: parabolic
-    r = sqrt(x**2 + y **2)
+    r = sqrt( x**2 + y**2)
     n = n*(1 - (r/beam_rmax)**2 )
     # Put the density above rmax to 0
     n[r > beam_rmax] = 0.
 
     return(n)
-
-# Perform a boost of the different quantities
-# -------------------------------------------
-boost = BoostConverter( gamma_boost )
-# Plasma
-n_plasma, = boost.static_density([ n_plasma ])
-plasma_zmin, plasma_zmax = boost.static_length([ plasma_zmin, plasma_zmax ])
-plasma_uz_m, = boost.longitudinal_momentum([ plasma_uz_m ])
-# Beam
-beam_beta = beam_uz/sqrt( 1. + beam_uz**2 )
-beam_zmin, beam_zmax = \
-    boost.copropag_length( [ beam_zmin, beam_zmax ], beta_object=beam_beta )
-n_beam, = boost.copropag_density( [n_beam], beta_object=beam_beta )
-beam_uz, = boost.longitudinal_momentum( [beam_uz] )
-# Simulation box
-zmin, zmax = boost.copropag_length([ zmin_lab, zmax_lab ])
-# NB: Do not boost the laser quantities: these are boosted in add_laser
 
 # -----------------------------------------------------------------------------
 # Initialization of the simulation (Normal users should not modify this part.)
@@ -286,23 +277,14 @@ if use_beam:
                                    beam_nz, dim, circ_m )
     beam = Species(type=Electron, weight=beam_weight, name='beam')
 # Set the numerical parameters only now: they affect the newly created species
+top.ssnpid = nextpid()
 set_numerics( depos_order, efetch, particle_pusher, dim)
 
 # Setup the field solver object
 # -----------------------------
-em = EM3D(
-    stencil = stencil,
-    npass_smooth = npass_smooth,
-    alpha_smooth = alpha_smooth,
-    stride_smooth = stride_smooth,
-    l_2dxz = (dim in ["2d", "circ"]),
-    l_2drz = (dim in ["circ"]),
-    l_1dz = (dim=="1d"),
-    l_getrho = True,
-    circ_m = (dim == "circ")*circ_m,
-    l_correct_num_Cherenkov = True,
-    type_rz_depose = 1,
-    l_setcowancoefs = True )
+em = initialize_em_solver( stencil, dim,
+    npass_smooth, alpha_smooth, stride_smooth,
+    circ_m = (dim =="circ")*circ_m )
 registersolver(em)
 
 # Introduce the laser
@@ -310,7 +292,7 @@ registersolver(em)
 if use_laser==1:
     add_laser( em, dim, laser_a0, laser_w0, laser_ctau, laser_z0,
         zf=laser_zfoc, theta_pol=laser_polangle, source_z=laser_source_z,
-        lambda0=laser_lambda0, gamma_boost=gamma_boost )
+        laser_file=laser_file, laser_file_energy=laser_file_energy )
 
 # Introduce the beam
 # ------------------
@@ -326,35 +308,25 @@ if use_beam:
 # Create an object to store the information about plasma injection
 plasma_injector = PlasmaInjector( elec, ions, w3d, top, dim,
         plasma_nx, plasma_ny, plasma_nz, plasma_zmin,
-        plasma_zmax, plasma_xmax, plasma_ymax, plasma_dens_func, 
-        uz_m = plasma_uz_m )
+        plasma_zmax, plasma_xmax, plasma_ymax, plasma_dens_func )
 # Continuously inject the plasma, if the moving window is on
 if use_moving_window :
     installuserinjection( plasma_injector.continuous_injection )
-        
+
 # Setup the diagnostics
 # ---------------------
-remove_existing_directory( ['diags', 'lab_diags'] )
+remove_existing_directory( ['diags'] )
 if write_fields == 1:
     diag1 = FieldDiagnostic( period=diag_period, top=top, w3d=w3d, em=em,
                 comm_world=comm_world, lparallel_output=parallel_output )
     installafterstep( diag1.write )
 if write_particles == 1:
     diag2 = ParticleDiagnostic( period=diag_period, top=top, w3d=w3d,
-            species={ species.name : species for species in listofallspecies }, 
+            species={species.name : species for species in listofallspecies},
+            particle_data={"position","momentum","weighting","id"},
             comm_world=comm_world, lparallel_output=parallel_output )
     installafterstep( diag2.write )
-if (write_lab_frame == 1) and (gamma_boost>1):
-    diag0 = BoostedFieldDiagnostic( zmin_lab, zmax_lab, clight,
-        dt_snapshot_lab, Ntot_snapshot_lab, gamma_boost, 
-        period=diag_period, top=top, w3d=w3d, em=em, comm_world=comm_world )
-    installafterstep( diag0.write )
-    diag3 = BoostedParticleDiagnostic( zmin_lab, zmax_lab, clight,
-        dt_snapshot_lab, Ntot_snapshot_lab, gamma_boost, 
-        period=diag_period, top=top, w3d=w3d, em=em, comm_world=comm_world,
-        species={ species.name : species for species in listofallspecies })
-    installafterstep(diag3.write)
-    
+
 print('\nInitialization complete\n')
 
 # -----------------------------------------------------------------------------
@@ -367,8 +339,10 @@ if interactive==0:
     while n_stepped < N_steps:
         step(10)
         n_stepped = n_stepped + 10
+
+    dump()
     printtimers()
-        
+
 # Interactive mode
 elif interactive==1:
     print('<<< To execute n steps, type "step(n)" at the prompt >>>')

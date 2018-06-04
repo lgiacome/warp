@@ -166,7 +166,7 @@ class TraceParticle(object):
             top.ssn = top.ssn + self.nn
         else:
             self.ssn = None
-        self.ssn = parallel.broadcast(self.ssn)
+        self.ssn = warp_parallel.broadcast(self.ssn)
         self.pidinit[:,top.ssnpid-1] = self.ssn
         # --- Set current values
         self.x = self.xinit*ones(self.nn)
