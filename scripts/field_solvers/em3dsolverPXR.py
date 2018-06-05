@@ -699,11 +699,10 @@ def initialize_virtual_particles( self, w3d ):
                                 self.yy_global, self.zz_global, self.nn_global,
                                 js_laser_pos)
 
-    #pxr.init_laser_species_python(self.emax, self.spot, self.vector, Ux, Uy,
-    #                                -1., self.weights_global, self.xx_global,
-    #                            self.yy_global, self.zz_global, self.nn_global,
-    #                            js_laser_neg)
-
+    pxr.init_laser_species_python(self.emax, self.spot, self.vector, Ux, Uy,
+                                -1., self.weights_global, self.xx_global,
+                                self.yy_global, self.zz_global, self.nn_global,
+                                js_laser_neg)
     self.js_pos = js_laser_pos
     self.js_neg = js_laser_neg
 
@@ -719,9 +718,9 @@ def push_virtual_particles(self, top, f, clight ):
     dt = top.dt
 
     # Coordinate of the antenna in the plane (Ux,Uy)
-    wpid = top.wpid
+    wpid = pxr.wpid
 
-    for js in [self.js_pos]:
+    for js in [self.js_neg, self.js_pos]:
         nb = numpy.empty(1,dtype=numpy.int64)
         pxr.get_local_number_of_particles_from_species(js, nb )
 
@@ -854,12 +853,22 @@ class EM3DPXR(EM3DFFT):
         if (self.l_debug): print("End __init__")
 
     def finalize(self,lforce=False):
+
         if self.finalized and not lforce: return
         if self.l_pxr:
           EM3D.finalize(self)
+
+          # Rewrite the LaserAntenna class methods for pxr
+          LaserAntenna.initialize_virtual_particles  = \
+                                                  initialize_virtual_particles
+          LaserAntenna.push_virtual_particles        = push_virtual_particles
+          LaserAntenna.select_particles_in_local_box = \
+                                                 select_particles_in_local_box
+
+
           self.allocatefieldarraysFFT()
           self.allocatefieldarraysPXR()
-
+          
           # Rewrite the get_quantity methods to the class species for pxr
           Species.get_quantity_pxr = get_quantity_pxr
           Species.getx             = getx
@@ -884,13 +893,6 @@ class EM3DPXR(EM3DFFT):
           Species.getby            = getby
           Species.getbz            = getbz
           Species.getn             = getn
-
-          # Rewrite the LaserAntenna class methods for pxr
-          LaserAntenna.initialize_virtual_particles  = \
-                                                  initialize_virtual_particles
-          LaserAntenna.push_virtual_particles        = push_virtual_particles
-          LaserAntenna.select_particles_in_local_box = \
-                                                 select_particles_in_local_box
 
 
         else:
@@ -1311,6 +1313,7 @@ class EM3DPXR(EM3DFFT):
         # --- allocates array of species
         if (self.l_debug): print(" Allocates array of species")
         pxr.init_species_section()
+
         for i,s in enumerate(self.listofallspecies):
             # Check for sorting
             if (i >= len(self.sorting.periods)):
@@ -1332,9 +1335,13 @@ class EM3DPXR(EM3DFFT):
             top.npid = 3
         else:
             pxr.npid=top.npid
+
+
+
         pxr.ssnpid=top.ssnpid
         pxr.set_tile_split()
         pxr.init_tile_arrays()
+
         # Add all particles of all species to PXR
         for i,s in enumerate(self.listofallspecies):
             pids=s.getpid(id=-1,bcast=0,gather=0)
@@ -1409,6 +1416,10 @@ class EM3DPXR(EM3DFFT):
 #                for pg in self.pgroups:
 #                   self._callppfunc(ppzx,pgroup=pg,**kw)
 
+        if (self.l_debug): print(" Allocates antenna")
+        for i in range(len(self.laser_antenna)):
+            self.laser_antenna[i].initialize_virtual_particles(w3d)
+            
         if (self.l_debug): print("End allocatefieldarraysPXR")
 
 #            s.ppzx = ppzx
