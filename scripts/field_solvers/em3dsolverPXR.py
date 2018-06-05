@@ -767,32 +767,6 @@ def select_particles_in_local_box(self, w3d, zgrid):
     deposition are not done through warp.
     """
     self.nn = 0
-    '''js = self.js_pos
-    nb = numpy.empty(1,dtype=numpy.int64)
-    pxr.get_local_number_of_particles_from_species(js, nb )
-
-    quantity_array = numpy.empty(nb[0], dtype=numpy.float64, order='F')
-    pxr.getquantity(js, 4, nb, quantity_array)
-    ux = quantity_array
-
-    quantity_array = numpy.empty(nb[0], dtype=numpy.float64, order='F')
-    pxr.getquantity(js, 1, nb, quantity_array)
-    x = quantity_array
-
-
-    self.nn = nb
-    self.xx = self.xx_global[:len(x)]
-    self.yy = self.yy_global[:len(x)]
-    self.zz = self.zz_global[:len(x)]
-    self.xdx = self.xx_global[:len(x)] - x
-    self.ydy = np.zeros(self.nn)
-    self.zdz = np.zeros(self.nn)
-    self.ux = ux
-    self.uy = np.zeros(self.nn)
-    self.uz = np.zeros(self.nn)
-    self.gi = self.gi_global[:len(x)]
-    self.weights = self.weights_global[:len(x)]
-    '''
     return
 
 class EM3DPXR(EM3DFFT):
