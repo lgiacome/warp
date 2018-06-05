@@ -732,12 +732,12 @@ def push_virtual_particles(self, top, f, clight ):
         pxr.getquantity_pid(js, wpid+2, nb, quantity_array)
         y = quantity_array
 
-        t = top.time*(1.-np.dot(self.v, self.vector)/clight)
+        t = top.time*(1.-self.v/clight)
         amp = self.laser_func(x,y,t)
 
         # --- displaces fixed weight particles on "continuous" trajectories
         dispmax = 0.01*clight
-        coef_ampli = dispmax * (1.-np.dot(self.v, self.vector)/clight) / self.emax
+        coef_ampli = dispmax * (1.-self.v/clight) / self.emax
 
         if isinstance(amp,list): #elliptic polarization
             amp_x = amp[0]*self.polvector[0] + amp[1]*self.polvector_2[0]
