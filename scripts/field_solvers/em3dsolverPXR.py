@@ -753,7 +753,7 @@ def push_virtual_particles(self, top, f, clight ):
             amplitude_y = coef_ampli * amp * self.polvector[1]
             amplitude_z = coef_ampli * amp * self.polvector[2]
 
-        pxr.laser_pusher_profile(js, amplitude_x,amplitude_y,amplitude_z, nb)
+        pxr.laser_pusher_profile(js, amplitude_x,amplitude_y,amplitude_z, nb,self.vx,self.vy,self.vz)
 
 def select_particles_in_local_box(self, w3d, zgrid):
     """
