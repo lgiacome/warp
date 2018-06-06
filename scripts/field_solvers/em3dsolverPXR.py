@@ -1305,10 +1305,9 @@ class EM3DPXR(EM3DFFT):
         if top.npid < 3:
             # At least 3 pid columns are need fot the antenna particles (weigth,
             # 2 components of the relative position to the plane)
-            pxr.npid = 3
-            top.npid = 3
-        else:
-            pxr.npid=top.npid
+            while top.npid < 3:
+                nextpid()  
+        pxr.npid=top.npid
 
 
 
