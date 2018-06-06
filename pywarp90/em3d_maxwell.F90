@@ -6186,6 +6186,13 @@ integer(ISZ):: n,xl,xr
 end subroutine shift_em3dsplitf_ncells_x
 
 subroutine shift_3darray_ncells_x(f,nx,ny,nz,nxguard,nyguard,nzguard,xl,xr,n)
+! ==================================================================================
+! Shift an array of reals along the z axis by n cells, and exchange values with
+! neighboring processors, in the direction of the shift
+! If n is positive, the values are shifted to the left within one domain
+! If n is negative, the values are shifter to the right within one domain
+! xl and xr are tags that identify the left and right boundary conditions
+! ==================================================================================
 #ifdef MPIPARALLEL
 use mpirz
 #endif
@@ -6194,44 +6201,51 @@ integer(ISZ) :: nx,ny,nz,nxguard,nyguard,nzguard,n,xl,xr
 integer(ISZ), parameter:: otherproc=10, ibuf = 950
 real(kind=8) :: f(-nxguard:nx+nxguard,-nyguard:ny+nyguard,-nzguard:nz+nzguard)
 
-if (n>0) then
+if (n > 0) then
+  ! Shift the values to the left within one domain
   f(-nxguard:nx+nxguard-n,:,:) = f(-nxguard+n:nx+nxguard,:,:)
   if (xr/=otherproc) f(nx+nxguard-n+1:,:,:) = 0.
 
 #ifdef MPIPARALLEL
-    if (xl==otherproc) then
-       call mpi_packbuffer_init(size(f(nxguard-n+1:nxguard,:,:)),ibuf)
-       call mympi_pack(f(nxguard-n+1:nxguard,:,:),ibuf)
-       call mpi_send_pack(procneighbors(0,0),0,ibuf)
-    end if
-    if (xr==otherproc) then
-      call mpi_packbuffer_init(size(f(nx+nxguard-n+1:nx+nxguard,:,:)),ibuf)
-      call mpi_recv_pack(procneighbors(1,0),0,ibuf)
-      f(nx+nxguard-n+1:nx+nxguard,:,:) = reshape(mpi_unpack_real_array( size(f(nx+nxguard-n+1:nx+nxguard,:,:)),ibuf), &
-                                                           shape(f(nx+nxguard-n+1:nx+nxguard,:,:)))
-    end if
+  ! Send data from the left side of the domain to the left processor
+  if (xl==otherproc) then
+     call mpi_packbuffer_init(size(f(nxguard-n+1:nxguard,:,:)),ibuf)
+     call mympi_pack(f(nxguard-n+1:nxguard,:,:),ibuf)
+     call mpi_send_pack(procneighbors(0,0),0,ibuf)
+  end if
+  ! Receive data from the right processor into the right side of the domain
+  if (xr==otherproc) then
+    call mpi_packbuffer_init(size(f(nx+nxguard-n+1:,:,:)),ibuf)
+    call mpi_recv_pack(procneighbors(1,0),0,ibuf)
+    f(nx+nxguard-n+1:,:,:) = reshape(mpi_unpack_real_array( size(f(nx+nxguard-n+1:,:,:)),ibuf), &
+                                                           shape(f(nx+nxguard-n+1:,:,:)))
+  end if
 #endif
-end if
-if (n<0) then
-  n=-n
-  f(-nxguard+n:nx+nxguard,:,:) = f(-nxguard:nx+nxguard-n,:,:)
-  if (xl/=otherproc) f(-nxguard:-nxguard+n-1,:,:) = 0.
+
+else if (n < 0) then
+  ! Shift the values to the right within one domain
+  ! NB: In the mathematical operations below, keep in mind that n is *negative*
+  f(-nxguard-n:nx+nxguard,:,:) = f(-nxguard:nx+nxguard+n,:,:)
+  if (xl/=otherproc) f(:,:,:-nxguard-n-1) = 0.
 
 #ifdef MPIPARALLEL
-    if (xr==otherproc) then
-       call mpi_packbuffer_init(size(f(nx-nxguard:nx-nxguard+n,:,:)),ibuf)
-       call mympi_pack(f(nx-nxguard:nx-nxguard+n,:,:),ibuf)
-       call mpi_send_pack(procneighbors(1,0),0,ibuf)
-    end if
-    if (xl==otherproc) then
-      call mpi_packbuffer_init(size(f(:-nxguard+n-1,:,:)),ibuf)
-      call mpi_recv_pack(procneighbors(0,0),0,ibuf)
-      f(:-nxguard+n-1,:,:) = reshape(mpi_unpack_real_array( size(f(:-nxguard+n-1,:,:)),ibuf), &
-                                                                   shape(f(:-nxguard+n-1,:,:)))
-    end if
+  ! Send data from the right side of the domain to the right processor
+  if (xr==otherproc) then
+     call mpi_packbuffer_init(size(f(nx-nxguard:nx-nxguard-n-1,:,:)),ibuf)
+     call mympi_pack(f(nx-nxguard:nx-nxguard-n-1,:,:),ibuf)
+     call mpi_send_pack(procneighbors(1,0),0,ibuf)
+  end if
+  ! Receive data from the left processor into the left side of the domain
+  if (xl==otherproc) then
+    call mpi_packbuffer_init(size(f(-nxguard:-nxguard-n-1,:,:)),ibuf)
+    call mpi_recv_pack(procneighbors(0,0),0,ibuf)
+    f(-nxguard:-nxguard-n-1,:,:) = reshape(mpi_unpack_real_array( size(f(-nxguard:-nxguard-n-1,:,:)),ibuf), &
+                                                                 shape(f(-nxguard:-nxguard-n-1,:,:)))
+  end if
 #endif
-  n=-n
-end if
+
+endif
+
 
   return
 end subroutine shift_3darray_ncells_x
