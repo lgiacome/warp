@@ -1,5 +1,4 @@
-#include "top.h"
-!     Last change:  JLV   3 Jun 2004    0:17 am
+#include "top.h"!     Last change:  JLV   3 Jun 2004    0:17 am
 !************* MODULE field  **********************************************
 
 module mod_emfield3d
@@ -5749,14 +5748,6 @@ integer(ISZ):: n,i,it,zl,zr
        call shift_circarray_ncells_z(f%By_circ,f%nx,f%nz,f%circ_m,f%nxguard,f%nzguard,zl,zr,n)
        call shift_circarray_ncells_z(f%Bz_circ,f%nx,f%nz,f%circ_m,f%nxguard,f%nzguard,zl,zr,n)
    endif
-   do it=1,f%ntimes
-     call shift_3darray_ncells_z(f%Jxarray(:,:,:,it), &
-                                    f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
-     call shift_3darray_ncells_z(f%Jyarray(:,:,:,it), &
-                                    f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
-     call shift_3darray_ncells_z(f%Jzarray(:,:,:,it), &
-                                    f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,zl,zr,n)
-   end do
    if (f%nxr>0) then
       do it=1,f%ntimes
          f%Rho => f%Rhoarray(:,:,:,it)
@@ -6114,14 +6105,6 @@ integer(ISZ):: n,i,it,xl,xr
   call shift_3darray_ncells_x(f%Bx,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   call shift_3darray_ncells_x(f%By,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
   call shift_3darray_ncells_x(f%Bz,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-  do it=1,f%ntimes
-    call shift_3darray_ncells_x(f%Jxarray(:,:,:,it), &
-                                    f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-    call shift_3darray_ncells_x(f%Jyarray(:,:,:,it), &
-                                    f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-    call shift_3darray_ncells_x(f%Jzarray(:,:,:,it), &
-                                    f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,xl,xr,n)
-  end do
   if (f%nxr>0) then
       do it=1,f%ntimes
          f%Rho => f%Rhoarray(:,:,:,it)
@@ -6318,14 +6301,6 @@ integer(ISZ):: n,i,it,yl,yr
   call shift_3darray_ncells_y(f%Bx,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,yl,yr,n)
   call shift_3darray_ncells_y(f%By,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,yl,yr,n)
   call shift_3darray_ncells_y(f%Bz,f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,yl,yr,n)
-  do it=1,f%ntimes
-    call shift_3darray_ncells_y(f%Jxarray(:,:,:,it), &
-                                    f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,yl,yr,n)
-    call shift_3darray_ncells_y(f%Jyarray(:,:,:,it), &
-                                    f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,yl,yr,n)
-    call shift_3darray_ncells_y(f%Jzarray(:,:,:,it), &
-                                    f%nx,f%ny,f%nz,f%nxguard,f%nyguard,f%nzguard,yl,yr,n)
-  end do
   if (f%nxr>0) then
       do it=1,f%ntimes
          f%Rho => f%Rhoarray(:,:,:,it)
