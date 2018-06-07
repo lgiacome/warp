@@ -64,7 +64,8 @@ then `cd` into the repository `warp/pywarp90` and create two files:
 
 - A file named `Makefile.local.pympi` which contains the following text:
 
-```FCOMP= -F gfortran --fcompex mpif90```
+```FCOMP= -F gfortran
+FCOMPEXEC =  --fcompexec mpif90```
 
 - A file named `setup.local.py` which contains the following text:
 
