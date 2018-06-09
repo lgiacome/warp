@@ -25,6 +25,19 @@ from ..warp import *
 def particlesdoc():
     print __doc__
 
+# -------------------------------------------------------------------------
+def setpid(pidname, pkg=None, force=False):
+    """Sets the specified pid.
+    If it has already been set (i.e. it is nonzero), then do nothing.
+     - pidname: name of the pid
+     - pkg=top: package where pid is defined
+     - force=False: If True, set it even if it has already be set
+    """
+    if pkg is None:
+        pkg = top
+    if getattr(pkg, pidname) == 0 or force:
+        setattr(pkg, pidname, nextpid())
+
 ##########################################################################
 # Setup the random subsets. This should only be used for special purposes.
 # This routine must be explicitly called by the user for this mechanism to
