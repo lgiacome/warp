@@ -59,7 +59,6 @@ RUN pip install --upgrade pip \
 RUN cd warp/pywarp90 \
     && echo 'FCOMP= -F gfortran' >> Makefile.local \
     && echo 'FCOMP= -F gfortran' >> Makefile.local.pympi \
-    && echo 'FCOMPEXEC= --fcompexec mpif90' >> Makefile.local.pympi \
     && echo "if parallel:" >> setup.local.py \
     && echo "   library_dirs += ['/home/warp_user/miniconda2/lib/']" >> setup.local.py \
     && echo "   libraries = fcompiler.libs + ['mpichf90', 'mpich', 'opa', 'mpl']" >> setup.local.py \
