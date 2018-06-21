@@ -21,7 +21,7 @@ class MagnetostaticMG(SubcycledPoissonSolver):
                      'mgmaxiters','mgtol','mgmaxlevels','mgform','mgverbose',
                      'lcndbndy','icndbndy','laddconductor','lprecalccoeffs']
 
-    def __init__(self,luse2D=false,**kw):
+    def __init__(self,luse2D=True,**kw):
         self.grid_overlap = 2
         self.luse2D = luse2D
 
@@ -31,15 +31,20 @@ class MagnetostaticMG(SubcycledPoissonSolver):
                                         f3d.bfield,kw)
 
         # --- Check for cylindrical geometry
-        if self.lcylindrical: self.solvergeom = w3d.RZgeom
-
-        SubcycledPoissonSolver.__init__(self,kwdict=kw)
-        if self.ny == 0 and self.solvergeom not in [w3d.RZgeom,w3d.XZgeom]:
+        if self.lcylindrical:
             self.solvergeom = w3d.RZgeom
+        elif 'solvergeom' in kw:
+            self.solvergeom = kw['solvergeom']
+        else:
+            self.solvergeom = w3d.solvergeom
+
         if self.solvergeom in [w3d.RZgeom,w3d.XZgeom]:
+            self.ny = 0
             self.nyguardphi = 0
             self.nyguardrho = 0
             self.nyguarde   = 0
+
+        SubcycledPoissonSolver.__init__(self,kwdict=kw)
 
         self.ncomponents = 3
         self.lusevectorpotential = true
