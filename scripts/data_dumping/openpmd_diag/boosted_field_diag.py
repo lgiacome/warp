@@ -1,3 +1,4 @@
+# coding: utf8
 """
 This file defines the class BoostedFieldDiagnostic
 
@@ -16,6 +17,7 @@ from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
 from warp_parallel import gather, me, mpiallgather
+import sys
 try:
     from mpi4py import MPI
 except ImportError:
@@ -35,7 +37,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period, em, top, w3d,
                  comm_world=None, fieldtypes=["rho", "E", "B", "J"],
-                 z_subsampling=1, write_dir=None, boost_dir=1 ) :
+                 z_subsampling=1, write_dir=None, boost_dir=1,lparallel_output=False ) :
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -82,7 +84,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # Initialize the normal attributes of a FieldDiagnostic
         FieldDiagnostic.__init__(self, period, em, top, w3d,
                 comm_world, fieldtypes=fieldtypes, write_dir=write_dir,
-                lparallel_output=False)
+                lparallel_output=lparallel_output)
         # Note: The boosted frame diagnostics cannot use parallel HDF5 output
 
         # Gather the indices that correspond to the positions
@@ -102,6 +104,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         self.inv_gamma_boost = 1./gamma_boost
         self.beta_boost = np.sqrt( 1. - self.inv_gamma_boost**2 ) * boost_dir
         self.inv_beta_boost = 1./self.beta_boost
+        self.lparallel_output = lparallel_output
 
         # Find the z resolution and size of the diagnostic *in the lab frame*
         # (Needed to initialize metadata in the openPMD file)
@@ -126,7 +129,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             snapshot = LabSnapshot( t_lab,
                                     zmin_lab + v_lab*t_lab,
                                     zmax_lab + v_lab*t_lab,
-                                    self.write_dir, i, self.rank, boost_dir)
+                                    self.write_dir, i, self.rank, boost_dir,lparallel_output)
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
             if self.rank == 0:
@@ -156,7 +159,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         # Every self.period, write the buffered slices to disk
         if self.top.it % self.period == 0:
-            self.flush_to_disk()
+            if( self.lparallel_output == False) : 
+              self.flush_to_disk()
+            else: 
+              self.flush_to_disk_parallel()
 
     def store_snapshot_slices( self ):
         """
@@ -194,6 +200,110 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 snapshot.register_slice( slice_array, self.inv_dz_lab )
 
 
+    def flush_to_disk_parallel(self): 
+        """ 
+        Write the buffered slices of fields to the disk using parallel h5py
+        Erease the buffered slices of LabSnapshot objects
+        Dada is NOT gathered to proc 0 before being save to disk
+        """
+        f2i = self.slice_handler.field_to_index
+        sys.stdout = sys.__stdout__
+        for snapshot in self.snapshots:
+          #Compact succesive slices that have been beffered 
+          #over time into a single array 
+          # This returns None, None, None for proc which has no slices
+          field_array, iz_min, iz_max = snapshot.compact_slices()
+          write_on = False
+          if (field_array is not None): write_on =True
+          # Erase the memory buffers
+          snapshot.buffered_slices = []
+          snapshot.buffer_z_indices = []
+          # creates the subcommunicator that will open the h5 file
+          in_list = [];in_list = -1 
+          if (field_array is not None):
+              in_list = me
+          ranks_group_list = mpiallgather( in_list )
+          
+          ranks_group_list = list(set(ranks_group_list))
+          ranks_group_list = [x for x in ranks_group_list if x >= 0 ]
+          mpi_group = self.comm_world.Get_group()
+          self.ranks_group_list = ranks_group_list
+          newgroup = mpi_group.Incl(ranks_group_list)
+          dump_comm = self.comm_world.Create(newgroup)
+          if(dump_comm!= MPI.COMM_NULL):
+            f = self.open_file( snapshot.filename, parallel_open=True, comm=dump_comm )
+          else: 
+            f = None
+          #if current mpi need to write for this snap
+          if(write_on):
+            if f is not None:
+              field_path = "/data/%d/fields/" %snapshot.iteration
+              field_grp = f[field_path]
+            else:
+              field_grp = None
+            # Loop over the different quantities that should be written
+            for fieldtype in self.fieldtypes:
+              if fieldtype == "rho":
+                  indices = self.global_indices
+                  if field_grp is not None:
+                    dset = field_grp[path]
+		  else: 
+                    dset = None
+                  if self.dim == "2d": 
+                    data = field_array[ f2i[ "rho" ] ]#\
+              #      [:,1:6]#iz_min-self.top.fsdecomp.iz[self.rank]:iz_max-self.top.fsdecomp.iz[self.rank]]
+                  elif self.dim == "3d":
+                      data = field_array[ f2i[ "rho" ] ]\
+                      [:,:,iz_min-self.top.fsdecomp.iz[self.rank]:iz_max-self.top.fsdecomp.iz[self.rank]]
+                  if self.dim == "2d":
+                    with dset.collective:
+                      dset[ indices[0,0]:indices[1,0],
+                                iz_min:iz_max ] = data
+                  elif self.dim == "3d":
+                    with dset.collective:
+                      dset[ indices[0,0]:indices[1,0],
+                                  indices[0,1]:indices[1,1],iz_min:iz_max ] = data
+
+              else:
+                for fieldtype in ["E", "B", "J"]:
+                  for coord in self.coords:
+                    quantity = "%s%s" %(fieldtype, coord)
+                    path = "%s/%s" %(fieldtype, coord)
+                    indices = self.global_indices
+                    if field_grp is not None:
+                      dset = field_grp[path]
+		    else: 
+                      dset = None
+                    if self.dim == "2d": 
+                      data = field_array[ f2i[ quantity ] ]#\
+                #      [:,1:6]#iz_min-self.top.fsdecomp.iz[self.rank]:iz_max-self.top.fsdecomp.iz[self.rank]]
+                    elif self.dim == "3d":
+                        data = field_array[ f2i[ quantity ] ]\
+                        [:,:,iz_min-self.top.fsdecomp.iz[self.rank]:iz_max-self.top.fsdecomp.iz[self.rank]]
+                    if self.dim == "2d":
+                      with dset.collective:
+                        dset[ indices[0,0]:indices[1,0],
+                                  iz_min:iz_max ] = data
+                    elif self.dim == "3d":
+                      with dset.collective:
+                        dset[ indices[0,0]:indices[1,0],
+                                    indices[0,1]:indices[1,1],iz_min:iz_max ] = data
+          if f is not None:
+             f.close()
+
+        mpi_group.Free()
+        newgroup.Free()
+        if dump_comm != MPI.COMM_NULL:
+            dump_comm.Free()
+        ranks_group_list = []
+        data = []
+        field_array = []
+
+        
+
+
+
+
     def flush_to_disk( self ):
         """
         Writes the buffered slices of fields to the disk
@@ -205,7 +315,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         """
         # Loop through the labsnapshots and flush the data
         for snapshot in self.snapshots:
-
+            
             # Compact the successive slices that have been buffered
             # over time into a single array
             # This returns None, None, None for proc which has no slices
@@ -429,7 +539,7 @@ class LabSnapshot:
     """
 
     def __init__(self, t_lab, zmin_lab, zmax_lab,
-                 write_dir, i, rank, boost_dir):
+                 write_dir, i, rank, boost_dir,lparallel=False):
         """
         Initialize a LabSnapshot
 
@@ -456,7 +566,10 @@ class LabSnapshot:
             to the boosted frame (along the z axis)
         """
         # Deduce the name of the filename where this snapshot writes
-        if rank == 0:
+        if(lparallel == False):
+            if rank == 0:
+              self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
+        else: 
             self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
         self.iteration = i
 
