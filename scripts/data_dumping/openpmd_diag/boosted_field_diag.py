@@ -1,4 +1,3 @@
-# coding: utf8
 """
 This file defines the class BoostedFieldDiagnostic
 
@@ -17,7 +16,6 @@ from field_diag import FieldDiagnostic
 from field_extraction import get_dataset
 from data_dict import z_offset_dict
 from warp_parallel import gather, me, mpiallgather
-import sys
 try:
     from mpi4py import MPI
 except ImportError:
@@ -207,25 +205,32 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         Dada is NOT gathered to proc 0 before being save to disk
         """
         f2i = self.slice_handler.field_to_index
-        sys.stdout = sys.__stdout__
+ 
+        # loop over boosted frames snapshots 
         for snapshot in self.snapshots:
           #Compact succesive slices that have been beffered 
           #over time into a single array 
           # This returns None, None, None for proc which has no slices
           field_array, iz_min, iz_max = snapshot.compact_slices()
+ 
+          # if field_array is not None , then this proc will have to dump data
           write_on = False
           if (field_array is not None): write_on =True
+
           # Erase the memory buffers
           snapshot.buffered_slices = []
           snapshot.buffer_z_indices = []
-          # creates the subcommunicator that will open the h5 file
+          # creates the subcommunicator that will open the h5 file and dump data
           in_list = [];in_list = -1 
           if (field_array is not None):
               in_list = me
           ranks_group_list = mpiallgather( in_list )
           
           ranks_group_list = list(set(ranks_group_list))
+
+          # deletes -1 from the list of ranks
           ranks_group_list = [x for x in ranks_group_list if x >= 0 ]
+
           mpi_group = self.comm_world.Get_group()
           self.ranks_group_list = ranks_group_list
           newgroup = mpi_group.Incl(ranks_group_list)
@@ -234,7 +239,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             f = self.open_file( snapshot.filename, parallel_open=True, comm=dump_comm )
           else: 
             f = None
-          #if current mpi need to write for this snap
+          #if current mpi need to dump for this snap
           if(write_on):
             if f is not None:
               field_path = "/data/%d/fields/" %snapshot.iteration
@@ -250,11 +255,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 		  else: 
                     dset = None
                   if self.dim == "2d": 
-                    data = field_array[ f2i[ "rho" ] ]#\
-              #      [:,1:6]#iz_min-self.top.fsdecomp.iz[self.rank]:iz_max-self.top.fsdecomp.iz[self.rank]]
+                    data = field_array[ f2i[ "rho" ] ]
                   elif self.dim == "3d":
-                      data = field_array[ f2i[ "rho" ] ]\
-                      [:,:,iz_min-self.top.fsdecomp.iz[self.rank]:iz_max-self.top.fsdecomp.iz[self.rank]]
+                      data = field_array[ f2i[ "rho" ] ]
                   if self.dim == "2d":
                     with dset.collective:
                       dset[ indices[0,0]:indices[1,0],
@@ -275,11 +278,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 		    else: 
                       dset = None
                     if self.dim == "2d": 
-                      data = field_array[ f2i[ quantity ] ]#\
-                #      [:,1:6]#iz_min-self.top.fsdecomp.iz[self.rank]:iz_max-self.top.fsdecomp.iz[self.rank]]
+                      data = field_array[ f2i[ quantity ] ]
                     elif self.dim == "3d":
-                        data = field_array[ f2i[ quantity ] ]\
-                        [:,:,iz_min-self.top.fsdecomp.iz[self.rank]:iz_max-self.top.fsdecomp.iz[self.rank]]
+                        data = field_array[ f2i[ quantity ] ]
                     if self.dim == "2d":
                       with dset.collective:
                         dset[ indices[0,0]:indices[1,0],
@@ -288,9 +289,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                       with dset.collective:
                         dset[ indices[0,0]:indices[1,0],
                                     indices[0,1]:indices[1,1],iz_min:iz_max ] = data
+          #closes current snapshot file
           if f is not None:
              f.close()
-
+        # frees communicators
         mpi_group.Free()
         newgroup.Free()
         if dump_comm != MPI.COMM_NULL:
