@@ -208,90 +208,89 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
  
         # loop over boosted frames snapshots 
         for snapshot in self.snapshots:
-          #Compact succesive slices that have been beffered 
-          #over time into a single array 
-          # This returns None, None, None for proc which has no slices
-          field_array, iz_min, iz_max = snapshot.compact_slices()
+            #Compact succesive slices that have been beffered 
+            #over time into a single array 
+            # This returns None, None, None for proc which has no slices
+            field_array, iz_min, iz_max = snapshot.compact_slices()
  
-          # if field_array is not None , then this proc will have to dump data
-          write_on = False
-          if (field_array is not None): write_on =True
+            # if field_array is not None , then this proc will have to dump data
+            write_on = False
+            if (field_array is not None): write_on =True
 
-          # Erase the memory buffers
-          snapshot.buffered_slices = []
-          snapshot.buffer_z_indices = []
-          # creates the subcommunicator that will open the h5 file and dump data
-          in_list = [];in_list = -1 
-          if (field_array is not None):
-              in_list = me
-          ranks_group_list = mpiallgather( in_list )
-          
-          ranks_group_list = list(set(ranks_group_list))
+            # Erase the memory buffers
+            snapshot.buffered_slices = []
+            snapshot.buffer_z_indices = []
+            # creates the subcommunicator that will open the h5 file and dump data
+            in_list = [];in_list = -1 
+            if (field_array is not None):
+                in_list = me
+            ranks_group_list = mpiallgather( in_list )
+            
+            ranks_group_list = list(set(ranks_group_list))
 
-          # deletes -1 from the list of ranks
-          ranks_group_list = [x for x in ranks_group_list if x >= 0 ]
+            # deletes -1 from the list of ranks
+            ranks_group_list = [x for x in ranks_group_list if x >= 0 ]
 
-          mpi_group = self.comm_world.Get_group()
-          self.ranks_group_list = ranks_group_list
-          newgroup = mpi_group.Incl(ranks_group_list)
-          dump_comm = self.comm_world.Create(newgroup)
-          if(dump_comm!= MPI.COMM_NULL):
-            f = self.open_file( snapshot.filename, parallel_open=True, comm=dump_comm )
-          else: 
-            f = None
-          #if current mpi need to dump for this snap
-          if(write_on):
+            mpi_group = self.comm_world.Get_group()
+            self.ranks_group_list = ranks_group_list
+            newgroup = mpi_group.Incl(ranks_group_list)
+            dump_comm = self.comm_world.Create(newgroup)
+            if(dump_comm!= MPI.COMM_NULL):
+                f = self.open_file( snapshot.filename, parallel_open=True, comm=dump_comm )
+            else: 
+                f = None
+            #if current mpi need to dump for this snap
+            if(write_on):
+                if f is not None:
+                    field_path = "/data/%d/fields/" %snapshot.iteration
+                    field_grp = f[field_path]
+                else:
+                    field_grp = None
+                # Loop over the different quantities that should be written
+                for fieldtype in self.fieldtypes:
+                    if fieldtype == "rho":
+                        indices = self.global_indices
+                        if field_grp is not None:
+                            dset = field_grp[path]
+	                else: 
+                            dset = None
+                        if self.dim == "2d": 
+                            data = field_array[ f2i[ "rho" ] ]
+                        elif self.dim == "3d":
+                            data = field_array[ f2i[ "rho" ] ]
+                        if self.dim == "2d":
+                            with dset.collective:
+                                dset[ indices[0,0]:indices[1,0],
+                                      iz_min:iz_max ] = data
+                        elif self.dim == "3d":
+                            with dset.collective:
+                                dset[ indices[0,0]:indices[1,0],
+                                        indices[0,1]:indices[1,1],iz_min:iz_max ] = data
+                    else:
+                        for fieldtype in ["E", "B", "J"]:
+                            for coord in self.coords:
+                                quantity = "%s%s" %(fieldtype, coord)
+                                path = "%s/%s" %(fieldtype, coord)
+                                indices = self.global_indices
+                                if field_grp is not None:
+                                    dset = field_grp[path]
+	                        else: 
+                                    dset = None
+                                if self.dim == "2d": 
+                                    data = field_array[ f2i[ quantity ] ]
+                                elif self.dim == "3d":
+                                    data = field_array[ f2i[ quantity ] ]
+                                if self.dim == "2d":
+                                    with dset.collective:
+                                        dset[ indices[0,0]:indices[1,0],
+                                              iz_min:iz_max ] = data
+                                elif self.dim == "3d":
+                                    with dset.collective:
+                                        dset[ indices[0,0]:indices[1,0],
+                                                indices[0,1]:indices[1,1],iz_min:iz_max ] = data
+            #closes current snapshot file
             if f is not None:
-              field_path = "/data/%d/fields/" %snapshot.iteration
-              field_grp = f[field_path]
-            else:
-              field_grp = None
-            # Loop over the different quantities that should be written
-            for fieldtype in self.fieldtypes:
-              if fieldtype == "rho":
-                  indices = self.global_indices
-                  if field_grp is not None:
-                    dset = field_grp[path]
-		  else: 
-                    dset = None
-                  if self.dim == "2d": 
-                    data = field_array[ f2i[ "rho" ] ]
-                  elif self.dim == "3d":
-                      data = field_array[ f2i[ "rho" ] ]
-                  if self.dim == "2d":
-                    with dset.collective:
-                      dset[ indices[0,0]:indices[1,0],
-                                iz_min:iz_max ] = data
-                  elif self.dim == "3d":
-                    with dset.collective:
-                      dset[ indices[0,0]:indices[1,0],
-                                  indices[0,1]:indices[1,1],iz_min:iz_max ] = data
-
-              else:
-                for fieldtype in ["E", "B", "J"]:
-                  for coord in self.coords:
-                    quantity = "%s%s" %(fieldtype, coord)
-                    path = "%s/%s" %(fieldtype, coord)
-                    indices = self.global_indices
-                    if field_grp is not None:
-                      dset = field_grp[path]
-		    else: 
-                      dset = None
-                    if self.dim == "2d": 
-                      data = field_array[ f2i[ quantity ] ]
-                    elif self.dim == "3d":
-                        data = field_array[ f2i[ quantity ] ]
-                    if self.dim == "2d":
-                      with dset.collective:
-                        dset[ indices[0,0]:indices[1,0],
-                                  iz_min:iz_max ] = data
-                    elif self.dim == "3d":
-                      with dset.collective:
-                        dset[ indices[0,0]:indices[1,0],
-                                    indices[0,1]:indices[1,1],iz_min:iz_max ] = data
-          #closes current snapshot file
-          if f is not None:
-             f.close()
+               f.close()
         # frees communicators
         mpi_group.Free()
         newgroup.Free()
