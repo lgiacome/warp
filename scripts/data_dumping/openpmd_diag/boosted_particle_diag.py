@@ -14,6 +14,7 @@ import time
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
 from warp_parallel import me, mpiallgather
+import sys
 try:
     from mpi4py import MPI
 except ImportError:
@@ -35,7 +36,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                  em, top, w3d, comm_world=None,
                  particle_data=["position", "momentum", "weighting"],
                  select=None, write_dir=None,
-                 species={"electrons": None}, boost_dir=1 ):
+                 species={"electrons": None}, boost_dir=1,lparallel_output=False ):
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -72,13 +73,15 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         # Do not leave write_dir as None, as this may conflict with
         # the default directory ('./diags') in which diagnostics in the
         # boosted frame are written
+        sys.stdout = sys.__stdout__
         if write_dir is None:
             write_dir = 'lab_diags'
-
+         
+        self.lparallel_output = lparallel_output
         # Initialize Particle diagnostic normal attributes
         ParticleDiagnostic.__init__(self, period, top, w3d, comm_world,
             species=species, particle_data=particle_data, select=select,
-            write_dir=write_dir, lparallel_output=False)
+            write_dir=write_dir, lparallel_output = lparallel_output)
         # Note: The boosted frame diagnostics cannot use parallel HDF5 output
 
         # Check user input
@@ -112,9 +115,8 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                             self.write_dir, i, self.species_dict, self.rank )
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
-            if self.rank == 0:
-                self.create_file_empty_particles(
-                    snapshot.filename, i, snapshot.t_lab, self.top.dt)
+            self.create_file_empty_particles(
+                snapshot.filename, i, snapshot.t_lab, self.top.dt)
 
         # Print a message that records the time for initialization
         if self.rank == 0:
@@ -133,7 +135,10 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
         # Every self.period, write the buffered slices to disk
         if self.top.it % self.period == 0:
-            self.flush_to_disk()
+            if(self.lparallel_output == False):
+                self.flush_to_disk()
+            else:
+                self.flush_to_disk_parallel() 
 
     def store_snapshot_slices( self ):
         """
@@ -165,6 +170,72 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                         species, self.select, snapshot.prev_z_boost,
                         snapshot.current_z_boost, snapshot.t_lab )
                     snapshot.register_slice( slice_array, species_name )
+  
+    def flush_to_disk_parallel(self):
+        """
+        Writes the buffered slices of particles to the disk. Erase the
+        buffered slices of the LabSnapshot objects
+        """
+       
+        # Loop through the labsnapshots and flush the data
+        for snapshot in self.snapshots:
+
+            # Prepare dictionary that contain, for each species, the list of the
+            # local number of macroparticles to be dumped on each proc,
+            # the total number of particles to be dumped across all procs,
+            # and the compact 2d arrays of particle quantities (with shape
+            # (n_quantity, n_particle))
+            nlocals_dict = dict()
+            nglobal_dict = dict()
+            parray_dict  = dict()
+            # Compact the successive slices that have been buffered
+            # over time into a single array
+            for species_name in self.species_dict:
+                particle_array = snapshot.compact_slices(species_name)
+                if self.comm_world is not None:
+
+                    parray_dict[species_name]=particle_array
+                    n = np.size(particle_array[0])
+                    nlocals_dict[species_name]= mpiallgather( n )
+                    nglobal_dict[species_name]=np.sum(nlocals_dict[species_name])
+
+                    n_rank = nlocals_dict[species_name]
+
+                    # Create a communicator containing ranks that have
+                    # particles to dump
+                    in_list = -1
+                    write_on = False
+                    if (np.shape(particle_array)[1] != 0) :
+                        in_list = me
+                        write_on = True
+                    ranks_group_list = mpiallgather( in_list )
+                    # deletes -1 from the list of ranks
+                    ranks_group_list = [x for x in ranks_group_list if x >= 0 ]
+                    ranks_group_list = list(set(ranks_group_list))
+                    mpi_group = self.comm_world.Get_group()
+                    self.ranks_group_list = ranks_group_list
+                    newgroup = mpi_group.Incl(ranks_group_list)
+                    # Create communicator
+                    dump_comm = self.comm_world.Create(newgroup)
+                    if(write_on): 
+                        n_part_to_dump = np.shape(particle_array)[1]
+                        p_array = particle_array 
+                        self.write_slices(p_array, species_name, snapshot,
+                        self.particle_catcher.particle_to_index,lparallel_output=True\
+                        ,comm=dump_comm,n_rank=n_rank,n_global=nglobal_dict)
+                else:
+                    # Prepare single-proc output (for single-proc simulation)
+                    parray_dict[species_name] = particle_array
+                    n = np.size(parray_dict[species_name][0])
+                    nlocals_dict[species_name]= None
+                    nglobal_dict[species_name]= n
+    
+
+            snapshot.buffered_slices[species_name] = []  
+      
+
+
+
 
     def flush_to_disk(self):
         """
@@ -218,21 +289,40 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                 # Erase the buffers
                 snapshot.buffered_slices[species_name] = []
 
-    def write_boosted_dataset(self, species_grp, path, data, quantity):
+    def write_boosted_dataset(self, species_grp, path, data, quantity,n_rank=None,n_global=None,parallel_open=False,comm=None):
         """
         Writes each quantity of the buffered dataset to the disk, the
         final step of the writing
         """
-        dset = species_grp[path]
-        index = dset.shape[0]
+        if(parallel_open == False): 
+            dset = species_grp[path]
+            index = dset.shape[0]
 
-        # Resize the h5py dataset
-        dset.resize(index+len(data), axis=0)
+            # Resize the h5py dataset
+            dset.resize(index+len(data), axis=0)
 
-        # Write the data to the dataset at correct indices
-        dset[index:] = data
+            # Write the data to the dataset at correct indices
+            dset[index:] = data
+        else:
+            dset = species_grp[path] 
+            index = dset.shape[0]
+            dset.resize(index+n_global, axis=0)            
 
-    def write_slices( self, particle_array, species_name, snapshot, p2i ):
+            if n_rank is not None:
+                iold = index+sum(n_rank[0:self.rank])
+                # Calculate the last index occupied by the current rank
+                inew = iold+n_rank[self.rank]
+                # Write the local data to the global array
+                dset[iold:inew] = data
+            #One proc writes the data (serial and lparallel_output=False)
+            else:
+                if (self.rank==0):
+                    # Write the data to the dataset at correct indices
+                    dset[index:] = data
+
+              
+
+    def write_slices( self, particle_array, species_name, snapshot, p2i,n_rank=None,n_global=None,lparallel_output=False,comm=None ):
         """
         For one given snapshot, write the slices of the
         different species to an openPMD file
@@ -250,46 +340,76 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         p2i: dict
             Dictionary of correspondance between the particle quantities
             and the integer index in the particle_array
+
         """
+        
         # Open the file without parallel I/O in this implementation
-        f = self.open_file( snapshot.filename, parallel_open=False )
+        parallel = lparallel_output
+        if(lparallel_output):
+            if(comm is not None and comm != MPI.COMM_NULL  ): 
+                f = self.open_file( snapshot.filename, parallel_open=parallel,comm=comm )
+            else: 
+                raise Exception("Boosted Parallel Particles diags without comm") 
+        else:
+        #serial diagnostics
+           f = self.open_file( snapshot.filename, parallel_open=False)
         particle_path = "/data/%d/particles/%s" %(snapshot.iteration,
                                                     species_name)
         species_grp = f[particle_path]
 
         # Loop over the different quantities that should be written
-        for particle_var in self.particle_data:
+#        for particle_var in self.particle_data:
+#
+#            if particle_var == "position":
+#                for coord in ["x","y","z"]:
+#                    quantity= coord
+#                    path = "%s/%s" %(particle_var, quantity)
+#                    data = particle_array[ p2i[ quantity ] ]
+#                    self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
+#                    n_global=n_global[species_name],parallel_open=parallel,comm=comm)
+#
+#
+   #         elif particle_var == "momentum":
+   #             for coord in ["x","y","z"]:
+   #                 quantity= "u%s" %coord
+   #                 path = "%s/%s" %(particle_var,coord)
+   #                 data = particle_array[ p2i[ quantity ] ]
+   #                 self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
+   #                 n_global=n_global[species_name],parallel_open=parallel,comm=comm)
 
-            if particle_var == "position":
-                for coord in ["x","y","z"]:
-                    quantity= coord
-                    path = "%s/%s" %(particle_var, quantity)
-                    data = particle_array[ p2i[ quantity ] ]
-                    self.write_boosted_dataset(
-                            species_grp, path, data, quantity)
 
-            elif particle_var == "momentum":
-                for coord in ["x","y","z"]:
-                    quantity= "u%s" %coord
-                    path = "%s/%s" %(particle_var,coord)
-                    data = particle_array[ p2i[ quantity ] ]
-                    self.write_boosted_dataset(
-                            species_grp, path, data, quantity)
+   #         elif particle_var == "weighting":
+   #            quantity= "w"
+   #            path = 'weighting'
+   #            self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
+   #            n_global=n_global[species_name],parallel_open=parallel,comm=comm)
 
-            elif particle_var == "weighting":
-               quantity= "w"
-               path = 'weighting'
-               data = particle_array[ p2i[ quantity ] ]
-               self.write_boosted_dataset(species_grp, path, data, quantity)
 
-            elif particle_var == "id":
-               quantity= "id"
-               path = 'id'
-               data = particle_array[ p2i[ quantity ] ]
-               self.write_boosted_dataset(species_grp, path, data, quantity)
+   #         elif particle_var == "id":
+   #            quantity= "id"
+   #            path = 'id'
+   #            data = particle_array[ p2i[ quantity ] ]
+   #            self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
+   #            n_global=n_global[species_name],parallel_open=parallel,comm=comm)
 
-        # Close the file
+        quantity="x"
+        particle_var="position" 
+        path = "%s/%s" %(particle_var, quantity)
+        data = particle_array[ p2i[ quantity ] ]
+        dset = species_grp[path]
+        index = dset.shape[0] 
+        dset.resize(index + n_global[species_name], axis=0)
+        iold = index+sum(n_rank[0:self.rank])
+        inew = iold+n_rank[self.rank]
+        print"here",self.rank,iold,inew,dset.shape,self.top.it
+        if(self.top.it == 190 and self.rank==0):
+          dset[0]=1.
+        
+        comm.Barrier()
+        print"coco from",self.rank
         f.close()
+        print"aaa from",self.rank
+
 
 class LabSnapshot:
     """
@@ -321,8 +441,7 @@ class LabSnapshot:
             (inherited from Warp)
         """
         # Deduce the name of the filename where this snapshot writes
-        if rank == 0:
-            self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
+        self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
         self.iteration = i
         self.dt = dt
 
