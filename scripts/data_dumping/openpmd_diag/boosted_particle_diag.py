@@ -14,7 +14,6 @@ import time
 from scipy.constants import c
 from particle_diag import ParticleDiagnostic
 from warp_parallel import me, mpiallgather
-import sys
 try:
     from mpi4py import MPI
 except ImportError:
@@ -73,7 +72,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         # Do not leave write_dir as None, as this may conflict with
         # the default directory ('./diags') in which diagnostics in the
         # boosted frame are written
-        sys.stdout = sys.__stdout__
         if write_dir is None:
             write_dir = 'lab_diags'
          
@@ -357,58 +355,46 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                                                     species_name)
         species_grp = f[particle_path]
 
+        if(parallel): 
+            ng=n_global[species_name] 
+        else: 
+            ng = None   
         # Loop over the different quantities that should be written
-#        for particle_var in self.particle_data:
-#
-#            if particle_var == "position":
-#                for coord in ["x","y","z"]:
-#                    quantity= coord
-#                    path = "%s/%s" %(particle_var, quantity)
-#                    data = particle_array[ p2i[ quantity ] ]
-#                    self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-#                    n_global=n_global[species_name],parallel_open=parallel,comm=comm)
-#
-#
-   #         elif particle_var == "momentum":
-   #             for coord in ["x","y","z"]:
-   #                 quantity= "u%s" %coord
-   #                 path = "%s/%s" %(particle_var,coord)
-   #                 data = particle_array[ p2i[ quantity ] ]
-   #                 self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-   #                 n_global=n_global[species_name],parallel_open=parallel,comm=comm)
+        for particle_var in self.particle_data:
+
+            if particle_var == "position":
+                for coord in ["x","y","z"]:
+                    quantity= coord
+                    path = "%s/%s" %(particle_var, quantity)
+                    data = particle_array[ p2i[ quantity ] ]
+                    self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
+                    n_global=ng,parallel_open=parallel,comm=comm)
 
 
-   #         elif particle_var == "weighting":
-   #            quantity= "w"
-   #            path = 'weighting'
-   #            self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-   #            n_global=n_global[species_name],parallel_open=parallel,comm=comm)
+            elif particle_var == "momentum":
+                for coord in ["x","y","z"]:
+                    quantity= "u%s" %coord
+                    path = "%s/%s" %(particle_var,coord)
+                    data = particle_array[ p2i[ quantity ] ]
+                    self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
+                    n_global=ng,parallel_open=parallel,comm=comm)
 
 
-   #         elif particle_var == "id":
-   #            quantity= "id"
-   #            path = 'id'
-   #            data = particle_array[ p2i[ quantity ] ]
-   #            self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-   #            n_global=n_global[species_name],parallel_open=parallel,comm=comm)
+            elif particle_var == "weighting":
+               quantity= "w"
+               path = 'weighting'
+               self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
+               n_global=ng,parallel_open=parallel,comm=comm)
 
-        quantity="x"
-        particle_var="position" 
-        path = "%s/%s" %(particle_var, quantity)
-        data = particle_array[ p2i[ quantity ] ]
-        dset = species_grp[path]
-        index = dset.shape[0] 
-        dset.resize(index + n_global[species_name], axis=0)
-        iold = index+sum(n_rank[0:self.rank])
-        inew = iold+n_rank[self.rank]
-        print"here",self.rank,iold,inew,dset.shape,self.top.it
-        if(self.top.it == 190 and self.rank==0):
-          dset[0]=1.
-        
-        comm.Barrier()
-        print"coco from",self.rank
+
+            elif particle_var == "id":
+               quantity= "id"
+               path = 'id'
+               data = particle_array[ p2i[ quantity ] ]
+               self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
+               n_global=ng,parallel_open=parallel,comm=comm)
+
         f.close()
-        print"aaa from",self.rank
 
 
 class LabSnapshot:
