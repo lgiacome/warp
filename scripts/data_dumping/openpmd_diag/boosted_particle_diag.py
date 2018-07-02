@@ -79,7 +79,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         # Initialize Particle diagnostic normal attributes
         ParticleDiagnostic.__init__(self, period, top, w3d, comm_world,
             species=species, particle_data=particle_data, select=select,
-            write_dir=write_dir, lparallel_output = lparallel_output)
+            write_dir=write_dir,write_metadata_parallel=lparallel_output, lparallel_output = lparallel_output)
         # Note: The boosted frame diagnostics cannot use parallel HDF5 output
 
         # Check user input
