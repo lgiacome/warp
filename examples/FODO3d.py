@@ -10,8 +10,8 @@ import warp as wp
 # --- Setup the description text which will be included at the bottom
 # --- of every plot frame. This is for user convenience, documenting
 # --- what the simulation is on the graphical output.
-wp.top.pline2 = "Example 3D beam in a FODO lattice"
-wp.top.pline1 = "Semi-Gaussian cigar beam. 32x32x128"
+wp.top.pline2   = "Example 3D beam in a FODO lattice"
+wp.top.pline1   = "Semi-Gaussian cigar beam. 32x32x128"
 wp.top.runmaker = "David P. Grote"
 
 # --- Invoke plotting setup routine - it is needed to create a cgm output file for plots.
@@ -30,14 +30,14 @@ beam = wp.Species(type=wp.Potassium, charge_state=+1, name="Beam species")
 # --- Note the units multipliers, e.g. mm. Almost all variables are MKS units
 # --- (except ekin). The multipliers provide a nice way of converting to MKS
 # --- while providing documentation about the units that are being used.
-beam.a0 = 8.760439903086566*wp.mm
-beam.b0 = 15.599886448447793*wp.mm
-beam.emit = 6.247186343204832e-05
-beam.ap0 = 0.
-beam.bp0 = 0.
+beam.a0    = 8.760439903086566*wp.mm
+beam.b0    = 15.599886448447793*wp.mm
+beam.emit  = 6.247186343204832e-05
+beam.ap0   = 0.
+beam.bp0   = 0.
 beam.ibeam = 2.*wp.mA
 beam.vbeam = 0.
-beam.ekin = 80.*wp.kV
+beam.ekin  = 80.*wp.kV
 
 # --- This call does some further processing on the input parameters.
 # --- For example, in the above, the beam energy is specified. derivqty
@@ -54,9 +54,9 @@ beam.vthz = 0.5*beam.vbeam*beam.emit/wp.sqrt(beam.a0*beam.b0)
 
 # --- Setup the FODO lattice
 # --- These are user created python variables describing the lattice.
-hlp = 36.*wp.cm   # half lattice period length
+hlp     = 36.*wp.cm    # half lattice period length
 piperad = 3.445*wp.cm  # pipe radius
-quadlen = 11.*wp.cm   # quadrupole length
+quadlen = 11.*wp.cm    # quadrupole length
 
 # --- Magnetic quadrupole field gradient - calculated to give sigma0 = 72 degrees.
 dbdx = 0.93230106124518164/quadlen
@@ -91,8 +91,8 @@ wp.top.tunelen = 2.*hlp
 # --- are the values at env.zl. Note that zl and zu must cover
 # --- the longitudinal extent where the beam particles will be loaded.
 # --- dzenv is the step size used in the envelope solver.
-wp.env.zl = -2.5*hlp  # z-lower
-wp.env.zu = -wp.env.zl  # z-upper
+wp.env.zl    = -2.5*hlp  # z-lower
+wp.env.zu    = -wp.env.zl  # z-upper
 wp.env.dzenv = wp.top.tunelen/100.
 
 # --- Select the envelope solver, do any initialization, and solve the equations.
@@ -127,13 +127,13 @@ wp.w3d.zmmax = +hlp*2
 
 # --- Specify the boundary conditions on the outer sides of the grid.
 # --- Possible values are dirichlet, periodic, and neumann.
-wp.w3d.bound0 = wp.dirichlet  # at iz == 0
+wp.w3d.bound0  = wp.dirichlet  # at iz == 0
 wp.w3d.boundnz = wp.dirichlet  # at iz == nz
 wp.w3d.boundxy = wp.dirichlet  # at all transverse sides
 
 # --- Set the particle boundary conditions at the outer sides of the grid.
 # --- Possible values are absorb, periodic, and reflect.
-wp.top.pbound0 = wp.absorb
+wp.top.pbound0  = wp.absorb
 wp.top.pboundnz = wp.absorb
 wp.top.pboundxy = wp.absorb
 
@@ -189,11 +189,11 @@ wp.top.zwindows[:, 3] = [0.3, 0.35]
 # --- Since it can use a significant amount of memory, only time histories of the
 # --- line-charge and vzbar are saved by default. These lines turn on the saving
 # --- of time histories of other quantities.
-wp.top.lhxrmsz = True
-wp.top.lhyrmsz = True
+wp.top.lhxrmsz  = True
+wp.top.lhyrmsz  = True
 wp.top.lhepsnxz = True
 wp.top.lhepsnyz = True
-wp.top.lhcurrz = True
+wp.top.lhcurrz  = True
 
 # --- nhist specifies the period, in time steps, of saving histories of
 # --- the particle moments.
