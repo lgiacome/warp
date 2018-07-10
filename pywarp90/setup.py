@@ -150,25 +150,16 @@ if os.access('setup.local.py', os.F_OK):
 
 elif parallel:
     if fcompexec is None or fcompexec == 'mpifort' or fcompexec == 'mpif90':
-        # --- If parallel, try the "mpifort --show" from openmpi to get the mpi libraries
+        # --- If parallel, try the "mpifort -show" to get the mpi libraries
         try:
-            show = subprocess.check_output([fcompexec, '--show'], universal_newlines=True, stderr=subprocess.STDOUT)
+            show = subprocess.check_output([fcompexec, '-show'], universal_newlines=True, stderr=subprocess.STDOUT)
             for s in show.split():
                 if s.startswith('-L'):
                     library_dirs += [s[2:]]
                 elif s.startswith('-l'):
                     libraries += [s[2:]]
         except (OSError, subprocess.CalledProcessError):
-            try:
-                # --- If that didn't work, see if using mvapich
-                output = subprocess.check_output(['mpifort', '-v'], universal_newlines=True, stderr=subprocess.STDOUT)
-                if output.find('MVAPICH2') > 0:
-                    which = subprocess.check_output(['which', 'mpifort'], universal_newlines=True, stderr=subprocess.STDOUT)
-                    root = os.path.dirname(os.path.dirname(which))
-                    library_dirs += [os.path.join(root, 'lib')]
-                    libraries += ['mpich', 'mpifort']
-            except (OSError, subprocess.CalledProcessError):
-                pass
+            pass
 
 setup (name = 'warp',
        version = '4.5',
