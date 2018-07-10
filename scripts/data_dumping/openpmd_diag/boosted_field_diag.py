@@ -261,11 +261,12 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                         if self.dim == "2d":
                             with dset.collective:
                                 dset[ indices[0,0]:indices[1,0],
-                                      iz_min:iz_max ] = data
+                                      iz_min:iz_max ] = data[:indices[1,0]-indices[0,0],:iz_max-iz_min]
                         elif self.dim == "3d":
                             with dset.collective:
                                 dset[ indices[0,0]:indices[1,0],
-                                        indices[0,1]:indices[1,1],iz_min:iz_max ] = data
+                                        indices[0,1]:indices[1,1],iz_min:iz_max ] = \
+                                        data[:indices[1,0]-indices[0,0],:indices[1,1]-indices[0,1],:iz_max-iz_min]
                     else:
                         for fieldtype in ["E", "B", "J"]:
                             for coord in self.coords:
@@ -283,11 +284,12 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                                 if self.dim == "2d":
                                     with dset.collective:
                                         dset[ indices[0,0]:indices[1,0],
-                                              iz_min:iz_max ] = data
+                                              iz_min:iz_max ] = data[:indices[1,0]-indices[0,0],:iz_max-iz_min]
                                 elif self.dim == "3d":
                                     with dset.collective:
                                         dset[ indices[0,0]:indices[1,0],
-                                                indices[0,1]:indices[1,1],iz_min:iz_max ] = data
+                                                indices[0,1]:indices[1,1],iz_min:iz_max ] = \
+                                                data[:indices[1,0]-indices[0,0],:indices[1,1]-indices[0,1],:iz_max-iz_min]
             #closes current snapshot file
             if f is not None:
                f.close()
