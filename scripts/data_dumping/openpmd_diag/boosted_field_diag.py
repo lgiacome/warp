@@ -103,6 +103,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         self.beta_boost = np.sqrt( 1. - self.inv_gamma_boost**2 ) * boost_dir
         self.inv_beta_boost = 1./self.beta_boost
         self.lparallel_output = lparallel_output
+   
+        #if parallel output , needs to store the mpi group of comm_world
+        if(lparallel_output):  self.mpi_group = self.comm_world.Get_group()
+
 
         # Find the z resolution and size of the diagnostic *in the lab frame*
         # (Needed to initialize metadata in the openPMD file)
@@ -121,6 +125,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             measured_start = time.clock()
             print('\nInitializing the lab-frame diagnostics: %d files...' %(
                 Ntot_snapshots_lab) )
+        self.Ntot_snapshots_lab = Ntot_snapshots_lab
         # Loop through the lab snapshots and create the corresponding files
         for i in range( Ntot_snapshots_lab ):
             t_lab = i * dt_snapshots_lab
@@ -158,9 +163,15 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # Every self.period, write the buffered slices to disk
         if self.top.it % self.period == 0:
             if( self.lparallel_output == False) : 
+              measured_start = time.clock()
               self.flush_to_disk()
+              measured_end= time.clock()
+              print('Time taken serial_diag: %.5f s' %( measured_end-measured_start) )
             else: 
+              measured_start = time.clock()
               self.flush_to_disk_parallel()
+              measured_end= time.clock()
+              print('Time taken parallel_diag: %.5f s' %( measured_end-measured_start) )
 
     def store_snapshot_slices( self ):
         """
@@ -203,104 +214,155 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         Write the buffered slices of fields to the disk using parallel h5py
         Erease the buffered slices of LabSnapshot objects
         Dada is NOT gathered to proc 0 before being save to disk
+        Instead, at each data dump, Ntot_snapshot communicators are created,
+        and each hdf5 file is opened calling the corresponding communicator.
+        Then each mpi dumps fields on the relevent files.
         """
+      
         f2i = self.slice_handler.field_to_index
  
-        # loop over boosted frames snapshots 
+        # allocates relevent arrays for the dump
+        
+        field_array = [None]*self.Ntot_snapshots_lab
+        iz_min = [None]*self.Ntot_snapshots_lab
+        iz_max = [None]*self.Ntot_snapshots_lab
+        f = [None]*self.Ntot_snapshots_lab
+        write_on = [None]*self.Ntot_snapshots_lab
+        newgroup = [None]*self.Ntot_snapshots_lab
+        dump_comm = [None]*self.Ntot_snapshots_lab
+        ranks_group_list = [None]*self.Ntot_snapshots_lab
+        field_grp =[None]*self.Ntot_snapshots_lab
+	indices = self.global_indices
+        
+        # loop over boosted frame snapshots in order to build mpi sub comms for each snapshot
+        # at each data dump.
+        # each communicator encodes informations about which processors need to dump data for this snapshot 
+        
+        i = -1 
         for snapshot in self.snapshots:
+            i = i + 1
             #Compact succesive slices that have been beffered 
             #over time into a single array 
             # This returns None, None, None for proc which has no slices
-            field_array, iz_min, iz_max = snapshot.compact_slices()
+            #t1 = time.clock() 
+            field_array[i], iz_min[i], iz_max[i] = snapshot.compact_slices()
+            #t3=time.clock()
  
             # if field_array is not None , then this proc will have to dump data
-            write_on = False
-            if (field_array is not None): write_on =True
+            write_on[i] = False
+            #if write_on[i] == True then the current mpi needs to dump data for the i_th snap
+            if (field_array[i] is not None): write_on[i] =True
 
             # Erase the memory buffers
             snapshot.buffered_slices = []
             snapshot.buffer_z_indices = []
             # creates the subcommunicator that will open the h5 file and dump data
             in_list = [];in_list = -1 
-            if (field_array is not None):
+            if (field_array[i] is not None):
                 in_list = me
-            ranks_group_list = mpiallgather( in_list )
+            ranks_group_list[i] = mpiallgather( in_list )
             
-            ranks_group_list = list(set(ranks_group_list))
+            ranks_group_list[i] = list(set(ranks_group_list[i]))
 
             # deletes -1 from the list of ranks
-            ranks_group_list = [x for x in ranks_group_list if x >= 0 ]
+            ranks_group_list[i] = [x for x in ranks_group_list[i] if x >= 0 ]
 
-            mpi_group = self.comm_world.Get_group()
-            self.ranks_group_list = ranks_group_list
-            newgroup = mpi_group.Incl(ranks_group_list)
-            dump_comm = self.comm_world.Create(newgroup)
-            if(dump_comm!= MPI.COMM_NULL):
-                f = self.open_file( snapshot.filename, parallel_open=True, comm=dump_comm )
+            #self.ranks_group_list[i] = ranks_group_list[i]
+            newgroup[i] = self.mpi_group.Incl(ranks_group_list[i])
+            dump_comm[i] = self.comm_world.Create(newgroup[i])
+            #eac mpi opens relevent snapshot files for himself  
+            if(dump_comm[i]!= MPI.COMM_NULL):
+                f[i] = self.open_file( snapshot.filename, parallel_open=True, comm=dump_comm[i] )
             else: 
-                f = None
-            #if current mpi need to dump for this snap
-            if(write_on):
-                if f is not None:
+                f[i] = None
+            #t2 = time.clock()
+            # cleaning unused vars in the future
+             
+            newgroup[i].Free()
+            #print("init time taken spap   %d time = %.5f "%(i,t2-t1))
+            #print("tme compact slice %d time = %.5f "%(i,t3-t1))
+        # cleans unused data 
+        ranks_group_list = []
+        newgroup = []
+        
+        # dumps data on each snapshot using previously initiized mpi communicators. 
+        
+        i = - 1
+        for snapshot in self.snapshots:  
+            i += 1
+            if(write_on[i]):
+                if f[i] is not None:
                     field_path = "/data/%d/fields/" %snapshot.iteration
-                    field_grp = f[field_path]
+                    field_grp[i] = f[i][field_path]
                 else:
-                    field_grp = None
+                    field_grp[i] = None
                 # Loop over the different quantities that should be written
                 for fieldtype in self.fieldtypes:
                     if fieldtype == "rho":
-                        indices = self.global_indices
-                        if field_grp is not None:
-                            dset = field_grp[path]
+                        if field_grp[i] is not None:
+                            dset = field_grp[i][path]
 	                else: 
                             dset = None
                         if self.dim == "2d": 
-                            data = field_array[ f2i[ "rho" ] ]
+                            data = field_array[i][ f2i[ "rho" ] ]
                         elif self.dim == "3d":
-                            data = field_array[ f2i[ "rho" ] ]
+                            data = field_array[i][ f2i[ "rho" ] ]
                         if self.dim == "2d":
                             with dset.collective:
                                 dset[ indices[0,0]:indices[1,0],
-                                      iz_min:iz_max ] = data[:indices[1,0]-indices[0,0],:iz_max-iz_min]
+                                      iz_min[i]:iz_max[i] ] = data[:indices[1,0]-indices[0,0],:iz_max[i] -iz_min[i]]
                         elif self.dim == "3d":
                             with dset.collective:
                                 dset[ indices[0,0]:indices[1,0],
-                                        indices[0,1]:indices[1,1],iz_min:iz_max ] = \
-                                        data[:indices[1,0]-indices[0,0],:indices[1,1]-indices[0,1],:iz_max-iz_min]
+                                        indices[0,1]:indices[1,1],iz_min[i]:iz_max[i] ] = data[:indices[1,0]-indices[0,0],:indices[1,1]-indices[0,1],:iz_max[i] -iz_min[i]]
                     else:
-                        for fieldtype in ["E", "B", "J"]:
+                        if fieldtype in ["E", "B", "J"]:
                             for coord in self.coords:
+				#ti = time.clock()
                                 quantity = "%s%s" %(fieldtype, coord)
+				#print "component",quantity
                                 path = "%s/%s" %(fieldtype, coord)
-                                indices = self.global_indices
+                                t_i = time.clock()
                                 if field_grp is not None:
-                                    dset = field_grp[path]
+                                    dset = field_grp[i][path]
 	                        else: 
                                     dset = None
                                 if self.dim == "2d": 
-                                    data = field_array[ f2i[ quantity ] ]
+                                    data = field_array[i][ f2i[ quantity ] ]
                                 elif self.dim == "3d":
-                                    data = field_array[ f2i[ quantity ] ]
+                                    data = field_array[i][ f2i[ quantity ] ]
                                 if self.dim == "2d":
                                     with dset.collective:
                                         dset[ indices[0,0]:indices[1,0],
-                                              iz_min:iz_max ] = data[:indices[1,0]-indices[0,0],:iz_max-iz_min]
+                                              iz_min[i]:iz_max[i] ] = data[:indices[1,0]-indices[0,0],:iz_max[i] -iz_min[i]]
                                 elif self.dim == "3d":
                                     with dset.collective:
                                         dset[ indices[0,0]:indices[1,0],
-                                                indices[0,1]:indices[1,1],iz_min:iz_max ] = \
-                                                data[:indices[1,0]-indices[0,0],:indices[1,1]-indices[0,1],:iz_max-iz_min]
-            #closes current snapshot file
-            if f is not None:
-               f.close()
-        # frees communicators
-        mpi_group.Free()
-        newgroup.Free()
-        if dump_comm != MPI.COMM_NULL:
-            dump_comm.Free()
-        ranks_group_list = []
+                                                indices[0,1]:indices[1,1],iz_min[i]:iz_max[i] ] = data[:indices[1,0]-indices[0,0],:indices[1,1]-indices[0,1],:iz_max[i] -iz_min[i]]
+                                #tf=time.clock()
+                                #print("time to write comp %s of it %d is %.5f"%(quantity,i,tf-ti))
+				#print "shape data",data.shape
+        #closes current snapshot file
+        for i in range(self.Ntot_snapshots_lab):
+            #t1=time.clock()
+            if f[i] is not None:
+               f[i].close()
+           # t2=time.clock()
+           # print("time to close iifile num %d %.5f s "%(i,t2-t1))
+           # self.comm_world.Barrier()
+            if dump_comm[i] != MPI.COMM_NULL:
+                dump_comm[i].Free()
+        #Further cleaning
         data = []
         field_array = []
+        f = [] 
+        iz_min = []
+        iz_max = []
+        write_on = []
+        dump_comm = []
+        field_grp = []
+        indices = []
+        
 
         
 
