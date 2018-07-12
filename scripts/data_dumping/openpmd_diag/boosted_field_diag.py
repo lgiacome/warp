@@ -35,7 +35,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period, em, top, w3d,
                  comm_world=None, fieldtypes=["rho", "E", "B", "J"],
-                 z_subsampling=1, write_dir=None, boost_dir=1,lparallel_output=False ) :
+                 z_subsampling=1, write_dir=None, boost_dir=1,lparallel_output=False,t_min_lab=0. ) :
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -58,6 +58,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         Ntot_snapshots_lab: int
             Total number of snapshots that this diagnostic will produce
+     
+        t_min_lab: real
+            Min diagnostics time for fields  in lab frame
 
         period: int
             Number of iterations for which the data is accumulated in memory,
@@ -70,6 +73,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         boost_dir: int (1 or -1)
             The direction of the Lorentz transformation from the lab frame
             to the boosted frame (along the z axis)
+                         
+        lparallel_output: boolean 
+            Enable/disable parallel IO 
 
         See the documentation of FieldDiagnostic for the other parameters
         """
@@ -103,6 +109,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         self.beta_boost = np.sqrt( 1. - self.inv_gamma_boost**2 ) * boost_dir
         self.inv_beta_boost = 1./self.beta_boost
         self.lparallel_output = lparallel_output
+        self.t_min_lab = t_min_lab
    
         #if parallel output , needs to store the mpi group of comm_world
         if(lparallel_output):  self.mpi_group = self.comm_world.Get_group()
@@ -128,7 +135,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         self.Ntot_snapshots_lab = Ntot_snapshots_lab
         # Loop through the lab snapshots and create the corresponding files
         for i in range( Ntot_snapshots_lab ):
-            t_lab = i * dt_snapshots_lab
+            t_lab = i * dt_snapshots_lab + self.t_min_lab
             snapshot = LabSnapshot( t_lab,
                                     zmin_lab + v_lab*t_lab,
                                     zmax_lab + v_lab*t_lab,
