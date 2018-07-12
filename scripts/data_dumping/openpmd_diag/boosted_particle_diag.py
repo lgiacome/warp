@@ -33,7 +33,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period,
                  em, top, w3d, comm_world=None,
-                 particle_data=["position", "momentum", "weighting"],
+                 particle_data=["position", "momentum", "weighting","E", "B"],
                  select=None, write_dir=None,
                  species={"electrons": None}, boost_dir=1,lparallel_output=False,t_min_lab=0. ):
         """
@@ -95,6 +95,8 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         self.inv_beta_boost = 1./self.beta_boost
         self.Ntot_snapshots_lab = Ntot_snapshots_lab
         self.t_min_lab = t_min_lab
+        self.dump_p_fields = False
+        if("E" in self.particle_data or "B" in self.particle_data): self.dump_p_fields = True
 
         # Create the list of LabSnapshot objects
         self.snapshots = []
@@ -107,14 +109,14 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
         # Loop through the lab snapshots and create the corresponding files
         self.particle_catcher = ParticleCatcher(
-            self.gamma_boost, self.beta_boost, top )
+            self.gamma_boost, self.beta_boost, top,self.dump_p_fields )
         self.particle_catcher.allocate_previous_instant()
 
         for i in range( Ntot_snapshots_lab ):
             t_lab = i*dt_snapshots_lab + self.t_min_lab
             snapshot = LabSnapshot( t_lab, zmin_lab + v_lab*t_lab,
                             top.dt, zmax_lab + v_lab*t_lab,
-                            self.write_dir, i, self.species_dict, self.rank )
+                            self.write_dir, i, self.species_dict, self.rank,self.dump_p_fields )
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
             self.create_file_empty_particles(
@@ -466,6 +468,22 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                     self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
                     n_global=ng,comm=comm)
 
+            elif particle_var == "B":
+                for coord in ["x","y","z"]:
+                    quantity= "b%s" %coord
+                    path = "%s/%s" %(particle_var,coord)
+                    data = particle_array[ p2i[ quantity ] ]
+                    self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
+                    n_global=ng,comm=comm)
+
+            elif particle_var == "E":
+                for coord in ["x","y","z"]:
+                    quantity= "e%s" %coord
+                    path = "%s/%s" %(particle_var,coord)
+                    data = particle_array[ p2i[ quantity ] ]
+                    self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
+                    n_global=ng,comm=comm)
+
 
             elif particle_var == "weighting":
                quantity= "w"
@@ -493,7 +511,7 @@ class LabSnapshot:
     in the lab frame (i.e. one given *time* in the lab frame)
     """
     def __init__(self, t_lab, zmin_lab, dt, zmax_lab, write_dir, i,
-        species_dict, rank):
+        species_dict, rank, dump_p_fields):
         """
         Initialize a LabSnapshot
 
@@ -515,11 +533,15 @@ class LabSnapshot:
         species_dict: dict
             Contains all the species name of the species object
             (inherited from Warp)
+
+        dump_p_fields: boolean
+            Flag to dump particle fields
         """
         # Deduce the name of the filename where this snapshot writes
         self.filename = os.path.join( write_dir, 'hdf5/data%08d.h5' %i)
         self.iteration = i
         self.dt = dt
+        self.dump_p_fields = dump_p_fields
 
         # Time and boundaries in the lab frame (constants quantities)
         self.zmin_lab = zmin_lab
@@ -598,7 +620,10 @@ class LabSnapshot:
             particle_array = np.concatenate(
                 self.buffered_slices[species], axis=1)
         else:
-            particle_array = np.empty((9,0))
+            if(self.dump_p_fields):
+                particle_array = np.empty((15,0))
+            else: 
+                particle_array = np.empty((9,0))  
 
         return particle_array
 
@@ -606,7 +631,7 @@ class ParticleCatcher:
     """
     Class that extracts, Lorentz-transforms and gathers particles
     """
-    def __init__(self, gamma_boost, beta_boost, top):
+    def __init__(self, gamma_boost, beta_boost, top,dump_f=False):
         """
         Initialize the ParticleCatcher object
 
@@ -614,6 +639,8 @@ class ParticleCatcher:
         ----------
         gamma_boost, beta_boost: float
             The Lorentz factor of the boost and the corresponding beta
+        dump_f : boolean
+            Flag for field dumping
 
         top: WARP object
         """
@@ -621,11 +648,16 @@ class ParticleCatcher:
         self.gamma_boost = gamma_boost
         self.beta_boost = beta_boost
         self.top = top
+        self.dump_p_fields = dump_f
 
         # Create a dictionary that contains the correspondance
         # between the particles quantity and array index
-        self.particle_to_index = {'x':0, 'y':1, 'z':2, 'ux':3,
-                'uy':4, 'uz':5, 'w':6, 'gamma':7, 't':8}
+        if(dump_f == False):
+            self.particle_to_index = {'x':0, 'y':1, 'z':2, 'ux':3,
+                    'uy':4, 'uz':5, 'w':6, 'gamma':7, 't':8}
+        else: 
+            self.particle_to_index = {'x':0, 'y':1, 'z':2, 'ux':3,
+                    'uy':4, 'uz':5, 'w':6, 'gamma':7, 't':8,'ex':10, 'ey':11, 'ez':12,'bx':13, 'by':14, 'bz':15} 
         if self.top.ssnpid > 0:
             self.particle_to_index['id'] = 9
     def get_particle_slice( self, species, prev_z_boost, current_z_boost ):
@@ -658,6 +690,14 @@ class ParticleCatcher:
         current_uy = self.get_quantity( species, "uy" )
         current_uz = self.get_quantity( species, "uz" )
         current_weights = self.get_quantity( species, "w" )
+        if(self.dump_p_fields): 
+            current_ex = self.get_quantity( species, "ex" )
+            current_ey = self.get_quantity( species, "ey" )
+            current_ez = self.get_quantity( species, "ez" )
+            current_bx = self.get_quantity( species, "bx" )
+            current_by = self.get_quantity( species, "by" )
+            current_bz = self.get_quantity( species, "bz" )
+        
         if self.top.ssnpid > 0:
             current_id = self.get_quantity( species, "id" )
 
@@ -668,6 +708,14 @@ class ParticleCatcher:
         previous_ux = self.get_quantity( species, "ux", l_prev=True )
         previous_uy = self.get_quantity( species, "uy", l_prev=True )
         previous_uz = self.get_quantity( species, "uz", l_prev=True )
+        if(self.dump_p_fields):
+            previous_ex = self.get_quantity( species, "ex",l_prev=True )
+            previous_ey = self.get_quantity( species, "ey",l_prev=True )
+            previous_ez = self.get_quantity( species, "ez",l_prev=True )
+            previous_bx = self.get_quantity( species, "bx",l_prev=True )
+            previous_by = self.get_quantity( species, "by",l_prev=True )
+            previous_bz = self.get_quantity( species, "bz",l_prev=True )
+
 
         # A particle array for mapping purposes
         particle_indices = np.arange( len(current_z) )
@@ -698,6 +746,13 @@ class ParticleCatcher:
             self.uy_captured**2 + self.uz_captured**2)/c**2)
         if self.top.ssnpid > 0:
             self.id_captured = np.take(current_id, selected_indices)
+        if(self.dump_p_fields):
+            self.ex_captured = np.take(current_ex, selected_indices)
+            self.ey_captured = np.take(current_ey, selected_indices)
+            self.ez_captured = np.take(current_ez, selected_indices)
+            self.bx_captured = np.take(current_bx, selected_indices)
+            self.by_captured = np.take(current_by, selected_indices)
+            self.bz_captured = np.take(current_bz, selected_indices) 
 
         self.x_prev_captured = np.take(previous_x, selected_indices)
         self.y_prev_captured = np.take(previous_y, selected_indices)
@@ -707,6 +762,14 @@ class ParticleCatcher:
         self.uz_prev_captured = np.take(previous_uz, selected_indices)
         self.gamma_prev_captured = np.sqrt(1. + (self.ux_prev_captured**2+\
             self.uy_prev_captured**2 + self.uz_prev_captured**2)/c**2)
+        if(self.dump_p_fields):
+            self.ex_prev_captured = np.take(previous_ex, selected_indices)
+            self.ey_prev_captured = np.take(previous_ey, selected_indices)
+            self.ez_prev_captured = np.take(previous_ez, selected_indices)
+            self.bx_prev_captured = np.take(previous_bx, selected_indices)
+            self.by_prev_captured = np.take(previous_by, selected_indices)
+            self.bz_prev_captured = np.take(previous_bz, selected_indices)
+
 
         return( num_part )
 
@@ -716,11 +779,13 @@ class ParticleCatcher:
         lab frame. These are classical Lorentz transformation equations
         """
         uzfrm = -self.beta_boost*self.gamma_boost*c
+        ic = 1./c
+        ic2 = 1./c**2
 
         # Time in lab frame
-        self.t = self.gamma_boost*self.top.time - uzfrm*self.z_captured/c**2
+        self.t = self.gamma_boost*self.top.time - uzfrm*self.z_captured*ic2
         self.t_prev = self.gamma_boost*(self.top.time - self.top.dt) \
-          - uzfrm*self.z_prev_captured/c**2
+          - uzfrm*self.z_prev_captured*ic2
 
         # Position in lab frame
         self.z_captured = self.gamma_boost*(self.z_captured + \
@@ -733,6 +798,28 @@ class ParticleCatcher:
         - self.gamma_captured*uzfrm
         self.uz_prev_captured = self.gamma_boost*self.uz_prev_captured \
         - self.gamma_prev_captured*uzfrm
+
+        # Field in lab frame
+        if(self.dump_p_fields): 
+            temp = np.copy(self.ey_captured)
+            self.ey_captured = self.gamma_boost*(self.ey_captured + self.beta_boost*c*self.bx_captured)
+            self.bx_captured = self.gamma_boost*(self.bx_captured + self.beta_boost*ic*temp)
+
+            temp = np.copy(self.ex_captured)
+            self.ex_captured = self.gamma_boost*(self.ex_captured - self.beta_boost*c*self.by_captured)
+            self.by_captured = self.gamma_boost*(self.by_captured - self.beta_boost*ic*temp)
+
+
+            temp = np.copy(self.ey_prev_captured)
+            self.ey_prev_captured = self.gamma_boost*(self.ey_prev_captured + self.beta_boost*c*self.bx_prev_captured)
+            self.bx_prev_captured = self.gamma_boost*(self.bx_prev_captured + self.beta_boost*ic*temp)
+
+            temp = np.copy(self.ex_prev_captured)
+            self.ex_prev_captured = self.gamma_boost*(self.ex_prev_captured - self.beta_boost*c*temp)
+            self.by_prev_captured = self.gamma_boost*(self.by_prev_captured - self.beta_boost*ic*self.ex_prev_captured)
+            temp = []
+
+
 
     def interpolate_to_time(self, t_output):
         """
@@ -763,6 +850,21 @@ class ParticleCatcher:
           self.uz_prev_captured * weight_prev + self.uz_captured * weight_next
         self.gamma_captured = self.gamma_prev_captured * weight_prev + \
           self.gamma_captured * weight_next
+        if(self.dump_p_fields):
+            self.ex_captured = \
+              self.ex_prev_captured * weight_prev + self.ex_captured * weight_next
+            self.ey_captured = \
+              self.ey_prev_captured * weight_prev + self.ey_captured * weight_next
+            self.ez_captured = \
+              self.ez_prev_captured * weight_prev + self.ez_captured * weight_next
+            self.bx_captured = \
+              self.bx_prev_captured * weight_prev + self.bx_captured * weight_next
+            self.by_captured = \
+              self.by_prev_captured * weight_prev + self.by_captured * weight_next
+            self.bz_captured = \
+              self.bz_prev_captured * weight_prev + self.bz_captured * weight_next
+
+    
 
     def gather_array(self, quantity):
         """
@@ -797,6 +899,19 @@ class ParticleCatcher:
             ar = np.array(self.gamma_captured)
         elif quantity == "id":
             ar = np.array(self.id_captured)
+        elif quantity == "ex":
+            ar = np.array(self.ex_captured)
+        elif quantity == "ey":
+            ar = np.array(self.ey_captured)
+        elif quantity == "ez":
+            ar = np.array(self.ez_captured)
+        elif quantity == "bx":
+            ar = np.array(self.bx_captured)
+        elif quantity == "by":
+            ar = np.array(self.by_captured)
+        elif quantity == "bz":
+            ar = np.array(self.bz_captured)
+
         return ar
 
     def extract_slice(self, species, select, prev_z_boost,
@@ -885,7 +1000,7 @@ class ParticleCatcher:
 
         quantity: string
             Describes which quantity is queried
-            Either "x", "y", "z", "ux", "uy", "uz", "w" or "id"
+            Either "x", "y", "z", "ux", "uy", "uz", "w", "ex", "ey", "ez","bx","by","bz" or "id"
 
         l_prev: boolean
             If True, then return the quantities of the previous timestep;
@@ -911,6 +1026,19 @@ class ParticleCatcher:
                 quantity_array = species.getweights( gather=False )
             elif quantity == "id":
                 quantity_array = species.getssn( gather=False )
+            elif(quantity == "ex"):
+                quantity_array = species.getex(gather = False)
+            elif(quantity == "ey"):
+                quantity_array = species.getey(gather = False)
+            elif(quantity == "ez"):
+                quantity_array = species.getez(gather = False)
+            elif(quantity == "bx"):
+                quantity_array = species.getbx(gather = False)
+            elif(quantity == "by"):
+                quantity_array = species.getby(gather = False)
+            elif(quantity == "bz"):
+                quantity_array = species.getbz(gather = False)
+
 
         # Or at previous timestep
         else:
@@ -926,6 +1054,18 @@ class ParticleCatcher:
                 quantity_array = species.getuyold( gather=False )
             elif quantity == "uz":
                 quantity_array = species.getuzold( gather=False )
+            elif(quantity == "ex"): 
+                quantity_array = species.getexold(gather = False)
+            elif(quantity == "ey"):
+                quantity_array = species.geteyold(gather = False)
+            elif(quantity == "ez"):
+                quantity_array = species.getezold(gather = False)
+            elif(quantity == "bx"):
+                quantity_array = species.getbxold(gather = False)
+            elif(quantity == "by"):
+                quantity_array = species.getbyold(gather = False)
+            elif(quantity == "bz"):
+                quantity_array = species.getbzold(gather = False)          
 
         return( quantity_array )
 
@@ -946,6 +1086,20 @@ class ParticleCatcher:
             self.top.uyoldpid = self.top.nextpid()
         if not self.top.uzoldpid:
             self.top.uzoldpid = self.top.nextpid()
+        if(self.dump_p_fields):
+            if not self.top.exoldpid:
+                self.top.exoldpid = self.top.nextpid() 
+            if not self.top.eyoldpid:
+                self.top.eyoldpid = self.top.nextpid()
+            if not self.top.ezoldpid:
+                self.top.ezoldpid = self.top.nextpid()
+            if not self.top.bxoldpid:
+                self.top.bxoldpid = self.top.nextpid()
+            if not self.top.byoldpid:
+                self.top.byoldpid = self.top.nextpid()
+            if not self.top.bzoldpid:
+                self.top.bzoldpid = self.top.nextpid()
+
 
     def apply_selection(self, select, slice_array):
         """
