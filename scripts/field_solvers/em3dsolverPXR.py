@@ -1138,6 +1138,9 @@ class EM3DPXR(EM3DFFT):
                         hi = [f.nx, f.nz]
                         flo = [-f.nxguard, -f.nzguard]
                         fhi = [f.nx + f.nxguard, f.nz + f.nzguard]
+                        # Warp field arrays have shape (nx, 1, nz) while PICSAR 
+                        # function pxrpush_em2d_evec takes fields with shape (nx, nz), 
+                        # so field arrays have to be squeezed.
                         pxr.pxrpush_em2d_evec(lo, hi, lo, hi, lo, hi, 
                                               f.Ex.squeeze(), flo, fhi,
                                               f.Ey.squeeze(), flo, fhi,
@@ -1168,17 +1171,17 @@ class EM3DPXR(EM3DFFT):
                         lo = [0, 0, 0]
                         hi = [f.nx, f.ny, f.nz]
                         flo = [-f.nxguard, -f.nyguard, -f.nzguard]
-                        fhi = [f.nx + f.nxguard, f.ny + f.nyguard, f.nz + f.nzguard]
+                        fhi = [f.nx + f.nxguard, f.ny + f.nyguard, f.nz + f.nzguard]                        
                         pxr.pxrpush_em3d_evec(lo, hi, lo, hi, lo, hi, 
-                                              f.Ex.squeeze(), flo, fhi,
-                                              f.Ey.squeeze(), flo, fhi,
-                                              f.Ez.squeeze(), flo, fhi,
-                                              f.Bx.squeeze(), flo, fhi,
-                                              f.By.squeeze(), flo, fhi,
-                                              f.Bz.squeeze(), flo, fhi,
-                                              f.Jx.squeeze(), flo, fhi,
-                                              f.Jy.squeeze(), flo, fhi,
-                                              f.Jz.squeeze(), flo, fhi,
+                                              f.Ex, flo, fhi,
+                                              f.Ey, flo, fhi,
+                                              f.Ez, flo, fhi,
+                                              f.Bx, flo, fhi,
+                                              f.By, flo, fhi,
+                                              f.Bz, flo, fhi,
+                                              f.Jx, flo, fhi,
+                                              f.Jy, flo, fhi,
+                                              f.Jz, flo, fhi,
                                               clight**2*mu0*dt,
                                               clight**2*dt/f.dx*f.xcoefs[0],
                                               clight**2*dt/f.dy*f.ycoefs[0],
@@ -1236,6 +1239,9 @@ class EM3DPXR(EM3DFFT):
                 hi = [f.nx, f.nz]
                 flo = [-f.nxguard, -f.nzguard]
                 fhi = [f.nx + f.nxguard, f.nz + f.nzguard]
+                # Warp field arrays have shape (nx, 1, nz) while PICSAR 
+                # function pxrpush_em2d_bvec takes fields with shape (nx, nz), 
+                # so field arrays have to be squeezed.
                 pxr.pxrpush_em2d_bvec(lo, hi, lo, hi, lo, hi, 
                                       f.Ex.squeeze(), flo, fhi,
                                       f.Ey.squeeze(), flo, fhi,
@@ -1272,12 +1278,12 @@ class EM3DPXR(EM3DFFT):
                 flo = [-f.nxguard, -f.nyguard, -f.nzguard]
                 fhi = [f.nx + f.nxguard, f.ny + f.nyguard, f.nz + f.nzguard]
                 pxr.pxrpush_em3d_bvec(lo, hi, lo, hi, lo, hi, 
-                                      f.Ex.squeeze(), flo, fhi,
-                                      f.Ey.squeeze(), flo, fhi,
-                                      f.Ez.squeeze(), flo, fhi,
-                                      f.Bx.squeeze(), flo, fhi,
-                                      f.By.squeeze(), flo, fhi,
-                                      f.Bz.squeeze(), flo, fhi,
+                                      f.Ex, flo, fhi,
+                                      f.Ey, flo, fhi,
+                                      f.Ez, flo, fhi,
+                                      f.Bx, flo, fhi,
+                                      f.By, flo, fhi,
+                                      f.Bz, flo, fhi,
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
@@ -1337,6 +1343,9 @@ class EM3DPXR(EM3DFFT):
                 hi = [f.nx, f.nz]
                 flo = [-f.nxguard, -f.nzguard]
                 fhi = [f.nx + f.nxguard, f.nz + f.nzguard]
+                # Warp field arrays have shape (nx, 1, nz) while PICSAR 
+                # function pxrpush_em2d_bvec takes fields with shape (nx, nz), 
+                # so field arrays have to be squeezed.
                 pxr.pxrpush_em2d_bvec(lo, hi, lo, hi, lo, hi, 
                                       f.Ex.squeeze(), flo, fhi,
                                       f.Ey.squeeze(), flo, fhi,
@@ -1372,12 +1381,12 @@ class EM3DPXR(EM3DFFT):
                 flo = [-f.nxguard, -f.nyguard, -f.nzguard]
                 fhi = [f.nx + f.nxguard, f.ny + f.nyguard, f.nz + f.nzguard]
                 pxr.pxrpush_em3d_bvec(lo, hi, lo, hi, lo, hi, 
-                                      f.Ex.squeeze(), flo, fhi,
-                                      f.Ey.squeeze(), flo, fhi,
-                                      f.Ez.squeeze(), flo, fhi,
-                                      f.Bx.squeeze(), flo, fhi,
-                                      f.By.squeeze(), flo, fhi,
-                                      f.Bz.squeeze(), flo, fhi,
+                                      f.Ex, flo, fhi,
+                                      f.Ey, flo, fhi,
+                                      f.Ez, flo, fhi,
+                                      f.Bx, flo, fhi,
+                                      f.By, flo, fhi,
+                                      f.Bz, flo, fhi,
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
