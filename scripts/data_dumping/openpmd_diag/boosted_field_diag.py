@@ -173,7 +173,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
               self.flush_to_disk()
             else: 
               self.flush_to_disk_parallel()
-              print('Time taken parallel_diag: %.5f s' %( measured_end-measured_start) )
 
     def store_snapshot_slices( self ):
         """
