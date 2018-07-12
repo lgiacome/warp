@@ -293,22 +293,25 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 # Loop over the different quantities that should be written
                 for fieldtype in self.fieldtypes:
                     if fieldtype == "rho":
+                        quantity = "rho"
+                        path = "rho"
                         if field_grp[i] is not None:
                             dset = field_grp[i][path]
 	                else: 
                             dset = None
-                        if self.dim == "2d": 
-                            data = field_array[i][ f2i[ "rho" ] ]
+                        if self.dim == "2d":
+                            data = field_array[i][ f2i[ quantity ] ]
                         elif self.dim == "3d":
-                            data = field_array[i][ f2i[ "rho" ] ]
+                            data = field_array[i][ f2i[ quantity ] ]
                         if self.dim == "2d":
                             with dset.collective:
-                                dset[ indices[0,0]:indices[1,0],iz_min[i]:iz_max[i] ]= \
+                                dset[ indices[0,0]:indices[1,0],iz_min[i]:iz_max[i] ] = \
                                 data[:indices[1,0]-indices[0,0],:iz_max[i] -iz_min[i]]
                         elif self.dim == "3d":
                             with dset.collective:
-                                dset[ indices[0,0]:indices[1,0],indices[0,1]:indices[1,1],iz_min[i]:iz_max[i] ] \
-                                = data[:indices[1,0]-indices[0,0],:indices[1,1]-indices[0,1],:iz_max[i] -iz_min[i]]
+                                dset[ indices[0,0]:indices[1,0],indices[0,1]:indices[1,1],iz_min[i]:iz_max[i] ] = \
+                                data[:indices[1,0]-indices[0,0],:indices[1,1]-indices[0,1],:iz_max[i] -iz_min[i]]
+
                     else:
                         if fieldtype in ["E", "B", "J"]:
                             for coord in self.coords:
