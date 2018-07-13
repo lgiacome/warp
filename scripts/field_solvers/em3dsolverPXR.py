@@ -1175,16 +1175,27 @@ class EM3DPXR(EM3DFFT):
                 tdebcell=MPI.Wtime()
                 if self.l_2dxz:
                     if (f.norderx==2) & (f.nordery==2) & (f.norderz==2):
-                        pxr.pxrpush_em2d_evec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-                                                  f.Jx,f.Jy,f.Jz,
-                                                  clight**2*mu0*dt,
-                                                  clight**2*dt/f.dx*f.xcoefs[0],
-                                                  clight**2*dt/f.dy*f.ycoefs[0],
-                                                  clight**2*dt/f.dz*f.zcoefs[0],
-                                                  f.nx,f.ny,f.nz,
-                                                  f.nxguard,f.nyguard,f.nzguard,
-                                                  0,0,0,f.l_nodalgrid)
-
+                        lo = [0, 0]
+                        hi = [f.nx, f.nz]
+                        flo = [-f.nxguard, -f.nzguard]
+                        fhi = [f.nx + f.nxguard, f.nz + f.nzguard]
+                        # Warp field arrays have shape (nx, 1, nz) while PICSAR 
+                        # function pxrpush_em2d_evec takes fields with shape (nx, nz), 
+                        # so field arrays have to be squeezed.
+                        pxr.pxrpush_em2d_evec(lo, hi, lo, hi, lo, hi, 
+                                              f.Ex.squeeze(), flo, fhi,
+                                              f.Ey.squeeze(), flo, fhi,
+                                              f.Ez.squeeze(), flo, fhi,
+                                              f.Bx.squeeze(), flo, fhi,
+                                              f.By.squeeze(), flo, fhi,
+                                              f.Bz.squeeze(), flo, fhi,
+                                              f.Jx.squeeze(), flo, fhi,
+                                              f.Jy.squeeze(), flo, fhi,
+                                              f.Jz.squeeze(), flo, fhi,
+                                              clight**2*mu0*dt,
+                                              clight**2*dt/f.dx*f.xcoefs[0],
+                                              clight**2*dt/f.dy*f.ycoefs[0],
+                                              clight**2*dt/f.dz*f.zcoefs[0])
                     else:
                         pxr.pxrpush_em2d_evec_norder(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                                                   f.Jx,f.Jy,f.Jz,
@@ -1198,15 +1209,24 @@ class EM3DPXR(EM3DFFT):
                                                   0,0,0,f.l_nodalgrid)
                 else:
                     if (f.norderx==2) & (f.nordery==2) & (f.norderz==2):
-                        pxr.pxrpush_em3d_evec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-                                              f.Jx,f.Jy,f.Jz,
+                        lo = [0, 0, 0]
+                        hi = [f.nx, f.ny, f.nz]
+                        flo = [-f.nxguard, -f.nyguard, -f.nzguard]
+                        fhi = [f.nx + f.nxguard, f.ny + f.nyguard, f.nz + f.nzguard]                        
+                        pxr.pxrpush_em3d_evec(lo, hi, lo, hi, lo, hi, 
+                                              f.Ex, flo, fhi,
+                                              f.Ey, flo, fhi,
+                                              f.Ez, flo, fhi,
+                                              f.Bx, flo, fhi,
+                                              f.By, flo, fhi,
+                                              f.Bz, flo, fhi,
+                                              f.Jx, flo, fhi,
+                                              f.Jy, flo, fhi,
+                                              f.Jz, flo, fhi,
                                               clight**2*mu0*dt,
                                               clight**2*dt/f.dx*f.xcoefs[0],
                                               clight**2*dt/f.dy*f.ycoefs[0],
-                                              clight**2*dt/f.dz*f.zcoefs[0],
-                                              f.nx,f.ny,f.nz,
-                                              f.nxguard,f.nyguard,f.nzguard,
-                                              0,0,0,f.l_nodalgrid)
+                                              clight**2*dt/f.dz*f.zcoefs[0])
                     else:
                         pxr.pxrpush_em3d_evec_norder(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                                               f.Jx,f.Jy,f.Jz,
@@ -1256,13 +1276,24 @@ class EM3DPXR(EM3DFFT):
           if self.l_2dxz:
             if (f.norderx==2) & (f.nordery==2) & (f.norderz==2):
               if (f.stencil==0): # Yee solver
-                pxr.pxrpush_em2d_bvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-                            0.5*dt/f.dx*f.xcoefs[0],
-                            0.5*dt/f.dy*f.ycoefs[0],
-                            0.5*dt/f.dz*f.zcoefs[0],
-                            f.nx,f.ny,f.nz,
-                            f.nxguard,f.nyguard,f.nzguard,
-                            0,0,0,f.l_nodalgrid)
+                lo = [0, 0]
+                hi = [f.nx, f.nz]
+                flo = [-f.nxguard, -f.nzguard]
+                fhi = [f.nx + f.nxguard, f.nz + f.nzguard]
+                # Warp field arrays have shape (nx, 1, nz) while PICSAR 
+                # function pxrpush_em2d_bvec takes fields with shape (nx, nz), 
+                # so field arrays have to be squeezed.
+                pxr.pxrpush_em2d_bvec(lo, hi, lo, hi, lo, hi, 
+                                      f.Ex.squeeze(), flo, fhi,
+                                      f.Ey.squeeze(), flo, fhi,
+                                      f.Ez.squeeze(), flo, fhi,
+                                      f.Bx.squeeze(), flo, fhi,
+                                      f.By.squeeze(), flo, fhi,
+                                      f.Bz.squeeze(), flo, fhi,
+                                      0.5*dt/f.dx*f.xcoefs[0],
+                                      0.5*dt/f.dy*f.ycoefs[0],
+                                      0.5*dt/f.dz*f.zcoefs[0])
+
               elif (f.stencil==1): # Karkainnen solver
                 pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                             0.5*dt/f.dx,
@@ -1283,13 +1314,20 @@ class EM3DPXR(EM3DFFT):
           else:
             if (f.norderx==2) & (f.nordery==2) & (f.norderz==2):
               if (f.stencil==0): # Yee solver
-                pxr.pxrpush_em3d_bvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-                            0.5*dt/f.dx*f.xcoefs[0],
-                            0.5*dt/f.dy*f.ycoefs[0],
-                            0.5*dt/f.dz*f.zcoefs[0],
-                            f.nx,f.ny,f.nz,
-                            f.nxguard,f.nyguard,f.nzguard,
-                            0,0,0,f.l_nodalgrid)
+                lo = [0, 0, 0]
+                hi = [f.nx, f.ny, f.nz]
+                flo = [-f.nxguard, -f.nyguard, -f.nzguard]
+                fhi = [f.nx + f.nxguard, f.ny + f.nyguard, f.nz + f.nzguard]
+                pxr.pxrpush_em3d_bvec(lo, hi, lo, hi, lo, hi, 
+                                      f.Ex, flo, fhi,
+                                      f.Ey, flo, fhi,
+                                      f.Ez, flo, fhi,
+                                      f.Bx, flo, fhi,
+                                      f.By, flo, fhi,
+                                      f.Bz, flo, fhi,
+                                      0.5*dt/f.dx*f.xcoefs[0],
+                                      0.5*dt/f.dy*f.ycoefs[0],
+                                      0.5*dt/f.dz*f.zcoefs[0])
               elif (f.stencil==1): # Karkainnen solver
                 pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                             0.5*dt/f.dx,
@@ -1342,13 +1380,23 @@ class EM3DPXR(EM3DFFT):
           if self.l_2dxz:
             if (f.norderx==2) & (f.nordery==2) & (f.norderz==2):
               if (f.stencil==0): # Yee solver
-                pxr.pxrpush_em2d_bvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-                            0.5*dt/f.dx*f.xcoefs[0],
-                            0.5*dt/f.dy*f.ycoefs[0],
-                            0.5*dt/f.dz*f.zcoefs[0],
-                            f.nx,f.ny,f.nz,
-                            f.nxguard,f.nyguard,f.nzguard,
-                            0,0,0,f.l_nodalgrid)
+                lo = [0, 0]
+                hi = [f.nx, f.nz]
+                flo = [-f.nxguard, -f.nzguard]
+                fhi = [f.nx + f.nxguard, f.nz + f.nzguard]
+                # Warp field arrays have shape (nx, 1, nz) while PICSAR 
+                # function pxrpush_em2d_bvec takes fields with shape (nx, nz), 
+                # so field arrays have to be squeezed.
+                pxr.pxrpush_em2d_bvec(lo, hi, lo, hi, lo, hi, 
+                                      f.Ex.squeeze(), flo, fhi,
+                                      f.Ey.squeeze(), flo, fhi,
+                                      f.Ez.squeeze(), flo, fhi,
+                                      f.Bx.squeeze(), flo, fhi,
+                                      f.By.squeeze(), flo, fhi,
+                                      f.Bz.squeeze(), flo, fhi,
+                                      0.5*dt/f.dx*f.xcoefs[0],
+                                      0.5*dt/f.dy*f.ycoefs[0],
+                                      0.5*dt/f.dz*f.zcoefs[0])
               elif (f.stencil==1): # Karkainnen solver
                 pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                             0.5*dt/f.dx,
@@ -1369,13 +1417,20 @@ class EM3DPXR(EM3DFFT):
           else:
             if (f.norderx==2) & (f.nordery==2) & (f.norderz==2):
               if (f.stencil==0): # Yee solver
-                pxr.pxrpush_em3d_bvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-                            0.5*dt/f.dx*f.xcoefs[0],
-                            0.5*dt/f.dy*f.ycoefs[0],
-                            0.5*dt/f.dz*f.zcoefs[0],
-                            f.nx,f.ny,f.nz,
-                            f.nxguard,f.nyguard,f.nzguard,
-                            0,0,0,f.l_nodalgrid)
+                lo = [0, 0, 0]
+                hi = [f.nx, f.ny, f.nz]
+                flo = [-f.nxguard, -f.nyguard, -f.nzguard]
+                fhi = [f.nx + f.nxguard, f.ny + f.nyguard, f.nz + f.nzguard]
+                pxr.pxrpush_em3d_bvec(lo, hi, lo, hi, lo, hi, 
+                                      f.Ex, flo, fhi,
+                                      f.Ey, flo, fhi,
+                                      f.Ez, flo, fhi,
+                                      f.Bx, flo, fhi,
+                                      f.By, flo, fhi,
+                                      f.Bz, flo, fhi,
+                                      0.5*dt/f.dx*f.xcoefs[0],
+                                      0.5*dt/f.dy*f.ycoefs[0],
+                                      0.5*dt/f.dz*f.zcoefs[0])
               elif (f.stencil==1): # Karkainnen solver
                 pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                             0.5*dt/f.dx,
