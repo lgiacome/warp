@@ -1270,13 +1270,6 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-#                 pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-#                             0.5*dt/f.dx,
-#                             0.5*dt/f.dy,
-#                             0.5*dt/f.dz,
-#                             f.nx,f.ny,f.nz,
-#                             f.nxguard,f.nyguard,f.nzguard,
-#                             f.l_2dxz)
             else: #nth order solver >  2
               pxr.pxrpush_em2d_bvec_norder(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                           0.5*dt/f.dx*f.xcoefs,
@@ -1318,13 +1311,6 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-#                 pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-#                             0.5*dt/f.dx,
-#                             0.5*dt/f.dy,
-#                             0.5*dt/f.dz,
-#                             f.nx,f.ny,f.nz,
-#                             f.nxguard,f.nyguard,f.nzguard,
-#                             f.l_2dxz)
             else: #nth order solver >  2
               pxr.pxrpush_em3d_bvec_norder(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                           0.5*dt/f.dx*f.xcoefs,
@@ -1404,13 +1390,6 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-#                 pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-#                             0.5*dt/f.dx,
-#                             0.5*dt/f.dy,
-#                             0.5*dt/f.dz,
-#                             f.nx,f.ny,f.nz,
-#                             f.nxguard,f.nyguard,f.nzguard,
-#                             f.l_2dxz)
             else: #nth order solver >  2
               pxr.pxrpush_em2d_bvec_norder(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                           0.5*dt/f.dx*f.xcoefs,
@@ -1452,13 +1431,6 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-#                 pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-#                             0.5*dt/f.dx,
-#                             0.5*dt/f.dy,
-#                             0.5*dt/f.dz,
-#                             f.nx,f.ny,f.nz,
-#                             f.nxguard,f.nyguard,f.nzguard,
-#                             f.l_2dxz)
             else:  #nth order solver >  2
               pxr.pxrpush_em3d_bvec_norder(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                           0.5*dt/f.dx*f.xcoefs,
