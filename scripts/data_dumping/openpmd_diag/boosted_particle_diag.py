@@ -33,7 +33,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period,
                  em, top, w3d, comm_world=None,
-                 particle_data=["position", "momentum", "weighting","E", "B"],
+                 particle_data=["position", "momentum", "weighting"],
                  select=None, write_dir=None,
                  species={"electrons": None}, boost_dir=1,lparallel_output=False,t_min_lab=0. ):
         """
@@ -655,11 +655,14 @@ class ParticleCatcher:
         if(dump_f == False):
             self.particle_to_index = {'x':0, 'y':1, 'z':2, 'ux':3,
                     'uy':4, 'uz':5, 'w':6, 'gamma':7, 't':8}
+            if self.top.ssnpid > 0:
+                self.particle_to_index['id'] = 9
+
         else: 
             self.particle_to_index = {'x':0, 'y':1, 'z':2, 'ux':3,
-                    'uy':4, 'uz':5, 'w':6, 'gamma':7, 't':8,'ex':10, 'ey':11, 'ez':12,'bx':13, 'by':14, 'bz':15} 
-        if self.top.ssnpid > 0:
-            self.particle_to_index['id'] = 9
+                    'uy':4, 'uz':5, 'w':6, 'gamma':7, 't':8,'ex':9, 'ey':10, 'ez':11,'bx':12, 'by':13, 'bz':14} 
+            if self.top.ssnpid > 0:
+                self.particle_to_index['id'] = 15
     def get_particle_slice( self, species, prev_z_boost, current_z_boost ):
         """
         Select the particles for the current slice, and extract their
