@@ -488,6 +488,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             elif particle_var == "weighting":
                quantity= "w"
                path = 'weighting'
+               data = particle_array[ p2i[ quantity ] ]
                self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
                n_global=ng,comm=comm)
 
@@ -495,6 +496,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             elif particle_var == "id":
                quantity= "id"
                path = 'id'
+               data = particle_array[ p2i[ quantity ] ]
                self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
                n_global=ng,comm=comm)
 
