@@ -495,9 +495,10 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             elif particle_var == "id":
                quantity= "id"
                path = 'id'
-               data = particle_array[ p2i[ quantity ] ]
                self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-               n_global=ng,parallel_open=self.lparallel_output,comm=comm)
+               n_global=ng,comm=comm)
+
+
 
         #If serial IO then close files here
         
