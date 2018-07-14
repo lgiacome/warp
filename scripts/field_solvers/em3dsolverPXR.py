@@ -1252,7 +1252,7 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-              elif (f.stencil==1): # Karkainnen solver
+              elif (f.stencil==1): # Karkkainen solver
                 lo = [0, 0]
                 hi = [f.nx, f.nz]
                 flo = [-f.nxguard, -f.nzguard]
@@ -1296,7 +1296,7 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-              elif (f.stencil==1): # Karkainnen solver
+              elif (f.stencil==1): # Karkkainen solver
                 lo = [0, 0, 0]
                 hi = [f.nx, f.ny, f.nz]
                 flo = [-f.nxguard, -f.nyguard, -f.nzguard]
@@ -1372,7 +1372,7 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-              elif (f.stencil==1): # Karkainnen solver
+              elif (f.stencil==1): # Karkkainen solver
                 lo = [0, 0]
                 hi = [f.nx, f.nz]
                 flo = [-f.nxguard, -f.nzguard]
@@ -1416,7 +1416,7 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-              elif (f.stencil==1): # Karkainnen solver
+              elif (f.stencil==1): # Karkkainen solver
                 lo = [0, 0, 0]
                 hi = [f.nx, f.ny, f.nz]
                 flo = [-f.nxguard, -f.nyguard, -f.nzguard]
