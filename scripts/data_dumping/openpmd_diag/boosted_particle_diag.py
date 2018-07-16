@@ -243,11 +243,10 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
 
 
-        i = -1
 
         # Loop over snapshots and species to construct dump_comms and open h5_files
         for snapshot in self.snapshots:
-            i =i+ 1 
+            i = snapshot.iteration 
             for species_name in self.species_dict:
 
                 particle_array[i][species_name] = snapshot.compact_slices(species_name)
@@ -280,10 +279,9 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                  
          
    
-        i = -1
         # loop over snapshots and species to flush data
 	for snapshot in self.snapshots:
-            i+= 1
+            i= snapshot.iteration 
 	    for species_name in self.species_dict:
                 if(write_on[i][species_name]):
                     n_part_to_dump = np.shape(particle_array[i][species_name])[1]
@@ -291,6 +289,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                     self.particle_catcher.particle_to_index\
                     ,comm=dump_comm[i][species_name],n_rank=n_rank[i][species_name]\
                     ,n_global=nglobal_dict[i],h5_file=f[i][species_name])
+		snapshot.buffered_slices[species_name] = []
 
         # loop over snapshots and species to  close files and free dump_comm
         for i in range(self.Ntot_snapshots_lab):
@@ -309,7 +308,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 	n_rank = [] 
 	nlocals_dict = []
 	nglobal_dict = []
-        snapshot.buffered_slices[species_name] = []  
       
 
 
@@ -500,7 +498,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
                n_global=ng,comm=comm)
 
-
+        data = []
 
         #If serial IO then close files here
         
