@@ -805,22 +805,25 @@ class ParticleCatcher:
 
         # Field in lab frame
         if(self.dump_p_fields): 
+	    cbeta = self.beta_boost*c
+            beta_ov_c = self.beta_boost*ic
+
             temp = np.copy(self.ey_captured)
-            self.ey_captured = self.gamma_boost*(self.ey_captured + self.beta_boost*c*self.bx_captured)
-            self.bx_captured = self.gamma_boost*(self.bx_captured + self.beta_boost*ic*temp)
+            self.ey_captured = self.gamma_boost*(self.ey_captured - cbeta*self.bx_captured)
+            self.bx_captured = self.gamma_boost*(self.bx_captured - beta_ov_c*temp)
 
             temp = np.copy(self.ex_captured)
-            self.ex_captured = self.gamma_boost*(self.ex_captured - self.beta_boost*c*self.by_captured)
-            self.by_captured = self.gamma_boost*(self.by_captured - self.beta_boost*ic*temp)
+            self.ex_captured = self.gamma_boost*(self.ex_captured + cbeta*self.by_captured)
+            self.by_captured = self.gamma_boost*(self.by_captured + beta_ov_c*ic*temp)
 
 
             temp = np.copy(self.ey_prev_captured)
-            self.ey_prev_captured = self.gamma_boost*(self.ey_prev_captured + self.beta_boost*c*self.bx_prev_captured)
-            self.bx_prev_captured = self.gamma_boost*(self.bx_prev_captured + self.beta_boost*ic*temp)
+            self.ey_prev_captured = self.gamma_boost*(self.ey_prev_captured - cbeta*self.bx_prev_captured)
+            self.bx_prev_captured = self.gamma_boost*(self.bx_prev_captured - beta_ov_c*temp)
 
             temp = np.copy(self.ex_prev_captured)
-            self.ex_prev_captured = self.gamma_boost*(self.ex_prev_captured - self.beta_boost*c*temp)
-            self.by_prev_captured = self.gamma_boost*(self.by_prev_captured - self.beta_boost*ic*self.ex_prev_captured)
+            self.ex_prev_captured = self.gamma_boost*(self.ex_prev_captured + cbeta*self.by_prev_captured)
+            self.by_prev_captured = self.gamma_boost*(self.by_prev_captured + beta_ov_c*temp)
             temp = []
 
 
