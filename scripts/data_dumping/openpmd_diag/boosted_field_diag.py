@@ -35,7 +35,8 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period, em, top, w3d,
                  comm_world=None, fieldtypes=["rho", "E", "B", "J"],
-                 z_subsampling=1, write_dir=None, boost_dir=1,lparallel_output=False,t_min_lab=0. ) :
+                 z_subsampling=1, write_dir=None, boost_dir=1,lparallel_output=False,t_min_lab=0.,
+                 xmin_lab = None, xmax_lab=None, ymin_lab=None, ymax_lab=None ) :
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -49,6 +50,10 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         zmin_lab, zmax_lab: floats (meters)
             Positions of the minimum and maximum of the virtual moving window,
             *in the lab frame*, at t=0
+
+        xmin_lab, xmax_lab, ymin_lab, ymax_lab: floats (meters)
+            Positions of the minimum and maximum of the virtual moving window,
+            *in the lab frame*, at t=0. If None then suppose all the sim box
 
         v_lab: float (m.s^-1)
             Speed of the moving window *in the lab frame*
@@ -94,10 +99,31 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # Gather the indices that correspond to the positions
         # of each subdomain within full domain
         # (Needed for MPI communications of slices)
-        if (self.comm_world is not None) and (self.comm_world.size > 1):
-            self.global_indices_list = gather( self.global_indices,
-                                               comm=self.comm_world )
+#        if (self.comm_world is not None) and (self.comm_world.size > 1):
+#            self.global_indices_list = gather( self.global_indices,
+#                                               comm=self.comm_world )
 
+        self.indices = np.copy(self.global_indices)
+        if(xmin_lab is not None):
+            shift_x_min = int(max(0,(xmin_lab-self.em.xmminlocal)/self.dx))
+            self.indices[0,0] += shift_x_min
+
+        if self.dim == "3d":
+            if(ymin_lab is not None):
+                shift_y_min = int(max(0,(ymin_lab-self.em.ymminlocal)/self.dy))
+                self.indices[0,1] += shift_y_min        
+        
+        if(xmax_lab is not None):
+            shift_x_max = int(max(0,(self.em.xmmaxlocal-xmax_lab)/self.dx))
+            self.indices[1,0] -= shift_x_max
+        if self.dim == "3d":
+            if(ymax_lab is not None):
+                shift_y_min = int(max(0,(self.em.ymmaxlocal-ymax_lab)/self.dy))
+                self.indices[1,1] -= shift_y_max
+
+        if (self.comm_world is not None) and (self.comm_world.size > 1):
+            self.global_indices_list = gather( self.indices,
+                                               comm=self.comm_world )
         # Check user input
         boost_dir = int(boost_dir)
         assert boost_dir in [1,-1]
@@ -233,7 +259,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         dump_comm = [None]*self.Ntot_snapshots_lab
         ranks_group_list = [None]*self.Ntot_snapshots_lab
         field_grp =[None]*self.Ntot_snapshots_lab
-	indices = self.global_indices
+	indices = self.indices#self.global_indices
         
         # Loop over boosted frame snapshots in order to build an mpi sub comm for each snapshot
         # each communicator encodes informations about which processors need to dump data for this snapshot 
@@ -574,7 +600,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             iz_min is inclusice and iz_max is exclusive
         """
         dset = field_grp[ path ]
-        indices = self.global_indices
+        indices = self.indices#self.global_indices
 
         # Write the fields depending on the geometry
         if self.dim == "2d":
