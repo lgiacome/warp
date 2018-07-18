@@ -41,8 +41,6 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         as a series of snapshot (one file per snapshot),
         within a virtual moving window defined by zmin_lab, zmax_lab, v_lab.
 
-        Note: In the current implementation, these diagnostics do not
-        use parallel HDF5 output. Rank 0 creates and writes all the files.
 
         Parameters
         ----------

@@ -94,14 +94,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         FieldDiagnostic.__init__(self, period, em, top, w3d,
                 comm_world, fieldtypes=fieldtypes, write_dir=write_dir,
                 lparallel_output=lparallel_output)
-        # Note: The boosted frame diagnostics cannot use parallel HDF5 output
 
         # Gather the indices that correspond to the positions
         # of each subdomain within full domain
-        # (Needed for MPI communications of slices)
-#        if (self.comm_world is not None) and (self.comm_world.size > 1):
-#            self.global_indices_list = gather( self.global_indices,
-#                                               comm=self.comm_world )
 
         self.indices = np.copy(self.global_indices)
         if(xmin_lab is not None):
@@ -145,6 +140,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # (Needed to initialize metadata in the openPMD file)
         dz_lab = np.abs(c*self.top.dt * self.inv_beta_boost*self.inv_gamma_boost)
         Nz = int(round( (zmax_lab - zmin_lab)/dz_lab ))
+
         # In case of subsampling along z, increase dz and reduce Nz
         if z_subsampling > 1:
             dz_lab = dz_lab * z_subsampling
@@ -248,18 +244,23 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
       
         f2i = self.slice_handler.field_to_index
  
-        # allocates relevent arrays for the dump
+        # allocates Ntot_snapshot arrays of different kinds
+
         field_array = [None]*self.Ntot_snapshots_lab
           
         iz_min = [None]*self.Ntot_snapshots_lab
         iz_max = [None]*self.Ntot_snapshots_lab
         f = [None]*self.Ntot_snapshots_lab
+        
+        # this flag is turned true if current mpi is dumping on the i_th snapshot during this flush  
         write_on = [None]*self.Ntot_snapshots_lab
         newgroup = [None]*self.Ntot_snapshots_lab
         dump_comm = [None]*self.Ntot_snapshots_lab
         ranks_group_list = [None]*self.Ntot_snapshots_lab
         field_grp =[None]*self.Ntot_snapshots_lab
-	indices = self.indices#self.global_indices
+
+        #limits of data dumping along x and y dirctions
+	indices = self.indices
         
         # Loop over boosted frame snapshots in order to build an mpi sub comm for each snapshot
         # each communicator encodes informations about which processors need to dump data for this snapshot 
@@ -600,7 +601,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             iz_min is inclusice and iz_max is exclusive
         """
         dset = field_grp[ path ]
-        indices = self.indices#self.global_indices
+        indices = self.indices
 
         # Write the fields depending on the geometry
         if self.dim == "2d":
