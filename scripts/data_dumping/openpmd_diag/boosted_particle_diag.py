@@ -87,6 +87,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         assert boost_dir in [1,-1]
         
         # Register the boost quantities
+        self.em = em
         self.gamma_boost = gamma_boost
         self.inv_gamma_boost = 1./gamma_boost
         self.beta_boost = np.sqrt(1. - self.inv_gamma_boost**2) * boost_dir
@@ -107,14 +108,14 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
         # Loop through the lab snapshots and create the corresponding files
         self.particle_catcher = ParticleCatcher(
-            self.gamma_boost, self.beta_boost, top,self.dump_p_fields )
+            self.gamma_boost, self.beta_boost, top,self.dump_p_fields,em )
         self.particle_catcher.allocate_previous_instant()
 
         for i in range( Ntot_snapshots_lab ):
             t_lab = i*dt_snapshots_lab + self.t_min_lab
             snapshot = LabSnapshot( t_lab, zmin_lab + v_lab*t_lab,
                             top.dt, zmax_lab + v_lab*t_lab,
-                            self.write_dir, i, self.species_dict, self.rank,self.dump_p_fields )
+                            self.write_dir, i, self.species_dict, self.rank,self.dump_p_fields,self.em )
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
             self.create_file_empty_particles(
@@ -510,7 +511,7 @@ class LabSnapshot:
     in the lab frame (i.e. one given *time* in the lab frame)
     """
     def __init__(self, t_lab, zmin_lab, dt, zmax_lab, write_dir, i,
-        species_dict, rank, dump_p_fields):
+        species_dict, rank, dump_p_fields, em):
         """
         Initialize a LabSnapshot
 
@@ -541,7 +542,7 @@ class LabSnapshot:
         self.iteration = i
         self.dt = dt
         self.dump_p_fields = dump_p_fields
-
+        self.em = em
         # Time and boundaries in the lab frame (constants quantities)
         self.zmin_lab = zmin_lab
         self.zmax_lab = zmax_lab
@@ -630,7 +631,7 @@ class ParticleCatcher:
     """
     Class that extracts, Lorentz-transforms and gathers particles
     """
-    def __init__(self, gamma_boost, beta_boost, top,dump_f=False):
+    def __init__(self, gamma_boost, beta_boost, top,dump_f=False, em=None):
         """
         Initialize the ParticleCatcher object
 
@@ -648,6 +649,7 @@ class ParticleCatcher:
         self.beta_boost = beta_boost
         self.top = top
         self.dump_p_fields = dump_f
+        self.em = em
 
         # Create a dictionary that contains the correspondance
         # between the particles quantity and array index
@@ -812,7 +814,7 @@ class ParticleCatcher:
 
             temp = np.copy(self.ex_captured)
             self.ex_captured = self.gamma_boost*(self.ex_captured + cbeta*self.by_captured)
-            self.by_captured = self.gamma_boost*(self.by_captured + beta_ov_c*ic*temp)
+            self.by_captured = self.gamma_boost*(self.by_captured + beta_ov_c*temp)
 
 
             temp = np.copy(self.ey_prev_captured)
@@ -962,11 +964,45 @@ class ParticleCatcher:
         num_part = self.get_particle_slice( species, prev_z_boost,
                         current_z_boost )
 
-        # Transform the particles from boosted frame back to lab frame
-        self.transform_particles_to_lab_frame()
+        if (hasattr(self.em,"l_pxr")):
+            if(self.em.l_pxr): 
+                if(self.dump_p_fields):
+                    self.em.lorentz_transform_parts_with_fields(num_part, self.gamma_boost, self.beta_boost, self.top.time, self.top.dt,t_output,\
+                                     self.x_captured, self.x_prev_captured,\
+                                     self.y_captured, self.y_prev_captured,\
+                                     self.z_captured, self.z_prev_captured,\
+                                     self.ux_captured, self.ux_prev_captured,\
+                                     self.uy_captured, self.uy_prev_captured,\
+                                     self.uz_captured, self.uz_prev_captured,\
+                                     self.gamma_captured, self.gamma_prev_captured,\
+                                     self.ex_captured, self.ex_prev_captured,\
+                                     self.ey_captured, self.ey_prev_captured,\
+                                     self.ez_captured, self.ez_prev_captured,\
+                                     self.bx_captured, self.bx_prev_captured,\
+                                     self.by_captured, self.by_prev_captured,\
+                                     self.bz_captured, self.bz_prev_captured)
 
-        # Interpolate the particle quantities in time, to t_output
-        self.interpolate_to_time( t_output )
+                else: 
+                    self.em.lorentz_transform_parts_without_fields(num_part, self.gamma_boost, self.beta_boost, self.top.time, self.top.dt,t_output,\
+                                     self.x_captured, self.x_prev_captured,\
+                                     self.y_captured, self.y_prev_captured,\
+                                     self.z_captured, self.z_prev_captured,\
+                                     self.ux_captured, self.ux_prev_captured,\
+                                     self.uy_captured, self.uy_prev_captured,\
+                                     self.uz_captured, self.uz_prev_captured,\
+                                     self.gamma_captured, self.gamma_prev_captured
+                                     )
+            else:
+                # Transform the particles from boosted frame back to lab frame
+                self.transform_particles_to_lab_frame()
+                # Interpolate the particle quantities in time, to t_output
+                self.interpolate_to_time( t_output )
+        else:
+            # Transform the particles from boosted frame back to lab frame
+            self.transform_particles_to_lab_frame()
+
+            # Interpolate the particle quantities in time, to t_output
+            self.interpolate_to_time( t_output )
         slice_array = np.empty((np.shape(p2i.keys())[0], num_part,))
 
         for quantity in self.particle_to_index.keys():

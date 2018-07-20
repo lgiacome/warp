@@ -859,7 +859,7 @@ class SliceHandler:
 
         # Perform the Lorentz transformation of the fields *from
         # the boosted frame to the lab frame*
-        self.transform_fields_to_lab_frame( slice_array )
+        self.transform_fields_to_lab_frame( slice_array,em )
 
         return( slice_array )
 
@@ -879,11 +879,11 @@ class SliceHandler:
         """
         # Allocate an array of the proper shape
         if self.dim=="2d":
-            slice_array = np.empty( (10, em.nxlocal+1,) )
+            slice_array = np.empty( (10, em.nxlocal+1,) ,order="F")
         elif self.dim=="3d":
-            slice_array = np.empty( (10, em.nxlocal+1, em.nylocal+1) )
+            slice_array = np.empty( (10, em.nxlocal+1, em.nylocal+1), order = "F" )
         elif self.dim=="circ":
-            slice_array = np.empty( (10, 2*em.circ_m+1, em.nxlocal+1) )
+            slice_array = np.empty( (10, 2*em.circ_m+1, em.nxlocal+1) ,order="F")
 
         # Find the index of the slice in the boosted frame
         # and the corresponding interpolation shape factor
@@ -930,7 +930,7 @@ class SliceHandler:
 
         return( slice_array )
 
-    def transform_fields_to_lab_frame( self, fields ):
+    def transform_fields_to_lab_frame( self, fields ,em):
         """
         Modifies the array `fields` in place, to transform the field values
         from the boosted frame to the lab frame.
@@ -965,16 +965,38 @@ class SliceHandler:
         # For E and B
         # (NB: Ez and Bz are unchanged by the Lorentz transform)
         if self.dim in ["2d", "3d"]:
-            # Use temporary arrays when changing Ex and By in place
-            ex_lab = gamma*( fields[f2i['Ex']] + cbeta * fields[f2i['By']] )
-            by_lab = gamma*( fields[f2i['By']] + beta_c * fields[f2i['Ex']] )
-            fields[ f2i['Ex'], ... ] = ex_lab
-            fields[ f2i['By'], ... ] = by_lab
-            # Use temporary arrays when changing Ey and Bx in place
-            ey_lab = gamma*( fields[f2i['Ey']] - cbeta * fields[f2i['Bx']] )
-            bx_lab = gamma*( fields[f2i['Bx']] - beta_c * fields[f2i['Ey']] )
-            fields[ f2i['Ey'], ... ] = ey_lab
-            fields[ f2i['Bx'], ... ] = bx_lab
+		
+	    if (hasattr(em,"l_pxr")) :
+		if(em.l_pxr == True):
+                    if(self.dim == "2d"):
+                        n1 = 10
+                        n2 = em.nxlocal+1
+                        em.lorentz_transform2d(n1,n2,fields,gamma,cbeta,beta_c)
+                    else: 
+                        n1 =  10
+                        n2 = em.nxlocal+1
+                        n3 = em.nylocal+1
+                        em.lorentz_transform3d(n1,n2,n3,fields,gamma,cbeta,beta_c)         
+            else :
+                # Use temporary arrays when changing Ex and By in place
+                ex_lab = gamma*( fields[f2i['Ex']] + cbeta * fields[f2i['By']] )
+                by_lab = gamma*( fields[f2i['By']] + beta_c * fields[f2i['Ex']] )
+                fields[ f2i['Ex'], ... ] = ex_lab
+                fields[ f2i['By'], ... ] = by_lab
+                # Use temporary arrays when changing Ey and Bx in place
+                ey_lab = gamma*( fields[f2i['Ey']] - cbeta * fields[f2i['Bx']] )
+                bx_lab = gamma*( fields[f2i['Bx']] - beta_c * fields[f2i['Ey']] )
+                fields[ f2i['Ey'], ... ] = ey_lab
+                fields[ f2i['Bx'], ... ] = bx_lab
+                # For rho and J
+                # (NB: the transverse components of J are unchanged)
+                # Use temporary arrays when changing rho and Jz in place
+
+                rho_lab = gamma*( fields[f2i['rho']] + beta_c * fields[f2i['Jz']] )
+                Jz_lab =  gamma*( fields[f2i['Jz']] + cbeta * fields[f2i['rho']] )
+                fields[ f2i['rho'], ... ] = rho_lab
+                fields[ f2i['Jz'], ... ] = Jz_lab
+    
         elif self.dim=="circ":
             # Use temporary arrays when changing Er and Bt in place
             er_lab = gamma*( fields[f2i['Er']] + cbeta * fields[f2i['Bt']] )
@@ -986,10 +1008,13 @@ class SliceHandler:
             br_lab = gamma*( fields[f2i['Br']] - beta_c * fields[f2i['Et']] )
             fields[ f2i['Et'], ... ] = et_lab
             fields[ f2i['Br'], ... ] = br_lab
-        # For rho and J
-        # (NB: the transverse components of J are unchanged)
-        # Use temporary arrays when changing rho and Jz in place
-        rho_lab = gamma*( fields[f2i['rho']] + beta_c * fields[f2i['Jz']] )
-        Jz_lab =  gamma*( fields[f2i['Jz']] + cbeta * fields[f2i['rho']] )
-        fields[ f2i['rho'], ... ] = rho_lab
-        fields[ f2i['Jz'], ... ] = Jz_lab
+
+            # For rho and J
+            # (NB: the transverse components of J are unchanged)
+            # Use temporary arrays when changing rho and Jz in place
+
+            rho_lab = gamma*( fields[f2i['rho']] + beta_c * fields[f2i['Jz']] )
+            Jz_lab =  gamma*( fields[f2i['Jz']] + cbeta * fields[f2i['rho']] )
+            fields[ f2i['rho'], ... ] = rho_lab
+            fields[ f2i['Jz'], ... ] = Jz_lab
+
