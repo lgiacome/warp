@@ -35,8 +35,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
     def __init__(self, zmin_lab, zmax_lab, v_lab, dt_snapshots_lab,
                  Ntot_snapshots_lab, gamma_boost, period, em, top, w3d,
                  comm_world=None, fieldtypes=["rho", "E", "B", "J"],
-                 z_subsampling=1, write_dir=None, boost_dir=1,lparallel_output=False,t_min_lab=0.,
-                 xmin_lab = None, xmax_lab=None, ymin_lab=None, ymax_lab=None ) :
+                 z_subsampling=1, write_dir=None, boost_dir=1,
+                 lparallel_output=False,t_min_lab=0., xmin_lab = None,
+                 xmax_lab=None, ymin_lab=None, ymax_lab=None ):
         """
         Initialize diagnostics that retrieve the data in the lab frame,
         as a series of snapshot (one file per snapshot),
@@ -95,33 +96,14 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                 comm_world, fieldtypes=fieldtypes, write_dir=write_dir,
                 lparallel_output=lparallel_output)
 
-        # Gather the indices that correspond to the positions
-        # of each subdomain within full domain
 
-        self.indices = np.copy(self.global_indices)
-        if(xmin_lab is not None):
-            shift_x_min = int(max(0,(xmin_lab-self.em.xmminlocal)/self.dx))
-            self.indices[0,0] += shift_x_min
-
-        if self.dim == "3d":
-            if(ymin_lab is not None):
-                shift_y_min = int(max(0,(ymin_lab-self.em.ymminlocal)/self.dy))
-                self.indices[0,1] += shift_y_min        
-        
-        if(xmax_lab is not None):
-            shift_x_max = int(max(0,(self.em.xmmaxlocal-xmax_lab)/self.dx))
-            self.indices[1,0] -= shift_x_max
-        if self.dim == "3d":
-            if(ymax_lab is not None):
-                shift_y_min = int(max(0,(self.em.ymmaxlocal-ymax_lab)/self.dy))
-                self.indices[1,1] -= shift_y_max
-
-        if (self.comm_world is not None) and (self.comm_world.size > 1):
-            self.global_indices_list = gather( self.indices,
-                                               comm=self.comm_world )
         # Check user input
         boost_dir = int(boost_dir)
         assert boost_dir in [1,-1]
+
+        # Compute global and local indices for transverse directions (x and y)
+        self.get_indices_transverse_directions(xmin_lab, xmax_lab, ymin_lab,\
+                                               ymax_lab)
 
         # Register the boost quantities
         self.gamma_boost = gamma_boost
@@ -161,12 +143,14 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             snapshot = LabSnapshot( t_lab,
                                     zmin_lab + v_lab*t_lab,
                                     zmax_lab + v_lab*t_lab,
-                                    self.write_dir, i, self.rank, boost_dir,lparallel_output)
+                                    self.write_dir, i, self.rank,
+                                    boost_dir,lparallel_output)
             self.snapshots.append( snapshot )
             # Initialize a corresponding empty file
             if self.rank == 0:
                 self.create_file_empty_meshes( snapshot.filename, i,
-                snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt )
+                snapshot.t_lab, Nz, snapshot.zmin_lab, dz_lab, self.top.dt, 
+                self.Nx_total , xmin_lab, self.Ny_total, ymin_lab   )
 
         # Print a message that records the time for initialization
         if self.rank == 0:
@@ -177,8 +161,108 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # Create a slice handler, which will do all the extraction, Lorentz
         # transformation, etc for each slice to be registered in a
         # LabSnapshot, and abstracts the dimension
-        self.slice_handler = SliceHandler(
-            self.gamma_boost, self.beta_boost, self.dim )
+
+        start = np.array([self.shift_x_min,self.shift_y_min,0])
+        self.slice_handler = SliceHandler(self.gamma_boost, self.beta_boost, 
+                                          self.dim,start, self.nx_dump,
+                                          self.ny_dump )
+
+    def get_indices_transverse_directions(self, xmin_lab, xmax_lab, 
+                                          ymin_lab, ymax_lab):
+        
+        """ This routine compute global and local indices that needed when 
+        using xmin_lab ... ymax_lab parameters to dump only a portion of the 
+        fields with this diagnostics
+        Since the Lorentz transform is done along the z direction, 
+        indices along transverse directions remain the same for each dump during
+        the simulation """
+
+        # Get local indices of each mpi task
+        self.indices = np.copy(self.global_indices)
+        self.shift_x_min = 0 
+        self.shift_y_min = 0
+        self.shift_x_max = 0
+        self.shift_y_max = 0
+
+        if(xmin_lab is not None):
+            # Compute the shift introduced by xmin_lab for each proc
+            self.shift_x_min = int(max(0,(xmin_lab-self.em.xmminlocal)/self.dx))
+            self.indices[0,0] += self.shift_x_min
+            # Compute the shift introduced by xmin_lab for the whole domain
+            self.ix_start_g   = max(0,int((xmin_lab-self.w3d.xmmin)/self.dx))
+        else:
+            self.ix_start_g = 0
+        if self.dim == "3d":
+            if(ymin_lab is not None):
+                # Compute the shift introduced by ymin_lab for each proc
+                self.shift_y_min = int(max(0,(ymin_lab-self.em.ymminlocal)/self.dy))
+                self.indices[0,1] += self.shift_y_min   
+                # Compute the shift introduced by ymin_lab for the whole domain     
+                self.iy_start_g = max(0,int((ymin_lab-self.w3d.ymmin)/self.dy))
+            else:
+                self.iy_start_g = 0
+        
+        if(xmax_lab is not None):
+            # Compute the shift introduced by xmax_lab for each proc
+            self.shift_x_max = int(max(0,(self.em.xmmaxlocal-xmax_lab)/self.dx))
+            self.indices[1,0] -= self.shift_x_max
+        if self.dim == "3d":
+            if(ymax_lab is not None):
+                # Compute the shift introduced by ymax_lab for each proc
+                shift_y_min = int(max(0,(self.em.ymmaxlocal-ymax_lab)/self.dy))
+                self.indices[1,1] -= self.shift_y_max
+
+        # If current mpi subdomain does not intersect with the diag window
+        # then set all to 0
+        if(xmax_lab is not None): 
+
+            if (xmax_lab < self.em.xmminlocal): 
+                self.indices[0,0] = 0
+                self.indices[1,0] = 0
+        if(xmin_lab is not None):
+            if (xmin_lab > self.em.xmmaxlocal):
+                self.indices[0,0] = 0
+                self.indices[1,0] = 0
+
+
+        if(self.dim=="3d"):
+            if(ymax_lab is not None):
+                if (ymax_lab < self.em.ymminlocal):
+                    self.indices[0,0] = 0
+                    self.indices[1,0] = 0
+            if(ymin_lab is not None):
+                if (ymin_lab > self.em.ymmaxlocal):
+                    self.indices[0,0] = 0
+                    self.indices[1,0] = 0
+
+        # Compute number of data points to dump along x  by current mpi task
+        self.nx_dump = max(0,self.indices[1,0] - self.indices[0,0])
+
+        # Compute number of data points to dump along y  by current mpi task
+        if self.dim == "3d" :   
+            self.ny_dump = max(0,self.indices[1,1] - self.indices[0,1])
+        else: 
+             self.ny_dump = 0
+
+        self.Nx_total = None
+        self.Ny_total = None
+
+        # Compute the total number of points to dump along x and y globally
+        if (self.comm_world is not None) and (self.comm_world.size > 1):
+            self.global_indices_list = gather( self.indices,
+                                               comm=self.comm_world )
+            self.Nx_total = gather(self.nx_dump,comm=self.comm_world)
+            self.Nx_total = sum(self.Nx_total)/(self.top.fsdecomp.nyprocs*self.top.fsdecomp.nzprocs)
+
+            
+            if self.dim == "3d" : 
+                self.Ny_total = mpiallreduce(self.ny_dump, comm=self.comm_world)
+                self.Ny_total = sum(self.Ny_total)/(self.top.fsdecomp.nxprocs*self.top.fsdecomp.nzprocs)
+        
+       
+        self.indices[:,0] -= self.ix_start_g
+        if(self.dim == "3d"): 
+            self.indices[:,1] -= self.iy_start_g
 
     def write( self ):
         """
@@ -278,13 +362,15 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             write_on[i] = False
             #if write_on[i] == True then the current mpi needs to dump data for the i_th snap
             if (field_array[i] is not None): write_on[i] =True
-
+            if(self.nx_dump <= 0) : write_on[i] = False
+            if(self.dim == "3d") :  
+               if(self.ny_dump <= 0) : write_on[i] = False 
             # Erase the memory buffers
             snapshot.buffered_slices = []
             snapshot.buffer_z_indices = []
             # Creates the subcommunicator that will open the h5 file and dump data
             in_list = [];in_list = -1 
-            if (field_array[i] is not None):
+            if ( write_on[i] ):
                 in_list = me
             ranks_group_list[i] = mpiallgather( in_list )
             
@@ -333,11 +419,13 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                         if self.dim == "2d":
                             with dset.collective:
                                 dset[ indices[0,0]:indices[1,0],iz_min[i]:iz_max[i] ] = \
-                                data[:indices[1,0]-indices[0,0],:iz_max[i] -iz_min[i]]
+                                data[:self.nx_dump,:iz_max[i] -iz_min[i]]
+
                         elif self.dim == "3d":
                             with dset.collective:
-                                dset[ indices[0,0]:indices[1,0],indices[0,1]:indices[1,1],iz_min[i]:iz_max[i] ] = \
-                                data[:indices[1,0]-indices[0,0],:indices[1,1]-indices[0,1],:iz_max[i] -iz_min[i]]
+                                dset[indices[0,0]:indices[1,0],indices[0,1]:indices[1,1],iz_min[i]:iz_max[i] ] = \
+                                data[:self.nx_dump,:self.ny_dump,:iz_max[i] -iz_min[i]]
+
 
                     else:
                         if fieldtype in ["E", "B", "J"]:
@@ -356,11 +444,11 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                                 if self.dim == "2d":
                                     with dset.collective:
                                         dset[ indices[0,0]:indices[1,0],iz_min[i]:iz_max[i] ] = \
-                                        data[:indices[1,0]-indices[0,0],:iz_max[i] -iz_min[i]]
+                                        data[:self.nx_dump,:iz_max[i] -iz_min[i]]
                                 elif self.dim == "3d":
                                     with dset.collective:
-                                        dset[ indices[0,0]:indices[1,0],indices[0,1]:indices[1,1],iz_min[i]:iz_max[i] ] = \
-                                        data[:indices[1,0]-indices[0,0],:indices[1,1]-indices[0,1],:iz_max[i] -iz_min[i]]
+                                        dset[indices[0,0]:indices[1,0],indices[0,1]:indices[1,1],iz_min[i]:iz_max[i] ] = \
+                                        data[:self.nx_dump,:self.ny_dump,:iz_max[i] -iz_min[i]]
         #closes current snapshot file
         for i in range(self.Ntot_snapshots_lab):
             if f[i] is not None:
@@ -494,7 +582,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         elif self.dim == "3d":
             data_shape = ( 10, self.nx+1, self.ny+1, nslice )
         global_array = np.zeros( data_shape )
-
         # Loop through all the processors
         # Fit the field arrays one by one into the global_array
         for i_proc in xrange(size_list):
@@ -792,7 +879,7 @@ class SliceHandler:
     """
     Class that extracts, Lorentz-transforms and writes slices of the fields
     """
-    def __init__( self, gamma_boost, beta_boost, dim ):
+    def __init__( self, gamma_boost, beta_boost, dim, start, nx_dump, ny_dump ):
         """
         Initialize the SliceHandler object
 
@@ -809,6 +896,9 @@ class SliceHandler:
         self.dim = dim
         self.gamma_boost = gamma_boost
         self.beta_boost = beta_boost
+        self.start = start
+        self.nx_dump = nx_dump
+        self.ny_dump = ny_dump
 
         # Create a dictionary that contains the correspondance
         # between the field names and array index
@@ -878,10 +968,14 @@ class SliceHandler:
             - (10, 2*em.circ_m+1, em.nxlocal+1) for dim="circ"
         """
         # Allocate an array of the proper shape
+	if(self.nx_dump is None): nx_ = em.nxlocal+1
+        else : nx_ = self.nx_dump
+        if(self.ny_dump is None): ny_ = em.nylocal+1
+        else : ny = self.ny_dump
         if self.dim=="2d":
-            slice_array = np.empty( (10, em.nxlocal+1,) ,order="F")
+            slice_array = np.empty( (10, nx_,) ,order="F")
         elif self.dim=="3d":
-            slice_array = np.empty( (10, em.nxlocal+1, em.nylocal+1), order = "F" )
+            slice_array = np.empty( (10, nx_, ny_), order = "F" )
         elif self.dim=="circ":
             slice_array = np.empty( (10, 2*em.circ_m+1, em.nxlocal+1) ,order="F")
 
@@ -923,10 +1017,10 @@ class SliceHandler:
             # to the nodes of the grid, thanks to the flag transverse_centered)
             slice_array[ f2i[quantity], ... ] = Sz * get_dataset(
                 self.dim, em, quantity, lgather=False, iz_slice=iz,
-                transverse_centered=True )
+                transverse_centered=True, start = self.start, nx_d = self.nx_dump,  ny_d = self.ny_dump )
             slice_array[ f2i[quantity], ... ] += (1.-Sz) * get_dataset(
                 self.dim, em, quantity, lgather=False, iz_slice=iz+1,
-                transverse_centered=True )
+                transverse_centered=True, start = self.start, nx_d = self.nx_dump,  ny_d = self.ny_dump )
 
         return( slice_array )
 
@@ -964,18 +1058,20 @@ class SliceHandler:
         # Lorentz transformations
         # For E and B
         # (NB: Ez and Bz are unchanged by the Lorentz transform)
+        if(self.nx_dump is None) : n2 = em.nxlocal+1
+        else : n2 = self.nx_dump
+        if(self.dim  == "3d"):
+            if(self.ny_dump is None) : n3 = em.nylocal+1
+            else: n3 = self.ny_dump
+
         if self.dim in ["2d", "3d"]:
 		
 	    if (hasattr(em,"l_pxr")) :
 		if(em.l_pxr == True):
+		    n1 = 10
                     if(self.dim == "2d"):
-                        n1 = 10
-                        n2 = em.nxlocal+1
                         em.lorentz_transform2d(n1,n2,fields,gamma,cbeta,beta_c)
                     else: 
-                        n1 =  10
-                        n2 = em.nxlocal+1
-                        n3 = em.nylocal+1
                         em.lorentz_transform3d(n1,n2,n3,fields,gamma,cbeta,beta_c)         
             else :
                 # Use temporary arrays when changing Ex and By in place
