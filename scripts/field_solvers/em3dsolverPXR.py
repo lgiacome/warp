@@ -1252,15 +1252,24 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-
-              elif (f.stencil==1): # Karkainnen solver
-                pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-                            0.5*dt/f.dx,
-                            0.5*dt/f.dy,
-                            0.5*dt/f.dz,
-                            f.nx,f.ny,f.nz,
-                            f.nxguard,f.nyguard,f.nzguard,
-                            f.l_2dxz)
+              elif (f.stencil==1): # Karkkainen solver
+                lo = [0, 0]
+                hi = [f.nx, f.nz]
+                flo = [-f.nxguard, -f.nzguard]
+                fhi = [f.nx + f.nxguard, f.nz + f.nzguard]
+                # Warp field arrays have shape (nx, 1, nz) while PICSAR 
+                # function pxrpush_em2d_bvec_ckc takes fields with shape 
+                # (nx, nz), so field arrays have to be squeezed.
+                pxr.pxrpush_em2d_bvec_ckc(lo, hi, lo, hi, lo, hi, 
+                                      f.Ex.squeeze(), flo, fhi,
+                                      f.Ey.squeeze(), flo, fhi,
+                                      f.Ez.squeeze(), flo, fhi,
+                                      f.Bx.squeeze(), flo, fhi,
+                                      f.By.squeeze(), flo, fhi,
+                                      f.Bz.squeeze(), flo, fhi,
+                                      0.5*dt/f.dx*f.xcoefs[0],
+                                      0.5*dt/f.dy*f.ycoefs[0],
+                                      0.5*dt/f.dz*f.zcoefs[0])
             else: #nth order solver >  2
               pxr.pxrpush_em2d_bvec_norder(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                           0.5*dt/f.dx*f.xcoefs,
@@ -1287,14 +1296,21 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-              elif (f.stencil==1): # Karkainnen solver
-                pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-                            0.5*dt/f.dx,
-                            0.5*dt/f.dy,
-                            0.5*dt/f.dz,
-                            f.nx,f.ny,f.nz,
-                            f.nxguard,f.nyguard,f.nzguard,
-                            f.l_2dxz)
+              elif (f.stencil==1): # Karkkainen solver
+                lo = [0, 0, 0]
+                hi = [f.nx, f.ny, f.nz]
+                flo = [-f.nxguard, -f.nyguard, -f.nzguard]
+                fhi = [f.nx + f.nxguard, f.ny + f.nyguard, f.nz + f.nzguard]
+                pxr.pxrpush_em3d_bvec_ckc(lo, hi, lo, hi, lo, hi, 
+                                      f.Ex, flo, fhi,
+                                      f.Ey, flo, fhi,
+                                      f.Ez, flo, fhi,
+                                      f.Bx, flo, fhi,
+                                      f.By, flo, fhi,
+                                      f.Bz, flo, fhi,
+                                      0.5*dt/f.dx*f.xcoefs[0],
+                                      0.5*dt/f.dy*f.ycoefs[0],
+                                      0.5*dt/f.dz*f.zcoefs[0])
             else: #nth order solver >  2
               pxr.pxrpush_em3d_bvec_norder(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                           0.5*dt/f.dx*f.xcoefs,
@@ -1356,14 +1372,24 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-              elif (f.stencil==1): # Karkainnen solver
-                pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-                            0.5*dt/f.dx,
-                            0.5*dt/f.dy,
-                            0.5*dt/f.dz,
-                            f.nx,f.ny,f.nz,
-                            f.nxguard,f.nyguard,f.nzguard,
-                            f.l_2dxz)
+              elif (f.stencil==1): # Karkkainen solver
+                lo = [0, 0]
+                hi = [f.nx, f.nz]
+                flo = [-f.nxguard, -f.nzguard]
+                fhi = [f.nx + f.nxguard, f.nz + f.nzguard]
+                # Warp field arrays have shape (nx, 1, nz) while PICSAR 
+                # function pxrpush_em2d_bvec_ckc takes fields with shape 
+                # (nx, nz), so field arrays have to be squeezed.
+                pxr.pxrpush_em2d_bvec_ckc(lo, hi, lo, hi, lo, hi, 
+                                      f.Ex.squeeze(), flo, fhi,
+                                      f.Ey.squeeze(), flo, fhi,
+                                      f.Ez.squeeze(), flo, fhi,
+                                      f.Bx.squeeze(), flo, fhi,
+                                      f.By.squeeze(), flo, fhi,
+                                      f.Bz.squeeze(), flo, fhi,
+                                      0.5*dt/f.dx*f.xcoefs[0],
+                                      0.5*dt/f.dy*f.ycoefs[0],
+                                      0.5*dt/f.dz*f.zcoefs[0])
             else: #nth order solver >  2
               pxr.pxrpush_em2d_bvec_norder(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                           0.5*dt/f.dx*f.xcoefs,
@@ -1390,14 +1416,21 @@ class EM3DPXR(EM3DFFT):
                                       0.5*dt/f.dx*f.xcoefs[0],
                                       0.5*dt/f.dy*f.ycoefs[0],
                                       0.5*dt/f.dz*f.zcoefs[0])
-              elif (f.stencil==1): # Karkainnen solver
-                pxr.pxr_push_em3d_kyeebvec(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
-                            0.5*dt/f.dx,
-                            0.5*dt/f.dy,
-                            0.5*dt/f.dz,
-                            f.nx,f.ny,f.nz,
-                            f.nxguard,f.nyguard,f.nzguard,
-                            f.l_2dxz)
+              elif (f.stencil==1): # Karkkainen solver
+                lo = [0, 0, 0]
+                hi = [f.nx, f.ny, f.nz]
+                flo = [-f.nxguard, -f.nyguard, -f.nzguard]
+                fhi = [f.nx + f.nxguard, f.ny + f.nyguard, f.nz + f.nzguard]
+                pxr.pxrpush_em3d_bvec_ckc(lo, hi, lo, hi, lo, hi, 
+                                      f.Ex, flo, fhi,
+                                      f.Ey, flo, fhi,
+                                      f.Ez, flo, fhi,
+                                      f.Bx, flo, fhi,
+                                      f.By, flo, fhi,
+                                      f.Bz, flo, fhi,
+                                      0.5*dt/f.dx*f.xcoefs[0],
+                                      0.5*dt/f.dy*f.ycoefs[0],
+                                      0.5*dt/f.dz*f.zcoefs[0])
             else:  #nth order solver >  2
               pxr.pxrpush_em3d_bvec_norder(f.Ex,f.Ey,f.Ez,f.Bx,f.By,f.Bz,
                           0.5*dt/f.dx*f.xcoefs,
