@@ -6,7 +6,6 @@ Major features:
   as much as possible, through class inheritance
 - The class implements memory buffering of the slices, so as
   not to write to disk at every timestep
-- The boosted frame diagnostics cannot use parallel HDF5 output
 """
 import os
 import numpy as np
@@ -57,8 +56,9 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
         Ntot_snapshots_lab: int
             Total number of snapshots that this diagnostic will produce
 
-        t_min_lab: real
-            Min diagnostics time for fields  in lab frame
+        t_min_lab: real (seconds)
+            Time for the first snapshot in the lab frame.
+            Snapshots are given at t = t_min_lab + i * dt_snapshot_lab -- with i = 0:Ntot_snapshots_lab-1
 
         period: int
             Number of iterations for which the data is accumulated in memory,
@@ -187,38 +187,38 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 
 
         #Init empty ntot_snapshot arrays of h5_file dictionnaries 
-        #The dictionanry is incremented with species_names
+        #The dictionary is incremented with species_names
         
         f = [None]*self.Ntot_snapshots_lab
 
 
         #Init empty ntot_snapshot arrays of particle_arrays dictionnaries 
-        #The dictionanry is incremented with species_names
+        #The dictionary is incremented with species_names
         particle_array = [None]*self.Ntot_snapshots_lab
  
         #Init empty ntot_snapshot arrays of boolean dictionnaries 
-        #The dictionanry is incremented with species_names
+        #The dictionary is incremented with species_names
         write_on =[None]*self.Ntot_snapshots_lab
   
         #Init empty ntot_snapshot arrays of integer_array dictionnaries 
-        #The dictionanry is incremented with species_names
+        #The dictionary is incremented with species_names
         n_rank =[None]*self.Ntot_snapshots_lab
 
 
         #Init empty ntot_snapshot arrays of integer dictionnaries 
-        #The dictionanry is incremented with species_names
+        #The dictionary is incremented with species_names
         #local_number number of particles to be dumped 
         nlocals_dict = [None]*self.Ntot_snapshots_lab
 
 
         #Init empty ntot_snapshot arrays of ineteger dictionnaries 
-        #The dictionanry is incremented with species_names
+        #The dictionary is incremented with species_names
         #Global number of particles to be dumped 
         nglobal_dict = [None]*self.Ntot_snapshots_lab
 
 
         #Init empty ntot_snapshot array of MPI.COMM dictionnaries 
-        #The dictionanry is incremented with species_names
+        #The dictionary is incremented with species_names
         #For each snapshot and for each species, dump_comm is passed to h5py to dump data
         dump_comm = [None]*self.Ntot_snapshots_lab
 
@@ -273,8 +273,8 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                 if(write_on[i][species_name]): 
 	            if(dump_comm[i][species_name] is not None and dump_comm[i][species_name] != MPI.COMM_NULL  ):
                         #each MPI opens relevent h5 files with adequate dump_com 
-                        f[i][species_name]=self.open_file( snapshot.filename, parallel_open= \
-                         self.lparallel_output,comm=dump_comm[i][species_name] )
+                        f[i][species_name]=self.open_file(snapshot.filename, parallel_open= \
+                                                          self.lparallel_output,comm=dump_comm[i][species_name] )
                  
          
    
@@ -283,12 +283,12 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             i= snapshot.iteration 
 	    for species_name in self.species_dict:
                 if(write_on[i][species_name]):
-                    n_part_to_dump = np.shape(particle_array[i][species_name])[1]
-                    self.write_slices(particle_array[i][species_name], species_name, snapshot,
-                    self.particle_catcher.particle_to_index\
-                    ,comm=dump_comm[i][species_name],n_rank=n_rank[i][species_name]\
-                    ,n_global=nglobal_dict[i],h5_file=f[i][species_name])
-		snapshot.buffered_slices[species_name] = []
+                      n_part_to_dump = np.shape(particle_array[i][species_name])[1]
+                                                self.write_slices(particle_array[i][species_name], species_name, snapshot,
+                                                self.particle_catcher.particle_to_index,
+                                                comm=dump_comm[i][species_name],n_rank=n_rank[i][species_name],
+                                                n_global=nglobal_dict[i],h5_file=f[i][species_name])
+                                                snapshot.buffered_slices[species_name] = []
 
         # loop over snapshots and species to  close files and free dump_comm
         for i in range(self.Ntot_snapshots_lab):
@@ -417,17 +417,18 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             and the integer index in the particle_array
  
         n_rank:  array of integer
-          array of local number of particles that need to be dumped for each mpi task
+            array of local number of particles that need to be dumped for each mpi task
 
         n_global: integer
-          global number of particles that need to be dumped
+            global number of particles  for this flush.
+
         comm : MPI_COMMUNICATOR
-           mpi communicator used to dump the data when parallel IO
+             mpi communicator used to dump the data when parallel IO
 
         h5_file : An h5py.File object
-          if parallel IO then  this routine does not open h5 files, 
-          instead h5 files are opened in flush_to_disk_parallel, and h5_file the returned object from open_file 
-          for current snapshot 
+            if parallel IO then  this routine does not open h5 files, 
+            instead h5 files are opened in flush_to_disk_parallel, and h5_file the returned object from open_file 
+            for current snapshot 
 
         """
         
@@ -454,7 +455,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                     path = "%s/%s" %(particle_var, quantity)
                     data = particle_array[ p2i[ quantity ] ]
                     self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-                    n_global=ng,comm=comm)
+                                               n_global=ng,comm=comm)
 
 
             elif particle_var == "momentum":
@@ -463,7 +464,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                     path = "%s/%s" %(particle_var,coord)
                     data = particle_array[ p2i[ quantity ] ]
                     self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-                    n_global=ng,comm=comm)
+                                               n_global=ng,comm=comm)
 
             elif particle_var == "B":
                 for coord in ["x","y","z"]:
@@ -471,7 +472,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                     path = "%s/%s" %(particle_var,coord)
                     data = particle_array[ p2i[ quantity ] ]
                     self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-                    n_global=ng,comm=comm)
+                                               n_global=ng,comm=comm)
 
             elif particle_var == "E":
                 for coord in ["x","y","z"]:
@@ -479,7 +480,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                     path = "%s/%s" %(particle_var,coord)
                     data = particle_array[ p2i[ quantity ] ]
                     self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-                    n_global=ng,comm=comm)
+                                               n_global=ng,comm=comm)
 
 
             elif particle_var == "weighting":
@@ -487,7 +488,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                path = 'weighting'
                data = particle_array[ p2i[ quantity ] ]
                self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-               n_global=ng,comm=comm)
+                                          n_global=ng,comm=comm)
 
 
             elif particle_var == "id":
@@ -495,7 +496,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                path = 'id'
                data = particle_array[ p2i[ quantity ] ]
                self.write_boosted_dataset(species_grp, path, data, quantity,n_rank=n_rank,\
-               n_global=ng,comm=comm)
+                                          n_global=ng,comm=comm)
 
         data = []
 
@@ -542,6 +543,13 @@ class LabSnapshot:
         self.iteration = i
         self.dt = dt
         self.dump_p_fields = dump_p_fields
+        self.n_quantities = 0
+
+        if(dump_p_fields) : 
+            self.n_quantities = 15
+        else: 
+            self.n_quantities = 9
+ 
         self.em = em
         # Time and boundaries in the lab frame (constants quantities)
         self.zmin_lab = zmin_lab
@@ -620,10 +628,7 @@ class LabSnapshot:
             particle_array = np.concatenate(
                 self.buffered_slices[species], axis=1)
         else:
-            if(self.dump_p_fields):
-                particle_array = np.empty((15,0))
-            else: 
-                particle_array = np.empty((9,0))  
+            particle_array = np.empty((self.n_quantities,0))
 
         return particle_array
 
@@ -639,10 +644,15 @@ class ParticleCatcher:
         ----------
         gamma_boost, beta_boost: float
             The Lorentz factor of the boost and the corresponding beta
-        dump_f : boolean
-            Flag for field dumping
 
         top: WARP object
+
+        dump_f : boolean
+            Flag for field dumping
+        
+        em : EM Object
+  
+       
         """
         # Some attributes neccessary for particle selections
         self.gamma_boost = gamma_boost

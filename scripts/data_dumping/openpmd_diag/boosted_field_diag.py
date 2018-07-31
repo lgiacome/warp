@@ -6,7 +6,6 @@ Major features:
   as much as possible, through class inheritance
 - The class implements memory buffering of the slices, so as
   not to write to disk at every timestep
-- The boosted frame diagnostics cannot use parallel HDF5 output
 """
 import os
 import numpy as np
@@ -52,9 +51,6 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             Positions of the minimum and maximum of the virtual moving window,
             *in the lab frame*, at t=0
 
-        xmin_lab, xmax_lab, ymin_lab, ymax_lab: floats (meters)
-            Positions of the minimum and maximum of the virtual moving window,
-            *in the lab frame*, at t=0. If None then suppose all the sim box
 
         v_lab: float (m.s^-1)
             Speed of the moving window *in the lab frame*
@@ -65,8 +61,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         Ntot_snapshots_lab: int
             Total number of snapshots that this diagnostic will produce
      
-        t_min_lab: real
-            Min diagnostics time for fields  in lab frame
+        t_min_lab: real (seconds)
+            Time for the first snapshot in the lab frame.
+            Snapshots are given at t = t_min_lab + i * dt_snapshot_lab -- with i = 0:Ntot_snapshots_lab-1
 
         period: int
             Number of iterations for which the data is accumulated in memory,
@@ -82,6 +79,11 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                          
         lparallel_output: boolean 
             Enable/disable parallel IO 
+
+        xmin_lab, xmax_lab, ymin_lab, ymax_lab: floats (meters)
+            Positions of the minimum and maximum of the virtual moving window,
+            *in the lab frame*, at t=0. If None then suppose all the sim box
+
 
         See the documentation of FieldDiagnostic for the other parameters
         """
@@ -214,26 +216,21 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
         # If current mpi subdomain does not intersect with the diag window
         # then set all to 0
-        if(xmax_lab is not None): 
-
-            if (xmax_lab < self.em.xmminlocal): 
-                self.indices[0,0] = 0
-                self.indices[1,0] = 0
-        if(xmin_lab is not None):
-            if (xmin_lab > self.em.xmmaxlocal):
+        if(xmax_lab is not None and xmax_lab < self.em.xmminlocal): 
+            self.indices[0,0] = 0
+            self.indices[1,0] = 0
+        if(xmin_lab is not None and xmin_lab > self.em.xmmaxlocal):
                 self.indices[0,0] = 0
                 self.indices[1,0] = 0
 
 
         if(self.dim=="3d"):
-            if(ymax_lab is not None):
-                if (ymax_lab < self.em.ymminlocal):
-                    self.indices[0,0] = 0
-                    self.indices[1,0] = 0
-            if(ymin_lab is not None):
-                if (ymin_lab > self.em.ymmaxlocal):
-                    self.indices[0,0] = 0
-                    self.indices[1,0] = 0
+            if(ymax_lab is not None and ymax_lab < self.em.ymminlocal):
+                self.indices[0,0] = 0
+                self.indices[1,0] = 0
+            if(ymin_lab is not None and  ymin_lab > self.em.ymmaxlocal):
+                self.indices[0,0] = 0
+                self.indices[1,0] = 0
 
         # Compute number of data points to dump along x  by current mpi task
         self.nx_dump = max(0,self.indices[1,0] - self.indices[0,0])
@@ -256,7 +253,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
 
             
             if self.dim == "3d" : 
-                self.Ny_total = mpiallreduce(self.ny_dump, comm=self.comm_world)
+                self.Ny_total = gather(self.ny_dump, comm=self.comm_world)
                 self.Ny_total = sum(self.Ny_total)/(self.top.fsdecomp.nxprocs*self.top.fsdecomp.nzprocs)
         
        
@@ -350,10 +347,9 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # each communicator encodes informations about which processors need to dump data for this snapshot 
         # Then each mpi open relevent h5files in parallel, all h5files stay open until the flush is completed
         
-        i = -1 
-        for snapshot in self.snapshots:
-            i = i + 1
-            #Compact succesive slices that have been beffered 
+        
+        for i,snapshot in enumerate(self.snapshots):
+            #Compact succesive slices that have been buffered 
             #over time into a single array 
             # This returns None, None, None for proc which has no slices
             field_array[i], iz_min[i], iz_max[i] = snapshot.compact_slices()
@@ -369,7 +365,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             snapshot.buffered_slices = []
             snapshot.buffer_z_indices = []
             # Creates the subcommunicator that will open the h5 file and dump data
-            in_list = [];in_list = -1 
+            in_list = -1 
             if ( write_on[i] ):
                 in_list = me
             ranks_group_list[i] = mpiallgather( in_list )
@@ -394,9 +390,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         
         # Dumps data on each snapshot using previously initiized mpi communicators. 
         
-        i = - 1
-        for snapshot in self.snapshots:  
-            i += 1
+        for i,snapshot in enumerate(self.snapshots):  
             if(write_on[i]):
                 if f[i] is not None:
                     field_path = "/data/%d/fields/" %snapshot.iteration

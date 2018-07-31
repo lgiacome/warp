@@ -340,7 +340,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         time: float (seconds)
             The physical time at this iteration
 
-        Nx, Ny, Nz: int
+        Nz: int
             The number of gridpoints along z in this diagnostics
 
         zmin: float (meters)
@@ -351,6 +351,19 @@ class FieldDiagnostic(OpenPMDDiagnostic):
 
         dt: float (seconds)
             The timestep of the simulation
+
+        Nx, Ny: int
+            The number of gridpoints along x, y in this diagnostics 
+            If None then act as if Nx = nx_globa, Ny = ny_global
+
+        xmin: float (meters)
+           The position of the lower boundary of the box along x 
+           If None, then act as if xmin = w3d.xmmin
+
+        ymin: float (meters)
+           The position of the lower boundary of the box along y
+           If None, then act as if ymin = w3d.ymmin
+
   
         """
         # Determine the shape of the datasets that will be written
@@ -359,6 +372,7 @@ class FieldDiagnostic(OpenPMDDiagnostic):
             nx = self.nx+1
         else: 
             nx = Nx
+        # 3d case
         if(self.dim == "3d"):
             if(Ny is None): 
                ny = self.ny + 1
