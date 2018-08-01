@@ -965,7 +965,7 @@ class SliceHandler:
 	if(self.nx_dump is None): nx_ = em.nxlocal+1
         else : nx_ = self.nx_dump
         if(self.ny_dump is None): ny_ = em.nylocal+1
-        else : ny = self.ny_dump
+        else : ny_ = self.ny_dump
         if self.dim=="2d":
             slice_array = np.empty( (10, nx_,) ,order="F")
         elif self.dim=="3d":
