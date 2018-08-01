@@ -284,11 +284,11 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
 	    for species_name in self.species_dict:
                 if(write_on[i][species_name]):
                       n_part_to_dump = np.shape(particle_array[i][species_name])[1]
-                                                self.write_slices(particle_array[i][species_name], species_name, snapshot,
-                                                self.particle_catcher.particle_to_index,
-                                                comm=dump_comm[i][species_name],n_rank=n_rank[i][species_name],
-                                                n_global=nglobal_dict[i],h5_file=f[i][species_name])
-                                                snapshot.buffered_slices[species_name] = []
+                      self.write_slices(particle_array[i][species_name], species_name, snapshot,
+                                        self.particle_catcher.particle_to_index,
+                                        comm=dump_comm[i][species_name],n_rank=n_rank[i][species_name],
+                                        n_global=nglobal_dict[i],h5_file=f[i][species_name])
+                                        snapshot.buffered_slices[species_name] = []
 
         # loop over snapshots and species to  close files and free dump_comm
         for i in range(self.Ntot_snapshots_lab):
