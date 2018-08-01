@@ -10,6 +10,7 @@ their final layout, in the openPMD file.
 import numpy as np
 from data_dict import circ_dict_quantity, cart_dict_quantity, \
     x_offset_dict, y_offset_dict
+import sys
 def get_dataset( dim, em, quantity, lgather, sub_sampling=[1,1,1],
             start=[0,0,0], iz_slice=None, transverse_centered=False,nx_d=None , ny_d=None ):
     """
@@ -260,10 +261,14 @@ def get_cart3d_dataset( em, quantity, lgather, iz_slice=None,
             nx_dump = F.shape[0] 
         if(ny_dump is None): 
             ny_dump = F.shape[1]
+        end_x = min(F.shape[0],nx_dump+start[0])
+        end_y = min(F.shape[1],ny_dump+start[1])
+
         if (iz_slice is None):
-            F=F[range(start[0],min(start[0]+nx_dump,F.shape[0]),sub_sampling[0]),range(start[1],min(start[1]+ny_dump,F.shape[1]),sub_sampling[1]),start[2]::sub_sampling[2]]
+            F=F[start[0]:end_x:sub_sampling[0],start[1]:end_y:sub_sampling[1],start[2]::sub_sampling[2]]
         else:
-            F=F[range(start[0],min(start[0]+nx_dump,F.shape[0]),sub_sampling[0]),range(start[1],min(start[1]+ny_dump,F.shape[1])]
+#	    sys.stdout = sys.__stdout__
+            F=F[start[0]:end_x:sub_sampling[0],start[1]:end_y:sub_sampling[1]]
     return( F )
 
 
@@ -331,10 +336,11 @@ def get_cart2d_dataset( em, quantity, lgather, iz_slice=None,
     if (F is not None):
         if(nx_dump is None):
             nx_dump = F.shape[0]
+        end_x = min(F.shape[0],start[0]+nx_dump)
         if (iz_slice is None):
-            F=F[range(start[0],min(nx_dump+start[0], F.shape[0]),sub_sampling[0]),start[2]::sub_sampling[2]]
+            F=F[start[0]:end_x:sub_sampling[0],start[2]::sub_sampling[2]]
         else:
-            F=F[range(start[0],min(nx_dump+start[0], F.shape[0])]
+            F=F[start[0]:end_x:sub_sampling[0],sub_sampling[0]]
     return( F )
 
 def get_cart1d_dataset( em, quantity, lgather, iz_slice=None,
