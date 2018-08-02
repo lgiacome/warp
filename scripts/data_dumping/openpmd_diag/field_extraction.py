@@ -340,7 +340,7 @@ def get_cart2d_dataset( em, quantity, lgather, iz_slice=None,
         if (iz_slice is None):
             F=F[start[0]:end_x:sub_sampling[0],start[2]::sub_sampling[2]]
         else:
-            F=F[start[0]:end_x:sub_sampling[0],sub_sampling[0]]
+            F=F[start[0]:end_x:sub_sampling[0]]
     return( F )
 
 def get_cart1d_dataset( em, quantity, lgather, iz_slice=None,
