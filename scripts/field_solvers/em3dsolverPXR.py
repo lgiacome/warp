@@ -375,6 +375,19 @@ def get_quantity_pxr( self, quantity, gather=True, bcast=False, **kw ):
         quantity_pid_dict['id'] = top.ssnpid
     if top.wpid is not None:
         quantity_pid_dict['w'] = top.wpid
+    if(top.exoldpid) is not None:
+        quantity_pid_dict['exold'] = top.exoldpid
+    if(top.eyoldpid) is not None:
+        quantity_pid_dict['eyold'] = top.eyoldpid
+    if(top.ezoldpid) is not None:
+        quantity_pid_dict['ezold'] = top.ezoldpid
+    if(top.bxoldpid) is not None:
+        quantity_pid_dict['bxold'] = top.bxoldpid
+    if(top.byoldpid) is not None:
+        quantity_pid_dict['byold'] = top.byoldpid
+    if(top.bzoldpid) is not None:
+        quantity_pid_dict['bzold'] = top.bzoldpid
+
 
     js = self.pxr_species_array
     nb = numpy.empty(1,dtype=numpy.int64)
@@ -463,6 +476,27 @@ def getby(self, gather=1, bcast=None, **kw ):
 def getbz(self, gather=1, bcast=None, **kw ):
     return self.get_quantity_pxr('bz', gather=gather, bcast=bcast, **kw)
 
+
+def getexold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('exold', gather=gather, bcast=bcast, **kw)
+
+def geteyold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('eyold', gather=gather, bcast=bcast, **kw)
+
+def getezold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('ezold', gather=gather, bcast=bcast, **kw)
+
+def getbxold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('bxold', gather=gather, bcast=bcast, **kw)
+
+def getbyold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('byold', gather=gather, bcast=bcast, **kw)
+
+def getbzold(self, gather=1, bcast=None, **kw ):
+    return self.get_quantity_pxr('bzold', gather=gather, bcast=bcast, **kw)
+
+
+
 def getn(self, gather=1, bcast=None, **kw ):
     js = self.pxr_species_array
     nb = numpy.empty(1,dtype=numpy.int64)
@@ -534,6 +568,12 @@ class EM3DPXR(EM3DFFT):
           self.allocatefieldarraysFFT()
           self.allocatefieldarraysPXR()
 
+          self.lorentz_transform2d = pxr.transform_lorentz2d
+          self.lorentz_transform3d = pxr.transform_lorentz3d
+          self.lorentz_transform_parts_with_fields = pxr.lorentz_transform_parts_with_fields
+          self.lorentz_transform_parts_without_fields = pxr.lorentz_transform_parts_without_fields
+
+
           # Rewrite the get_quantity methods to the class species for pxr
           Species.get_quantity_pxr = get_quantity_pxr
           Species.getx             = getx
@@ -558,6 +598,13 @@ class EM3DPXR(EM3DFFT):
           Species.getby            = getby
           Species.getbz            = getbz
           Species.getn             = getn
+
+          Species.getexold         = getexold
+          Species.geteyold         = geteyold
+          Species.getezold         = getezold
+          Species.getbxold         = getbxold
+          Species.getbyold         = getbyold
+          Species.getbzold         = getbzold
 
         else:
           EM3DFFT.finalize(self)
