@@ -511,9 +511,9 @@ class EM3DPXR(EM3DFFT):
 		      'nb_group_z':0,
 		      'nyg_group':0,
 		      'nzg_group':0,
-		      'nx_pml':4,
-		      'ny_pml':4,
-		      'nz_pml':4,
+		      'nx_pml':8,
+		      'ny_pml':8,
+		      'nz_pml':8,
                       'g_spectral':False,
                       }
 
@@ -549,6 +549,10 @@ class EM3DPXR(EM3DFFT):
           EM3D.finalize(self)
           self.allocatefieldarraysFFT()
 	  self.allocatefieldarraysPXR()
+	  #if full_pxr == True additional computations are done in picsar.
+	  # This includes PSATD block initialization and fields boundaries through PMLS.
+	  #This mode also allows to use FFTW_MPI or P3DFFT in order to perform FFT computations.
+	  
 	  if(self.full_pxr):
 	    pxr.init_plans_blocks()
 	 #   pxr.deallocate_mat_block()
@@ -892,6 +896,8 @@ class EM3DPXR(EM3DFFT):
             pxr.absorbing_bcs_y = True
 	  
           #Set aborbing_bcs flag to true if there is an absorbing bc in any direction
+          #If absorbing bcs in one direction then increase the grid offset for particles 
+          #in order to avoid PMLS instabilities.
           if(pxr.absorbing_bcs_x or pxr.absorbing_bcs_y or pxr.absorbing_bcs_z):
             pxr.absorbing_bcs=True
 	    pxr.nx_pml = self.nx_pml
@@ -1659,12 +1665,10 @@ class EM3DPXR(EM3DFFT):
         self.time_stat_loc_array[6] += (t1-t0)
 
 
-    def solve_maxwell_full_pxr(self,ii=0):
+    def solve_maxwell_full_pxr(self):
 
         """ full Maxwell push in pxr"""
 	if(self.l_debug):print("begin solve maxwell full pxr")
-        if(pxr.absorbing_bcs):
-          pxr.field_damping_bcs()
 	if(pxr.fftw_with_mpi):
           pxr.get_ffields_mpi_lb()
 	else:
