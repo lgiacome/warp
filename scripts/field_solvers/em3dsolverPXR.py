@@ -555,7 +555,6 @@ class EM3DPXR(EM3DFFT):
 	  
 	  if(self.full_pxr):
 	    pxr.init_plans_blocks()
-	 #   pxr.deallocate_mat_block()
 	    if(pxr.absorbing_bcs):
 	      pxr.init_pml_arrays()
 
