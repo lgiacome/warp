@@ -128,7 +128,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         # In case of subsampling along z, increase dz and reduce Nz
         if z_subsampling > 1:
             dz_lab = dz_lab * z_subsampling
-            Nz = Nz / z_subsampling
+            Nz = Nz // z_subsampling
         self.inv_dz_lab = 1./dz_lab
 
         # Create the list of LabSnapshot objects
@@ -249,12 +249,12 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
             self.global_indices_list = gather( self.indices,
                                                comm=self.comm_world )
             self.Nx_total = gather(self.nx_dump,comm=self.comm_world)
-            self.Nx_total = sum(self.Nx_total)/(self.top.fsdecomp.nyprocs*self.top.fsdecomp.nzprocs)
+            self.Nx_total = sum(self.Nx_total)//(self.top.fsdecomp.nyprocs*self.top.fsdecomp.nzprocs)
 
             
             if self.dim == "3d" : 
                 self.Ny_total = gather(self.ny_dump, comm=self.comm_world)
-                self.Ny_total = sum(self.Ny_total)/(self.top.fsdecomp.nxprocs*self.top.fsdecomp.nzprocs)
+                self.Ny_total = sum(self.Ny_total)//(self.top.fsdecomp.nxprocs*self.top.fsdecomp.nzprocs)
         
        
         self.indices[:,0] -= self.ix_start_g
