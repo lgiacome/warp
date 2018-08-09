@@ -271,7 +271,7 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
                 newgroup.Free()
                 ranks_group_list = []
                 if(write_on[i][species_name]): 
-	            if(dump_comm[i][species_name] is not None and dump_comm[i][species_name] != MPI.COMM_NULL  ):
+                    if(dump_comm[i][species_name] is not None and dump_comm[i][species_name] != MPI.COMM_NULL  ):
                         #each MPI opens relevent h5 files with adequate dump_com 
                         f[i][species_name]=self.open_file(snapshot.filename, parallel_open= \
                                                           self.lparallel_output,comm=dump_comm[i][species_name] )
@@ -279,9 +279,9 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
          
    
         # loop over snapshots and species to flush data
-	for snapshot in self.snapshots:
+        for snapshot in self.snapshots:
             i= snapshot.iteration 
-	    for species_name in self.species_dict:
+            for species_name in self.species_dict:
                 if(write_on[i][species_name]):
                       n_part_to_dump = np.shape(particle_array[i][species_name])[1]
                       self.write_slices(particle_array[i][species_name], species_name, snapshot,
@@ -295,18 +295,18 @@ class BoostedParticleDiagnostic(ParticleDiagnostic):
             for species_name in self.species_dict: 
                 if(write_on[i][species_name]):
                     f[i][species_name].close()
-		if dump_comm[i][species_name] != MPI.COMM_NULL:
+                if dump_comm[i][species_name] != MPI.COMM_NULL:
                     dump_comm[i][species_name].Free()
 
 
        # cleaning 
         f = []
-	dump_comm = []        
-	particle_array = []
-	write_on = []
-	n_rank = [] 
-	nlocals_dict = []
-	nglobal_dict = []
+        dump_comm = []        
+        particle_array = []
+        write_on = []
+        n_rank = [] 
+        nlocals_dict = []
+        nglobal_dict = []
       
 
 
@@ -815,7 +815,7 @@ class ParticleCatcher:
 
         # Field in lab frame
         if(self.dump_p_fields): 
-	    cbeta = self.beta_boost*c
+            cbeta = self.beta_boost*c
             beta_ov_c = self.beta_boost*ic
 
             temp = np.copy(self.ey_captured)

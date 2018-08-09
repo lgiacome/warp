@@ -341,7 +341,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
         field_grp =[None]*self.Ntot_snapshots_lab
 
         #limits of data dumping along x and y dirctions
-	indices = self.indices
+        indices = self.indices
         
         # Loop over boosted frame snapshots in order to build an mpi sub comm for each snapshot
         # each communicator encodes informations about which processors need to dump data for this snapshot 
@@ -404,7 +404,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                         path = "rho"
                         if field_grp[i] is not None:
                             dset = field_grp[i][path]
-	                else: 
+                        else: 
                             dset = None
                         if self.dim == "2d":
                             data = field_array[i][ f2i[ quantity ] ]
@@ -429,7 +429,7 @@ class BoostedFieldDiagnostic(FieldDiagnostic):
                                 t_i = time.clock()
                                 if field_grp is not None:
                                     dset = field_grp[i][path]
-	                        else: 
+                                else: 
                                     dset = None
                                 if self.dim == "2d": 
                                     data = field_array[i][ f2i[ quantity ] ]
@@ -962,7 +962,7 @@ class SliceHandler:
             - (10, 2*em.circ_m+1, em.nxlocal+1) for dim="circ"
         """
         # Allocate an array of the proper shape
-	if(self.nx_dump is None): nx_ = em.nxlocal+1
+        if(self.nx_dump is None): nx_ = em.nxlocal+1
         else : nx_ = self.nx_dump
         if(self.ny_dump is None): ny_ = em.nylocal+1
         else : ny_ = self.ny_dump
@@ -1059,10 +1059,10 @@ class SliceHandler:
             else: n3 = self.ny_dump
 
         if self.dim in ["2d", "3d"]:
-		
-	    if (hasattr(em,"l_pxr")) :
-		if(em.l_pxr == True):
-		    n1 = 10
+
+            if (hasattr(em,"l_pxr")) :
+                if(em.l_pxr == True):
+                    n1 = 10
                     if(self.dim == "2d"):
                         em.lorentz_transform2d(n1,n2,fields,gamma,cbeta,beta_c)
                     else: 

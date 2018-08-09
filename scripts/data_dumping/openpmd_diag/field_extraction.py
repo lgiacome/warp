@@ -267,7 +267,7 @@ def get_cart3d_dataset( em, quantity, lgather, iz_slice=None,
         if (iz_slice is None):
             F=F[start[0]:end_x:sub_sampling[0],start[1]:end_y:sub_sampling[1],start[2]::sub_sampling[2]]
         else:
-#	    sys.stdout = sys.__stdout__
+#           sys.stdout = sys.__stdout__
             F=F[start[0]:end_x:sub_sampling[0],start[1]:end_y:sub_sampling[1]]
     return( F )
 
