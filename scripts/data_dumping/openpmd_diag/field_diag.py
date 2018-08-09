@@ -143,9 +143,9 @@ class FieldDiagnostic(OpenPMDDiagnostic):
         self.global_indices = global_indices
 
         # Dumped data array dimensions in x,y,z
-        self.nx = ((em.nx)-(em.nx)%sub_sampling[0])/sub_sampling[0]
-        self.ny = ((em.ny)-(em.ny)%sub_sampling[1])/sub_sampling[1]
-        self.nz = ((em.nz)-(em.nz)%sub_sampling[2])/sub_sampling[2]
+        self.nx = ((em.nx)-(em.nx)%sub_sampling[0])//sub_sampling[0]
+        self.ny = ((em.ny)-(em.ny)%sub_sampling[1])//sub_sampling[1]
+        self.nz = ((em.nz)-(em.nz)%sub_sampling[2])//sub_sampling[2]
 
         # Mesh cell sizes of dumped grid arrays
         self.dx = em.dx*sub_sampling[0]
