@@ -315,11 +315,15 @@ class GaussianLaser(PICMI_Base.PICMI_GaussianLaser):
     def initialize_inputs(self, solver, antenna):
         from .init_tools import add_laser
         dim = '3d'
+        if self.zeta is None: self.zeta = 0.
+        if self.beta is None: self.beta = 0.
+        if self.phi2 is None: self.phi2 = 0.
         antenna_z0 = antenna.position[2]
         add_laser(solver.solver, dim, self.a0, self.waist, self.duration*warp.clight,
                   self.centroid_position[2], self.focal_position[2],
                   lambda0=self.wavelength, theta_pol=self.polarization_angle, source_z=antenna_z0,
-                  zeta=0., beta=0., phi2=0., gamma_boost=None, laser_file=None, laser_file_energy=None)
+                  zeta=self.zeta, beta=self.beta, phi2=self.phi2, 
+                  gamma_boost=None, laser_file=None, laser_file_energy=None)
 
 
 class LaserAntenna(PICMI_Base.PICMI_LaserAntenna):
