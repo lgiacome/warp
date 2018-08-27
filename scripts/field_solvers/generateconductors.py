@@ -1174,8 +1174,6 @@ class XAssembly(Assembly):
         extent.toX()
 
     def xconductorf(self,*argtuple):
-        import pdb
-        pdb.set_trace()
         arglist = list(argtuple)
         # --- permutate the object center
         arglist[-14] = argtuple[-13]
@@ -3225,6 +3223,13 @@ class XPlane(ZPlane,XAssembly):
         XAssembly.modifyextent(self, extent)
         return extent
 
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+
 #============================================================================
 class YPlane(ZPlane,YAssembly):
     """
@@ -3253,6 +3258,14 @@ class YPlane(ZPlane,YAssembly):
         extent = ZPlane.getextent(self)
         YAssembly.modifyextent(self, extent)
         return extent
+
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+
 
 #============================================================================
 class Box(Assembly):
@@ -3819,6 +3832,14 @@ class XCylinder(ZCylinder,XAssembly):
         XAssembly.modifyextent(self, extent)
         return extent
 
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+
+
 #============================================================================
 class XCylinderOut(ZCylinderOut,XAssembly):
     """
@@ -3854,6 +3875,14 @@ class XCylinderOut(ZCylinderOut,XAssembly):
         extent = ZCylinderOut.getextent(self)
         XAssembly.modifyextent(self, extent)
         return extent
+
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+
 
 #============================================================================
 class YCylinder(ZCylinder,YAssembly):
@@ -3891,6 +3920,13 @@ class YCylinder(ZCylinder,YAssembly):
         YAssembly.modifyextent(self, extent)
         return extent
 
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+
 #============================================================================
 class YCylinderOut(ZCylinderOut,YAssembly):
     """
@@ -3926,6 +3962,14 @@ class YCylinderOut(ZCylinderOut,YAssembly):
         extent = ZCylinderOut.getextent(self)
         YAssembly.modifyextent(self, extent)
         return extent
+
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+
 
 #============================================================================
 class ZCylinderElliptic(ZCylinder,EllipticAssembly):
@@ -4068,6 +4112,14 @@ class XCylinderElliptic(ZCylinder,EllipticAssembly,XAssembly):
         XAssembly.modifyextent(self, extent)
         return extent
 
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+
+
 #============================================================================
 class XCylinderEllipticOut(ZCylinderOut,EllipticAssembly,XAssembly):
     """
@@ -4113,6 +4165,14 @@ class XCylinderEllipticOut(ZCylinderOut,EllipticAssembly,XAssembly):
         XAssembly.modifyextent(self, extent)
         return extent
 
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+
+
 #============================================================================
 class YCylinderElliptic(ZCylinder,EllipticAssembly,YAssembly):
     """
@@ -4157,6 +4217,14 @@ class YCylinderElliptic(ZCylinder,EllipticAssembly,YAssembly):
         YAssembly.modifyextent(self, extent)
         return extent
 
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+
+
 #============================================================================
 class YCylinderEllipticOut(ZCylinderOut,EllipticAssembly,YAssembly):
     """
@@ -4200,6 +4268,14 @@ class YCylinderEllipticOut(ZCylinderOut,EllipticAssembly,YAssembly):
         EllipticAssembly.modifyextent(self, extent)
         YAssembly.modifyextent(self, extent)
         return extent
+
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+
 
 #============================================================================
 class Sphere(Assembly):
@@ -5769,6 +5845,14 @@ class XSrfrvOut(ZSrfrvOut,XAssembly):
         XAssembly.modifyextent(self, extent)
         return extent
 
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+
+
 #============================================================================
 class XSrfrvIn(ZSrfrvIn,XAssembly):
     """
@@ -5811,6 +5895,14 @@ class XSrfrvIn(ZSrfrvIn,XAssembly):
         extent = ZSrfrvIn.getextent(self)
         XAssembly.modifyextent(self, extent)
         return extent
+
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+
 
 #============================================================================
 class XSrfrvInOut(ZSrfrvInOut,XAssembly):
@@ -5858,6 +5950,14 @@ class XSrfrvInOut(ZSrfrvInOut,XAssembly):
         XAssembly.modifyextent(self, extent)
         return extent
 
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+
+
 #============================================================================
 class YSrfrvOut(ZSrfrvOut,YAssembly):
     """
@@ -5901,6 +6001,14 @@ class YSrfrvOut(ZSrfrvOut,YAssembly):
         YAssembly.modifyextent(self, extent)
         return extent
 
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+
+
 #============================================================================
 class YSrfrvIn(ZSrfrvIn,YAssembly):
     """
@@ -5943,6 +6051,14 @@ class YSrfrvIn(ZSrfrvIn,YAssembly):
         extent = ZSrfrvIn.getextent(self)
         YAssembly.modifyextent(self, extent)
         return extent
+
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+
 
 #============================================================================
 class YSrfrvInOut(ZSrfrvInOut,YAssembly):
@@ -5989,6 +6105,14 @@ class YSrfrvInOut(ZSrfrvInOut,YAssembly):
         extent = ZSrfrvInOut.getextent(self)
         YAssembly.modifyextent(self, extent)
         return extent
+
+    def drawzx(self,**kw):
+        super(self.__class__,self).drawxy(**kw)
+    def drawzy(self,**kw):
+        super(self.__class__,self).drawzx(**kw)
+    def drawxy(self,**kw):
+        super(self.__class__,self).drawzy(**kw)
+
 
 #============================================================================
 class Annulus(Assembly):
