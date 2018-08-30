@@ -1,14 +1,14 @@
 """Classes following the PICMI standard
 """
 import re
-import PICMI_Base
+import picmistandard
 import numpy as np
 from .warp import *
 from .init_tools.plasma_initialization import PlasmaInjector
 import warp
 
 codename = 'warp'
-PICMI_Base.register_codename(codename)
+picmistandard.register_codename(codename)
 
 c = warp.clight
 ep0 = warp.eps0
@@ -35,7 +35,7 @@ for name,d in warp.periodic_table.items():
     species_type_dict[symbol] = getattr(warp, name)
 
 
-class Species(PICMI_Base.PICMI_Species):
+class Species(picmistandard.PICMI_Species):
     def init(self, kw):
 
         # --- When using the PICMI standard, always make the particles
@@ -70,12 +70,12 @@ class Species(PICMI_Base.PICMI_Species):
         self.initial_distribution.loaddistribution(self.wspecies, self.layout)
 
 
-PICMI_Base.PICMI_MultiSpecies.Species_class = Species
-class MultiSpecies(PICMI_Base.PICMI_MultiSpecies):
+picmistandard.PICMI_MultiSpecies.Species_class = Species
+class MultiSpecies(picmistandard.PICMI_MultiSpecies):
     pass
 
 
-class GaussianBunchDistribution(PICMI_Base.PICMI_GaussianBunchDistribution):
+class GaussianBunchDistribution(picmistandard.PICMI_GaussianBunchDistribution):
     def loaddistribution(self, species, layout):
         assert isinstance(layout, PseudoRandomLayout), Exception('Warp only supports PseudoRandomLayout with GaussianBunchDistribution')
         assert layout.n_macroparticles is not None, Exception('Warp only support n_macroparticles with PseudoRandomLayout with GaussianBunchDistribution')
@@ -101,7 +101,7 @@ class GaussianBunchDistribution(PICMI_Base.PICMI_GaussianBunchDistribution):
                                   zdist='random', rdist='linear', fourfold=False, lmomentum=True, w=w)
 
 
-class UniformDistribution(PICMI_Base.PICMI_UniformDistribution):
+class UniformDistribution(picmistandard.PICMI_UniformDistribution):
     def loaddistribution(self, species, layout):
         xmin = self.lower_bound[0]
         if xmin is None: xmin = w3d.xmmin
@@ -163,7 +163,7 @@ class UniformDistribution(PICMI_Base.PICMI_UniformDistribution):
                                     w=w)
 
 
-class AnalyticDistribution(PICMI_Base.PICMI_AnalyticDistribution):
+class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
     def loaddistribution(self, species, layout):
         xmin = self.lower_bound[0]
         if xmin is None: xmin = w3d.xmmin
@@ -233,39 +233,39 @@ class AnalyticDistribution(PICMI_Base.PICMI_AnalyticDistribution):
                                     w=w)
 
 
-class ParticleList(PICMI_Base.PICMI_ParticleList):
+class ParticleListDistribution(picmistandard.PICMI_ParticleListDistribution):
     def loaddistribution(self, species, layout):
         species.addparticles(x=self.x, y=self.y, z=self.z, ux=self.ux, uy=self.uy, uz=self.uz,
                              vx=None, vy=None, vz=None)
 
 
-class ParticleDistributionPlanarInjector(PICMI_Base.PICMI_ParticleDistributionPlanarInjector):
+class ParticleDistributionPlanarInjector(picmistandard.PICMI_ParticleDistributionPlanarInjector):
     pass
 
 
-class GriddedLayout(PICMI_Base.PICMI_GriddedLayout):
+class GriddedLayout(picmistandard.PICMI_GriddedLayout):
     pass
 
 
-class PseudoRandomLayout(PICMI_Base.PICMI_PseudoRandomLayout):
+class PseudoRandomLayout(picmistandard.PICMI_PseudoRandomLayout):
     pass
 
 
-class BinomialSmoother(PICMI_Base.PICMI_BinomialSmoother):
+class BinomialSmoother(picmistandard.PICMI_BinomialSmoother):
     pass
 
 
-class CylindricalGrid(PICMI_Base.PICMI_CylindricalGrid):
+class CylindricalGrid(picmistandard.PICMI_CylindricalGrid):
     def init(self, kw):
         raise Exception('WarpX does not support CylindricalGrid yet')
 
 
-class Cartesian2DGrid(PICMI_Base.PICMI_Cartesian2DGrid):
+class Cartesian2DGrid(picmistandard.PICMI_Cartesian2DGrid):
     def init(self, kw):
         raise Exception('WarpX does not support Cartesian2DGrid yet')
 
 
-class Cartesian3DGrid(PICMI_Base.PICMI_Cartesian3DGrid):
+class Cartesian3DGrid(picmistandard.PICMI_Cartesian3DGrid):
     def init(self, kw):
         w3d.nx = self.nx
         w3d.ny = self.ny
@@ -299,19 +299,20 @@ class Cartesian3DGrid(PICMI_Base.PICMI_Cartesian3DGrid):
             top.lgridqnt = true
 
 
-class ElectromagneticSolver(PICMI_Base.PICMI_ElectromagneticSolver):
+class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
     def init(self, kw):
-        self.solver = EM3D()
+        stencil = {'Yee':0, 'CKC':1}[self.method]
+        self.solver = EM3D(stencil=stencil)
         registersolver(self.solver)
 
 
-class Electrostatic_solver(PICMI_Base.PICMI_Electrostatic_solver):
+class ElectrostaticSolver(picmistandard.PICMI_ElectrostaticSolver):
     def init(self, kw):
         self.solver = MultiGrid3d()
         registersolver(self.solver)
 
 
-class GaussianLaser(PICMI_Base.PICMI_GaussianLaser):
+class GaussianLaser(picmistandard.PICMI_GaussianLaser):
     def initialize_inputs(self, solver, antenna):
         from .init_tools import add_laser
         dim = '3d'
@@ -326,11 +327,11 @@ class GaussianLaser(PICMI_Base.PICMI_GaussianLaser):
                   gamma_boost=None, laser_file=None, laser_file_energy=None)
 
 
-class LaserAntenna(PICMI_Base.PICMI_LaserAntenna):
+class LaserAntenna(picmistandard.PICMI_LaserAntenna):
     pass
 
 
-class Simulation(PICMI_Base.PICMI_Simulation):
+class Simulation(picmistandard.PICMI_Simulation):
     def init(self, kw):
         if self.verbose is not None:
             top.verbosity = self.verbose + 1
