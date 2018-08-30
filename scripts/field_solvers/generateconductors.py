@@ -3224,11 +3224,11 @@ class XPlane(ZPlane,XAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawzy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.xcent,**kw)
 
 #============================================================================
 class YPlane(ZPlane,YAssembly):
@@ -3260,11 +3260,11 @@ class YPlane(ZPlane,YAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzy(xcent=self.ycent,zcent=self.xcent,**kw)
 
 #============================================================================
 class Box(Assembly):
@@ -3836,11 +3836,11 @@ class XCylinder(ZCylinder,XAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawzy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.xcent,**kw)
 
 
 #============================================================================
@@ -3880,11 +3880,11 @@ class XCylinderOut(ZCylinderOut,XAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawzy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.xcent,**kw)
 
 
 #============================================================================
@@ -3924,11 +3924,11 @@ class YCylinder(ZCylinder,YAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzy(xcent=self.ycent,zcent=self.xcent,**kw)
 
 #============================================================================
 class YCylinderOut(ZCylinderOut,YAssembly):
@@ -3967,11 +3967,11 @@ class YCylinderOut(ZCylinderOut,YAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzy(xcent=self.ycent,zcent=self.xcent,**kw)
 
 #============================================================================
 class ZCylinderElliptic(ZCylinder,EllipticAssembly):
@@ -4115,11 +4115,11 @@ class XCylinderElliptic(ZCylinder,EllipticAssembly,XAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawzy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.xcent,**kw)
 
 
 #============================================================================
@@ -4168,11 +4168,11 @@ class XCylinderEllipticOut(ZCylinderOut,EllipticAssembly,XAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawzy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.xcent,**kw)
 
 
 #============================================================================
@@ -4220,11 +4220,11 @@ class YCylinderElliptic(ZCylinder,EllipticAssembly,YAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzy(xcent=self.ycent,zcent=self.xcent,**kw)
 
 #============================================================================
 class YCylinderEllipticOut(ZCylinderOut,EllipticAssembly,YAssembly):
@@ -4271,11 +4271,11 @@ class YCylinderEllipticOut(ZCylinderOut,EllipticAssembly,YAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzy(xcent=self.ycent,zcent=self.xcent,**kw)
 
 #============================================================================
 class Sphere(Assembly):
@@ -5846,11 +5846,11 @@ class XSrfrvOut(ZSrfrvOut,XAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawzy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.xcent,**kw)
 
 
 #============================================================================
@@ -5897,11 +5897,11 @@ class XSrfrvIn(ZSrfrvIn,XAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawzy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.xcent,**kw)
 
 
 #============================================================================
@@ -5951,11 +5951,11 @@ class XSrfrvInOut(ZSrfrvInOut,XAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawzy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.xcent,**kw)
 
 
 #============================================================================
@@ -6002,11 +6002,11 @@ class YSrfrvOut(ZSrfrvOut,YAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzy(xcent=self.ycent,zcent=self.xcent,**kw)
 
 #============================================================================
 class YSrfrvIn(ZSrfrvIn,YAssembly):
@@ -6052,11 +6052,11 @@ class YSrfrvIn(ZSrfrvIn,YAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzy(xcent=self.ycent,zcent=self.xcent,**kw)
 
 #============================================================================
 class YSrfrvInOut(ZSrfrvInOut,YAssembly):
@@ -6105,11 +6105,11 @@ class YSrfrvInOut(ZSrfrvInOut,YAssembly):
         return extent
 
     def drawzx(self,**kw):
-        super(self.__class__,self).drawxy(**kw,xcent=self.xcent,zcent=self.zcent)
+        super(self.__class__,self).drawxy(xcent=self.xcent,zcent=self.zcent,**kw)
     def drawzy(self,**kw):
-        super(self.__class__,self).drawzx(**kw,xcent=self.ycent,zcent=self.zcent)
+        super(self.__class__,self).drawzx(xcent=self.ycent,zcent=self.zcent,**kw)
     def drawxy(self,**kw):
-        super(self.__class__,self).drawzy(**kw,xcent=self.ycent,zcent=self.xcent)
+        super(self.__class__,self).drawzy(xcent=self.ycent,zcent=self.xcent,**kw)
 
 #============================================================================
 class Annulus(Assembly):
