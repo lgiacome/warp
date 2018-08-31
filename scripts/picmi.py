@@ -301,7 +301,10 @@ class Cartesian3DGrid(picmistandard.PICMI_Cartesian3DGrid):
 
 class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
     def init(self, kw):
-        stencil = {'Yee':0, 'CKC':1}[self.method]
+        if self.method is not None:
+            stencil = {'Yee':0, 'CKC':1}[self.method]
+        else:
+            stencil = 0
         self.solver = EM3D(stencil=stencil)
         registersolver(self.solver)
 
