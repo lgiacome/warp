@@ -883,6 +883,8 @@ class EM3DPXR(EM3DFFT):
 	  pxr.fftw_with_mpi = self.fftw_with_mpi
 	  pxr.fftw_mpi_transpose = self.fftw_mpi_transpose
 	  pxr.fftw_hybrid = self.fftw_hybrid
+          pxr.p3dfft_flag = self.p3dfft_flag
+          pxr.p3dfft_stride = self.p3dfft_stride
 	  pxr.nxg_group = self.nxguard
 	  pxr.nyg_group = self.nyg_group
           pxr.nzg_group = self.nzg_group
