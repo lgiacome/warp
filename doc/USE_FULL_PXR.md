@@ -1,20 +1,15 @@
-When picsar is compiled using full mode. (See picsar documentation), warp can take advantage
-of additional features from picsar.
-This includes Hybrid PSATD solver for Maxwell's equations and picsar absorbing boundary conditions.
+When PICSAR is compiled using "full_pxr" mode (See PICSAR documentation), WARP can take advantage
+of additional features from picsar. This notably includes the Hybrid PSATD solver capability for solving Maxwell's equations aas well ass absorbing boundary conditions.
 
-Hybrid PSATD allows to solve Maxwell's equations using distributed memory FFT (right now picsar supports
-p3dfft and FFTW_MPI) across multiple mpi subdomains in order to reduce the memory footprint and the computational time of the simulation. 
+Hybrid PSATD allows to solve Maxwell's equations using distributed memory FFT across multiple mpi subdomains in order to reduce the memory footprint and the computational time of the simulation. At present, PICSAR supports
+P3DFFT and FFTW libraries for performing distributed FFTs. The decomposition technique used groups the mpi tasks among different "mpi groups", each mpi group still forming a cartesian subdomain.
+Then distributed ffts are performed across each mpi group and guard cells exchanged between the mpi groups. This results in better memory footprint (tanks to reduced data redundancy) as well as better performance.
 
-The idea is to divide the mpi tasks between different mpi groups, each mpi group forms a cartesian subdomain.
-Then perform distributed memory fft across each group and excange the guardcells between the groups.
-This will result in better memory footprint and less data redundancy as well as better performance.
-
-Note that when using full_pxr = True, PMLS  computations are done in picsar.
-Picsar PMLS are inside the simulation domain you set, (the first and last np_pml cells are set to be pml cells)
+Note that when using full_pxr = True, Perflectly Matched Layer (PML) computations for simulating absorbing boundary conditions are done in PICSAR exclusively. In PICSAR, PMLs are inside the simulation domain you set, (the first and last np_pml cells are set to be PML cells)
 You might take that into consideration when designing you simulation box.
 
 
-When using this mode, you need to turn full_pxr flag in your EM3DPXR to True.
+When using this mode, you need to turn the `full_pxr` flag in your EM3DPXR class instanciation to `True`.
 Then you need to specify additional parameters:
 
 
@@ -38,51 +33,36 @@ em=EM3DPXR{.
            'g_spectral':False,
            }
 
-when full_pxr is True this will allows matrix initializations for PSATD and PMLS compuations to be done in picsar.
-To use hybrid PSATD you need to set fftw_with_mpi = True and fftw_hybrid = True, if fftw_hyrid = False, then picsar will solve Maxwell 
-using whole domain ffts. Note that this mode is buggy and is has not been tested extensively. 
-So you might want to set fftw_with_mpi = True, and fftw_hybrid = True to avoid inconvenient bugs.
+when `full_pxr` is set to `True`, this will allow matrix initializations for PSATD and PMLs compuations to be done in PICSAR (initialization on the WARP layer is noit performed).
+To use the hybrid PSATD solver, you need to set `fftw_with_mpi` to `True` and `fftw_hybrid=True`. If `fftw_hyrid = False`, then PICSAR will solve Maxwell's equations 
+using a global domain FFT. Note that this mode is buggy and has not been tested extensively. As a consequence, use only `fftw_with_mpi = True`, and `fftw_hybrid = True` for now in order to avoid inconvenient bugs.
 
-Then you need to choose between between the fft library that performs the fft computations.
-Right now you can choose between FFTW_MPI and p3dfft.
-To choose p3dfft you need to set p3dfft_flag = True, otherwise warp will use FFTW_MPI by default.
+Regarding the choice of the FFT library, you ca choose between FFTW and P3DFFT. To choose P3DFFT set `p3dfft_flag = True`, otherwise warp will use FFTW_MPI by default.
 
-Whether you chose fftw_mpi or p3dfft you might want to set fftw_mpi_transpose = True p3dfft_stride = True respectively.
-This will allow to preform faster ffts since this will allow to get rid of one data transposition during the fft computation.
-Note that when using p3dfft_stride = True, P3DFFT library needs to be compiled using --enable-stride1 
-Also, when p3dfft_stride=False, you need to recompile p3dfft  WITHOUT --enable-stride1.
+Whether you chose FFTW or P3DFFT, you might want to set `fftw_mpi_transpose = True` or `p3dfft_stride = True` respectively. This performs faster FFTs since it gets rid of one data transposition during the distributed FFT computation.
+Note that when using `p3dfft_stride = True`, the P3DFFT library needs to be compiled using `--enable-stride1`. In addition, when `p3dfft_stride=False`, you need to recompile P3DFFT without `--enable-stride1`. However, we recommend to always use `--enable-stride1` since this results in better performance.
 
 
-But we recommand to always use --enable-stride1 since this results in better performance.
+The main difference between P3DFFT and FFTW libraries is that FFTW allows for 1D slab domain decomposition (along z-axis) whereas P3DFFT allows for 2D pencil decomposition. Note that P3DFFT CANNOT be used when doing 2D simulations since this library only performs 3D FFTs.
+Plus, `fftw_mpi_transpose` must be set to `False` when performing 2D simulations.
 
 
-The main difference between these two libraries is that fftw_mpi can gather mpi_tasks along one direction(the z axis)
-while p3dfft can gather mpis along y and z axes.
+The next parameter to be set are `nb_group_x,y,z`: 
+
+`nb_group_x` is the number of groups along the x direction.
+`nb_group_y` is the number of groups along the y direction.
+`nb_group_z` is the number of groups along the z direction.
+
+At present, you can't choose `nb_group_x` as there is currently no support for FFT libraries allowing 3D decomposition. If you are using FFTW (1D slab decomposition), nb_group_y will be set automatically to nprocy.  
+
+You will also need to set `nyg_group`(number of guardcells along y for the groups)
+and `nzg_group`(number of guardcells along z  for the groups). When using the hybrid mode, you can set `nzg_group`, `nyg_group` (P3DFFT only) high enough to get very small truncation errors and reduce `nyguards`, `nzguards` to the minimum value to avoid data redundancy. 
+`nxg_group` is set to `nxguards` automatically since task gathering along the x-axis is currently not supported.
 
 
+If you are doing simulations using periodic boundary counditions for the EM-fields you might want to set `g_spectral = False` as this will reduce the memory footprint of the EM solver.
 
-Note that p3dfft CANNOT be used when doing 2d simulations since this library only performs 3D ffts.
-Plus, fftw_mpi_transpose must be set to False when performing 2d simulations.
-
-
-The next thing you need to set are nb_group_z and nb_group_y. Note that you can't choose nb_group_x as this parameter is only  defined for future implementations.
-
-nb_group_y is the number of groups along the y direction.
-nb_group_z is the number of groups along the z direction.
-
-If you are using fftw_mpi you might nb_group_y since this will be set automatically to nprocy
-
-Finally, you need to choose nyg_group = (number of guardcells along y for the groups)
-and nzg_group = (number of guardcells along z  for the groups)
-
-Note that when using the hybrid mode, you can set nzg_group, nyg_group(P3DFFT only) high enough to get very small truncation error and reduce nyguards, nzguards to the minimum value (nyguard+1,nzguard+1)
-to avoid data redundancy
-Note that nxg_group is set to nxguards automatically since task gathering along x axis is not supported.
-
-
-If you are doing simulations using periodic boundaries you might want to set g_spectral = False, it will reduce the memory footprint of the EM solver.
-
-In general you don't need to change the values of nx_pml, ny_pml ... since the default value brings good absorbtion rate.
+In general you don't need to change the values of `nx_pml`, `ny_pml` ... since the default value already brings good absorbtion rate.
 
 
 
