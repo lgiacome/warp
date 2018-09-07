@@ -1616,8 +1616,6 @@ class EM3DPXR(EM3DFFT):
         Electric field boundary conditions
         """
 
-	if(self.full_pxr):
-	  return
         t0 = MPI.Wtime()
         if self.novercycle==1:
             if dir>0.:
@@ -1645,9 +1643,6 @@ class EM3DPXR(EM3DFFT):
         """
         Magnetic field boundary conditions
         """
-
-        if(self.full_pxr):
-          return
 
         t0 = MPI.Wtime()
 
