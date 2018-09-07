@@ -1458,6 +1458,9 @@ class EM3DPXR(EM3DFFT):
           tdebcell=MPI.Wtime()
 
         if top.it%100==0:print 'push PSAOTD',top.it
+	if(self.full_pxr):
+          self.solve_maxwell_full_pxr()
+          return
         if top.efetch[0] != 4 and (self.refinement is None) and not self.l_nodalgrid:self.node2yee3d()
 
         if self.ntsub==inf:
@@ -1613,6 +1616,8 @@ class EM3DPXR(EM3DFFT):
         Electric field boundary conditions
         """
 
+	if(self.full_pxr):
+	  return
         t0 = MPI.Wtime()
         if self.novercycle==1:
             if dir>0.:
@@ -1640,6 +1645,10 @@ class EM3DPXR(EM3DFFT):
         """
         Magnetic field boundary conditions
         """
+
+        if(self.full_pxr):
+          return
+
         t0 = MPI.Wtime()
 
         if self.novercycle==1:
@@ -1669,6 +1678,12 @@ class EM3DPXR(EM3DFFT):
     def solve_maxwell_full_pxr(self):
 
         """ full Maxwell push in pxr"""
+        pxr.rho = self.fields.Rho
+        pxr.rhoold = self.fields.Rhoold
+        pxr.jx = self.fields.Jx
+        pxr.jy = self.fields.Jy
+        pxr.jz = self.fields.Jz
+
 	if(self.l_debug):print("begin solve maxwell full pxr")
 	if(pxr.fftw_with_mpi):
           pxr.get_ffields_mpi_lb()
