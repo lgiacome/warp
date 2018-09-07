@@ -1922,10 +1922,7 @@ class EM3DPXR(EM3DFFT):
 
         if (self.l_debug): print("Call dosolve")
 
-	if(self.full_pxr == False):
-          self.dosolve()
-        else:
-	  self.solve_maxwell_full_pxr()
+        self.dosolve()
         #tendcell=MPI.Wtime()
         #pxr.local_time_cell=pxr.local_time_cell+(tendcell-tdebcell)
 
