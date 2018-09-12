@@ -514,6 +514,9 @@ class EM3DPXR(EM3DFFT):
 		      'nx_pml':8,
 		      'ny_pml':8,
 		      'nz_pml':8,
+		      'absorbing_bcs_x':0,
+                      'absorbing_bcs_y':0,
+                      'absorbing_bcs_z':0,
                       'g_spectral':False,
                       }
 
@@ -552,11 +555,24 @@ class EM3DPXR(EM3DFFT):
 	  #if full_pxr == True additional computations are done in picsar.
 	  # This includes PSATD block initialization and fields boundaries through PMLS.
 	  #This mode also allows to use FFTW_MPI or P3DFFT in order to perform FFT computations.
-	  
+	   
 	  if(self.full_pxr):
 	    pxr.init_plans_blocks()
 	    if(pxr.absorbing_bcs):
 	      pxr.init_pml_arrays()
+              self.exy_pxr = pxr.exy
+              self.exz_pxr = pxr.exz
+              self.eyx_pxr = pxr.eyx
+              self.eyz_pxr = pxr.eyz
+              self.ezx_pxr = pxr.ezx
+              self.ezy_pxr = pxr.ezy
+              self.bxy_pxr = pxr.bxy
+              self.bxz_pxr = pxr.bxz
+              self.byx_pxr = pxr.byx
+              self.byz_pxr = pxr.byz
+              self.bzx_pxr = pxr.bzx
+              self.bzy_pxr = pxr.bzy
+
 
           # Rewrite the get_quantity methods to the class species for pxr
           Species.get_quantity_pxr = get_quantity_pxr
@@ -890,11 +906,16 @@ class EM3DPXR(EM3DFFT):
           pxr.nzg_group = self.nzg_group
           pxr.nb_group_z = self.nb_group_z
 	  pxr.nb_group_y = self.nb_group_y
-	  if(w3d.bound0 == openbc or w3d.boundnz==openbc):
-            pxr.absorbing_bcs_z = True
-          if(w3d.boundxy == openbc):
-            pxr.absorbing_bcs_x = True
-            pxr.absorbing_bcs_y = True
+          pxr.absorbing_bcs_x = self.absorbing_bcs_x
+          pxr.absorbing_bcs_y = self.absorbing_bcs_y
+          pxr.absorbing_bcs_z = self.absorbing_bcs_z
+
+
+	 # if(w3d.bound0 == openbc or w3d.boundnz==openbc):
+         #   pxr.absorbing_bcs_z = True
+         # if(w3d.boundxy == openbc):
+         #   pxr.absorbing_bcs_x = True
+         #   pxr.absorbing_bcs_y = True
 	  
           #Set aborbing_bcs flag to true if there is an absorbing bc in any direction
           #If absorbing bcs in one direction then increase the grid offset for particles 
@@ -904,18 +925,11 @@ class EM3DPXR(EM3DFFT):
 	    pxr.nx_pml = self.nx_pml
             pxr.ny_pml = self.ny_pml 
             pxr.nz_pml = self.nz_pml
-            pxr.offset_grid_part_x_min += pxr.nx_pml 
-            pxr.offset_grid_part_x_max -= pxr.nx_pml
-            pxr.offset_grid_part_y_min += pxr.ny_pml
-            pxr.offset_grid_part_y_max -= pxr.ny_pml
-            pxr.offset_grid_part_z_min += pxr.nz_pml
-            pxr.offset_grid_part_z_max -= pxr.nz_pml
 
+          self.absorbing_bcs_pxr = pxr.absorbing_bcs
 	  pxr.get_neighbours_python()
           if(pxr.absorbing_bcs==True):
             #if absorbing_bcs in warp then set warp bcs to periodic to avoid bugs (and useless block inits)
-            w3d.bound0  = w3d.boundnz = periodic
-            w3d.boundxy = periodic
             pxr.g_spectral = True
             pxr.get_non_periodic_mpi_bcs()
           if(pxr.fftw_with_mpi):
@@ -1628,8 +1642,7 @@ class EM3DPXR(EM3DFFT):
             else:
                 doit=False
         if doit:
-            if 0:#self.l_pxr:
-                print 'exchange e pxr'
+            if (self.l_pxr and self.full_pxr):
                 pxr.efield_bcs()
             else:
                 em3d_exchange_e(self.block)
@@ -1658,8 +1671,7 @@ class EM3DPXR(EM3DFFT):
                 doit=False
         if doit:
             if self.l_verbose:print 'exchange_b',self,top.it,self.icycle
-            if 0:#self.l_pxr:
-                print 'exchange b pxr'
+            if (self.l_pxr and self.full_pxr):
                 pxr.bfield_bcs()
             else:
                 em3d_exchange_b(self.block)
@@ -1695,11 +1707,9 @@ class EM3DPXR(EM3DFFT):
           pxr.get_fields_mpi_lb()
 	else:
 	  pxr.get_fields()
-	pxr.efield_bcs()
-	pxr.bfield_bcs()
         if(pxr.absorbing_bcs):
           pxr.field_damping_bcs()
-          pxr.merge_fields()
+	  pxr.merge_fields()
 	if(self.l_debug):print("end solve maxwell full pxr")
 
 
@@ -1980,6 +1990,15 @@ class EM3DPXR(EM3DFFT):
         if (self.l_debug): print("Call PXR custom outputs mpi-io")
         if(l_pxr & self.l_output_grid & (top.it % self.l_output_freq ==0)):
           self.output_pxr(top.it)
+
+        xgrid=w3d.xmmin-pxr.xmin
+        ygrid=w3d.ymmin-pxr.ymin
+        zgrid=w3d.zmmin-pxr.zmin
+        if (xgrid != 0. or ygrid!=0. or zgrid !=0.):
+            pxr.pxr_move_sim_boundaries(xgrid,ygrid,zgrid)
+            pxr.particle_bcs()
+            aliasparticlearrays()
+
 
         # --- call afterstep functions
         if (self.l_debug): print("Call callafterstepfuncs.callfuncsinlist()")
