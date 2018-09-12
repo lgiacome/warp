@@ -514,6 +514,9 @@ class EM3DPXR(EM3DFFT):
 		      'nx_pml':8,
 		      'ny_pml':8,
 		      'nz_pml':8,
+		      'shift_x_pml_pxr':4,
+                      'shift_y_pml_pxr':4,
+                      'shift_z_pml_pxr':4,
 		      'absorbing_bcs_x':0,
                       'absorbing_bcs_y':0,
                       'absorbing_bcs_z':0,
@@ -925,6 +928,14 @@ class EM3DPXR(EM3DFFT):
 	    pxr.nx_pml = self.nx_pml
             pxr.ny_pml = self.ny_pml 
             pxr.nz_pml = self.nz_pml
+            
+	    pxr.shift_x_pml = self.shift_x_pml_pxr
+            pxr.shift_y_pml = self.shift_y_pml_pxr
+            pxr.shift_z_pml = self.shift_z_pml_pxr
+            if(self.fftw_hybrid): 
+              pxr.shift_x_pml = pxr.nxguards
+	      pxr.shift_y_pml = pxr.nyguards
+              pxr.shift_z_pml = pxr.nzguards
 
           self.absorbing_bcs_pxr = pxr.absorbing_bcs
 	  pxr.get_neighbours_python()
