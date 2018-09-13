@@ -1720,7 +1720,7 @@ class EM3DPXR(EM3DFFT):
 	  pxr.get_fields()
         if(pxr.absorbing_bcs):
           pxr.field_damping_bcs()
-	  pxr.merge_fields()
+	  #pxr.merge_fields()
 	if(self.l_debug):print("end solve maxwell full pxr")
 
 
