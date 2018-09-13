@@ -1723,6 +1723,98 @@ class EM3DPXR(EM3DFFT):
 	  #pxr.merge_fields()
 	if(self.l_debug):print("end solve maxwell full pxr")
 
+    def move_cells(self,n, coord):
+        # move the boundaries of the box along the coord axis
+        # in case of moving window along the coordinate coord.
+        #coord = 'x', 'y', 'z'
+        if(self.full_pxr and self.absorbing_bcs_pxr):
+
+	  # when using full pxr mode with absorbing_bcs, the moving window needs
+	  # to be applied to the splitted fields of pxr
+
+          save_ntimes = self.block.core.yf.ntimes
+          if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
+          elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
+          elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
+          # sets ntimes to 0 to force the mv window to act only once on the currents and densities
+	  self.block.core.yf.ntimes = 0
+
+          s1 = self.block.core.yf.Ex
+          s2 = self.block.core.yf.Ey
+          s3 = self.block.core.yf.Ez
+          s4 = self.block.core.yf.Bx
+          s5 = self.block.core.yf.By
+          s6 = self.block.core.yf.Bz
+
+	  self.block.core.yf.Ex = self.exy_pxr
+          self.block.core.yf.Ey = self.eyx_pxr
+	  self.block.core.yf.Ez = self.ezx_pxr
+	  self.block.core.yf.Bx = self.bxy_pxr
+	  self.block.core.yf.By = self.byx_pxr
+          self.block.core.yf.Bz = self.bzx_pxr
+
+
+          if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
+          elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
+          elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
+
+          self.block.core.yf.Ex = self.exz_pxr
+          self.block.core.yf.Ey = self.eyz_pxr
+          self.block.core.yf.Ez = self.ezy_pxr
+          self.block.core.yf.Bx = self.bxz_pxr
+          self.block.core.yf.By = self.byz_pxr
+          self.block.core.yf.Bz = self.bzy_pxr
+
+          if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
+          elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
+          elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
+
+          self.block.core.yf.Ex = s1
+          self.block.core.yf.Ey = s2
+          self.block.core.yf.Ez = s3
+          self.block.core.yf.Bx = s4
+          self.block.core.yf.By = s5
+          self.block.core.yf.Bz = s6
+	  self.block.core.yf.ntimes = save_ntimes
+	else:
+          if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
+          elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
+          elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
+
+           
+        listtoshift = [(self,'%s_grid' %(coord) ),
+                       (self,'%smmin'  %(coord) ),
+                       (self,'%smmax' %(coord) ),
+                       (self,'%smminlocal'%(coord) ),
+                       (self,'%smmaxlocal'%(coord) ),
+                       (self.fields,'%smin'%(coord) ),
+                       (self.fields,'%smax'%(coord) ),
+                       (self.block,'%smin'%(coord) ),
+                       (self.block,'%smax'%(coord) ),
+                       (w3d,'%smmin'%(coord) ),
+                       (w3d,'%smmax'%(coord) ),
+                       (w3d,'%smminp'%(coord) ),
+                       (w3d,'%smmaxp'%(coord) ),
+                       (w3d,'%smminlocal'%(coord) ),
+                       (w3d,'%smmaxlocal'%(coord) ),
+                       (w3d,'%smminglobal'%(coord) ),
+                       (w3d,'%smmaxglobal'%(coord) ),
+                       (top,'%spmin'%(coord) ),
+                       (top,'%spmax'%(coord) ),
+                       (top,'%spminlocal'%(coord) ),
+                       (top,'%spmaxlocal'%(coord) )]
+
+        if   coord=='x': increment=self.dx
+        elif coord=='y': increment=self.dy
+        elif coord=='z': increment=self.dz
+
+        for (coord_object,coord_attribute) in listtoshift:
+            # loop equivalent to self.incrementposition(coord_object.coord_attribute, increment, n)
+            # for each tupple in listtoshift
+            coordtoshift=getattr(coord_object,coord_attribute)
+            setattr(coord_object,coord_attribute,self.incrementposition(coordtoshift,increment,n))
+
+
 
 
 

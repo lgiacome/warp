@@ -1867,65 +1867,9 @@ class EM3D(SubcycledPoissonSolver):
         # move the boundaries of the box along the coord axis
         # in case of moving window along the coordinate coord.
         #coord = 'x', 'y', 'z'
-        if(hasattr(self,"full_pxr") and hasattr(self,"absorbing_bcs_pxr")):
-
-	  # when using full pxr mode, needs to force field shift to act 
-	  # on picsar fields 
-
-	  if(self.full_pxr and self.absorbing_bcs_pxr):
-            save_ntimes = self.block.core.yf.ntimes
-            if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
-            elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
-            elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
-	    self.block.core.yf.ntimes = 0
-
-            s1 = self.block.core.yf.Ex
-            s2 = self.block.core.yf.Ey
-            s3 = self.block.core.yf.Ez
-            s4 = self.block.core.yf.Bx
-            s5 = self.block.core.yf.By
-            s6 = self.block.core.yf.Bz
-
-	    self.block.core.yf.Ex = self.exy_pxr
-            self.block.core.yf.Ey = self.eyx_pxr
-	    self.block.core.yf.Ez = self.ezx_pxr
-	    self.block.core.yf.Bx = self.bxy_pxr
-	    self.block.core.yf.By = self.byx_pxr
-            self.block.core.yf.Bz = self.bzx_pxr
-
-
-            if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
-            elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
-            elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
-
-            self.block.core.yf.Ex = self.exz_pxr
-            self.block.core.yf.Ey = self.eyz_pxr
-            self.block.core.yf.Ez = self.ezy_pxr
-            self.block.core.yf.Bx = self.bxz_pxr
-            self.block.core.yf.By = self.byz_pxr
-            self.block.core.yf.Bz = self.bzy_pxr
-
-            if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
-            elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
-            elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
-
-            self.block.core.yf.Ex = s1
-            self.block.core.yf.Ey = s2
-            self.block.core.yf.Ez = s3
-            self.block.core.yf.Bx = s4
-            self.block.core.yf.By = s5
-            self.block.core.yf.Bz = s6
-	    self.block.core.yf.ntimes = save_ntimes
-	  else:
-            if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
-            elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
-            elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
-
-           
-	else:
-          if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
-          elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
-          elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
+        if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
+        elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
+        elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
 
 
         listtoshift = [(self,'%s_grid' %(coord) ),
