@@ -563,6 +563,7 @@ class EM3DPXR(EM3DFFT):
 	    pxr.init_plans_blocks()
 	    if(pxr.absorbing_bcs):
 	      pxr.init_pml_arrays()
+              # Creates a pointer into each pxr pml sub field
               self.exy_pxr = pxr.exy
               self.exz_pxr = pxr.exz
               self.eyx_pxr = pxr.eyx
