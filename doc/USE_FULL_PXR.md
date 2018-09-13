@@ -1,5 +1,6 @@
 When PICSAR is compiled using "full_pxr" mode (See PICSAR documentation), WARP can take advantage
-of additional features from picsar. This notably includes the Hybrid PSATD solver capability for solving Maxwell's equations aas well ass absorbing boundary conditions.
+of additional features from picsar. This notably includes the Hybrid PSATD solver capability for solving Maxwell's equations as well as absorbing boundary conditions.
+This mode allows a substantial memory saving due to overall less data redundancy
 
 Hybrid PSATD allows to solve Maxwell's equations using distributed memory FFT across multiple mpi subdomains in order to reduce the memory footprint and the computational time of the simulation. At present, PICSAR supports
 P3DFFT and FFTW libraries for performing distributed FFTs. The decomposition technique used groups the mpi tasks among different "mpi groups", each mpi group still forming a cartesian subdomain.
