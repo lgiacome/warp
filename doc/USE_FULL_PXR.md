@@ -34,7 +34,7 @@ em=EM3DPXR{.
            'g_spectral':False,
            }
 
-when `full_pxr` is set to `True`, this will allow matrix initializations for PSATD and PMLs compuations to be done in PICSAR (initialization on the WARP layer is noit performed).
+when `full_pxr` is set to `True`, this will allow matrix initializations for PSATD and PMLs compuations to be done in PICSAR (initialization on the WARP layer is not performed).
 To use the hybrid PSATD solver, you need to set `fftw_with_mpi` to `True` and `fftw_hybrid=True`. If `fftw_hyrid = False`, then PICSAR will solve Maxwell's equations 
 using a global domain FFT. Note that this mode is buggy and has not been tested extensively. As a consequence, use only `fftw_with_mpi = True`, and `fftw_hybrid = True` for now in order to avoid inconvenient bugs.
 

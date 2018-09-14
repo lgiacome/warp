@@ -514,9 +514,9 @@ class EM3DPXR(EM3DFFT):
 		      'nx_pml':8,
 		      'ny_pml':8,
 		      'nz_pml':8,
-		      'shift_x_pml_pxr':4,
-                      'shift_y_pml_pxr':4,
-                      'shift_z_pml_pxr':4,
+		      'shift_x_pml_pxr':4, # number of guardcells whre fields are forced to 0 
+                      'shift_y_pml_pxr':4, # when using pml with full pxr mode. This parameter 
+                      'shift_z_pml_pxr':4, # is only 
 		      'absorbing_bcs_x':0,
                       'absorbing_bcs_y':0,
                       'absorbing_bcs_z':0,
@@ -563,7 +563,7 @@ class EM3DPXR(EM3DFFT):
 	    pxr.init_plans_blocks()
 	    if(pxr.absorbing_bcs):
 	      pxr.init_pml_arrays()
-              # Creates a pointer into each pxr pml sub field
+              # Creates a pointer to each pxr pml sub field
               self.exy_pxr = pxr.exy
               self.exz_pxr = pxr.exz
               self.eyx_pxr = pxr.eyx
