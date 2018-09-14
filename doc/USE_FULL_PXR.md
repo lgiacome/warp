@@ -23,11 +23,17 @@ em=EM3DPXR{.
            'fftw_mpi_transpose':False,
            'p3dfft_flag':False,
            'p3dfft_stride':False,
+	   'shift_x_pml':4,
+           'shift_y_pml':4,
+           'shift_z_pml':4,
            'nb_group_x':0,
            'nb_group_y':0,
            'nb_group_z':0,
            'nyg_group':0,
            'nzg_group':0,
+	   'absorbing_bcs_x':False,
+           'absorbing_bcs_y':False,
+           'absorbing_bcs_z':False,
            'nx_pml':8,
            'ny_pml':8,
            'nz_pml':8,
@@ -63,8 +69,14 @@ and `nzg_group`(number of guardcells along z  for the groups). When using the hy
 
 If you are doing simulations using periodic boundary counditions for the EM-fields you might want to set `g_spectral = False` as this will reduce the memory footprint of the EM solver.
 
-In general you don't need to change the values of `nx_pml`, `ny_pml` ... since the default value already brings good absorbtion rate.
+When using full_pxr mode with pmls you need to set absorbing_bcs_x/y/z flags to True. Unlike warp, picsar can handle different EM boundary conditions along y and z (but same BC for z_min and z_max).
+You would also want force w3d boundaries on fields to False.
 
+In general you don't need to change the values of `nx_pml`, `ny_pml` ... since the default value already brings good absorbtion rate.
+The PML in picsar in by default appended to the first  and the last ni_pmls OF the simulation domain. Field values inside domain guardcells are forced to 0 to emulate perfectly reflective media.
+When using the local solver with full pxr this can be changed slightly in order to put the pml cells inside the domain guardcells though the shift_x_pml/shift_y_pml/shift_z_pml parameters.
+These parameters represent the number of domain guardcells in which the fields are forced to 0. So if nx_pml + shift_x_pml = nxguards for example then the whole pml region is held by the guardcell.
+For hybird solver, this has not been implemented yet, and shift parameters don't have any impact
 
 
 
