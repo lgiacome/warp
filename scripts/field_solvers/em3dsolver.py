@@ -138,7 +138,7 @@ class EM3D(SubcycledPoissonSolver):
             if self.l_nodalgrid:
                 self.l_deposit_nodal=True
             else:
-                l_deposit_nodal=False
+                self.l_deposit_nodal=False
 
         # --- Impose type_rz_depose = 0 if not in circ mode
         if self.l_2drz == False :
@@ -1867,10 +1867,10 @@ class EM3D(SubcycledPoissonSolver):
         # move the boundaries of the box along the coord axis
         # in case of moving window along the coordinate coord.
         #coord = 'x', 'y', 'z'
-
         if   coord=='x': shift_em3dblock_ncells_x(self.block,n)
         elif coord=='y': shift_em3dblock_ncells_y(self.block,n)
         elif coord=='z': shift_em3dblock_ncells_z(self.block,n)
+
 
         listtoshift = [(self,'%s_grid' %(coord) ),
                        (self,'%smmin'  %(coord) ),
@@ -1941,7 +1941,7 @@ class EM3D(SubcycledPoissonSolver):
         if self.l_verbose:print 'solve 1st half'
         if top.dt != self.dtinit:raise Exception('Time step has been changed since initialization of EM3D.')
         if self.fields.spectral:
-#            self.move_window_fields()
+            #self.move_window_fields()
             self.push_spectral_psaotd()
         else:
             self.push_e()

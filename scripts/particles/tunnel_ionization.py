@@ -111,7 +111,6 @@ class TunnelIonization(Ionization):
                     self.injdatapid[emitted_pgroup][js]=fzeros(self.npmax,'d')
 
     def GetADKrateSI(self,E,charge,elemnt,dt,l_dc2ac=False):
-        Z=elemnt.Z
         # ------------CONSTANTS--(cgs)----------------------------------#
         wAtomic = 4.134E16; # Atomic Unit. of freq.
         rBohr = 5.2918E-11; # Bohr radius.

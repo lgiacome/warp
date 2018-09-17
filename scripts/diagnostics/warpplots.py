@@ -2686,7 +2686,7 @@ def colorbar(zmin,zmax,uselog=None,ncolor=100,view=None,levs=None,
         # --- the range of the level relative to other levels.
         if (isinstance(zmin,types.IntType) and isinstance(zmax,types.IntType) and
             zmin >= 0 and zmax <=199):
-            plotval = arange(zmin,zmax+1,typecode=ubyte)[:,newaxis]*ones(2)
+            plotval = arange(zmin,zmax+1,dtype=ubyte)[:,newaxis]*ones(2)
         else:
             plotval = (arange(ncolor)/(ncolor-1.))[:,newaxis]*ones(2)
         pli(plotval,xmin,ymin,xmax,ymax,top=ctop,local=1)

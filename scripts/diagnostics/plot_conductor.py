@@ -2473,9 +2473,9 @@ def updatemgconductorsold():
         icndlznew = icndlznew + list(llz[j]*ones(len(ii),'l'))
 
     # --- Find odd and even points
-    icndxnew = array(icndxnew,typecode='i')
-    icndynew = array(icndynew,typecode='i')
-    icndznew = array(icndznew,typecode='i')
+    icndxnew = array(icndxnew,dtype='i')
+    icndynew = array(icndynew,dtype='i')
+    icndznew = array(icndznew,dtype='i')
     ee = compress((icndxnew+icndynew+icndznew)%2==0,arange(len(icndxnew)))
     oo = compress((icndxnew+icndynew+icndznew)%2==1,arange(len(icndxnew)))
 
