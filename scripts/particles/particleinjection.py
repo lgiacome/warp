@@ -404,6 +404,8 @@ the area of the dual cell.
         #if self.lsmooth121: Qnew = where(self.isdeepinside == 1.,0.,Qnew)
 
         # --- Calculate the number of new particles to add at each grid cell.
+        assert top.pgroup.sq[self.js] != 0., Exception('InjectionGaussLaw.doinjection: The charge of species %d must not be zero.'%self.js)
+        assert top.pgroup.sw[self.js] != 0., Exception('InjectionGaussLaw.doinjection: The weight of species %d must not be zero.'%self.js)
         rnn = Qnew/(top.pgroup.sq[self.js]*top.pgroup.sw[self.js])
 
         # --- Make sure it is positive or zero
