@@ -143,8 +143,8 @@ conductors are an argument.
                     # --- A registered solver may have had loadrho already called.
                     if isinstance(solver,EM3D):
                         # --- If using the EM solver, loadrho has already been called
-                        # --- only if the l_deposit_rho flag is true.
-                        if solver.l_deposit_rho:
+                        # --- only if the l_getrho flag is true.
+                        if solver.l_getrho:
                             self.solverwithrho = solver
                             return
                         else:
@@ -167,11 +167,11 @@ conductors are an argument.
                         self.solverwithrho = solver
 
         if isinstance(self.solverwithrho,EM3D) and self.solverwithrho in regsolvers:
-            # --- The EM solver is being used, but the l_deposit_rho is not set.
+            # --- The EM solver is being used, but the l_getrho is not set.
             # --- Set the flag to true - BUT - don't load rho here.
             # --- Loading rho with the EM solver is better done as part of normal
             # --- operations. This will happen during the remainder of the loadrho call.
-            self.solverwithrho.l_deposit_rho = True
+            self.solverwithrho.l_getrho = True
             return
 
         # --- If this point is reached, then an explicit call to loadrho is needed.
@@ -325,8 +325,8 @@ the charge density at the grid point at the center of the dual cell times
 the area of the dual cell.
         """
         if isinstance(solver,EM3D):
-            if not solver.l_deposit_rho:
-                raise Exception("The l_deposit_rho flag must be true for the EM solver")
+            if not solver.l_getrho:
+                raise Exception("The l_getrho flag must be true for the EM solver")
             nxguard = solver.nxguard
             nyguard = solver.nyguard
             nzguard = solver.nzguard
