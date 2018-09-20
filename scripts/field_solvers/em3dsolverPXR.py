@@ -1002,9 +1002,6 @@ class EM3DPXR(EM3DFFT):
         pxr.allocate_grid_quantities()
 	if(self.l_debug): print("Compute simulation axis in PXR")
         pxr.compute_simulation_axis()
-	if(self.full_pxr):
-	  if(pxr.absorbing_bcs):
-	    pxr.init_splitted_fields_random()
 
         # set time step
         pxr.dt = top.dt
@@ -1060,6 +1057,9 @@ class EM3DPXR(EM3DFFT):
 	if(self.full_pxr):
 	  pxr.rho = self.fields.Rho
 	  pxr.rhoold = self.fields.Rhoold
+          if(pxr.absorbing_bcs):
+            pxr.init_splitted_fields_random()
+
 
         pxr.ex_p = self.fields.Exp
         pxr.ey_p = self.fields.Eyp
