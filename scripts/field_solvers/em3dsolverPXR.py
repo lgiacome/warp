@@ -2230,11 +2230,6 @@ class EM3DPXR(EM3DFFT):
         if(l_pxr & self.l_output_grid & (top.it % self.l_output_freq ==0)):
           self.output_pxr(top.it)
 
-
-        # --- call afterstep functions
-        if (self.l_debug): print("Call callafterstepfuncs.callfuncsinlist()")
-        callafterstepfuncs.callfuncsinlist()
-
         xgrid=w3d.xmmin-pxr.xmin
         ygrid=w3d.ymmin-pxr.ymin
         zgrid=w3d.zmmin-pxr.zmin
@@ -2242,6 +2237,11 @@ class EM3DPXR(EM3DFFT):
             pxr.pxr_move_sim_boundaries(xgrid,ygrid,zgrid)
             pxr.particle_bcs()
             aliasparticlearrays()
+
+        # --- call afterstep functions
+        if (self.l_debug): print("Call callafterstepfuncs.callfuncsinlist()")
+        callafterstepfuncs.callfuncsinlist()
+
 
 
     def load_balance_3d(self,imbalance):
