@@ -2456,6 +2456,10 @@ class EM3DPXR(EM3DFFT):
         if (self.l_debug): print("Call user-defined injection routines")
         userinjection.callfuncsinlist()
 
+        # --- call beforeloadrho functions
+        if (self.l_debug): print("Call beforeloadrho functions")
+        beforeloadrho.callfuncsinlist()
+
         xgrid=w3d.xmmin-pxr.xmin
         ygrid=w3d.ymmin-pxr.ymin
         zgrid=w3d.zmmin-pxr.zmin
@@ -2464,9 +2468,6 @@ class EM3DPXR(EM3DFFT):
             pxr.particle_bcs()
             aliasparticlearrays()
 
-        # --- call beforeloadrho functions
-        if (self.l_debug): print("Call beforeloadrho functions")
-        beforeloadrho.callfuncsinlist()
 
         if (self.l_debug): print("Call loadrho")
         self.loadrho(pgroups=pgroups)
