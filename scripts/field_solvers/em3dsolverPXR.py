@@ -2137,13 +2137,13 @@ class EM3DPXR(EM3DFFT):
         if (self.l_debug): print("Call user-defined injection routines")
         userinjection.callfuncsinlist()
 
-        #xgrid=w3d.xmmin-pxr.xmin
-        #ygrid=w3d.ymmin-pxr.ymin
-        #zgrid=w3d.zmmin-pxr.zmin
-        #if (xgrid != 0. or ygrid!=0. or zgrid !=0.):
-        #    pxr.pxr_move_sim_boundaries(xgrid,ygrid,zgrid)
-        #    pxr.particle_bcs()
-        #    aliasparticlearrays()
+        xgrid=w3d.xmmin-pxr.xmin
+        ygrid=w3d.ymmin-pxr.ymin
+        zgrid=w3d.zmmin-pxr.zmin
+        if (xgrid != 0. or ygrid!=0. or zgrid !=0.):
+            pxr.pxr_move_sim_boundaries(xgrid,ygrid,zgrid)
+            pxr.particle_bcs()
+            aliasparticlearrays()
 
         # --- call beforeloadrho functions
         if (self.l_debug): print("Call beforeloadrho functions")
