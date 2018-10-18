@@ -1953,10 +1953,10 @@ class EM3D(SubcycledPoissonSolver):
                 self.push_e_full(i)
                 self.exchange_e()
             self.push_b_part_1()
-	if(hasattr(self,"full_pxr") == False):
+        if(hasattr(self,"full_pxr") == False):
           if self.pml_method==2:
               scale_em3d_bnd_fields(self.block,top.dt,self.l_pushf,self.l_pushg)
-	elif(self.full_pxr == False):
+        elif(self.full_pxr == False):
           if self.pml_method==2:
               scale_em3d_bnd_fields(self.block,top.dt,self.l_pushf,self.l_pushg)
 
