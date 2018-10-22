@@ -49,7 +49,7 @@ RUN git clone https://bitbucket.org/dpgrote/pygist.git \
     && rm -rf pygist
 
 # Install the openPMD-viewer (mainly for tests)
-RUN pip install openPMD-viewer matplotlib
+RUN pip install openPMD-viewer matplotlib==2
 
 # Install Forthon
 RUN pip install --upgrade pip \
