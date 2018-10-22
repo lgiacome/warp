@@ -35,11 +35,12 @@ RUN conda install -c conda-forge --yes \
     numpy \
     scipy \
     gcc \
-    mpi4py \
     h5py \
     dateutil \
     && conda clean --all
     
+RUN conda install -c conda-forge --yes mpi4py=*=*mpich*
+
 # Install pygist
 RUN git clone https://bitbucket.org/dpgrote/pygist.git \
     && cd pygist \
