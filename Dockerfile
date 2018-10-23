@@ -3,6 +3,7 @@ FROM ubuntu:18.10
 # Install a few packages, as root
 RUN apt-get update \
     && apt-get install -y \
+    sudo \
     wget \
     make \
     git \
