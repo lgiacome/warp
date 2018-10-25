@@ -854,6 +854,7 @@ class EM3DPXR(EM3DFFT):
                       'absorbing_bcs_y':0,
                       'absorbing_bcs_z':0,
                       'g_spectral':False,
+                      'pxr_antenna':True,
                       }
 
     def __init__(self,**kw):
@@ -869,6 +870,10 @@ class EM3DPXR(EM3DFFT):
         if (self.l_debug):
           print("Call __init__")
           print(' Debug prints activated')
+
+        if(self.pxr_antenna):
+          top.nextpid()
+          top.nextpid()
 
         EM3DFFT.__init__(self,kwdict=kw)
 
@@ -889,10 +894,11 @@ class EM3DPXR(EM3DFFT):
           EM3D.finalize(self)
 
           # Rewrite the LaserAntenna class methods for pxr
-          LaserAntenna.initialize_virtual_particles  = \
-                                                  initialize_virtual_particles
-          LaserAntenna.push_virtual_particles        = push_virtual_particles
-          LaserAntenna.select_particles_in_local_box = \
+          if(self.pxr_antenna):
+            LaserAntenna.initialize_virtual_particles  = \
+                                                    initialize_virtual_particles
+            LaserAntenna.push_virtual_particles        = push_virtual_particles
+            LaserAntenna.select_particles_in_local_box = \
                                                  select_particles_in_local_box
 
 
@@ -1458,12 +1464,6 @@ class EM3DPXR(EM3DFFT):
                                                 self.sorting.starts[i],  \
                                                 s.pgroup.ldodepos[i])
             pxr.nspecies+=1
-
-        if top.npid < 3:
-            # At least 3 pid columns are needed for the antenna particles (weigth
-            # and 2 components of the relative position to the plane)
-            while top.npid < 3:
-                nextpid()
         pxr.npid=top.npid
 
 
