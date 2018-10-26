@@ -8,8 +8,7 @@ image: atlassian/default-image:2
 pipelines:
   default:
     - step:
-        size:
-          - 2x # Double resources available for this step.
+        size: 2x # Double resources available for this step.
         services:
           - docker
         script: # Modify the commands below to build your repository.
