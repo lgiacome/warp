@@ -334,10 +334,13 @@ class EM3D(SubcycledPoissonSolver):
                             elif self.stencil == 3 : # Lehe scheme
                                 self.dtcourant = 1./clight  * min( self.dz, self.dx )
                         else :  # 2D r-z
-                            if self.stencil==3: # Lehe scheme
+                            if self.stencil==1:
+                                raise ValueError(
+                                    "The Cole-Karkkainen solver (stencil=1) cannot be used in cylindrical geometry.")
+                            elif self.stencil==3: # Lehe scheme
                                 self.dtcourant = 1./clight  * min( self.dz, self.dx )
 
-                            else:  # Yee scheme and Cole-Karkkainen
+                            else:  # Yee scheme
                                 # In the rz case, the Courant limit has been evaluated
                                 # semi-analytically by R. Lehe, and resulted in the following
                                 # coefficients. For an explanation, see (not officially published)
