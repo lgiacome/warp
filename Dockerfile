@@ -23,7 +23,7 @@ RUN apt-get update \
 # openPMD-viewer is installed mainly for tests
 # Note: matplotlib is installed with pip since the apt-get install matplotlib
 #       needs the time zone to be set.
-RUN pip3 install matplotlib \
+RUN pip3 --no-cache-dir install matplotlib \
     openPMD-viewer \
     Forthon
 
@@ -55,8 +55,8 @@ RUN cd warp/pywarp90 \
     && echo 'FCOMP= -F gfortran' >> Makefile.local3.pympi \
     && echo 'FCOMPEXEC= --fcompexec mpifort' >> Makefile.local3.pympi \
     && make install3 INSTALLOPTIONS=--user \
-    && make pinstall3 INSTALLOPTIONS=--user \
     && make clean3 \
+    && make pinstall3 INSTALLOPTIONS=--user \
     && make pclean3
 
 # This is needed to get around a bug in openmpi that would print copious error messages
