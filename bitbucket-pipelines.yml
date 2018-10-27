@@ -8,7 +8,6 @@ image: atlassian/default-image:2
 pipelines:
   default:
     - step:
-        size: 2x # Double resources available for this step.
         services:
           - docker
         script: # Modify the commands below to build your repository.
@@ -21,3 +20,7 @@ pipelines:
           - docker login --username $DOCKER_HUB_USERNAME --password $DOCKER_HUB_PASSWORD
           # push the new Docker image to the Docker registry
           - docker push $IMAGE_NAME
+definitions:
+  services:
+    docker:
+      memory: 2048
