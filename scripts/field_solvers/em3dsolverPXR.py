@@ -1937,7 +1937,6 @@ class EM3DPXR(EM3DFFT):
         if self.l_pxr:
           tdebcell=MPI.Wtime()
 
-        if top.it%100==0:print 'push PSAOTD',top.it
         if(self.full_pxr):
           self.solve_maxwell_full_pxr()
           return
@@ -2273,7 +2272,7 @@ class EM3DPXR(EM3DFFT):
 
 
 
-    def step(self,n=1,freq_print=10,lallspecl=0):
+    def step(self,n=1,freq_print=10,lallspecl=0,stdout_stat=10):
       """
       This function performs a range of Particle-In-Cell iterations
 
@@ -2284,7 +2283,6 @@ class EM3DPXR(EM3DFFT):
 
       if (self.l_debug): print("Call step")
 
-      stdout_stat=10
       t0=MPI.Wtime()
       tdeb=MPI.Wtime()
 
