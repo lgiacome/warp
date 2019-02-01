@@ -5,6 +5,7 @@ import picmistandard
 import numpy as np
 from .warp import *
 from .init_tools.plasma_initialization import PlasmaInjector
+from .field_solvers.em3dsolverFFT import *
 import warp
 
 codename = 'warp'
@@ -364,7 +365,8 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
         else: 
             npass_smooth  = [[ 0 ],[ 0 ],[ 0 ]]
             alpha_smooth  = [[ 1.],[ 1.],[ 1.]]
-            stride_smooth = [[ 1 ],[ 1 ],[ 1 ]]  			
+            stride_smooth = [[ 1 ],[ 1 ],[ 1 ]]  	
+            
         self.solver = EM3DFFT(stencil=stencil, 
                               norderx=self.stencil_order[0], 
                               nordery=self.stencil_order[1], 
