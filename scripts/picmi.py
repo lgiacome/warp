@@ -259,7 +259,7 @@ class BinomialSmoother(picmistandard.PICMI_BinomialSmoother):
 
 class CylindricalGrid(picmistandard.PICMI_CylindricalGrid):
     def init(self, kw):
-        raise Exception('WarpX does not support CylindricalGrid yet')
+        raise Exception('PICMI WARP file does not support CylindricalGrid yet')
 
 
 class Cartesian2DGrid(picmistandard.PICMI_Cartesian2DGrid):
