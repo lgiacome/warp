@@ -6,6 +6,7 @@ import numpy as np
 from .warp import *
 from .init_tools.plasma_initialization import PlasmaInjector
 from .field_solvers.em3dsolverFFT import *
+from .data_dumping import openpmd_diag
 import warp
 
 codename = 'warp'
@@ -442,3 +443,25 @@ class Simulation(picmistandard.PICMI_Simulation):
         self.initilize_inputs()
         pass
 
+class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic): 
+	def init(self, kw):
+		species_dict=dict()
+		if isinstance(self.species,list): 
+		    for sp in self.species: 
+		    	if isinstance(sp,Species):
+		    	    species_dict[sp.name]=sp.wspecies
+		else: 
+			if isinstance(self.species,Species):
+				species_dict[self.species.name]=self.species.wspecies
+
+		self.diag=openpmd_diag.ParticleDiagnostic( period=self.period, 
+                                      top=top, w3d=w3d,
+                                      species=species_dict,
+                                      comm_world=comm_world,
+                                      particle_data=self.data_list,
+                                      iteration_min=self.step_min,
+                                      iteration_max=self.step_max,
+                                      write_dir=self.write_dir)
+
+class FieldDiagnostic(picmistandard.PICMI_FieldDiagnostic): 
+	pass
