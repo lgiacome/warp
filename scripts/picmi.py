@@ -262,7 +262,37 @@ class CylindricalGrid(picmistandard.PICMI_CylindricalGrid):
 
 class Cartesian2DGrid(picmistandard.PICMI_Cartesian2DGrid):
     def init(self, kw):
-        raise Exception('WarpX does not support Cartesian2DGrid yet')
+        w3d.nx = self.nx
+        w3d.ny = 2
+        w3d.nz = self.ny
+        w3d.xmmin = self.xmin
+        w3d.xmmax = self.xmax
+        w3d.ymmin = -float(w3d.ny)/2.
+        w3d.ymmax = float(w3d.ny)/2.
+        w3d.zmmin = self.ymin
+        w3d.zmmax = self.ymax
+
+        bc_dict = {'dirichlet':warp.dirichlet,
+                        'neumann':warp.neumann,
+                        'periodic':warp.periodic,
+                        'open':warp.openbc}
+        self.bounds = [bc_dict[self.lower_boundary_conditions[0]], 
+        			   bc_dict[self.upper_boundary_conditions[0]],
+                       bc_dict[self.lower_boundary_conditions[1]], 
+                       bc_dict[self.upper_boundary_conditions[1]]]
+        w3d.boundxy = self.bounds[1]
+        w3d.bound0 = self.bounds[2]
+        w3d.boundnz = self.bounds[3]
+        top.pboundxy = self.bounds[1]
+        top.pbound0 = self.bounds[2]
+        top.pboundnz = self.bounds[3]
+        if top.pboundxy == warp.openbc: top.pboundxy = warp.absorb
+        if top.pbound0 == warp.openbc: top.pbound0 = warp.absorb
+        if top.pboundnz == warp.openbc: top.pboundnz = warp.absorb
+
+        if self.moving_window_velocity is not None:
+            top.vbeam = top.vbeamfrm = self.moving_window_velocity[1]
+            top.lgridqnt = true
 
 
 class Cartesian3DGrid(picmistandard.PICMI_Cartesian3DGrid):
@@ -281,9 +311,12 @@ class Cartesian3DGrid(picmistandard.PICMI_Cartesian3DGrid):
                         'neumann':warp.neumann,
                         'periodic':warp.periodic,
                         'open':warp.openbc}
-        self.bounds = [bc_dict[self.lower_boundary_conditions[0]], bc_dict[self.upper_boundary_conditions[0]],
-                       bc_dict[self.lower_boundary_conditions[1]], bc_dict[self.upper_boundary_conditions[1]],
-                       bc_dict[self.lower_boundary_conditions[2]], bc_dict[self.upper_boundary_conditions[2]]]
+        self.bounds = [bc_dict[self.lower_boundary_conditions[0]], 
+        			   bc_dict[self.upper_boundary_conditions[0]],
+                       bc_dict[self.lower_boundary_conditions[1]], 
+                       bc_dict[self.upper_boundary_conditions[1]],
+                       bc_dict[self.lower_boundary_conditions[2]], 
+                       bc_dict[self.upper_boundary_conditions[2]]]
         w3d.boundxy = self.bounds[1]
         w3d.bound0 = self.bounds[4]
         w3d.boundnz = self.bounds[5]
@@ -302,10 +335,47 @@ class Cartesian3DGrid(picmistandard.PICMI_Cartesian3DGrid):
 class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
     def init(self, kw):
         if self.method is not None:
-            stencil = {'Yee':0, 'CKC':1}[self.method]
+            stencil = {'Yee':0, 'CKC':1, 'PSATD':1, 'PSTD':0, 'GPSTD':0}[self.method]
         else:
             stencil = 0
-        self.solver = EM3D(stencil=stencil)
+
+        if self.method in ['PSATD','GPSTD','PSTD']: 
+        	ntsub=np.inf 
+        	spectral=1
+        	if self.stencil_order is None: 
+        		# If stencil order is not defined
+        		# By default, use infinite order stencil 
+        		stencil_order=[-1,-1,-1]
+        else: 
+        	ntsub=1
+        	spectral=0
+        	# If stencil_order not defined, 
+        	# use stencil_order=[2,2,2] by default
+        	if stencil_order is None: 
+        		stencil_order=[2,2,2]
+        		
+        if isinstance(self.source_smoother, BinomialSmoother): 
+            npass_smooth  = self.source_smoother.n_pass
+            alpha_smooth  = self.source_smoother.alpha
+            stride_smooth = self.source_smoother.stride
+            if (self.grid.number_of_dimensions==2): 
+                for i in range(len(npass_smooth[0])):
+                    npass_smooth[1][i]=0
+        else: 
+            npass_smooth  = [[ 0 ],[ 0 ],[ 0 ]]
+            alpha_smooth  = [[ 1.],[ 1.],[ 1.]]
+            stride_smooth = [[ 1 ],[ 1 ],[ 1 ]]  			
+        self.solver = EM3DFFT(stencil=stencil, 
+                              norderx=self.stencil_order[0], 
+                              nordery=self.stencil_order[1], 
+                              norderz=self.stencil_order[2], 
+                              ntsub=ntsub, 
+                              l_2dxz=self.grid.number_of_dimensions==2, 
+                              l_1dz=self.grid.number_of_dimensions==1, 
+                              spectral=spectral, 
+                              npass_smooth=npass_smooth,
+                              alpha_smooth=alpha_smooth, 
+                              stride_smooth=stride_smooth)
         registersolver(self.solver)
 
 
