@@ -435,6 +435,9 @@ class Simulation(picmistandard.PICMI_Simulation):
         for i in range(len(self.lasers)):
             self.lasers[i].initialize_inputs(self.solver, self.laser_injection_methods[i])
 
+        for diag in self.diagnostics:
+            diag.initialize_inputs(emsolver=self.solver)
+
     def step(self, nsteps=1):
         self.initilize_inputs()
         step(nsteps)
@@ -444,8 +447,9 @@ class Simulation(picmistandard.PICMI_Simulation):
         pass
 
 class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic): 
-	def init(self, kw):
+	def initialize_inputs(self,**kwargs):
 		species_dict=dict()
+		# Check if self.species is a Species object or [Species]
 		if isinstance(self.species,list): 
 		    for sp in self.species: 
 		    	if isinstance(sp,Species):
@@ -453,8 +457,10 @@ class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic):
 		else: 
 			if isinstance(self.species,Species):
 				species_dict[self.species.name]=self.species.wspecies
-
-		self.diag=openpmd_diag.ParticleDiagnostic( period=self.period, 
+		self.species_dict=species_dict 
+		
+		# Init Warp diag
+		diag_part = openpmd_diag.ParticleDiagnostic( period=self.period, 
                                       top=top, w3d=w3d,
                                       species=species_dict,
                                       comm_world=comm_world,
@@ -462,6 +468,18 @@ class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic):
                                       iteration_min=self.step_min,
                                       iteration_max=self.step_max,
                                       write_dir=self.write_dir)
+        # Install after step 
+		installafterstep( diag_part.write )
 
 class FieldDiagnostic(picmistandard.PICMI_FieldDiagnostic): 
-	pass
+	def initialize_inputs(self,emsolver=None):
+	    diag_field = openpmd_diag.FieldDiagnostic( period=self.period, 
+                                      top=top, w3d=w3d,
+                                      em=emsolver.solver,
+                                      comm_world=comm_world,
+                                      fieldtypes=self.data_list,
+                                      iteration_min=self.step_min,
+                                      iteration_max=self.step_max,
+                                      write_dir=self.write_dir)
+	    # Install after step 
+	    installafterstep( diag_field.write )
