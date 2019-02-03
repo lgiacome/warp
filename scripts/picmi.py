@@ -337,19 +337,24 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
             stencil = 0
 
         if self.method in ['PSATD','GPSTD','PSTD']: 
-            ntsub = np.inf 
             spectral = 1
             if self.stencil_order is None: 
                 # If stencil order is not defined
                 # By default, use infinite order stencil 
-                stencil_order = [-1,-1,-1]
+                self.stencil_order = [-1,-1,-1]
+            if self.method=='PSATD': 
+                ntsub=np.inf 
+            elif self.method=='PSTD':
+                 ntsub=1
+            elif self.method=='GPSTD':
+                 ntsub=2
         else: 
             ntsub = 1
             spectral = 0
             # If stencil_order not defined, 
             # use stencil_order=[2,2,2] by default
-            if stencil_order is None: 
-                stencil_order = [2,2,2]
+            if self.stencil_order is None: 
+                self.stencil_order = [2,2,2]
                 
         if isinstance(self.source_smoother, BinomialSmoother): 
             npass_smooth = self.source_smoother.n_pass
