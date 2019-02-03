@@ -260,7 +260,7 @@ class BinomialSmoother(picmistandard.PICMI_BinomialSmoother):
 class CylindricalGrid(picmistandard.PICMI_CylindricalGrid):
     def init(self, kw):
         raise Exception('PICMI WARP file does not support CylindricalGrid yet')
-
+    
 
 class Cartesian2DGrid(picmistandard.PICMI_Cartesian2DGrid):
     def init(self, kw):
@@ -279,7 +279,7 @@ class Cartesian2DGrid(picmistandard.PICMI_Cartesian2DGrid):
                         'periodic':warp.periodic,
                         'open':warp.openbc}
         self.bounds = [bc_dict[self.lower_boundary_conditions[0]], 
-        			   bc_dict[self.upper_boundary_conditions[0]],
+                       bc_dict[self.upper_boundary_conditions[0]],
                        bc_dict[self.lower_boundary_conditions[1]], 
                        bc_dict[self.upper_boundary_conditions[1]]]
         w3d.boundxy = self.bounds[1]
@@ -314,7 +314,7 @@ class Cartesian3DGrid(picmistandard.PICMI_Cartesian3DGrid):
                         'periodic':warp.periodic,
                         'open':warp.openbc}
         self.bounds = [bc_dict[self.lower_boundary_conditions[0]], 
-        			   bc_dict[self.upper_boundary_conditions[0]],
+                       bc_dict[self.upper_boundary_conditions[0]],
                        bc_dict[self.lower_boundary_conditions[1]], 
                        bc_dict[self.upper_boundary_conditions[1]],
                        bc_dict[self.lower_boundary_conditions[2]], 
@@ -342,20 +342,20 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
             stencil = 0
 
         if self.method in ['PSATD','GPSTD','PSTD']: 
-        	ntsub=np.inf 
-        	spectral=1
-        	if self.stencil_order is None: 
-        		# If stencil order is not defined
-        		# By default, use infinite order stencil 
-        		stencil_order=[-1,-1,-1]
+            ntsub=np.inf 
+            spectral=1
+            if self.stencil_order is None: 
+                # If stencil order is not defined
+                # By default, use infinite order stencil 
+                stencil_order=[-1,-1,-1]
         else: 
-        	ntsub=1
-        	spectral=0
-        	# If stencil_order not defined, 
-        	# use stencil_order=[2,2,2] by default
-        	if stencil_order is None: 
-        		stencil_order=[2,2,2]
-        		
+            ntsub=1
+            spectral=0
+            # If stencil_order not defined, 
+            # use stencil_order=[2,2,2] by default
+            if stencil_order is None: 
+                stencil_order=[2,2,2]
+                
         if isinstance(self.source_smoother, BinomialSmoother): 
             npass_smooth  = self.source_smoother.n_pass
             alpha_smooth  = self.source_smoother.alpha
@@ -366,7 +366,7 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
         else: 
             npass_smooth  = [[ 0 ],[ 0 ],[ 0 ]]
             alpha_smooth  = [[ 1.],[ 1.],[ 1.]]
-            stride_smooth = [[ 1 ],[ 1 ],[ 1 ]]  	
+            stride_smooth = [[ 1 ],[ 1 ],[ 1 ]]      
             
         self.solver = EM3DFFT(stencil=stencil, 
                               norderx=self.stencil_order[0], 
@@ -447,20 +447,20 @@ class Simulation(picmistandard.PICMI_Simulation):
         pass
 
 class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic): 
-	def initialize_inputs(self,**kwargs):
-		species_dict=dict()
-		# Check if self.species is a Species object or [Species]
-		if isinstance(self.species,list): 
-		    for sp in self.species: 
-		    	if isinstance(sp,Species):
-		    	    species_dict[sp.name]=sp.wspecies
-		else: 
-			if isinstance(self.species,Species):
-				species_dict[self.species.name]=self.species.wspecies
-		self.species_dict=species_dict 
-		
-		# Init Warp diag
-		diag_part = openpmd_diag.ParticleDiagnostic( period=self.period, 
+    def initialize_inputs(self,**kwargs):
+        species_dict=dict()
+        # Check if self.species is a Species object or [Species]
+        if isinstance(self.species,list): 
+            for sp in self.species: 
+                if isinstance(sp,Species):
+                    species_dict[sp.name]=sp.wspecies
+        else: 
+            if isinstance(self.species,Species):
+                species_dict[self.species.name]=self.species.wspecies
+        self.species_dict=species_dict 
+        
+        # Init Warp diag
+        diag_part = openpmd_diag.ParticleDiagnostic( period=self.period, 
                                       top=top, w3d=w3d,
                                       species=species_dict,
                                       comm_world=comm_world,
@@ -469,11 +469,11 @@ class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic):
                                       iteration_max=self.step_max,
                                       write_dir=self.write_dir)
         # Install after step 
-		installafterstep( diag_part.write )
+        installafterstep( diag_part.write )
 
 class FieldDiagnostic(picmistandard.PICMI_FieldDiagnostic): 
-	def initialize_inputs(self,emsolver=None):
-	    diag_field = openpmd_diag.FieldDiagnostic( period=self.period, 
+    def initialize_inputs(self,emsolver=None):
+        diag_field = openpmd_diag.FieldDiagnostic( period=self.period, 
                                       top=top, w3d=w3d,
                                       em=emsolver.solver,
                                       comm_world=comm_world,
@@ -481,5 +481,5 @@ class FieldDiagnostic(picmistandard.PICMI_FieldDiagnostic):
                                       iteration_min=self.step_min,
                                       iteration_max=self.step_max,
                                       write_dir=self.write_dir)
-	    # Install after step 
-	    installafterstep( diag_field.write )
+        # Install after step 
+        installafterstep( diag_field.write )
