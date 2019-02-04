@@ -231,8 +231,7 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
                                     vthx=ux_th, vthy=uy_th, vthz=uz_th,
                                     vxmean=ux_m, vymean=uy_m, vzmean=uz_m,
                                     lmomentum=1, spacing='random',
-                                    lallindomain=warp.true,
-                                    w=w)
+                                    lallindomain=warp.true, w=w)
 
 
 class ParticleListDistribution(picmistandard.PICMI_ParticleListDistribution):
@@ -341,44 +340,44 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
             if self.stencil_order is None: 
                 # If stencil order is not defined
                 # By default, use infinite order stencil 
-                self.stencil_order = [-1,-1,-1]
-            if self.method=='PSATD': 
-                ntsub=np.inf 
-            elif self.method=='PSTD':
-                 ntsub=1
-            elif self.method=='GPSTD':
-                 ntsub=2
+                self.stencil_order = [-1, -1, -1]
+            if self.method == 'PSATD': 
+                ntsub = np.inf 
+            elif self.method == 'PSTD':
+                ntsub = 1
+            elif self.method == 'GPSTD':
+                ntsub = 2
         else: 
             ntsub = 1
             spectral = 0
             # If stencil_order not defined, 
-            # use stencil_order=[2,2,2] by default
+            # use stencil_order = [2, 2, 2] by default
             if self.stencil_order is None: 
-                self.stencil_order = [2,2,2]
+                self.stencil_order = [2, 2, 2]
                 
         if isinstance(self.source_smoother, BinomialSmoother): 
             npass_smooth = self.source_smoother.n_pass
             alpha_smooth = self.source_smoother.alpha
             stride_smooth = self.source_smoother.stride
-            if (self.grid.number_of_dimensions==2): 
+            if (self.grid.number_of_dimensions == 2): 
                 for i in range(len(npass_smooth[0])):
-                    npass_smooth[1][i]=0
+                    npass_smooth[1][i] = 0
         else: 
-            npass_smooth = [[ 0 ],[ 0 ],[ 0 ]]
-            alpha_smooth = [[ 1.],[ 1.],[ 1.]]
-            stride_smooth = [[ 1 ],[ 1 ],[ 1 ]]      
+            npass_smooth = [[ 0 ], [ 0 ], [ 0 ]]
+            alpha_smooth = [[ 1.], [ 1.], [ 1.]]
+            stride_smooth = [[ 1 ], [ 1 ], [ 1 ]]      
             
         self.solver = EM3DFFT(stencil=stencil, 
-                              norderx=self.stencil_order[0], 
-                              nordery=self.stencil_order[1], 
-                              norderz=self.stencil_order[2], 
+                              norderx = self.stencil_order[0], 
+                              nordery = self.stencil_order[1], 
+                              norderz = self.stencil_order[2], 
                               ntsub=ntsub, 
-                              l_2dxz=self.grid.number_of_dimensions==2, 
-                              l_1dz=self.grid.number_of_dimensions==1, 
-                              spectral=spectral, 
-                              npass_smooth=npass_smooth,
-                              alpha_smooth=alpha_smooth, 
-                              stride_smooth=stride_smooth)
+                              l_2dxz = self.grid.number_of_dimensions == 2, 
+                              l_1dz = self.grid.number_of_dimensions == 1, 
+                              spectral = spectral, 
+                              npass_smooth = npass_smooth,
+                              alpha_smooth = alpha_smooth, 
+                              stride_smooth = stride_smooth)
         registersolver(self.solver)
 
 
@@ -436,7 +435,7 @@ class Simulation(picmistandard.PICMI_Simulation):
             self.lasers[i].initialize_inputs(self.solver, self.laser_injection_methods[i])
 
         for diag in self.diagnostics:
-            diag.initialize_inputs(emsolver=self.solver)
+            diag.initialize_inputs(emsolver = self.solver)
 
     def step(self, nsteps=1):
         self.initilize_inputs()
@@ -452,15 +451,15 @@ class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic):
         # Check if self.species is a Species object or an iterable of Specie
         if np.iterable(self.species): 
             for sp in self.species: 
-                if isinstance(sp,Species):
+                if isinstance(sp, Species):
                     species_dict[sp.name] = sp.wspecies
         else: 
-            if isinstance(self.species,Species):
+            if isinstance(self.species, Species):
                 species_dict[self.species.name] = self.species.wspecies
         self.species_dict = species_dict 
         
         # Init Warp diag
-        diag_part = openpmd_diag.ParticleDiagnostic( period=self.period, 
+        diag_part = openpmd_diag.ParticleDiagnostic(period=self.period, 
                                       top=top, w3d=w3d,
                                       species=species_dict,
                                       comm_world=comm_world,
@@ -472,8 +471,8 @@ class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic):
         installafterstep(diag_part.write)
 
 class FieldDiagnostic(picmistandard.PICMI_FieldDiagnostic): 
-    def initialize_inputs(self,emsolver=None):
-        diag_field = openpmd_diag.FieldDiagnostic( period=self.period, 
+    def initialize_inputs(self, emsolver=None):
+        diag_field = openpmd_diag.FieldDiagnostic(period=self.period, 
                                       top=top, w3d=w3d,
                                       em=emsolver.solver,
                                       comm_world=comm_world,
