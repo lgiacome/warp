@@ -449,8 +449,8 @@ class Simulation(picmistandard.PICMI_Simulation):
 class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic): 
     def initialize_inputs(self,**kwargs):
         species_dict = dict()
-        # Check if self.species is a Species object or [Species]
-        if isinstance(self.species,list): 
+        # Check if self.species is a Species object or an iterable of Specie
+        if np.iterable(self.species): 
             for sp in self.species: 
                 if isinstance(sp,Species):
                     species_dict[sp.name] = sp.wspecies
