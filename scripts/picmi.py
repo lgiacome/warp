@@ -5,6 +5,8 @@ import picmistandard
 import numpy as np
 from .warp import *
 from .init_tools.plasma_initialization import PlasmaInjector
+from .field_solvers.em3dsolverFFT import *
+from .data_dumping import openpmd_diag
 import warp
 
 codename = 'warp'
@@ -229,8 +231,7 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
                                     vthx=ux_th, vthy=uy_th, vthz=uz_th,
                                     vxmean=ux_m, vymean=uy_m, vzmean=uz_m,
                                     lmomentum=1, spacing='random',
-                                    lallindomain=warp.true,
-                                    w=w)
+                                    lallindomain=warp.true, w=w)
 
 
 class ParticleListDistribution(picmistandard.PICMI_ParticleListDistribution):
@@ -257,12 +258,40 @@ class BinomialSmoother(picmistandard.PICMI_BinomialSmoother):
 
 class CylindricalGrid(picmistandard.PICMI_CylindricalGrid):
     def init(self, kw):
-        raise Exception('WarpX does not support CylindricalGrid yet')
-
+        raise Exception('PICMI WARP file does not support CylindricalGrid yet')
+    
 
 class Cartesian2DGrid(picmistandard.PICMI_Cartesian2DGrid):
     def init(self, kw):
-        raise Exception('WarpX does not support Cartesian2DGrid yet')
+        w3d.nx = self.nx
+        w3d.ny = 2
+        w3d.nz = self.ny
+        w3d.xmmin = self.xmin
+        w3d.xmmax = self.xmax
+        w3d.ymmin = -float(w3d.ny)/2.
+        w3d.ymmax = float(w3d.ny)/2.
+        w3d.zmmin = self.ymin
+        w3d.zmmax = self.ymax
+
+        bc_dict = {'dirichlet':warp.dirichlet,
+                        'neumann':warp.neumann,
+                        'periodic':warp.periodic,
+                        'open':warp.openbc}
+        self.bounds = [bc_dict[self.lower_boundary_conditions[0]], bc_dict[self.upper_boundary_conditions[0]],
+                       bc_dict[self.lower_boundary_conditions[1]], bc_dict[self.upper_boundary_conditions[1]]]
+        w3d.boundxy = self.bounds[1]
+        w3d.bound0 = self.bounds[2]
+        w3d.boundnz = self.bounds[3]
+        top.pboundxy = self.bounds[1]
+        top.pbound0 = self.bounds[2]
+        top.pboundnz = self.bounds[3]
+        if top.pboundxy == warp.openbc: top.pboundxy = warp.absorb
+        if top.pbound0 == warp.openbc: top.pbound0 = warp.absorb
+        if top.pboundnz == warp.openbc: top.pboundnz = warp.absorb
+
+        if self.moving_window_velocity is not None:
+            top.vbeam = top.vbeamfrm = self.moving_window_velocity[1]
+            top.lgridqnt = true
 
 
 class Cartesian3DGrid(picmistandard.PICMI_Cartesian3DGrid):
@@ -302,10 +331,60 @@ class Cartesian3DGrid(picmistandard.PICMI_Cartesian3DGrid):
 class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
     def init(self, kw):
         if self.method is not None:
-            stencil = {'Yee':0, 'CKC':1}[self.method]
+            # Stencil controls the courant condition for each solver in WARP
+            # Yee solver: stencil = 0 (cdt=1./sqrt(d) dx, where d is dimensionality) 
+            # CKC, PSATD solvers: stencil=1 (cdt=dx)
+            # N.B: For PSTD solvers and GPSTD solvers the courant condition depends on 
+            # the solver order and is currently not automatically implemented in WARP. 
+            # In this case and by default, we currently set stencil=0 for these solvers 
+            # as well as other solvers. 
+            stencil = {'Yee':0, 'CKC':1, 'PSATD':1, 'PSTD':0, 'GPSTD':0}[self.method]
         else:
             stencil = 0
-        self.solver = EM3D(stencil=stencil)
+
+        if self.method in ['PSATD','GPSTD','PSTD']: 
+            spectral = 1
+            if self.stencil_order is None: 
+                # If stencil order is not defined
+                # By default, use infinite order stencil 
+                self.stencil_order = [-1, -1, -1]
+            if self.method == 'PSATD': 
+                ntsub = np.inf 
+            elif self.method == 'PSTD':
+                ntsub = 1
+            elif self.method == 'GPSTD':
+                ntsub = 2
+        else: 
+            ntsub = 1
+            spectral = 0
+            # If stencil_order not defined, 
+            # use stencil_order = [2, 2, 2] by default
+            if self.stencil_order is None: 
+                self.stencil_order = [2, 2, 2]
+                
+        if isinstance(self.source_smoother, BinomialSmoother): 
+            npass_smooth = self.source_smoother.n_pass
+            alpha_smooth = self.source_smoother.alpha
+            stride_smooth = self.source_smoother.stride
+            if (self.grid.number_of_dimensions == 2): 
+                for i in range(len(npass_smooth[0])):
+                    npass_smooth[1][i] = 0
+        else: 
+            npass_smooth = [[ 0 ], [ 0 ], [ 0 ]]
+            alpha_smooth = [[ 1.], [ 1.], [ 1.]]
+            stride_smooth = [[ 1 ], [ 1 ], [ 1 ]]      
+            
+        self.solver = EM3DFFT(stencil=stencil, 
+                              norderx = self.stencil_order[0], 
+                              nordery = self.stencil_order[1], 
+                              norderz = self.stencil_order[2], 
+                              ntsub=ntsub, 
+                              l_2dxz = self.grid.number_of_dimensions == 2, 
+                              l_1dz = self.grid.number_of_dimensions == 1, 
+                              spectral = spectral, 
+                              npass_smooth = npass_smooth,
+                              alpha_smooth = alpha_smooth, 
+                              stride_smooth = stride_smooth)
         registersolver(self.solver)
 
 
@@ -362,6 +441,9 @@ class Simulation(picmistandard.PICMI_Simulation):
         for i in range(len(self.lasers)):
             self.lasers[i].initialize_inputs(self.solver, self.laser_injection_methods[i])
 
+        for diag in self.diagnostics:
+            diag.initialize_inputs(emsolver = self.solver)
+
     def step(self, nsteps=1):
         self.initilize_inputs()
         step(nsteps)
@@ -370,3 +452,40 @@ class Simulation(picmistandard.PICMI_Simulation):
         self.initilize_inputs()
         pass
 
+class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic): 
+    def initialize_inputs(self,**kwargs):
+        species_dict = dict()
+        # Check if self.species is a Species object or an iterable of Specie
+        if np.iterable(self.species): 
+            for sp in self.species: 
+                if isinstance(sp, Species):
+                    species_dict[sp.name] = sp.wspecies
+        else: 
+            if isinstance(self.species, Species):
+                species_dict[self.species.name] = self.species.wspecies
+        self.species_dict = species_dict 
+        
+        # Init Warp diag
+        diag_part = openpmd_diag.ParticleDiagnostic(period=self.period, 
+                                      top=top, w3d=w3d,
+                                      species=species_dict,
+                                      comm_world=comm_world,
+                                      particle_data=self.data_list,
+                                      iteration_min=self.step_min,
+                                      iteration_max=self.step_max,
+                                      write_dir=self.write_dir)
+        # Install after step 
+        installafterstep(diag_part.write)
+
+class FieldDiagnostic(picmistandard.PICMI_FieldDiagnostic): 
+    def initialize_inputs(self, emsolver=None):
+        diag_field = openpmd_diag.FieldDiagnostic(period=self.period, 
+                                      top=top, w3d=w3d,
+                                      em=emsolver.solver,
+                                      comm_world=comm_world,
+                                      fieldtypes=self.data_list,
+                                      iteration_min=self.step_min,
+                                      iteration_max=self.step_max,
+                                      write_dir=self.write_dir)
+        # Install after step 
+        installafterstep(diag_field.write)
