@@ -331,6 +331,13 @@ class Cartesian3DGrid(picmistandard.PICMI_Cartesian3DGrid):
 class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
     def init(self, kw):
         if self.method is not None:
+            # Stencil controls the courant condition for each solver in WARP
+            # Yee solver: stencil = 0 (cdt=1./sqrt(d) dx, where d is dimensionality) 
+            # CKC, PSATD solver: stencil=1 (cdt=dx)
+            # N.B: For PSTD solvers and GPSTD solvers the courant condition depends on 
+            # the solver order and is currently not automatically implemented in WARP. 
+            # In this case and by default, we currently set stencil=0 for these solvers 
+            # as well as other solvers. 
             stencil = {'Yee':0, 'CKC':1, 'PSATD':1, 'PSTD':0, 'GPSTD':0}[self.method]
         else:
             stencil = 0
