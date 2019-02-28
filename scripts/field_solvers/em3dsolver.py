@@ -3126,6 +3126,7 @@ class EM3D(SubcycledPoissonSolver):
             pg = top.pgroup
         np = pg.nps[js]
         if np==0:return
+        setuppgroup(pg)
         il = pg.ins[js]-1
         iu = il+pg.nps[js]
         dt = top.dt*dtmult
