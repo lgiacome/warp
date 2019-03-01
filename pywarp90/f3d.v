@@ -913,6 +913,10 @@ cosqx(a:real,w:real,c:real,nx:integer,ny:integer,
 cosqy(a:real,w:real,c:real,nx:integer,ny:integer,
       nxguardphi:integer,nyguardphi:integer,
       isetup:integer,isign:integer) subroutine
+vrpft2   (a:real, b:real, n:integer, incp:integer, lenv:integer, lfd:integer)  subroutine
+         #  Vectorized Real Periodic Fourier Transform, 2 at a time
+vrpfti2  (a:real, b:real, n:integer, incp:integer, lenv:integer, lfd:integer)  subroutine
+         #  Vectorized Real Periodic Fourier Transform Inverse, 2 at a time
 vcpft(r:real,i:real,n:integer,incp:integer,signp:integer,lenv:integer,
       lfd:integer) subroutine
 attenuate(nx:integer,ny:integer,nz:integer,

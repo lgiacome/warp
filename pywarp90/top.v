@@ -3312,12 +3312,6 @@ dvbksb(u:real,w:real,v:real,m:integer,n:integer,mp:integer,np:integer,
        b:real,x:real,tmp:real) subroutine
        # singular value back-substitution routine for solution of matrix 
        # problems                                          (in util.m)
-vrpft2   (a:real, b:real, n, incp, lenv, lfd)  subroutine
-         #  Vectorized Real Periodic Fourier Transform, 2 at a time
-vrpfti2  (a:real, b:real, n, incp, lenv, lfd)  subroutine
-         #  Vectorized Real Periodic Fourier Transform Inverse, 2 at a time
-vcpft    (re:real, im:real, n, incp, signp:real, lenv, lfd) subroutine
-         #  Vectorized Complex Periodic Fourier Transform
 writarry(nn,arry:real,filename:string) subroutine # write array to file
 wtime() real function # returns current absolute CPU time
 wtimeon()  subroutine # turns timer on
