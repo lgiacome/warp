@@ -41,23 +41,27 @@ RUN git clone https://bitbucket.org/dpgrote/pygist.git \
 RUN useradd --create-home warp_user
 RUN mkdir /home/warp_user/warp/
 COPY ./ /home/warp_user/warp/
+
+# Compile warp
+RUN cd /home/warp_user/warp/pywarp90 \
+    && rm -f *local* \
+    && echo 'FCOMP= -F gfortran' >> Makefile.local3 \
+    && echo 'FCOMP= -F gfortran' >> Makefile.local3.pympi \
+    && echo 'FCOMPEXEC= --fcompexec mpifort' >> Makefile.local3.pympi \
+    && make install3 \
+    && make clean3 \
+    && make pinstall3 \
+    && make pclean3
+
 RUN chown -R warp_user /home/warp_user/warp/
+RUN chgrp -R warp_user /home/warp_user/warp/
+
 # Grant sudo access without password
 RUN echo 'warp_user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 # Switch to the new user
 WORKDIR /home/warp_user
 USER warp_user
-
-# Compile warp
-RUN cd warp/pywarp90 \
-    && echo 'FCOMP= -F gfortran' >> Makefile.local3 \
-    && echo 'FCOMP= -F gfortran' >> Makefile.local3.pympi \
-    && echo 'FCOMPEXEC= --fcompexec mpifort' >> Makefile.local3.pympi \
-    && make install3 INSTALLOPTIONS=--user \
-    && make clean3 \
-    && make pinstall3 INSTALLOPTIONS=--user \
-    && make pclean3
 
 # This is needed to get around a bug in openmpi that would print copious error messages
 # Unfortunately, this turns off CMA and uses shared memory for communication.
