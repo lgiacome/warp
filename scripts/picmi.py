@@ -4,7 +4,9 @@ import re
 import picmistandard
 import numpy as np
 from .warp import *
+from .init_tools.boost_tools import BoostConverter
 from .init_tools.plasma_initialization import PlasmaInjector
+from .init_tools.beam_tools import initialize_beam_fields
 from .field_solvers.em3dsolverFFT import *
 from .data_dumping import openpmd_diag
 import warp
@@ -55,7 +57,7 @@ class Species(picmistandard.PICMI_Species):
                                      lvariableweights = True,
                                      weight = 1.)
 
-    def initialize_inputs(self, layout):
+    def initialize_species_inputs(self, layout):
 
         if self.particle_shape is not None:
             if isinstance(self.particle_shape, str):
@@ -106,30 +108,46 @@ class GaussianBunchDistribution(picmistandard.PICMI_GaussianBunchDistribution):
 class UniformDistribution(picmistandard.PICMI_UniformDistribution):
     def loaddistribution(self, species, layout):
         xmin = self.lower_bound[0]
-        if xmin is None: xmin = w3d.xmmin
+        if xmin is None:
+            xmin = -largepos
         ymin = self.lower_bound[1]
-        if ymin is None: ymin = w3d.ymmin
+        if ymin is None:
+            ymin = -largepos
         zmin = self.lower_bound[2]
-        if zmin is None: zmin = w3d.zmmin
+        if zmin is None:
+            zmin = -largepos
         xmax = self.upper_bound[0]
-        if xmax is None: xmax = w3d.xmmax
+        if xmax is None:
+            xmax = +largepos
         ymax = self.upper_bound[1]
-        if ymax is None: ymax = w3d.ymmax
+        if ymax is None:
+            ymax = +largepos
         zmax = self.upper_bound[2]
-        if zmax is None: zmax = w3d.zmmax
+        if zmax is None:
+            zmax = +largepos
         ux_th = self.rms_velocity[0]
         uy_th = self.rms_velocity[1]
         uz_th = self.rms_velocity[2]
         ux_m = self.directed_velocity[0]
         uy_m = self.directed_velocity[1]
         uz_m = self.directed_velocity[2]
+
+        density = self.density
+
+        if top.boost_gamma > 1.:
+            boost = BoostConverter(top.boost_gamma)
+            beta = uz_m/sqrt(1. + uz_m**2)
+            zmin, zmax = boost.copropag_length([zmin, zmax], beta_object=beta)
+            density, = boost.copropag_density([density], beta_object=beta)
+            uz_m, = boost.longitudinal_momentum([uz_m])
+
         if isinstance(layout, GriddedLayout):
             # --- Note that layout.grid is ignored
             p_nx = layout.n_macroparticle_per_cell[0]
             p_ny = layout.n_macroparticle_per_cell[1]
             p_nz = layout.n_macroparticle_per_cell[2]
 
-            npreal_per_cell = self.density*w3d.dx*w3d.dy*w3d.dz
+            npreal_per_cell = density*w3d.dx*w3d.dy*w3d.dz
             w = npreal_per_cell/(p_nx*p_ny*p_nz)
             def dens_func(x, y, z, w=w):
                 return w
@@ -140,7 +158,7 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
                 injection_direction = -1
             plasmainjector = PlasmaInjector(elec=species, ions=None, w3d=w3d, top=top, dim='3d',
                                             p_nx=p_nx, p_ny=p_ny, p_nz=p_nz,
-                                            p_xmin=xmin, p_ymin=xmin, p_zmin=zmin,
+                                            p_xmin=xmin, p_ymin=ymin, p_zmin=zmin,
                                             p_xmax=xmax, p_ymax=ymax, p_zmax=zmax,
                                             dens_func=dens_func,
                                             ux_m=ux_m, uy_m=uy_m, uz_m=uz_m,
@@ -151,11 +169,20 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
 
         elif isinstance(layout, PseudoRandomLayout):
             assert not self.fill_in, Exception('Warp does not support fill_in with PseudoRandomLayout')
+            # For this option, the mins and maxs must be bounded by the domain
+            xmin = max(xmin, w3d.xmmin)
+            xmax = min(xmax, w3d.xmmax)
+            ymin = max(ymin, w3d.ymmin)
+            ymax = min(ymax, w3d.ymmax)
+            zmin = max(zmin, w3d.zmmin)
+            zmax = min(zmax, w3d.zmmax)
+            # Determine the number of particles to load
             if layout.n_macroparticles_per_cell is not None:
                 np = layout.n_macroparticles_per_cell*w3d.nx*w3d.ny*w3d.nz
             elif layout.n_macroparticles is not None:
                 np = layout.n_macroparticles
-            npreal = self.density*(xmax - xmin)*(ymax - ymin)*(zmax - zmin)
+            # The particle weight
+            npreal = density*(xmax - xmin)*(ymax - ymin)*(zmax - zmin)
             w = np.full(np, npreal/np)
             species.add_uniform_box(np=np, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
                                     vthx=ux_th, vthy=uy_th, vthz=uz_th,
@@ -168,23 +195,40 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
 class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
     def loaddistribution(self, species, layout):
         xmin = self.lower_bound[0]
-        if xmin is None: xmin = w3d.xmmin
+        if xmin is None:
+            xmin = -largepos
         ymin = self.lower_bound[1]
-        if ymin is None: ymin = w3d.ymmin
+        if ymin is None:
+            ymin = -largepos
         zmin = self.lower_bound[2]
-        if zmin is None: zmin = w3d.zmmin
+        if zmin is None:
+            zmin = -largepos
         xmax = self.upper_bound[0]
-        if xmax is None: xmax = w3d.xmmax
+        if xmax is None:
+            xmax = +largepos
         ymax = self.upper_bound[1]
-        if ymax is None: ymax = w3d.ymmax
+        if ymax is None:
+            ymax = +largepos
         zmax = self.upper_bound[2]
-        if zmax is None: zmax = w3d.zmmax
+        if zmax is None:
+            zmax = +largepos
         ux_th = self.rms_velocity[0]
         uy_th = self.rms_velocity[1]
         uz_th = self.rms_velocity[2]
         ux_m = self.directed_velocity[0]
         uy_m = self.directed_velocity[1]
         uz_m = self.directed_velocity[2]
+
+        if top.boost_gamma > 1.:
+            boost = BoostConverter(top.boost_gamma)
+            beta = uz_m/sqrt(1. + uz_m**2)
+            zmin, zmax = boost.copropag_length([zmin, zmax], beta_object=beta)
+            density_boost_converter, = boost.copropag_density([1.], beta_object=beta)
+            z_boost_converter, = boost.copropag_length([1.], beta_object=beta)
+            uz_m, = boost.longitudinal_momentum([uz_m])
+        else:
+            density_boost_converter = 1.
+
         if isinstance(layout, GriddedLayout):
             # --- Note that layout.grid is ignored
             p_nx = layout.n_macroparticle_per_cell[0]
@@ -192,13 +236,17 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
             p_nz = layout.n_macroparticle_per_cell[2]
 
             if isinstance(self.density_expression, str):
-                cell_volume_per_particle = w3d.dx*w3d.dy*w3d.dz/(p_nx*p_ny*p_nz)
-                def dens_func(x, y, z, density=self.density_expression, cell_volume_per_particle=cell_volume_per_particle):
+                cell_volume_per_particle = w3d.dx*w3d.dy*w3d.dz/(p_nx*p_ny*p_nz)*density_boost_converter
+                def dens_func(x, y, z, density=self.density_expression, cell_volume_per_particle=cell_volume_per_particle, z_boost_converter=z_boost_converter):
                     # --- Include globals so that numpy is available
-                    d = eval(density, locals(), globals())
+                    if top.boost_gamma > 1.:
+                        z = z/z_boost_converter
+                    dct = locals()
+                    dct.update(self.user_defined_kw)
+                    d = eval(density, globals(), dct)
                     return d*cell_volume_per_particle
             else:
-                npreal_per_cell = self.density_expression*w3d.dx*w3d.dy*w3d.dz
+                npreal_per_cell = self.density_expression*w3d.dx*w3d.dy*w3d.dz*density_boost_converter
                 w = npreal_per_cell/(p_nx*p_ny*p_nz)
                 def dens_func(x, y, z, w=w):
                     return w
@@ -209,7 +257,7 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
                 injection_direction = -1
             plasmainjector = PlasmaInjector(elec=species, ions=None, w3d=w3d, top=top, dim='3d',
                                             p_nx=p_nx, p_ny=p_ny, p_nz=p_nz,
-                                            p_xmin=xmin, p_ymin=xmax, p_zmin=zmin,
+                                            p_xmin=xmin, p_ymin=ymin, p_zmin=zmin,
                                             p_xmax=xmax, p_ymax=ymax, p_zmax=zmax,
                                             dens_func=dens_func,
                                             ux_m=ux_m, uy_m=uy_m, uz_m=uz_m,
@@ -221,11 +269,20 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
         elif isinstance(layout, PseudoRandomLayout):
             assert not self.fill_in, Exception('Warp does not support fill_in with PseudoRandomLayout')
             assert not isinstance(self.density_expression, str), Exception('Warp does not support PseudoRandomLayout with nonuniform distribution')
+            # For this option, the mins and maxs must be bounded by the domain
+            xmin = max(xmin, w3d.xmmin)
+            xmax = min(xmax, w3d.xmmax)
+            ymin = max(ymin, w3d.ymmin)
+            ymax = min(ymax, w3d.ymmax)
+            zmin = max(zmin, w3d.zmmin)
+            zmax = min(zmax, w3d.zmmax)
+            # Determine the number of particles to load
             if layout.n_macroparticles_per_cell is not None:
                 np = layout.n_macroparticles_per_cell*w3d.nx*w3d.ny*w3d.nz
             elif layout.n_macroparticles is not None:
                 np = layout.n_macroparticles
-            npreal = self.density_expression*(xmax - xmin)*(ymax - ymin)*(zmax - zmin)
+            # The particle weight
+            npreal = self.density_expression*(xmax - xmin)*(ymax - ymin)*(zmax - zmin)*density_boost_converter
             w = np.full(np, npreal/np)
             species.add_uniform_box(np=np, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
                                     vthx=ux_th, vthy=uy_th, vthz=uz_th,
@@ -330,6 +387,12 @@ class Cartesian3DGrid(picmistandard.PICMI_Cartesian3DGrid):
 
 class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
     def init(self, kw):
+        self.l_correct_num_Cherenkov = kw.pop('warp_l_correct_num_Cherenkov', EM3D.__flaginputs__['l_correct_num_Cherenkov'])
+        self.type_rz_depose = kw.pop('warp_type_rz_depose', EM3D.__flaginputs__['type_rz_depose'])
+        self.l_setcowancoefs = kw.pop('warp_l_setcowancoefs', EM3D.__flaginputs__['l_setcowancoefs'])
+        self.l_getrho = kw.pop('warp_l_getrho', EM3D.__flaginputs__['l_getrho'])
+
+    def initialize_solver_inputs(self):
         if self.method is not None:
             # Stencil controls the courant condition for each solver in WARP
             # Yee solver: stencil = 0 (cdt=1./sqrt(d) dx, where d is dimensionality) 
@@ -378,24 +441,26 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
                               norderx = self.stencil_order[0], 
                               nordery = self.stencil_order[1], 
                               norderz = self.stencil_order[2], 
-                              ntsub=ntsub, 
+                              ntsub = ntsub, 
                               l_2dxz = self.grid.number_of_dimensions == 2, 
                               l_1dz = self.grid.number_of_dimensions == 1, 
                               spectral = spectral, 
                               npass_smooth = npass_smooth,
                               alpha_smooth = alpha_smooth, 
-                              stride_smooth = stride_smooth)
-        registersolver(self.solver)
+                              stride_smooth = stride_smooth,
+                              l_correct_num_Cherenkov = self.l_correct_num_Cherenkov,
+                              type_rz_depose = self.type_rz_depose,
+                              l_setcowancoefs = self.l_setcowancoefs,
+                              l_getrho = self.l_getrho)
 
 
 class ElectrostaticSolver(picmistandard.PICMI_ElectrostaticSolver):
-    def init(self, kw):
+    def initialize_solver_inputs(self):
         self.solver = MultiGrid3d()
-        registersolver(self.solver)
 
 
 class GaussianLaser(picmistandard.PICMI_GaussianLaser):
-    def initialize_inputs(self, solver, antenna):
+    def initialize_laser_inputs(self, solver, antenna, gamma_boost):
         from .init_tools import add_laser
         dim = '3d'
         if self.zeta is None: self.zeta = 0.
@@ -406,7 +471,7 @@ class GaussianLaser(picmistandard.PICMI_GaussianLaser):
                   self.centroid_position[2], self.focal_position[2],
                   lambda0=self.wavelength, theta_pol=self.polarization_angle, source_z=antenna_z0,
                   zeta=self.zeta, beta=self.beta, phi2=self.phi2, 
-                  gamma_boost=None, laser_file=None, laser_file_energy=None)
+                  gamma_boost=gamma_boost, laser_file=None, laser_file_energy=None)
 
 
 class LaserAntenna(picmistandard.PICMI_LaserAntenna):
@@ -422,38 +487,94 @@ class Simulation(picmistandard.PICMI_Simulation):
             # --- Setup the graphics if needed.
             setup()
 
+        self.lebcancel_pusher = kw.pop('warp_lebcancel_pusher', None)
+        self.initialize_solver_after_generate = kw.pop('warp_initialize_solver_after_generate', False)
+
         self.inputs_initialized = False
 
-    def initilize_inputs(self):
+    def initialize_sim_inputs(self):
         if self.inputs_initialized:
             return
 
         self.inputs_initialized = True
 
+        top.boost_gamma = self.gamma_boost
+
+        if self.gamma_boost > 1:
+            boost = BoostConverter(top.boost_gamma)
+            w3d.zmmin, w3d.zmmax = boost.copropag_length([w3d.zmmin, w3d.zmmax],
+                                                         beta_object = self.solver.grid.moving_window_velocity[-1]/c)
+
         for i in range(len(self.species)):
             if self.species[i].particle_shape is None:
                 self.species[i].particle_shape = self.particle_shape
-            self.species[i].initialize_inputs(self.layouts[i])
+            self.species[i].initialize_species_inputs(self.layouts[i])
+
+        if self.lebcancel_pusher is not None:
+            top.pgroup.lebcancel_pusher = lebcancel_pusher
+
+        if self.initialize_solver_after_generate:
+            # --- Turn off the field solver during the generate
+            top.fstype = -1
+        else:
+            self.solver.initialize_solver_inputs()
+            registersolver(self.solver.solver)
+            installparticleloader(self.initialize_beam_fields)
 
         package('w3d')
         generate()
 
+        if self.initialize_solver_after_generate:
+            self.solver.initialize_solver_inputs()
+            registersolver(self.solver.solver)
+            self.initialize_beam_fields()
+
         for i in range(len(self.lasers)):
-            self.lasers[i].initialize_inputs(self.solver, self.laser_injection_methods[i])
+            self.lasers[i].initialize_laser_inputs(self.solver, self.laser_injection_methods[i], self.gamma_boost)
 
         for diag in self.diagnostics:
-            diag.initialize_inputs(emsolver = self.solver)
+            diag.initialize_diag_inputs(sim = self)
+
+    def initialize_beam_fields(self):
+        """This generates the self-fields of any species with initialize_self_field True
+        It'll be called after all of the species are loaded, and before the field solver starts.
+        """
+        for i in range(len(self.species)):
+            if self.initialize_self_fields[i]:
+                dim = '%dd'%self.solver.grid.number_of_dimensions
+                initialize_beam_fields(self.solver.solver, dim, self.species[i].wspecies, w3d, top)
 
     def step(self, nsteps=1):
-        self.initilize_inputs()
+        self.initialize_sim_inputs()
         step(nsteps)
 
     def write_input_file(self, file_name='inputs'):
-        self.initilize_inputs()
+        self.initialize_sim_inputs()
         pass
 
+
+class FieldDiagnostic(picmistandard.PICMI_FieldDiagnostic): 
+    def initialize_diag_inputs(self, sim):
+        if any(self.lower_bound != self.grid.lower_bound) or any(self.upper_bound != self.grid.upper_bound):
+            print('Warning: Warp cannot return a subdomain. Bounds set to grid bounds')
+        sub_sampling = (np.array(self.grid.number_of_cells)/np.array(self.number_of_cells)).astype('l')
+        diag_field = openpmd_diag.FieldDiagnostic(period = self.period,
+                                                  top = top,
+                                                  w3d = w3d,
+                                                  em = sim.solver.solver,
+                                                  comm_world = comm_world,
+                                                  fieldtypes = self.data_list,
+                                                  iteration_min = self.step_min,
+                                                  iteration_max = self.step_max,
+                                                  sub_sampling = sub_sampling,
+                                                  lparallel_output = self.parallelio,
+                                                  write_dir = self.write_dir)
+        # Install after step 
+        installafterstep(diag_field.write)
+
+
 class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic): 
-    def initialize_inputs(self,**kwargs):
+    def initialize_diag_inputs(self, sim):
         species_dict = dict()
         # Check if self.species is a Species object or an iterable of Specie
         if np.iterable(self.species): 
@@ -466,26 +587,91 @@ class ParticleDiagnostic(picmistandard.PICMI_ParticleDiagnostic):
         self.species_dict = species_dict 
         
         # Init Warp diag
-        diag_part = openpmd_diag.ParticleDiagnostic(period=self.period, 
-                                      top=top, w3d=w3d,
-                                      species=species_dict,
-                                      comm_world=comm_world,
-                                      particle_data=self.data_list,
-                                      iteration_min=self.step_min,
-                                      iteration_max=self.step_max,
-                                      write_dir=self.write_dir)
+        diag_part = openpmd_diag.ParticleDiagnostic(period = self.period,
+                                                    top = top,
+                                                    w3d = w3d,
+                                                    species = species_dict,
+                                                    comm_world = comm_world,
+                                                    particle_data = self.data_list,
+                                                    iteration_min = self.step_min,
+                                                    iteration_max = self.step_max,
+                                                    lparallel_output = self.parallelio,
+                                                    write_dir = self.write_dir)
         # Install after step 
         installafterstep(diag_part.write)
 
-class FieldDiagnostic(picmistandard.PICMI_FieldDiagnostic): 
-    def initialize_inputs(self, emsolver=None):
-        diag_field = openpmd_diag.FieldDiagnostic(period=self.period, 
-                                      top=top, w3d=w3d,
-                                      em=emsolver.solver,
-                                      comm_world=comm_world,
-                                      fieldtypes=self.data_list,
-                                      iteration_min=self.step_min,
-                                      iteration_max=self.step_max,
-                                      write_dir=self.write_dir)
+
+class LabFrameFieldDiagnostic(picmistandard.PICMI_LabFrameFieldDiagnostic):
+    def init(self, kw):
+        self.diag_period = kw.pop('warp_diag_period', 20)
+
+    def initialize_diag_inputs(self, sim):
+        if self.grid.moving_window_velocity is not None:
+            v_lab = self.grid.moving_window_velocity[-1]
+        else:
+            v_lab = 0.
+        diag_field = openpmd_diag.BoostedFieldDiagnostic(zmin_lab = self.grid.zmin,
+                                                         zmax_lab = self.grid.zmax,
+                                                         v_lab = v_lab,
+                                                         dt_snapshots_lab = self.dt_snapshots,
+                                                         Ntot_snapshots_lab = self.num_snapshots,
+                                                         gamma_boost = sim.gamma_boost,
+                                                         period = self.diag_period,
+                                                         em = sim.solver.solver,
+                                                         top = top,
+                                                         w3d = w3d,
+                                                         comm_world = comm_world,
+                                                         fieldtypes = self.data_list,
+                                                         z_subsampling = self.z_subsampling,
+                                                         write_dir = self.write_dir,
+                                                         boost_dir = 1,
+                                                         lparallel_output = self.parallelio,
+                                                         t_min_lab = self.time_start,
+                                                         xmin_lab = None,
+                                                         xmax_lab = None,
+                                                         ymin_lab = None,
+                                                         ymax_lab = None)
         # Install after step 
         installafterstep(diag_field.write)
+
+
+class LabFrameParticleDiagnostic(picmistandard.PICMI_LabFrameParticleDiagnostic):
+    def init(self, kw):
+        self.diag_period = kw.pop('warp_diag_period', 20)
+
+    def initialize_diag_inputs(self, sim):
+        species_dict = dict()
+        # Check if self.species is a Species object or an iterable of Specie
+        if np.iterable(self.species): 
+            for sp in self.species: 
+                if isinstance(sp, Species):
+                    species_dict[sp.name] = sp.wspecies
+        else: 
+            if isinstance(self.species, Species):
+                species_dict[self.species.name] = self.species.wspecies
+        self.species_dict = species_dict 
+
+        if self.grid.moving_window_velocity is not None:
+            v_lab = self.grid.moving_window_velocity[-1]
+        else:
+            v_lab = 0.
+
+        diag_part = openpmd_diag.BoostedParticleDiagnostic(zmin_lab = self.grid.zmin,
+                                                           zmax_lab = self.grid.zmax,
+                                                           v_lab = v_lab,
+                                                           dt_snapshots_lab = self.dt_snapshots,
+                                                           Ntot_snapshots_lab = self.num_snapshots,
+                                                           gamma_boost = sim.gamma_boost,
+                                                           period = self.diag_period,
+                                                           em = sim.solver.solver,
+                                                           top = top,
+                                                           w3d = w3d,
+                                                           comm_world = comm_world,
+                                                           particle_data = self.data_list,
+                                                           select = None,
+                                                           write_dir = self.write_dir,
+                                                           species = species_dict,
+                                                           boost_dir = 1,
+                                                           lparallel_output = self.parallelio,
+                                                           t_min_lab = self.time_start)
+
