@@ -20,6 +20,9 @@ RUN apt-get update \
     python3-h5py \
     && rm -rf /var/lib/apt/lists/*
 
+# This is a bit of a hack so that the name "python" is defined.
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
 # openPMD-viewer is installed mainly for tests
 # Note: matplotlib is installed with pip since the apt-get install matplotlib
 #       needs the time zone to be set.
@@ -44,6 +47,7 @@ COPY ./ /home/warp_user/warp/
 
 # Compile warp
 RUN cd /home/warp_user/warp/pywarp90 \
+    && make cleanall \
     && rm -f *local* \
     && echo 'FCOMP= -F gfortran' >> Makefile.local3 \
     && echo 'FCOMP= -F gfortran' >> Makefile.local3.pympi \

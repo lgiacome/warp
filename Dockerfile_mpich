@@ -39,6 +39,9 @@ RUN cd /build/mpi4py-3.0.1 && python3 setup.py build && python3 setup.py install
 
 RUN /sbin/ldconfig
 
+# This is a bit of a hack so that the name "python" is defined.
+RUN ln -sf /usr/local/bin/python3 /usr/local/bin/python
+
 # openPMD-viewer is installed mainly for tests
 # Note: matplotlib is installed with pip3 since the apt-get install matplotlib
 #       needs the time zone to be set.
@@ -68,6 +71,7 @@ COPY ./ /home/warp_user/warp/
 
 # Compile warp
 RUN cd /home/warp_user/warp/pywarp90 \
+    && make cleanall \
     && rm -f *local* \
     && echo 'FCOMP= -F gfortran' >> Makefile.local3 \
     && echo 'FCOMP= -F gfortran' >> Makefile.local3.pympi \
