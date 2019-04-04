@@ -144,10 +144,10 @@ contains
            end if
           end do
           if (sf%pml_method==1) then
-            sf%bmfx(1:sf%nx+sf%nxguard)=-sf%bmfx(1:sf%nx+sf%nxguard)
-            sf%bpfx(1:sf%nx+sf%nxguard)=-sf%bpfx(1:sf%nx+sf%nxguard)
-            sf%bmgx(0:sf%nx+sf%nxguard-1)=-sf%bmgx(0:sf%nx+sf%nxguard-1)
-            sf%bpgx(0:sf%nx+sf%nxguard-1)=-sf%bpgx(0:sf%nx+sf%nxguard-1)
+            sf%bmfx(-sf%nxguard+1:sf%nx)=-sf%bmfx(-sf%nxguard+1:sf%nx)
+            sf%bpfx(-sf%nxguard+1:sf%nx)=-sf%bpfx(-sf%nxguard+1:sf%nx)
+            sf%bmgx(-sf%nxguard:sf%nx-1)=-sf%bmgx(-sf%nxguard:sf%nx-1)
+            sf%bpgx(-sf%nxguard:sf%nx-1)=-sf%bpgx(-sf%nxguard:sf%nx-1)
           end if
        end select
     end if
@@ -204,10 +204,10 @@ contains
            end if
           end do
           if (sf%pml_method==1) then
-            sf%bmfy(1:sf%ny+sf%nyguard)=-sf%bmfy(1:sf%ny+sf%nyguard)
-            sf%bpfy(1:sf%ny+sf%nyguard)=-sf%bpfy(1:sf%ny+sf%nyguard)
-            sf%bmgy(0:sf%ny+sf%nyguard-1)=-sf%bmgy(0:sf%ny+sf%nyguard-1)
-            sf%bpgy(0:sf%ny+sf%nyguard-1)=-sf%bpgy(0:sf%ny+sf%nyguard-1)
+            sf%bmfy(-sf%nyguard+1:sf%ny)=-sf%bmfy(-sf%nyguard+1:sf%ny)
+            sf%bpfy(-sf%nyguard+1:sf%ny)=-sf%bpfy(-sf%nyguard+1:sf%ny)
+            sf%bmgy(-sf%nyguard:sf%ny-1)=-sf%bmgy(-sf%nyguard:sf%ny-1)
+            sf%bpgy(-sf%nyguard:sf%ny-1)=-sf%bpgy(-sf%nyguard:sf%ny-1)
           end if
        end select
     end if
@@ -262,10 +262,10 @@ contains
            end if
           end do
           if (sf%pml_method==1) then
-            sf%bmfz(1:sf%nz+sf%nzguard)=-sf%bmfz(1:sf%nz+sf%nzguard)
-            sf%bpfz(1:sf%nz+sf%nzguard)=-sf%bpfz(1:sf%nz+sf%nzguard)
-            sf%bmgz(0:sf%nz+sf%nzguard-1)=-sf%bmgz(0:sf%nz+sf%nzguard-1)
-            sf%bpgz(0:sf%nz+sf%nzguard-1)=-sf%bpgz(0:sf%nz+sf%nzguard-1)
+            sf%bmfz(-sf%nzguard+1:sf%nz)=-sf%bmfz(-sf%nzguard+1:sf%nz)
+            sf%bpfz(-sf%nzguard+1:sf%nz)=-sf%bpfz(-sf%nzguard+1:sf%nz)
+            sf%bmgz(-sf%nzguard:sf%nz-1)=-sf%bmgz(-sf%nzguard:sf%nz-1)
+            sf%bpgz(-sf%nzguard:sf%nz-1)=-sf%bpgz(-sf%nzguard:sf%nz-1)
           end if
       end select
     end if
