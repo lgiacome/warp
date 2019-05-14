@@ -156,7 +156,8 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
                 injection_direction = +1
             else:
                 injection_direction = -1
-            plasmainjector = PlasmaInjector(elec=species, ions=None, w3d=w3d, top=top, dim='3d',
+            plasmainjector = PlasmaInjector(elec=species, ions=None, w3d=w3d, top=top,
+                                            dim='%dd'%layout.grid.number_of_dimensions,
                                             p_nx=p_nx, p_ny=p_ny, p_nz=p_nz,
                                             p_xmin=xmin, p_ymin=ymin, p_zmin=zmin,
                                             p_xmax=xmax, p_ymax=ymax, p_zmax=zmax,
@@ -347,7 +348,7 @@ class Cartesian2DGrid(picmistandard.PICMI_Cartesian2DGrid):
         if top.pboundnz == warp.openbc: top.pboundnz = warp.absorb
 
         if self.moving_window_velocity is not None:
-            top.vbeam = top.vbeamfrm = self.moving_window_velocity[1]
+            top.vbeam = top.vbeamfrm = self.moving_window_velocity[-1]
             top.lgridqnt = true
 
 
@@ -462,7 +463,7 @@ class ElectrostaticSolver(picmistandard.PICMI_ElectrostaticSolver):
 class GaussianLaser(picmistandard.PICMI_GaussianLaser):
     def initialize_laser_inputs(self, solver, antenna, gamma_boost):
         from .init_tools import add_laser
-        dim = '3d'
+        dim = '%dd'%solver.grid.number_of_dimensions
         if self.zeta is None: self.zeta = 0.
         if self.beta is None: self.beta = 0.
         if self.phi2 is None: self.phi2 = 0.
@@ -558,6 +559,9 @@ class FieldDiagnostic(picmistandard.PICMI_FieldDiagnostic):
         if any(self.lower_bound != self.grid.lower_bound) or any(self.upper_bound != self.grid.upper_bound):
             print('Warning: Warp cannot return a subdomain. Bounds set to grid bounds')
         sub_sampling = (np.array(self.grid.number_of_cells)/np.array(self.number_of_cells)).astype('l')
+        if self.grid.number_of_dimensions == 2:
+            # A list of length 3 is expected.
+            sub_sampling = [sub_sampling[0], 1, sub_sampling[1]]
         diag_field = openpmd_diag.FieldDiagnostic(period = self.period,
                                                   top = top,
                                                   w3d = w3d,
