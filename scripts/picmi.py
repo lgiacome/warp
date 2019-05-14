@@ -614,8 +614,8 @@ class LabFrameFieldDiagnostic(picmistandard.PICMI_LabFrameFieldDiagnostic):
             v_lab = self.grid.moving_window_velocity[-1]
         else:
             v_lab = 0.
-        diag_field = openpmd_diag.BoostedFieldDiagnostic(zmin_lab = self.grid.zmin,
-                                                         zmax_lab = self.grid.zmax,
+        diag_field = openpmd_diag.BoostedFieldDiagnostic(zmin_lab = self.grid.lower_bound[-1],
+                                                         zmax_lab = self.grid.upper_bound[-1],
                                                          v_lab = v_lab,
                                                          dt_snapshots_lab = self.dt_snapshots,
                                                          Ntot_snapshots_lab = self.num_snapshots,
@@ -660,8 +660,8 @@ class LabFrameParticleDiagnostic(picmistandard.PICMI_LabFrameParticleDiagnostic)
         else:
             v_lab = 0.
 
-        diag_part = openpmd_diag.BoostedParticleDiagnostic(zmin_lab = self.grid.zmin,
-                                                           zmax_lab = self.grid.zmax,
+        diag_part = openpmd_diag.BoostedParticleDiagnostic(zmin_lab = self.grid.lower_bound[-1],
+                                                           zmax_lab = self.grid.upper_bound[-1],
                                                            v_lab = v_lab,
                                                            dt_snapshots_lab = self.dt_snapshots,
                                                            Ntot_snapshots_lab = self.num_snapshots,
