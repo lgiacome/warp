@@ -10546,4 +10546,335 @@ c
       x3=-re-a2d3+root3*ai
       return
       end
+c=======================================================================
+c=======================================================================
+      subroutine insertintercept(icpt,nicpt,loutside,i1,i2,nicptmax,n1,n2,intercepts,isentering)
+      real(kind=8):: icpt
+      integer(ISZ):: nicpt,i1,i2
+      integer(ISZ):: nicptmax,n1,n2
+      real(kind=8):: intercepts(nicptmax,0:n1,0:n2)
+      logical(ISZ):: isentering
+      logical(ISZ):: loutside
 
+c Insert an intercept into the proper place in the list.
+c They are saved in increasing order.
+c This assumes that there is enough space for the new intercept.
+c isentering keeps track of whether the lowest point is entering or
+c leaving the conductor
+c If the intercept is the same as a previously included one, then
+c don't insert it.
+
+      integer(ISZ):: ii, jj
+
+      if (icpt < intercepts(1,i1,i2)) then
+        do ii=nicpt+1,2,-1
+          intercepts(ii,i1,i2) = intercepts(ii-1,i1,i2)
+        enddo
+        intercepts(1,i1,i2) = icpt
+        nicpt = nicpt + 1
+        isentering = loutside
+        return
+      endif
+
+      do ii=1,nicpt-1
+        if (intercepts(ii,i1,i2) < icpt .and. icpt < intercepts(ii+1,i1,i2)) then
+          do jj=nicpt+1,ii+2,-1
+            intercepts(jj,i1,i2) = intercepts(jj-1,i1,i2)
+          enddo
+          intercepts(ii+1,i1,i2) = icpt
+          nicpt = nicpt + 1
+          return
+        endif
+      enddo
+
+      if (icpt > intercepts(nicpt,i1,i2)) then
+        intercepts(nicpt+1,i1,i2) = icpt
+        nicpt = nicpt + 1
+      endif
+
+      return
+      end subroutine insertintercept
+c=======================================================================
+      subroutine TrianglesConductorFnew(ntriangles,triangles,xcent,ycent,zcent,
+     &                                  intercepts,fuzz)
+      use ConductorInterceptTypeModule
+      integer(ISZ):: ntriangles
+      real(kind=8):: triangles(3,3,ntriangles)
+      real(kind=8):: xcent,ycent,zcent
+      type(ConductorInterceptType):: intercepts
+      real(kind=8):: fuzz
+
+c Finds the intercepts of the object with grid lines along the three axis.
+c The structure of the triangles array is triangles(coordinates, corners, number)
+c The coordinates are listed in clockwise order facing the triangle from
+c outside of the conductor. (The normal points inward.)
+
+      real(kind=8):: xmmin,ymmin,zmmin
+      real(kind=8):: dx,dy,dz
+      integer(ISZ):: nx,ny,nz
+
+      integer(ISZ):: it,ix,iy,iz,ii
+      real(kind=8):: xx,yy,zz,rsq
+      real(kind=8):: q1(3), q2(3), N(3), I(3)
+      real(kind=8):: v0, v1, v2, v3, t
+
+      real(kind=8), allocatable, dimension(:):: minx, maxx, miny, maxy, minz, maxz
+      logical(ISZ):: isentering
+
+      xmmin = intercepts%xmmin
+      ymmin = intercepts%ymmin
+      zmmin = intercepts%zmmin
+      dx = intercepts%dx
+      dy = intercepts%dy
+      dz = intercepts%dz
+      nx = intercepts%nx
+      ny = intercepts%ny
+      nz = intercepts%nz
+
+      allocate(minx(ntriangles))
+      allocate(maxx(ntriangles))
+      allocate(miny(ntriangles))
+      allocate(maxy(ntriangles))
+      allocate(minz(ntriangles))
+      allocate(maxz(ntriangles))
+
+c     --- Find the extrema of each triangle in each direction
+      do it=1, ntriangles
+        minx(it) = minval(triangles(1,:,it)) - fuzz
+        maxx(it) = maxval(triangles(1,:,it)) + fuzz
+        miny(it) = minval(triangles(2,:,it)) - fuzz
+        maxy(it) = maxval(triangles(2,:,it)) + fuzz
+        minz(it) = minval(triangles(3,:,it)) - fuzz
+        maxz(it) = maxval(triangles(3,:,it)) + fuzz
+      enddo
+
+c     --- Allocate the arrays and give the default values.
+c     --- These will be increased as needed.
+      intercepts%nxicpt = 2
+      intercepts%nyicpt = 2
+      intercepts%nzicpt = 2
+      call ConductorInterceptTypeallot(intercepts)
+      intercepts%xintercepts(:,:,:) = +LARGEPOS
+      intercepts%yintercepts(:,:,:) = +LARGEPOS
+      intercepts%zintercepts(:,:,:) = +LARGEPOS
+
+c --- Handy macros for referencing the points of the triangle
+#define P1 triangles(:,1,it)
+#define P2 triangles(:,2,it)
+#define P3 triangles(:,3,it)
+
+c     --- Loop over x plane
+      do iz=0,nz
+        zz = zmmin + iz*dz - zcent
+        do iy=0,ny
+          yy = ymmin + iy*dy - ycent
+          ! --- The two points on the opposite side of the grid
+          ! --- define the line.
+          q1(1) = xmmin - xcent
+          q1(2) = yy
+          q1(3) = zz
+          q2(1) = xmmin + nx*dx - xcent
+          q2(2) = yy
+          q2(3) = zz
+          ii = 0
+          isentering = .true.
+          do it=1, ntriangles
+            ! --- Only check the triangle if the grid point is
+            ! --- within it's extrema.
+            if (miny(it) <= yy .and. yy <= maxy(it) .and.
+     &          minz(it) <= zz .and. zz <= maxz(it)) then
+              v1 = SignedVolume(q1,q2,P1,P2)
+              v2 = SignedVolume(q1,q2,P2,P3)
+              v3 = SignedVolume(q1,q2,P3,P1)
+              if ((v1 >= 0. .and. v2 >= 0. .and. v3 >= 0.) .or.
+     &            (v1 <= 0. .and. v2 <= 0. .and. v3 <= 0.)) then
+                ! --- An intersection was found
+                ! --- Make sure there is enough space in the arrays.
+                ! --- Space is added two at a time, giving space
+                ! --- for an entrance and exit from the object.
+                if (ii + 1 > intercepts%nxicpt) then
+                  ! --- Hopefully this won't happen very often...
+                  intercepts%nxicpt = intercepts%nxicpt + 2
+                  call ConductorInterceptTypechange(intercepts)
+                  intercepts%xintercepts(intercepts%nxicpt-1:,:,:) = +LARGEPOS
+                endif
+                N = cross(P2-P1, P3-P1) ! The normal
+                ! t is the parameter where the parametric line p = q1 + t*(q2 - q1)
+                ! intersects the plane defined by dot(p,N) - dot(p1,N) = 0 
+                t = dot(P1 - q1, N)/dot(q2 - q1, N)
+                xx = q1(1) + t*(q2(1) - q1(1)) + xcent
+                ! If the volume is positive, q1 is facing the outside of the surface.
+                v0 = SignedVolume(q1,P1,P2,P3)
+                call insertintercept(xx,ii,v0>0.,iy,iz,intercepts%nxicpt,ny,nz,intercepts%xintercepts,isentering)
+              endif
+            endif
+          enddo
+          if (.not. isentering) then
+            ! --- The first data point is exiting the object.
+            ! --- An entering point needs to be added, making sure there is space
+            if (ii + 1 > intercepts%nxicpt) then
+              ! --- Hopefully this won't happen very often...
+              intercepts%nxicpt = intercepts%nxicpt + 2
+              call ConductorInterceptTypechange(intercepts)
+              intercepts%xintercepts(intercepts%nxicpt-1:,:,:) = +LARGEPOS
+            endif
+            call insertintercept(-LARGEPOS,ii,.true.,iy,iz,intercepts%nxicpt,ny,nz,intercepts%xintercepts,isentering)
+          endif
+        enddo
+      enddo
+
+c     --- Loop over y plane
+      do iz=0,nz
+        zz = zmmin + iz*dz - zcent
+        do ix=0,nx
+          xx = xmmin + ix*dx - xcent
+          ! --- The two points on the opposite side of the grid
+          ! --- define the line.
+          q1(1) = xx
+          q1(2) = ymmin - ycent
+          q1(3) = zz
+          q2(1) = xx
+          q2(2) = ymmin + ny*dy - ycent
+          q2(3) = zz
+          ii = 0
+          isentering = .true.
+          do it=1, ntriangles
+            ! --- Only check the triangle if the grid point is
+            ! --- within it's extrema.
+            if (minx(it) <= xx .and. xx <= maxx(it) .and.
+     &          minz(it) <= zz .and. zz <= maxz(it)) then
+              v1 = SignedVolume(q1,q2,P1,P2)
+              v2 = SignedVolume(q1,q2,P2,P3)
+              v3 = SignedVolume(q1,q2,P3,P1)
+              if ((v1 >= 0. .and. v2 >= 0. .and. v3 >= 0.) .or.
+     &            (v1 <= 0. .and. v2 <= 0. .and. v3 <= 0.)) then
+                ! --- An intersection was found
+                ! --- Make sure there is enough space in the arrays.
+                ! --- Space is added two at a time, giving space
+                ! --- for an entrance and exit from the object.
+                if (ii + 1 > intercepts%nyicpt) then
+                  ! --- Hopefully this won't happen very often...
+                  intercepts%nyicpt = intercepts%nyicpt + 2
+                  call ConductorInterceptTypechange(intercepts)
+                  intercepts%yintercepts(intercepts%nyicpt-1:,:,:) = +LARGEPOS
+                endif
+                N = cross(P2-P1, P3-P1) ! The normal
+                ! t is the parameter where the parametric line p = q1 + t*(q2 - q1)
+                ! intersects the plane defined by dot(p,N) - dot(p1,N) = 0 
+                t = dot(P1 - q1, N)/dot(q2 - q1, N)
+                yy = q1(2) + t*(q2(2) - q1(2)) + ycent
+                ! If the volume is positive, q1 is facing the outside of the surface.
+                v0 = SignedVolume(q1,P1,P2,P3)
+                call insertintercept(yy,ii,v0>0.,ix,iz,intercepts%nyicpt,nx,nz,intercepts%yintercepts,isentering)
+              endif
+            endif
+          enddo
+          if (.not. isentering) then
+            ! --- The first data point is exiting the object.
+            ! --- An entering point needs to be added, making sure there is space
+            if (ii + 1 > intercepts%nyicpt) then
+              ! --- Hopefully this won't happen very often...
+              intercepts%nyicpt = intercepts%nyicpt + 2
+              call ConductorInterceptTypechange(intercepts)
+              intercepts%yintercepts(intercepts%nyicpt-1:,:,:) = +LARGEPOS
+            endif
+            call insertintercept(-LARGEPOS,ii,.true.,ix,iz,intercepts%nyicpt,nx,nz,intercepts%yintercepts,isentering)
+          endif
+        enddo
+      enddo
+
+c     --- Loop over z plane
+      do iy=0,ny
+        yy = ymmin + iy*dy - ycent
+        do ix=0,nx
+          xx = xmmin + ix*dx - xcent
+          ! --- The two points on the opposite side of the grid
+          ! --- define the line.
+          q1(1) = xx
+          q1(2) = yy
+          q1(3) = zmmin - zcent
+          q2(1) = xx
+          q2(2) = yy
+          q2(3) = zmmin + nz*dz - zcent
+          ii = 0
+          isentering = .true.
+          do it=1, ntriangles
+            ! --- Only check the triangle if the grid point is
+            ! --- within it's extrema.
+            if (minx(it) <= xx .and. xx <= maxx(it) .and.
+     &          miny(it) <= yy .and. yy <= maxy(it)) then
+              v1 = SignedVolume(q1,q2,P1,P2)
+              v2 = SignedVolume(q1,q2,P2,P3)
+              v3 = SignedVolume(q1,q2,P3,P1)
+              if ((v1 >= 0. .and. v2 >= 0. .and. v3 >= 0.) .or.
+     &            (v1 <= 0. .and. v2 <= 0. .and. v3 <= 0.)) then
+                ! --- An intersection was found
+                ! --- Make sure there is enough space in the arrays.
+                ! --- Space is added two at a time, giving space
+                ! --- for an entrance and exit from the object.
+                if (ii + 1 > intercepts%nzicpt) then
+                  ! --- Hopefully this won't happen very often...
+                  intercepts%nzicpt = intercepts%nzicpt + 2
+                  call ConductorInterceptTypechange(intercepts)
+                  intercepts%zintercepts(intercepts%nzicpt-1:,:,:) = +LARGEPOS
+                endif
+                N = cross(P2-P1, P3-P1) ! The normal
+                ! t is the parameter where the parametric line p = q1 + t*(q2 - q1)
+                ! intersects the plane defined by dot(p,N) - dot(p1,N) = 0 
+                t = dot(P1 - q1, N)/dot(q2 - q1, N)
+                zz = q1(3) + t*(q2(3) - q1(3)) + zcent
+                ! If the volume is positive, q1 is facing the outside of the surface.
+                v0 = SignedVolume(q1,P1,P2,P3)
+                call insertintercept(zz,ii,v0>0.,ix,iy,intercepts%nzicpt,nx,ny,intercepts%zintercepts,isentering)
+              endif
+            endif
+          enddo
+          if (.not. isentering) then
+            ! --- The first data point is exiting the object.
+            ! --- An entering point needs to be added, making sure there is space
+            if (ii + 1 > intercepts%nzicpt) then
+              ! --- Hopefully this won't happen very often...
+              intercepts%nzicpt = intercepts%nzicpt + 2
+              call ConductorInterceptTypechange(intercepts)
+              intercepts%zintercepts(intercepts%nzicpt-1:,:,:) = +LARGEPOS
+            endif
+            call insertintercept(-LARGEPOS,ii,.true.,ix,iy,intercepts%nzicpt,nx,ny,intercepts%zintercepts,isentering)
+          endif
+        enddo
+      enddo
+
+      deallocate(minx)
+      deallocate(maxx)
+      deallocate(miny)
+      deallocate(maxy)
+      deallocate(minz)
+      deallocate(maxz)
+
+      return
+      CONTAINS
+
+        real(kind=8) function dot(a,b)
+        real(kind=8), dimension(3) :: a,b
+        dot = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
+        return
+        end function dot
+
+        function cross(a,b)
+        real(kind=8), dimension(3) :: a,b
+        real(kind=8):: cross(3)
+        cross(1) = a(2)*b(3) - a(3)*b(2)
+        cross(2) = a(3)*b(1) - a(1)*b(3)
+        cross(3) = a(1)*b(2) - a(2)*b(1)
+        return
+        end function cross
+
+        real(kind=8) function SignedVolume(a,b,c,d)
+        ! Returns (1/6)*dot(cross(b-a,c-a),d-a)
+        ! The signed volume of the tetrahedron specified by the four
+        ! points
+        real(kind=8), dimension(3) :: a,b,c,d
+        SignedVolume = (1./6.)*dot(cross(b-a,c-a),d-a)
+        end function SignedVolume
+
+      end subroutine TrianglesConductorFnew
+c=======================================================================

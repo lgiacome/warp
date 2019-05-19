@@ -1059,6 +1059,9 @@ zsrfrvconductorfnew(nn:integer,rsrf(nn):real,zsrf(nn):real,
                     rad(nn-1):real,rc(nn-1):real,zc(nn-1):real,
                     xcent:real,ycent:real,zcent:real,
                     intercepts:ConductorInterceptType,fuzz:real) subroutine
+trianglesconductorfnew(ntriangles:integer,triangles(3,3,ntriangles):real,
+                       xcent:real,ycent:real,zcent:real,
+                       intercepts:ConductorInterceptType,fuzz:real) subroutine
 zsrfrvintercept(nn:integer,rsrf(nn):real,zsrf(nn):real,
                 rad(nn-1):real,rc(nn-1):real,zc(nn-1):real,
                 xcent:real,ycent:real,zcent:real,

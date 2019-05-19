@@ -59,6 +59,7 @@ Surfaces of revolution:
  YSrfrvInOut(rminofz,rmaxofz,zmin,zmax,...)
 
 Special:
+ Triangles(triangles,...)
  CADconductor(filename,...)
 
 Note that all take the following additional arguments:
@@ -6407,6 +6408,50 @@ class ZConeOutSlope(ZSrfrvOut):
                            condid=condid,
                            rofzdata=rofzdata,zdata=zdata,
                            kw=kw)
+
+#============================================================================
+class Triangles(Assembly):
+    """
+  Defines an object by specifying the triangulated surface
+    - triangles: array of triangles defining the surface. The array should have
+                 the shape (3,3,ntriangles), where the first dimension is the coordinates,
+                 and the second the corners. The corners should be in clockwise order
+                 facing the triangle from the outside.
+                 This works best if the triangles define a closed surface (without holes).
+    - voltage=0: object voltage
+    - xcent=0.,ycent=0.,zcent=0.: center of the object
+    - condid='next': conductor id, must be integer, or can be 'next' in
+                     which case a unique ID is chosen
+    """
+    def __init__(self,triangles,voltage=0.,xcent=0.,ycent=0.,zcent=0.,
+                      condid='next',**kw):
+        kwlist=['ntriangles', 'triangles']
+        Assembly.__init__(self,voltage,xcent,ycent,zcent,condid,kwlist,
+                               None,None,None,
+                               trianglesconductorfnew,
+                               kw=kw)
+        self.ntriangles = triangles.shape[2]
+        self.triangles = triangles
+
+    def getextent(self):
+        return ConductorExtent([self.triangles[0,:,:].min(),self.triangles[1,:,:].min(),self.triangles[2,:,:].min()],
+                               [self.triangles[0,:,:].max(),self.triangles[1,:,:].max(),self.triangles[2,:,:].max()],
+                               [self.xcent,self.ycent,self.zcent])
+
+    def draw(self,color='fg',filled=None,fullplane=1,**kw):
+        self.drawzx(**kw)
+
+    def drawxy(self,color='fg',filled=None,fullplane=1,**kw):
+        pass
+
+    def drawzx(self,color='fg',filled=None,fullplane=1,**kw):
+        pass
+
+    def drawzy(self,color='fg',filled=None,fullplane=1,**kw):
+        pass
+
+    def createdxobject(self,kwdict={},**kw):
+        pass
 
 #============================================================================
 #============================================================================
