@@ -6427,7 +6427,7 @@ class Triangles(Assembly):
                       condid='next',**kw):
         kwlist=['ntriangles', 'triangles']
         Assembly.__init__(self,voltage,xcent,ycent,zcent,condid,kwlist,
-                               None,None,None,
+                               None,trianglesconductord,trianglesintercept,
                                trianglesconductorfnew,
                                kw=kw)
         self.ntriangles = triangles.shape[2]

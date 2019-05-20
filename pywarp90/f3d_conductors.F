@@ -10595,9 +10595,37 @@ c don't insert it.
       return
       end subroutine insertintercept
 c=======================================================================
+      module vectortools
+      contains
+        real(kind=8) function dot3(a,b)
+        real(kind=8), dimension(3) :: a,b
+        ! Dot product of vectors of length 3
+        dot3 = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
+        return
+        end function dot3
+        !=================================================================
+        function cross3(a,b)
+        real(kind=8), dimension(3) :: a,b
+        real(kind=8):: cross3(3)
+        ! Cross product of vectors of length 3
+        cross3(1) = a(2)*b(3) - a(3)*b(2)
+        cross3(2) = a(3)*b(1) - a(1)*b(3)
+        cross3(3) = a(1)*b(2) - a(2)*b(1)
+        return
+        end function cross3
+        !=================================================================
+        real(kind=8) function SignedVolume(a,b,c,d)
+        ! The signed volume of the tetrahedron specified by the four points
+        ! Returns (1/6)*dot(cross(b-a,c-a),d-a)
+        real(kind=8), dimension(3) :: a,b,c,d
+        SignedVolume = (1./6.)*dot3(cross3(b-a,c-a),d-a)
+        end function SignedVolume
+      end module vectortools
+c=======================================================================
       subroutine TrianglesConductorFnew(ntriangles,triangles,xcent,ycent,zcent,
      &                                  intercepts,fuzz)
       use ConductorInterceptTypeModule
+      use vectortools
       integer(ISZ):: ntriangles
       real(kind=8):: triangles(3,3,ntriangles)
       real(kind=8):: xcent,ycent,zcent
@@ -10698,10 +10726,10 @@ c     --- Loop over x plane
                   call ConductorInterceptTypechange(intercepts)
                   intercepts%xintercepts(intercepts%nxicpt-1:,:,:) = +LARGEPOS
                 endif
-                N = cross(P2-P1, P3-P1) ! The normal
+                N = cross3(P2-P1, P3-P1) ! The normal
                 ! t is the parameter where the parametric line p = q1 + t*(q2 - q1)
                 ! intersects the plane defined by dot(p,N) - dot(p1,N) = 0 
-                t = dot(P1 - q1, N)/dot(q2 - q1, N)
+                t = dot3(P1 - q1, N)/dot3(q2 - q1, N)
                 xx = q1(1) + t*(q2(1) - q1(1)) + xcent
                 ! If the volume is positive, q1 is facing the outside of the surface.
                 v0 = SignedVolume(q1,P1,P2,P3)
@@ -10758,10 +10786,10 @@ c     --- Loop over y plane
                   call ConductorInterceptTypechange(intercepts)
                   intercepts%yintercepts(intercepts%nyicpt-1:,:,:) = +LARGEPOS
                 endif
-                N = cross(P2-P1, P3-P1) ! The normal
+                N = cross3(P2-P1, P3-P1) ! The normal
                 ! t is the parameter where the parametric line p = q1 + t*(q2 - q1)
                 ! intersects the plane defined by dot(p,N) - dot(p1,N) = 0 
-                t = dot(P1 - q1, N)/dot(q2 - q1, N)
+                t = dot3(P1 - q1, N)/dot3(q2 - q1, N)
                 yy = q1(2) + t*(q2(2) - q1(2)) + ycent
                 ! If the volume is positive, q1 is facing the outside of the surface.
                 v0 = SignedVolume(q1,P1,P2,P3)
@@ -10818,10 +10846,10 @@ c     --- Loop over z plane
                   call ConductorInterceptTypechange(intercepts)
                   intercepts%zintercepts(intercepts%nzicpt-1:,:,:) = +LARGEPOS
                 endif
-                N = cross(P2-P1, P3-P1) ! The normal
+                N = cross3(P2-P1, P3-P1) ! The normal
                 ! t is the parameter where the parametric line p = q1 + t*(q2 - q1)
                 ! intersects the plane defined by dot(p,N) - dot(p1,N) = 0 
-                t = dot(P1 - q1, N)/dot(q2 - q1, N)
+                t = dot3(P1 - q1, N)/dot3(q2 - q1, N)
                 zz = q1(3) + t*(q2(3) - q1(3)) + zcent
                 ! If the volume is positive, q1 is facing the outside of the surface.
                 v0 = SignedVolume(q1,P1,P2,P3)
@@ -10851,30 +10879,413 @@ c     --- Loop over z plane
       deallocate(maxz)
 
       return
-      CONTAINS
-
-        real(kind=8) function dot(a,b)
-        real(kind=8), dimension(3) :: a,b
-        dot = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
-        return
-        end function dot
-
-        function cross(a,b)
-        real(kind=8), dimension(3) :: a,b
-        real(kind=8):: cross(3)
-        cross(1) = a(2)*b(3) - a(3)*b(2)
-        cross(2) = a(3)*b(1) - a(1)*b(3)
-        cross(3) = a(1)*b(2) - a(2)*b(1)
-        return
-        end function cross
-
-        real(kind=8) function SignedVolume(a,b,c,d)
-        ! Returns (1/6)*dot(cross(b-a,c-a),d-a)
-        ! The signed volume of the tetrahedron specified by the four
-        ! points
-        real(kind=8), dimension(3) :: a,b,c,d
-        SignedVolume = (1./6.)*dot(cross(b-a,c-a),d-a)
-        end function SignedVolume
-
       end subroutine TrianglesConductorFnew
+c=======================================================================
+      subroutine pointTriangleDistance(triangle, point, dist, PP0)
+      use vectortools
+      real(kind=8):: triangle(3,3)
+      real(kind=8):: point(3)
+      real(kind=8):: dist
+      real(kind=8):: PP0(3)
+
+c [dist,PP0] = pointTriangleDistance(triangle,point)
+c calculate distance between a point and a triangle in 3D
+c SYNTAX
+c   dist = pointTriangleDistance(triangle,point)
+c   [dist,PP0] = pointTriangleDistance(triangle,point)
+c
+c DESCRIPTION
+c   Calculate the distance of a given point point from a triangle triangle.
+c   Point point is a row vector of the form 1x3. The triangle is a matrix
+c   formed by three rows of points triangle = [P1;P2;P3] each of size 1x3.
+c   dist = pointTriangleDistance(triangle,point) returns the distance of the point point
+c   to the triangle triangle.
+c   [dist,PP0] = pointTriangleDistance(triangle,point) additionally returns the
+c   closest point PP0 to point on the triangle triangle.
+c
+c Author: Gwolyn Fischer
+c Release: 1.0
+c Release date: 09/02/02
+c Release: 1.1 Fixed Bug because of normalization
+c Release: 1.2 Fixed Bug because of typo in region 5 20101013
+c Release: 1.3 Fixed Bug because of typo in region 2 20101014
+
+c Possible extention could be a version tailored not to return the distance
+c and additionally the closest point, but instead return only the closest
+c point. Could lead to a small speed gain.
+
+c Example:
+c %% The Problem
+c P0 = [0.5 -0.3 0.5]
+c
+c P1 = [0 -1 0]
+c P2 = [1  0 0]
+c P3 = [0  0 0]
+c
+c vertices = [P1; P2; P3]
+c faces = [1 2 3]
+c
+c %% The Engine
+c [dist,PP0] = pointTriangleDistance([P1;P2;P3],P0)
+c
+c %% Visualization
+c [x,y,z] = sphere(20)
+c x = dist*x+P0(1)
+c y = dist*y+P0(2)
+c z = dist*z+P0(3)
+c
+c figure
+c hold all
+c patch('Vertices',vertices,'Faces',faces,'FaceColor','r','FaceAlpha',0.8)
+c plot3(P0(1),P0(2),P0(3),'b*')
+c plot3(PP0(1),PP0(2),PP0(3),'*g')
+c surf(x,y,z,'FaceColor','b','FaceAlpha',0.3)
+c view(3)
+
+c The algorithm is based on
+c "David Eberly, 'Distance Between Point and Triangle in 3D', Geometric Tools, LLC, (1999)"
+c http:\\www.geometrictools.com/Documentation/DistancePoint3Triangle3.pdf
+c
+c        ^t
+c  \     |
+c   \reg2|
+c    \   |
+c     \  |
+c      \ |
+c       \|
+c        *P2
+c        |\
+c        | \
+c  reg3  |  \ reg1
+c        |   \
+c        |reg0\
+c        |     \
+c        |      \ P1
+c -------*-------*------->s
+c        |P0      \
+c  reg4  | reg5    \ reg6
+c rewrite triangle in normal form
+
+      real(kind=8):: BB(3), E0(3), E1(3), DD(3)
+      real(kind=8):: a, b, c, d, e, f
+      real(kind=8):: det, s, t
+      real(kind=8):: sqrdistance, invDet, tmp0, tmp1, numer, denom
+
+      BB = triangle(:,1)
+      E0 = triangle(:,2) - BB
+      ! E0 = E0/sqrt(sum(E0**2)) !normalize vector
+      E1 = triangle(:,3) - BB
+      ! E1 = E1/sqrt(sum(E1**2)) !normalize vector
+      DD = BB - point
+      a = dot3(E0, E0)
+      b = dot3(E0, E1)
+      c = dot3(E1, E1)
+      d = dot3(E0, DD)
+      e = dot3(E1, DD)
+      f = dot3(DD, DD)
+
+      det = a*c - b*b
+      s = b*e - c*d
+      t = b*d - a*e
+
+      ! Terrible tree of conditionals to determine in which region of the diagram
+      ! shown above the projection of the point into the triangle-plane lies.
+      if ((s + t) <= det) then
+          if (s < 0.0) then
+              if (t < 0.0) then
+                  ! region4
+                  if (d < 0) then
+                      t = 0.0
+                      if (-d >= a) then
+                          s = 1.0
+                          sqrdistance = a + 2.0*d + f
+                      else
+                          s = -d/a
+                          sqrdistance = d*s + f
+                      endif
+                  else
+                      s = 0.0
+                      if (e >= 0.0) then
+                          t = 0.0
+                          sqrdistance = f
+                      else
+                          if (-e >= c) then
+                              t = 1.0
+                              sqrdistance = c + 2.0*e + f
+                          else
+                              t = -e/c
+                              sqrdistance = e*t + f
+                              ! of region 4
+                          endif
+                      endif
+                  endif
+              else
+                  ! region 3
+                  s = 0
+                  if (e >= 0) then
+                      t = 0
+                      sqrdistance = f
+                  else
+                      if (-e >= c) then
+                          t = 1
+                          sqrdistance = c + 2.0*e + f
+                      else
+                          t = -e/c
+                          sqrdistance = e*t + f
+                          ! of region 3
+                      endif
+                  endif
+              endif
+          else
+              if (t < 0) then
+                  ! region 5
+                  t = 0
+                  if (d >= 0) then
+                      s = 0
+                      sqrdistance = f
+                  else
+                      if (-d >= a) then
+                          s = 1
+                          sqrdistance = a + 2.0*d + f
+                      else
+                          s = -d/a
+                          sqrdistance = d*s + f
+                      endif
+                  endif
+              else
+                  ! region 0
+                  invDet = 1.0/det
+                  s = s*invDet
+                  t = t*invDet
+                  sqrdistance = s*(a*s + b*t + 2.0*d) + t*(b*s + c*t + 2.0*e) + f
+              endif
+          endif
+      else
+          if (s < 0.0) then
+              ! region 2
+              tmp0 = b + d
+              tmp1 = c + e
+              if (tmp1 > tmp0) then  ! minimum on edge s+t=1
+                  numer = tmp1 - tmp0
+                  denom = a - 2.0*b + c
+                  if (numer >= denom) then
+                      s = 1.0
+                      t = 0.0
+                      sqrdistance = a + 2.0*d + f
+                  else
+                      s = numer/denom
+                      t = 1 - s
+                      sqrdistance = s*(a*s + b*t + 2*d) + t*(b*s + c*t + 2.0*e) + f
+                  endif
+              else  ! minimum on edge s=0
+                  s = 0.0
+                  if (tmp1 <= 0.0) then
+                      t = 1
+                      sqrdistance = c + 2.0*e + f
+                  else
+                      if (e >= 0.0) then
+                          t = 0.0
+                          sqrdistance = f
+                      else
+                          t = -e/c
+                          sqrdistance = e*t + f
+                          ! of region 2
+                      endif
+                  endif
+              endif
+          else
+              if (t < 0.0) then
+                  ! region6
+                  tmp0 = b + e
+                  tmp1 = a + d
+                  if (tmp1 > tmp0) then
+                      numer = tmp1 - tmp0
+                      denom = a - 2.0*b + c
+                      if (numer >= denom) then
+                          t = 1.0
+                          s = 0
+                          sqrdistance = c + 2.0*e + f
+                      else
+                          t = numer/denom
+                          s = 1 - t
+                          sqrdistance = s*(a*s + b*t + 2.0*d) + t*(b*s + c*t + 2.0*e) + f
+                      endif
+                  else
+                      t = 0.0
+                      if (tmp1 <= 0.0) then
+                          s = 1
+                          sqrdistance = a + 2.0*d + f
+                      else
+                          if (d >= 0.0) then
+                              s = 0.0
+                              sqrdistance = f
+                          else
+                              s = -d/a
+                              sqrdistance = d*s + f
+                          endif
+                      endif
+                  endif
+              else
+                  ! region 1
+                  numer = c + e - b - d
+                  if (numer <= 0) then
+                      s = 0.0
+                      t = 1.0
+                      sqrdistance = c + 2.0*e + f
+                  else
+                      denom = a - 2.0*b + c
+                      if (numer >= denom) then
+                          s = 1.0
+                          t = 0.0
+                          sqrdistance = a + 2.0*d + f
+                      else
+                          s = numer/denom
+                          t = 1 - s
+                          sqrdistance = s*(a*s + b*t + 2.0*d) + t*(b*s + c*t + 2.0*e) + f
+                      endif
+                  endif
+              endif
+          endif
+      endif
+  
+      ! account for numerical round-off error
+      if (sqrdistance < 0) then
+          sqrdistance = 0
+      endif
+  
+      dist = sqrt(sqrdistance)
+  
+      PP0 = BB + s*E0 + t*E1
+      return
+      end subroutine pointTriangleDistance
+c=======================================================================
+      subroutine TrianglesConductorD(ntriangles,triangles,xcent,ycent,zcent,n,x,y,z,distance)
+      use vectortools
+      integer(ISZ):: ntriangles
+      real(kind=8):: triangles(3,3,ntriangles)
+      real(kind=8):: xcent,ycent,zcent
+      integer(ISZ):: n
+      real(kind=8):: x(n),y(n),z(n)
+      real(kind=8):: distance(n)
+
+c Finds distances from triangles.
+c The notation is that a negative distance means that the point is inside.
+
+      integer(ISZ):: i,it,itdist
+      real(kind=8):: dist,v0
+      real(kind=8):: point(3), pp0(3)
+
+      do i=1,n
+
+        point(1) = x(i) - xcent
+        point(2) = y(i) - ycent
+        point(3) = z(i) - zcent
+
+        distance(i) = LARGEPOS
+        itdist = 0
+        do it=1,ntriangles
+          call pointTriangleDistance(triangles(:,:,it), point, dist, pp0)
+          if (dist < distance(i)) then
+            distance(i) = dist
+            itdist = it
+          endif
+        enddo
+
+        v0 = SignedVolume(point,triangles(:,1,itdist),
+     &                          triangles(:,2,itdist),
+     &                          triangles(:,3,itdist))
+
+        if (v0 < 0) then
+          ! The point is inside
+          distance(i) = -distance(i)
+        endif
+
+      enddo
+
+      return
+      end subroutine TrianglesConductorD
+c=======================================================================
+      subroutine TrianglesIntercept(ntriangles,triangles,xcent,ycent,zcent,
+     &                              n,x,y,z,vx,vy,vz,xi,yi,zi,itheta,iphi)
+      use vectortools
+      integer(ISZ):: ntriangles
+      real(kind=8):: triangles(3,3,ntriangles)
+      real(kind=8):: xcent,ycent,zcent
+      integer(ISZ):: n
+      real(kind=8):: x(n),y(n),z(n),vx(n),vy(n),vz(n)
+      real(kind=8):: xi(n),yi(n),zi(n),itheta(n),iphi(n)
+
+c Finds place where particle inside intercepted the surface and the
+c normal angle of the surface at that point.
+
+      integer(ISZ):: i, it
+      real(kind=8):: maxt, mint, vmag, dt, dti
+      real(kind=8):: q1(3), q2(3)
+      real(kind=8):: NN(3), pp(3)
+      real(kind=8):: v1,v2,v3,t
+
+      mint = minval(triangles)
+      maxt = maxval(triangles)
+
+      do i=1,n
+
+        vmag = sqrt(vx(i)**2 + vy(i)**2 + vz(i)**2)
+
+        if (vmag == 0.) then
+          xi(i) = LARGEPOS
+          yi(i) = LARGEPOS
+          zi(i) = LARGEPOS
+          itheta(i) = 0.
+          iphi(i) = 0.
+          cycle
+        endif
+
+        q1(1) = x(i) - xcent
+        q1(2) = y(i) - ycent
+        q1(3) = z(i) - zcent
+
+        ! This should provide a reasonable second point
+        ! that is not too far away from q1.
+        dt = (maxt - mint)/vmag
+        q2(1) = x(i) - xcent + vx(i)*dt
+        q2(2) = y(i) - ycent + vy(i)*dt
+        q2(3) = z(i) - zcent + vz(i)*dt
+
+#define P1 triangles(:,1,it)
+#define P2 triangles(:,2,it)
+#define P3 triangles(:,3,it)
+
+        dti = LARGEPOS
+        do it=1,ntriangles
+
+          v1 = SignedVolume(q1,q2,P1,P2)
+          v2 = SignedVolume(q1,q2,P2,P3)
+          v3 = SignedVolume(q1,q2,P3,P1)
+          if ((v1 >= 0. .and. v2 >= 0. .and. v3 >= 0.) .or.
+     &        (v1 <= 0. .and. v2 <= 0. .and. v3 <= 0.)) then
+            ! --- An intersection was found
+            NN = cross3(P2-P1, P3-P1) ! The normal
+            ! t is the parameter where the parametric line p = q1 + t*(q2 - q1)
+            ! intersects the plane defined by dot(p,N) - dot(p1,N) = 0 
+            t = dot3(P1 - q1, NN)/dot3(q2 - q1, NN)
+            pp = q1 + t*(q2 - q1)
+            ! --- Negative time until the particle reaches the intercept
+            dt = -sum(pp - q1)/(vx(i) + vy(i) + vz(i))
+            ! --- Check if the intercept is closer than any previous one.
+            if (dt < dti .and. dt > 0.) then
+              dti = dt
+              xi(i) = pp(1)
+              yi(i) = pp(2)
+              zi(i) = pp(3)
+              itheta(i) = atan2(sqrt(NN(1)**2 + NN(2)**2), NN(3))
+              iphi(i) = atan2(NN(2), NN(1))
+            endif
+          endif
+
+        enddo
+
+      enddo
+
+      return
+      end subroutine TrianglesIntercept
 c=======================================================================
