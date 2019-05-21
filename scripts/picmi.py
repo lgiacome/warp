@@ -229,7 +229,8 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
             uz_m, = boost.longitudinal_momentum([uz_m])
         else:
             density_boost_converter = 1.
-
+            z_boost_converter = 1.
+            
         if isinstance(layout, GriddedLayout):
             # --- Note that layout.grid is ignored
             p_nx = layout.n_macroparticle_per_cell[0]
