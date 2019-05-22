@@ -453,6 +453,7 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
                               l_correct_num_Cherenkov = self.l_correct_num_Cherenkov,
                               type_rz_depose = self.type_rz_depose,
                               l_setcowancoefs = self.l_setcowancoefs,
+                              current_cor = spectral,
                               l_getrho = self.l_getrho)
 
 
