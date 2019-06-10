@@ -1260,7 +1260,7 @@ class EM3D(SubcycledPoissonSolver):
             self.add_laser(self.block.core.yf, self.laser_antenna[i])
         # --- smooth current density
         if any(self.npass_smooth>0):self.smoothdensity()
-        if self.l_nodalgrid:self.Jyee2node3d()
+        if self.l_nodalgrid and not self.l_deposit_nodal:self.Jyee2node3d()
         # --- apply boundary conditions
         self.applysourceboundaryconditions()
         # --- exchange guard cells data across domains
