@@ -617,8 +617,10 @@ class Simulation(picmistandard.PICMI_Simulation):
                 dim = '%dd'%self.solver.grid.number_of_dimensions
                 initialize_beam_fields(self.solver.solver, dim, self.species[i].wspecies, w3d, top)
 
-    def step(self, nsteps=1):
+    def step(self, nsteps=None):
         self.initialize_sim_inputs()
+        if nsteps is None:
+            nsteps = self.max_steps
         step(nsteps)
 
     def write_input_file(self, file_name='inputs'):
