@@ -104,6 +104,41 @@ class GaussianBunchDistribution(picmistandard.PICMI_GaussianBunchDistribution):
                                   xmean, ymean, zmean, vxmean, vymean, vzmean, vxdiv, vydiv, vzdiv,
                                   zdist='random', rdist='linear', fourfold=False, lmomentum=True, w=w)
 
+        if top.boost_gamma > 1.:
+            # --- Code copied from Boosted_Frame class
+            # --- This maps all particles from this species, which will not be
+            # --- correct if some had be created elsewhere.
+            boost_beta = sqrt(1. - 1./top.boost_gamma**2)
+            for jspr,js in enumerate(species.jslist):
+                if getn(pgroup=top.pgroup, js=js, bcast=0, gather=0)>0:
+                    il = top.pgroup.ins[js] - 1
+                    iu = il + top.pgroup.nps[js]
+                    uzfrm = top.boost_gamma*boost_beta*warp.clight
+                    tpr = top.boost_gamma*top.time - uzfrm*top.pgroup.zp[il:iu]/warp.clight**2
+                    top.pgroup.zp[il:iu] = top.boost_gamma*top.pgroup.zp[il:iu] - uzfrm*top.time
+                    vx = getvx(pgroup=top.pgroup, js=js, bcast=0, gather=0)
+                    vy = getvy(pgroup=top.pgroup, js=js, bcast=0, gather=0)
+                    vz = getvz(pgroup=top.pgroup, js=js, bcast=0, gather=0)
+                    fact = 1./(1. - boost_beta*vz/warp.clight)
+                    vxpr = vx*fact/top.boost_gamma
+                    vypr = vy*fact/top.boost_gamma
+                    vzpr = (vz - boost_beta*warp.clight)*fact
+                    top.pgroup.xp[il:iu] = top.pgroup.xp[il:iu] - tpr*vxpr
+                    top.pgroup.yp[il:iu] = top.pgroup.yp[il:iu] - tpr*vypr
+                    top.pgroup.zp[il:iu] = top.pgroup.zp[il:iu] - tpr*vzpr
+                    gammapr = 1./sqrt(1. - (vxpr*vxpr + vypr*vypr + vzpr*vzpr)/warp.clight**2)
+                    top.pgroup.uxp[il:iu] = vxpr*gammapr
+                    top.pgroup.uyp[il:iu] = vypr*gammapr
+                    top.pgroup.uzp[il:iu] = vzpr*gammapr
+                    top.pgroup.gaminv[il:iu] = 1./gammapr
+                    if top.uxoldpid > 0:
+                        top.pgroup.pid[il:iu,top.uxoldpid-1] = top.pgroup.uxp[il:iu]
+                    if top.uyoldpid > 0:
+                        top.pgroup.pid[il:iu,top.uyoldpid-1] = top.pgroup.uyp[il:iu]
+                    if top.uzoldpid > 0:
+                        top.pgroup.pid[il:iu,top.uzoldpid-1] = top.pgroup.uzp[il:iu]
+            particleboundaries3d(top.pgroup, -1, False)
+
 
 class UniformDistribution(picmistandard.PICMI_UniformDistribution):
     def loaddistribution(self, species, layout):
