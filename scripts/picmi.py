@@ -144,8 +144,11 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
         if isinstance(layout, GriddedLayout):
             # --- Note that layout.grid is ignored
             p_nx = layout.n_macroparticle_per_cell[0]
-            p_ny = layout.n_macroparticle_per_cell[1]
-            p_nz = layout.n_macroparticle_per_cell[2]
+            if len(layout.n_macroparticle_per_cell) > 2:
+                p_ny = layout.n_macroparticle_per_cell[1]
+            else:
+                p_ny = 1
+            p_nz = layout.n_macroparticle_per_cell[-1]
 
             npreal_per_cell = density*w3d.dx*w3d.dy*w3d.dz
             w = npreal_per_cell/(p_nx*p_ny*p_nz)
@@ -234,8 +237,11 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
         if isinstance(layout, GriddedLayout):
             # --- Note that layout.grid is ignored
             p_nx = layout.n_macroparticle_per_cell[0]
-            p_ny = layout.n_macroparticle_per_cell[1]
-            p_nz = layout.n_macroparticle_per_cell[2]
+            if len(layout.n_macroparticle_per_cell) > 2:
+                p_ny = layout.n_macroparticle_per_cell[1]
+            else:
+                p_ny = 1
+            p_nz = layout.n_macroparticle_per_cell[-1]
 
             if isinstance(self.density_expression, str):
                 cell_volume_per_particle = w3d.dx*w3d.dy*w3d.dz/(p_nx*p_ny*p_nz)*density_boost_converter
@@ -317,7 +323,35 @@ class BinomialSmoother(picmistandard.PICMI_BinomialSmoother):
 
 class CylindricalGrid(picmistandard.PICMI_CylindricalGrid):
     def init(self, kw):
-        raise Exception('PICMI WARP file does not support CylindricalGrid yet')
+        w3d.nx = self.nr
+        w3d.ny = 0
+        w3d.nz = self.nz
+        w3d.xmmin = self.rmin
+        w3d.xmmax = self.rmax
+        w3d.ymmin = 0.
+        w3d.ymmax = 1.
+        w3d.zmmin = self.zmin
+        w3d.zmmax = self.zmax
+
+        bc_dict = {'dirichlet':warp.dirichlet,
+                     'neumann':warp.neumann,
+                    'periodic':warp.periodic,
+                        'open':warp.openbc}
+        self.bounds = [bc_dict[self.lower_boundary_conditions[0]], bc_dict[self.upper_boundary_conditions[0]],
+                       bc_dict[self.lower_boundary_conditions[-1]], bc_dict[self.upper_boundary_conditions[-1]]]
+        w3d.boundxy = self.bounds[1]
+        w3d.bound0 = self.bounds[2]
+        w3d.boundnz = self.bounds[3]
+        top.pboundxy = self.bounds[1]
+        top.pbound0 = self.bounds[2]
+        top.pboundnz = self.bounds[3]
+        if top.pboundxy == warp.openbc: top.pboundxy = warp.absorb
+        if top.pbound0 == warp.openbc: top.pbound0 = warp.absorb
+        if top.pboundnz == warp.openbc: top.pboundnz = warp.absorb
+
+        if self.moving_window_velocity is not None:
+            top.vbeam = top.vbeamfrm = self.moving_window_velocity[-1]
+            top.lgridqnt = true
     
 
 class Cartesian2DGrid(picmistandard.PICMI_Cartesian2DGrid):
@@ -445,6 +479,7 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
                               norderz = self.stencil_order[2], 
                               ntsub = ntsub, 
                               l_2dxz = self.grid.number_of_dimensions == 2, 
+                              l_2drz = isinstance(self.grid, CylindricalGrid),
                               l_1dz = self.grid.number_of_dimensions == 1, 
                               spectral = spectral, 
                               npass_smooth = npass_smooth,
