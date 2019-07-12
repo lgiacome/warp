@@ -571,9 +571,12 @@ class Simulation(picmistandard.PICMI_Simulation):
 
         self.inputs_initialized = True
 
-        top.boost_gamma = self.gamma_boost
+        if self.gamma_boost is not None:
+            top.boost_gamma = self.gamma_boost
+        else:
+            top.boost_gamma = 1.
 
-        if self.gamma_boost > 1:
+        if top.boost_gamma > 1:
             boost = BoostConverter(top.boost_gamma)
             w3d.zmmin, w3d.zmmax = boost.copropag_length([w3d.zmmin, w3d.zmmax],
                                                          beta_object = self.solver.grid.moving_window_velocity[-1]/c)
@@ -603,7 +606,7 @@ class Simulation(picmistandard.PICMI_Simulation):
             self.initialize_beam_fields()
 
         for i in range(len(self.lasers)):
-            self.lasers[i].initialize_laser_inputs(self.solver, self.laser_injection_methods[i], self.gamma_boost)
+            self.lasers[i].initialize_laser_inputs(self.solver, self.laser_injection_methods[i], top.boost_gamma)
 
         for diag in self.diagnostics:
             diag.initialize_diag_inputs(sim = self)
