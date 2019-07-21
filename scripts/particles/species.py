@@ -223,6 +223,15 @@ for elemt in elements:
         Ionization_Levels[4] = 97.888
         Ionization_Levels[5] = 552.057
         Ionization_Levels[6] = 667.029
+    if Z == 8:  # --- O
+        Ionization_Levels[0] = 13.6180540
+        Ionization_Levels[1] = 35.121110
+        Ionization_Levels[2] = 54.93554
+        Ionization_Levels[3] = 77.41350
+        Ionization_Levels[4] = 113.89890
+        Ionization_Levels[5] = 138.1189
+        Ionization_Levels[6] = 739.326790
+        Ionization_Levels[7] = 871.409850        
     if Z == 10:  # --- Ne
         Ionization_Levels[0] = 21.564
         Ionization_Levels[1] = 40.962
