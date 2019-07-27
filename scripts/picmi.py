@@ -499,10 +499,41 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
                 self.stencil_order = [2, 2, 2]
                 
         if isinstance(self.source_smoother, BinomialSmoother): 
+            # --- Messy code that handles either None, a single value, or a triplet as input
+            # --- for each of the quantities.
             npass_smooth = self.source_smoother.n_pass
+            if npass_smooth is None:
+                npass_smooth = [[ 1 ], [ 1 ], [ 1 ]]
+            else:
+                try:
+                    len(npass_smooth)
+                except TypeError:
+                    npass_smooth = [[npass_smooth], [npass_smooth], [npass_smooth]]
             alpha_smooth = self.source_smoother.alpha
+            if alpha_smooth is None:
+                alpha_smooth = [[ 0.5 ], [ 0.5 ], [ 0.5 ]]
+            else:
+                try:
+                    len(alpha_smooth)
+                except TypeError:
+                    alpha_smooth = [[alpha_smooth], [alpha_smooth], [alpha_smooth]]
             stride_smooth = self.source_smoother.stride
+            if stride_smooth is None:
+                stride_smooth = [[ 1 ], [ 1 ], [ 1 ]]
+            else:
+                try:
+                    len(stride_smooth)
+                except TypeError:
+                    stride_smooth = [[stride_smooth], [stride_smooth], [stride_smooth]]
+            if self.source_smoother.compensation:
+                for npass in npass_smooth:
+                    npass.append(1)
+                for alpha in alpha_smooth:
+                    alpha.append(3./2.)
+                for stride in stride_smooth:
+                    stride.append(stride[0])
             if (self.grid.number_of_dimensions == 2): 
+                # --- With two dimensions, set to 0 passes in y.
                 for i in range(len(npass_smooth[0])):
                     npass_smooth[1][i] = 0
         else: 
@@ -542,9 +573,10 @@ class GaussianLaser(picmistandard.PICMI_GaussianLaser):
         if self.beta is None: self.beta = 0.
         if self.phi2 is None: self.phi2 = 0.
         antenna_z0 = antenna.position[2]
+        theta_pol = np.arctan2(self.polarization_direction[1], self.polarization_direction[0])
         add_laser(solver.solver, dim, self.a0, self.waist, self.duration*warp.clight,
                   self.centroid_position[2], self.focal_position[2],
-                  lambda0=self.wavelength, theta_pol=self.polarization_angle, source_z=antenna_z0,
+                  lambda0=self.wavelength, theta_pol=theta_pol, source_z=antenna_z0,
                   zeta=self.zeta, beta=self.beta, phi2=self.phi2, 
                   gamma_boost=gamma_boost, laser_file=None, laser_file_energy=None)
 
