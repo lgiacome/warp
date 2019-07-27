@@ -73,16 +73,18 @@ class Species(picmistandard.PICMI_Species):
             installparticleloader(self.particle_loader)
 
     def particle_loader(self):
-        self.initial_distribution.loaddistribution(self.wspecies, self.layout)
+        self.initial_distribution.loaddistribution(self.wspecies, self.layout, self.density_scale)
 
 
 picmistandard.PICMI_MultiSpecies.Species_class = Species
 class MultiSpecies(picmistandard.PICMI_MultiSpecies):
-    pass
+    def initialize_species_inputs(self, layout):
+        for species in self.species_instances_list:
+            species.initialize_species_inputs(layout)
 
 
 class GaussianBunchDistribution(picmistandard.PICMI_GaussianBunchDistribution):
-    def loaddistribution(self, species, layout):
+    def loaddistribution(self, species, layout, density_scale):
         assert isinstance(layout, PseudoRandomLayout), Exception('Warp only supports PseudoRandomLayout with GaussianBunchDistribution')
         assert layout.n_macroparticles is not None, Exception('Warp only support n_macroparticles with PseudoRandomLayout with GaussianBunchDistribution')
         np = layout.n_macroparticles
@@ -102,6 +104,8 @@ class GaussianBunchDistribution(picmistandard.PICMI_GaussianBunchDistribution):
         vydiv = self.velocity_divergence[1]
         vzdiv = self.velocity_divergence[2]
         w = self.n_physical_particles/np
+        if density_scale is not None:
+            w *= density_scale
         species.add_gaussian_dist(np, deltax, deltay, deltaz, vthx, vthy, vthz,
                                   xmean, ymean, zmean, vxmean, vymean, vzmean, vxdiv, vydiv, vzdiv,
                                   zdist='random', rdist='linear', fourfold=False, lmomentum=True, w=w)
@@ -143,7 +147,7 @@ class GaussianBunchDistribution(picmistandard.PICMI_GaussianBunchDistribution):
 
 
 class UniformDistribution(picmistandard.PICMI_UniformDistribution):
-    def loaddistribution(self, species, layout):
+    def loaddistribution(self, species, layout, density_scale):
         xmin = self.lower_bound[0]
         if xmin is None:
             xmin = -largepos
@@ -170,6 +174,8 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
         uz_m = self.directed_velocity[2]
 
         density = self.density
+        if density_scale is not None:
+            density *= density_scale
 
         if top.boost_gamma > 1.:
             boost = BoostConverter(top.boost_gamma)
@@ -234,7 +240,7 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
 
 
 class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
-    def loaddistribution(self, species, layout):
+    def loaddistribution(self, species, layout, density_scale):
         xmin = self.lower_bound[0]
         if xmin is None:
             xmin = -largepos
@@ -282,17 +288,21 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
 
             if isinstance(self.density_expression, str):
                 cell_volume_per_particle = w3d.dx*w3d.dy*w3d.dz/(p_nx*p_ny*p_nz)*density_boost_converter
-                def dens_func(x, y, z, density=self.density_expression, cell_volume_per_particle=cell_volume_per_particle, z_boost_converter=z_boost_converter):
+                def dens_func(x, y, z, density=self.density_expression, cell_volume_per_particle=cell_volume_per_particle, z_boost_converter=z_boost_converter, density_scale=density_scale):
                     # --- Include globals so that numpy is available
                     if top.boost_gamma > 1.:
                         z = z/z_boost_converter
                     dct = locals()
                     dct.update(self.user_defined_kw)
                     d = eval(density, globals(), dct)
+                    if density_scale is not None:
+                        d *= density_scale
                     return d*cell_volume_per_particle
             else:
                 npreal_per_cell = self.density_expression*w3d.dx*w3d.dy*w3d.dz*density_boost_converter
                 w = npreal_per_cell/(p_nx*p_ny*p_nz)
+                if density_scale is not None:
+                    w *= density_scale
                 def dens_func(x, y, z, w=w):
                     return w
 
@@ -328,6 +338,8 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
                 np = layout.n_macroparticles
             # The particle weight
             npreal = self.density_expression*(xmax - xmin)*(ymax - ymin)*(zmax - zmin)*density_boost_converter
+            if density_scale is not None:
+                npreal *= density_scale
             w = np.full(np, npreal/np)
             species.add_uniform_box(np=np, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
                                     vthx=ux_th, vthy=uy_th, vthz=uz_th,
@@ -337,7 +349,8 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
 
 
 class ParticleListDistribution(picmistandard.PICMI_ParticleListDistribution):
-    def loaddistribution(self, species, layout):
+    def loaddistribution(self, species, layout, density_scale):
+        # Something is needed to set the particle weight
         species.addparticles(x=self.x, y=self.y, z=self.z, ux=self.ux, uy=self.uy, uz=self.uz,
                              vx=None, vy=None, vz=None)
 
@@ -613,7 +626,7 @@ class Simulation(picmistandard.PICMI_Simulation):
         if top.boost_gamma > 1:
             boost = BoostConverter(top.boost_gamma)
             w3d.zmmin, w3d.zmmax = boost.copropag_length([w3d.zmmin, w3d.zmmax],
-                                                         beta_object = self.solver.grid.moving_window_velocity[-1]/c)
+                                                         beta_object = self.solver.grid.moving_window_velocity[-1]/warp.clight)
 
         for i in range(len(self.species)):
             if self.species[i].particle_shape is None:
