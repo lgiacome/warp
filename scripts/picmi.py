@@ -14,12 +14,14 @@ import warp
 codename = 'warp'
 picmistandard.register_codename(codename)
 
-c = warp.clight
-ep0 = warp.eps0
-mu0 = warp.mu0
-q_e = warp.echarge
-m_e = warp.Electron.mass
-m_p = warp.Proton.mass
+class constants:
+    # --- Put the constants in their own namespace
+    c = warp.clight
+    ep0 = warp.eps0
+    mu0 = warp.mu0
+    q_e = warp.echarge
+    m_e = warp.Electron.mass
+    m_p = warp.Proton.mass
 
 # --- Always assume that relativity should be turned on.
 warp.top.lrelativ = warp.true
