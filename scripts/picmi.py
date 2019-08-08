@@ -554,7 +554,8 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
             alpha_smooth = [[ 1.], [ 1.], [ 1.]]
             stride_smooth = [[ 1 ], [ 1 ], [ 1 ]]      
             
-        self.solver = EM3DFFT(stencil=stencil, 
+        self.solver = EM3DFFT(stencil = stencil, 
+                              dtcoef = self.cfl,
                               norderx = self.stencil_order[0], 
                               nordery = self.stencil_order[1], 
                               norderz = self.stencil_order[2], 
