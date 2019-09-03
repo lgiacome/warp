@@ -8,6 +8,7 @@ from .init_tools.boost_tools import BoostConverter
 from .init_tools.plasma_initialization import PlasmaInjector
 from .init_tools.beam_tools import initialize_beam_fields
 from .field_solvers.em3dsolverFFT import *
+from .field_solvers.multigrid import *
 from .data_dumping import openpmd_diag
 import warp
 
@@ -576,7 +577,7 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
 
 class ElectrostaticSolver(picmistandard.PICMI_ElectrostaticSolver):
     def initialize_solver_inputs(self):
-        self.solver = MultiGrid3d()
+        self.solver = MultiGrid3D()
 
 
 class GaussianLaser(picmistandard.PICMI_GaussianLaser):
