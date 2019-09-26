@@ -371,6 +371,10 @@ helepe(1:nhmlt,0:nhele)   _real    [rad]
                               # phase angle of h.e. electric multipoles
 helepm(1:nhmlt,0:nhele)   _real    [rad]
                               # phase angle of h.e. magnetic multipoles
+helesf(0:nhele)   _real [1] /0./ # Scale factor for hard edged multipoles
+                                 # Field is scaled by (helesc+helesf)
+helesc(0:nhele)   _real [1] /1./ # Scale factor for hard edged multipoles
+                                 # Field is scaled by (helesc+helesf)
 helene(0:nhele)   _integer [1] # no. elec multipoles in h.e. element (auto-set)
 helenm(0:nhele)   _integer [1] # no. mag  multipoles in h.e. element (auto-set)
 heleox(0:nhele)   _real    [m] # X-offsets of h.e. multipole centers
