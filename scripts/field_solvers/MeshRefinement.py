@@ -3409,7 +3409,9 @@ class EMMRBlock(MeshRefinement,EM3D):
         # --- smooth current density
         self.smoothdensity()
         # -- add laser 
-        self.add_laser(self.block.core.yf)
+        # -- add laser, loop on the different antennas
+        for i in range(len(self.laser_antenna)):
+            self.add_laser(self.block.core.yf, self.laser_antenna[i])
         self.applysourceboundaryconditions()
         if self.l_verbose:print 'finalizesourcep done'
 
