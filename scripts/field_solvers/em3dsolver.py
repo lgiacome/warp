@@ -6336,7 +6336,7 @@ class EM3D(SubcycledPoissonSolver):
         self.num_Cherenkov_cor_coefs["Uniform"].append(array([[-3.01526,3.26469,-1.47449,0.225082],[-2.51528,2.13227,-0.661275,0.0450525]]))
 
     def get_num_Cherenkov_cor_coefs(self):
-        dtodz=clight*top.dt/self.dz
+        dtodz=clight*top.dt/(self.dz*self.ntsub)
         allcoefs=self.num_Cherenkov_cor_coefs[self.gather_method]
         ndt=shape(allcoefs[...])[0]
         dtodz_unit=1./(ndt-1)
