@@ -226,13 +226,13 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
             zmax = min(zmax, w3d.zmmax)
             # Determine the number of particles to load
             if layout.n_macroparticles_per_cell is not None:
-                np = layout.n_macroparticles_per_cell*w3d.nx*w3d.ny*w3d.nz
+                npart = layout.n_macroparticles_per_cell*w3d.nx*w3d.ny*w3d.nz
             elif layout.n_macroparticles is not None:
-                np = layout.n_macroparticles
+                npart = layout.n_macroparticles
             # The particle weight
             npreal = density*(xmax - xmin)*(ymax - ymin)*(zmax - zmin)
-            w = np.full(np, npreal/np)
-            species.add_uniform_box(np=np, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
+            w = np.full(npart, npreal/npart)
+            species.add_uniform_box(np=npart, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
                                     vthx=ux_th, vthy=uy_th, vthz=uz_th,
                                     vxmean=ux_m, vymean=uy_m, vzmean=uz_m,
                                     lmomentum=1, spacing='random',
@@ -478,6 +478,7 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
         self.type_rz_depose = kw.pop('warp_type_rz_depose', EM3D.__flaginputs__['type_rz_depose'])
         self.l_setcowancoefs = kw.pop('warp_l_setcowancoefs', EM3D.__flaginputs__['l_setcowancoefs'])
         self.l_getrho = kw.pop('warp_l_getrho', EM3D.__flaginputs__['l_getrho'])
+        self.l_pushf = kw.pop('warp_l_pushf', EM3D.__flaginputs__['l_pushf'])
 
     def initialize_solver_inputs(self):
         if self.method is not None:
@@ -572,6 +573,7 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
                               type_rz_depose = self.type_rz_depose,
                               l_setcowancoefs = self.l_setcowancoefs,
                               current_cor = spectral,
+                              l_pushf = self.l_pushf,
                               l_getrho = self.l_getrho)
 
 
