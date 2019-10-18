@@ -700,77 +700,30 @@ class Secondaries:
                                     itypes=AppendableArray(typecode='i',autobump=100)
                                 else:
                                     itypes=None
-                                if 1:
-                                    itype=self.inter[incident_species]['type'][ics]
-                                    scale_factor=self.inter[incident_species]['scale_factor'][ics]
-                                    if scale_factor is None:scale_factor=1.
-                                    self.prepare_secondaries(itype,posC.maxsec)
-                                    if top.wpid==0:weight=ones(n,'d')
-                                    xnew = zeros(n*posC.maxsec,'d')
-                                    ynew = zeros(n*posC.maxsec,'d')
-                                    znew = zeros(n*posC.maxsec,'d')
-                                    uxsec = zeros(n*posC.maxsec,'d')
-                                    uysec = zeros(n*posC.maxsec,'d')
-                                    uzsec = zeros(n*posC.maxsec,'d')
-                                    ns = array([n*posC.maxsec])
-                                    pos.secelecarray(n,e0,coseta,weight,ns,xnew,ynew,znew,uxsec,uysec,uzsec,
-                                                costheta,sintheta,sinphi,cosphi,n_unit0,xplost,yplost,zplost,vxplost,vyplost,vzplost,
-                                                top.pgroup.sm[js_new],Electron.mass,scale_factor,init_position_offset)
-                                    ns = ns[0]
-                                    if ns>0:
-                                        xnew=xnew[:ns]
-                                        ynew=ynew[:ns]
-                                        znew=znew[:ns]
-                                        uxsec=uxsec[:ns]
-                                        uysec=uysec[:ns]
-                                        uzsec=uzsec[:ns]
-                                else:
-                                    ns = 0
-                                    xnew=AppendableArray(typecode='d',autobump=100)
-                                    ynew=AppendableArray(typecode='d',autobump=100)
-                                    znew=AppendableArray(typecode='d',autobump=100)
-                                    uxsec=AppendableArray(typecode='d',autobump=100)
-                                    uysec=AppendableArray(typecode='d',autobump=100)
-                                    uzsec=AppendableArray(typecode='d',autobump=100)
-                                    for i in range(n):
-                                        if top.wpid>0:
-                                            self.generate_secondaries(e0[i],coseta[i],weight[i],self.inter[incident_species]['type'][ics],
-                                                                      scale_factor=self.inter[incident_species]['scale_factor'][ics])
-                                        else:
-                                            self.generate_secondaries(e0[i],coseta[i],weight,self.inter[incident_species]['type'][ics],
-                                                                      scale_factor=self.inter[incident_species]['scale_factor'][ics])
-                                        if self.secelec_ns[0]>0:
-                                            nsemit=self.secelec_ns[0]
-                                            ns+=nsemit
-                                            ut=self.secelec_ut[:nsemit]
-                                            un=self.secelec_un[:nsemit]
-                                            uz=self.secelec_uz[:nsemit]
-                                            if self.piditype>0:
-                                                itypes.append(self.secelec_ityps[:ns])
-                                            if self.l_verbose:
-                                                e0[i], coseta[i],i1,i2,iit[i],top.npslost,self.secelec_dele,self.secelec_delr,self.secelec_delts
-                                            x,y,z,ux,uy,uz =  self.getxv(i,costheta,sintheta,sinphi,cosphi,n_unit0,xplost,yplost,zplost,vxplost,vyplost,vzplost,un,ut,uz,init_position_offset)
-                                            xnew.append(x)
-                                            ynew.append(y)
-                                            znew.append(z)
-                                            uxsec.append(ux)
-                                            uysec.append(uy)
-                                            uzsec.append(uz)
-                                    # --- In case that the mass of electrons was artificially changed for
-                                    # --- numerical convenience, the velocity of emitted electrons is scaled
-                                    # --- so that energy is conserved.
-                                    if top.pgroup.sm[js_new] != Electron.mass:
-                                        mfact = sqrt(Electron.mass/top.pgroup.sm[js_new])
-                                        uxsec[:]*=mfact
-                                        uysec[:]*=mfact
-                                        uzsec[:]*=mfact
-                                    xnew=xnew.data()
-                                    ynew=ynew.data()
-                                    znew=znew.data()
-                                    uxsec=uxsec.data()
-                                    uysec=uysec.data()
-                                    uzsec=uzsec.data()
-
+                                
+                                itype=self.inter[incident_species]['type'][ics]
+                                scale_factor=self.inter[incident_species]['scale_factor'][ics]
+                                if scale_factor is None:scale_factor=1.
+                                self.prepare_secondaries(itype,posC.maxsec)
+                                if top.wpid==0:weight=ones(n,'d')
+                                xnew = zeros(n*posC.maxsec,'d')
+                                ynew = zeros(n*posC.maxsec,'d')
+                                znew = zeros(n*posC.maxsec,'d')
+                                uxsec = zeros(n*posC.maxsec,'d')
+                                uysec = zeros(n*posC.maxsec,'d')
+                                uzsec = zeros(n*posC.maxsec,'d')
+                                ns = array([n*posC.maxsec])
+                                pos.secelecarray(n,e0,coseta,weight,ns,xnew,ynew,znew,uxsec,uysec,uzsec,
+                                            costheta,sintheta,sinphi,cosphi,n_unit0,xplost,yplost,zplost,vxplost,vyplost,vzplost,
+                                            top.pgroup.sm[js_new],Electron.mass,scale_factor,init_position_offset)
+                                ns = ns[0]
+                                if ns>0:
+                                    xnew=xnew[:ns]
+                                    ynew=ynew[:ns]
+                                    znew=znew[:ns]
+                                    uxsec=uxsec[:ns]
+                                    uysec=uysec[:ns]
+                                    uzsec=uzsec[:ns]
                             else: # incidents are atoms or ions
                                 ##########################################
                                 # atom/ion-induced emission of electrons #
@@ -1515,81 +1468,6 @@ class Secondaries:
         if  itype != self.mat_number:
             self.mat_number=itype
             self.call_set_params_user(maxsec,self.mat_number)
-
-    def generate_secondaries(self,Ek0,costheta,weight,itype,maxsec=10,scale_factor=None):
-        """
-        Wrapper to secondary electrons routine secelec.
-         - Ek0      # energy in eV
-         - costheta # cosine of the angle; costheta = 1. is normal incidence
-         - weight   # weight of macroparticle
-         - itype    # type of interaction
-                    # = 1: e- -> Cu (default)
-                    # = 2: e- -> Stainless Steel
-                    # = 3: H  -> Au
-                    # = 4: He -> Au
-                    # = 5: K  -> SS
-         - maxsec   # size of secondary arrays
-         - set_params_user # alternate set_params routine provided by the user
-
-        Given the incident energy Ek0 and costheta, subroutine SECELEC first
-        decides how many secondary electrons (NS) are generated in the
-        collision (NS is constrained to lie in [0,MAXSEC]). It then generates the
-        kinetic energies (in [eV]) and the angles (in [rad]) of these NS
-        secondaries. From the energies and angles, it computes
-        the normalized velocity (bn,bt,bz)=(inward normal,CCW tangent,longitudinal)
-        components of the secondaries (dimensionless).
-        """
-
-        self.prepare_secondaries(itype,maxsec)
-
-        ndelerm=0
-        ndeltspm=0
-        np0lt0=0
-        np1gt1=0
-        if scale_factor is None:
-            if pos_version >= '17p3':
-                pos.secelec(Ek0,costheta,weight, #in
-                     self.secelec_ns,self.secelec_un,self.secelec_ut,self.secelec_uz,self.secelec_ityps,
-                     self.secelec_ekstot,self.secelec_dele,self.secelec_delr,self.secelec_delts)
-            else:
-                pos.secelec(Ek0,costheta,weight, #in
-                            self.secelec_ns,self.secelec_un,self.secelec_ut,self.secelec_uz,self.secelec_ityps,
-                            self.secelec_ekstot,self.secelec_dele,self.secelec_delr,self.secelec_delts,
-                            maxsec,posC.enpar,posC.pnpar,posC.matsurf,
-                            posC.pangsec,posC.pmax,posC.pr,posC.sige,
-                            posC.iprob,ndelerm,ndeltspm,np0lt0,np1gt1,
-                            posC.dtspk,posC.Ecr,posC.E0tspk,posC.E0epk,posC.E0w,
-                            posC.rpar1,posC.rpar2,posC.tpar1,posC.tpar2,posC.tpar3,
-                            posC.tpar4,posC.tpar5,posC.tpar6,posC.epar1,posC.epar2,
-                            posC.P1rinf,posC.P1einf,posC.P1epk,posC.powts,posC.powe,posC.qr,posC.nbc,
-                            posC.rp0lt0,posC.rp1gt1,posC.rdeltspm,posC.rdelerm)
-        else:
-            if pos_version >= '17p3':
-                raise Exception('this should call scale_SEY_params')
-            else:
-                pos.secelec(Ek0,costheta,weight, #in
-                            self.secelec_ns,self.secelec_un,self.secelec_ut,self.secelec_uz,self.secelec_ityps,
-                            self.secelec_ekstot,self.secelec_dele,self.secelec_delr,self.secelec_delts,
-                            maxsec,posC.enpar,posC.pnpar,posC.matsurf,
-                            posC.pangsec,posC.pmax,posC.pr,posC.sige,
-                            posC.iprob,ndelerm,ndeltspm,np0lt0,np1gt1,
-                            scale_factor*posC.dtspk,posC.Ecr,posC.E0tspk,posC.E0epk,posC.E0w,
-                            posC.rpar1,posC.rpar2,posC.tpar1,posC.tpar2,posC.tpar3,
-                            posC.tpar4,posC.tpar5,posC.tpar6,posC.epar1,posC.epar2,
-                            scale_factor*posC.P1rinf,
-                            scale_factor*posC.P1einf,
-                            scale_factor*posC.P1epk,
-                            posC.powts,posC.powe,posC.qr,posC.nbc,
-                            posC.rp0lt0,posC.rp1gt1,posC.rdeltspm,posC.rdelerm)
-#       call secelec(Ek0,costheta,chm(n),ns,vgns,vgts,vgzs,ityps,ens,
-#     + dele,delr,delts,
-#     + maxsec,enpar,pnpar,matsurf,
-#     + pangsec,pmax,pr,sige,
-#     + iprob,ndelerm,ndeltspm,np0lt0,np1gt1,
-#     + dtspk,Ecr,E0tspk,E0epk,E0w,
-#     + rpar1,rpar2,tpar1,tpar2,tpar3,tpar4,tpar5,tpar6,epar1,epar2,
-#     + P1rinf,P1einf,P1epk,powts,powe,qr,nbc,
-#     + rp0lt0,rp1gt1,rdeltspm,rdelerm)
 
     def getP1elast(self,E0,costheta,material,maxsec=10):
         self.set_params(maxsec,material)
