@@ -1484,56 +1484,6 @@ class Secondaries:
                        posC.powts,posC.tpar1,posC.tpar2,posC.tpar3,
                        posC.tpar4,posC.tpar5,posC.tpar6)
 
-    def generate_probabilities(self,mye0,mycostheta,mymaterial,maxsec=10,iprob=4):
-
-        if(maxsec != posC.maxsec):
-            posC.maxsec = maxsec
-            posC.gchange("bincoeff")
-            if pos_version >= '17p3':
-                pos.init_pascal_triangle()
-            else:
-                pos.init_pascal_triangle(posC.nbc,posC.maxsec)
-
-         # posC.enpar = zeros(maxsec,float64)
-         # posC.pnpar = zeros(maxsec,float64)
-
-         # Initialize all parameters  #
-         # 1 = Cu (default)
-         # 2 = Stainless Steel
-         # 3 = H+ on Au
-        mat_number = mymaterial
-
-        self.set_params(maxsec,mat_number)
-
-        #  if posC.ielswitch or posC.iredswitch:
-        #    posC.dtspk=posC.dtotpk-posC.P1einf-posC.P1rinf
-
-        # --- Seed random number generator
-        # semod.rnset(0)
-
-        # --- define inputs
-        Ek0 = mye0 # energy in eV
-        costheta=mycostheta # cosine of the angle; costheta = 1. is normal incidence
-        posC.iprob = iprob
-
-        # --- define outputs
-        dele   = zeros(1,'d')
-        delr   = zeros(1,'d')
-        delts  = zeros(1,'d')
-        prob = zeros(maxsec+1,float64)
-        probts = zeros(maxsec+1,float64)
-
-        posC.gen_prob(Ek0,costheta,dele,delr,delts, #in
-                maxsec,posC.iprob,prob,probts,
-                posC.ndelerm,posC.ndeltspm,posC.pmax,posC.np0lt0,posC.np1gt1,
-                posC.dtspk,posC.Ecr,posC.E0tspk,posC.E0epk,posC.E0w,
-                posC.rpar1,posC.rpar2,posC.tpar1,posC.tpar2,posC.tpar3,
-                posC.tpar4,posC.tpar5,posC.tpar6,posC.epar1,posC.epar2,
-                posC.P1rinf,posC.P1einf,posC.P1epk,posC.powts,posC.powe,posC.qr,posC.nbc)
-        # --- The result 'res' is a list of 4 things
-        # --- Here I just assign them to more useful names
-        return  prob,probts
-
     def sey2(self,energy):
         maxsec=10
 
