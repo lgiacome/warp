@@ -544,6 +544,7 @@ class Secondaries:
                         pysum += sum(weight*uyplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
                         pzsum += sum(weight*uzplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
                     ek0max=max(max(e0),ek0max)
+                    # Collection of data for post-processing
                     if 1:#cond.lcollectlpdata:
                         if js not in cond.lostparticles_angles:
                             cond.lostparticles_angles[js]=zeros(181,'d')
@@ -1233,6 +1234,8 @@ class Secondaries:
                         pysum += sum(weight*uyplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
                         pzsum += sum(weight*uzplost)*top.pgroup.sm[js]*top.pgroup.sw[js]
                     ek0max=max(max(e0),ek0max)
+                    
+                    ## Collection of data
                     if 1:#cond.lcollectlpdata:
                         if js not in cond.lostparticles_angles:
                             cond.lostparticles_angles[js]=zeros(181,'d')
@@ -1558,8 +1561,10 @@ class Secondaries:
                                 tgen+=wtime()-tstart
                                 tstart=wtime()
                             if ns>0:
+                                # Record number of emitted
                                 self.inter[incident_species]['emitted'][ics][ie] += ns*top.pgroup.sq[js_new]*top.pgroup.sw[js_new]
                                 self.inter[incident_species]['absorbed'][ics][ie] += top.pgroup.sq[js]*top.pgroup.sw[js]
+                                
                                 # pid[:,self.xoldpid]=xnew-vx*top.dt
                                 # pid[:,self.yoldpid]=ynew-vy*top.dt
                                 # pid[:,self.zoldpid]=znew-vz*top.dt
