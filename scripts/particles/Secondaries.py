@@ -32,6 +32,8 @@ except:
     l_desorb = 0
 import time
 
+def coldotprod(a, b):
+    return np.sum(a*b, axis=0)
 
 def secondariesdoc():
     from ..particles import Secondaries
@@ -1190,7 +1192,7 @@ class Secondaries:
         it2_impact = np.array([
             -sinphi,
             cosphi,
-            0. * sintheta)
+            0. * sintheta])
         
         in_impact = np.array([
             cosphi*sintheta,
