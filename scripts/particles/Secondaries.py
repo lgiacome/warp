@@ -1190,7 +1190,7 @@ class Secondaries:
     def pyecloud_secondary_emission(sintheta, costheta, sinphi, cosphi,
                                         weightplost, 
                                         xplost, yplost, zplost,
-                                        vxplost, vyplost, vzplost)
+                                        vxplost, vyplost, vzplost):
 
         # Build normal and tangent unit vectors 
         it1_impact = np.array([
