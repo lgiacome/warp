@@ -1199,6 +1199,20 @@ class Secondaries:
             sinphi*sintheta, 
             costheta])
 
+        # Define local reference system (_impact)
+        ix_impact = it1_impact
+        iy_impact = in_impact
+        iz_impact = it2_impact
+
+        # Transform velocities
+        u_vect = np.array([
+            uxplost,
+            uyplost,
+            uzplost,
+            ])
+        vx_impact = coldotprod(u_vect, ix_impact)
+        vy_impact = coldotprod(u_vect, iy_impact)
+        vz_impact = coldotprod(u_vect, iz_impact)
 
         # There is no need to transform the positions
         # (they are just copied from primary to secondary)
@@ -1206,13 +1220,25 @@ class Secondaries:
         y_impact = yplost
         z_impact = zplost
 
+        # We defined our reference system so the the iy is the normal
+        Norm_x = np.zeros_like(xplost)
+        Norm_y = np.ones_like(xplost)
+
+        # Some auxiliary quantity
+        v_impact_n = vy_impact
+        v_impact_mod = np.sqrt(np.sum(u_vect*u_vect, axis=0))
+        costheta_impact = np.abs(v_impact_n / v_impact_mod)
+        E_impact_eV = 0.5 * MP_e.mass / qe * v_impact_mod * v_impact_mod
+        i_found = None
+        flag_seg = False
+
         (nel_emit_tot_events, event_type, event_info,
            nel_replace, x_replace, y_replace, z_replace,
            vx_replace, vy_replace, vz_replace, i_seg_replace,
            nel_new_MPs, x_new_MPs, y_new_MPs, z_new_MPs,
            vx_new_MPs, vy_new_MPs, vz_new_MPs, i_seg_new_MPs,
            ) = sey_mod.impacts_on_surface(
-           MP_e.mass, nel_impact, x_impact, y_impact, z_impact,
+           e_mass, nel_impact, x_impact, y_impact, z_impact,
            vx_impact, vy_impact, vz_impact, Norm_x, Norm_y, i_found,
            v_impact_n, E_impact_eV, costheta_impact, nel_mp_th, flag_seg)
 
