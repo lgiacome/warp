@@ -731,7 +731,7 @@ class Secondaries:
                                 
                                 if self.flag_pyecloud:
                                     (xnew, ynew, znew, 
-                                     uxsec, uysec, uzsec) = self.pyeclsecemi.impacts(
+                                     uxsec, uysec, uzsec) = self.pyecloud_sevondary_emission(
                                         sintheta[:n], costheta[:n], sinphi[:n], cosphi[:n],
                                         xplost[:n], yplost[:n], zplost[:n],
                                         vxplost[:n], vyplost[:n], vzplost[:n])
@@ -1176,6 +1176,46 @@ class Secondaries:
             znew +=n_unit0[2][i]*init_position_offset
         return xnew,ynew,znew,uxsec,uysec,uzsec
 
+    def pyecloud_sevondary_emission(sintheta, costheta, sinphi, cosphi,
+                                        weightlost, 
+                                        xplost, yplost, zplost,
+                                        vxplost, vyplost, vzplost)
+
+        # Build normal and tangent unit vectors 
+        it1_impact = np.array([
+            cosphi * costheta,
+            sinphi * costheta,
+            -sintheta])
+        
+        it2_impact = np.array([
+            -sinphi,
+            cosphi,
+            0. * sintheta)
+        
+        in_impact = np.array([
+            cosphi*sintheta,
+            sinphi*sintheta, 
+            costheta])
+
+
+        # There is no need to transform the positions
+        # (they are just copied from primary to secondary)
+        x_impact = xplost
+        y_impact = yplost
+        z_impact = zplost
+
+        (nel_emit_tot_events, event_type, event_info,
+           nel_replace, x_replace, y_replace, z_replace,
+           vx_replace, vy_replace, vz_replace, i_seg_replace,
+           nel_new_MPs, x_new_MPs, y_new_MPs, z_new_MPs,
+           vx_new_MPs, vy_new_MPs, vz_new_MPs, i_seg_new_MPs,
+           ) = sey_mod.impacts_on_surface(
+           MP_e.mass, nel_impact, x_impact, y_impact, z_impact,
+           vx_impact, vy_impact, vz_impact, Norm_x, Norm_y, i_found,
+           v_impact_n, E_impact_eV, costheta_impact, nel_mp_th, flag_seg)
+
+
+        return xnew, ynew, znew, uxnew, uynew, uznew, weightnew
 
 
     def set_params(self,maxsec,mat_num=None):
