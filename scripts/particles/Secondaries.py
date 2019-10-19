@@ -76,7 +76,8 @@ class Secondaries:
                       l_set_params_user_only=0,lcallscrapercontrollers=0,l_trackssnparents=0,
                       l_usenew=1,
                       luseoldpositionifout=False,
-                      maxsec=None, pyecloud_secemi_object=None):
+                      maxsec=None, pyecloud_secemi_object=None, pyecloud_fact_clean=None,
+                      pyecloud_fact_split=None, pyecloud_nel_mp_ref=None):
 
         if pyecloud_secemi_object is not None:
             assert(l_set_params_user_only == 0)
@@ -86,9 +87,17 @@ class Secondaries:
             assert(set_params_user is None)
             assert(material is None)
             assert(maxsec is None) # Probably just ignored
-            
+           
+            assert(pyecloud_fact_clean is not None)
+            assert(pyecloud_fact_split is not None)
+            assert(pyecloud_nel_mp_ref is not None)
+
             self.flag_pyecloud = True
             self.pyeclsecemi = pyecloud_secemi_object
+            self.pyecloud_fact_clean = pyecloud_fact_clean
+            self.pyecloud_fact_split = pyecloud_fact_split
+            self.pyecloud_nel_mp_ref = pyecloud_nel_mp_ref
+            
         else:
             self.flag_pyecloud = False
 
@@ -733,7 +742,7 @@ class Secondaries:
                                 
                                 if self.flag_pyecloud:
                                     (xnew, ynew, znew, 
-                                     uxsec, uysec, uzsec) = self.pyecloud_sevondary_emission(
+                                     uxsec, uysec, uzsec) = self.pyecloud_secondary_emission(
                                         sintheta[:n], costheta[:n], sinphi[:n], cosphi[:n],
                                         xplost[:n], yplost[:n], zplost[:n],
                                         vxplost[:n], vyplost[:n], vzplost[:n])
@@ -1178,8 +1187,8 @@ class Secondaries:
             znew +=n_unit0[2][i]*init_position_offset
         return xnew,ynew,znew,uxsec,uysec,uzsec
 
-    def pyecloud_sevondary_emission(sintheta, costheta, sinphi, cosphi,
-                                        weightlost, 
+    def pyecloud_secondary_emission(sintheta, costheta, sinphi, cosphi,
+                                        weightplost, 
                                         xplost, yplost, zplost,
                                         vxplost, vyplost, vzplost)
 
@@ -1228,9 +1237,11 @@ class Secondaries:
         v_impact_n = vy_impact
         v_impact_mod = np.sqrt(np.sum(u_vect*u_vect, axis=0))
         costheta_impact = np.abs(v_impact_n / v_impact_mod)
-        E_impact_eV = 0.5 * MP_e.mass / qe * v_impact_mod * v_impact_mod
+        E_impact_eV = 0.5 * e_mass / qe * v_impact_mod * v_impact_mod
         i_found = None
         flag_seg = False
+        nel_mp_th = self.pyecloud_fact_split * self.pyecloud_nel_mp_ref
+        nel_impact = weightplost
 
         (nel_emit_tot_events, event_type, event_info,
            nel_replace, x_replace, y_replace, z_replace,
@@ -1242,6 +1253,30 @@ class Secondaries:
            vx_impact, vy_impact, vz_impact, Norm_x, Norm_y, i_found,
            v_impact_n, E_impact_eV, costheta_impact, nel_mp_th, flag_seg)
 
+        x_impact_new = np.concatenate([x_replace, x_new_MPs])
+        y_impact_new = np.concatenate([y_replace, y_new_MPs])
+        z_impact_new = np.concatenate([z_replace, z_new_MPs])
+        vx_impact_new = np.concatenate([vx_replace, vx_new_MPs])
+        vy_impact_new = np.concatenate([vy_replace, vy_new_MPs])
+        vz_impact_new = np.concatenate([vz_replace, vz_new_MPs])
+        weight_impact_new = np.concatenate([nel_replace, nel_new_MPs])
+
+        # Remove small macroparticles
+        mask_keep = weight_impact_new > (self.pyecloud_fact_clean * self.pyecloud_nel_mp_ref)
+        
+        xnew = x_impact_new[mask_keep]
+        ynew = y_impact_new[mask_keep]
+        znew = z_impact_new[mask_keep]
+        vx_impact_new = vx_impact_new[mask_keep]
+        vy_impact_new = vy_impact_new[mask_keep]
+        vz_impact_new = vz_impact_new[mask_keep]
+        weightnew = weight_impact_new[mask_keep]
+
+        # Transform velocities to warp frame
+        u_new = vx_impact_new * ix_impact + vy_impact_new * iy_impact + vz_impact_new * iz_impact 
+        uxnew = u_new[0, :]
+        uynew = u_new[1, :]
+        uznew = u_new[2, :]
 
         return xnew, ynew, znew, uxnew, uynew, uznew, weightnew
 
