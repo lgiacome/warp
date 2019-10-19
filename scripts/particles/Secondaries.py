@@ -87,7 +87,6 @@ class Secondaries:
             
             self.flag_pyecloud = True
             self.pyeclsecemi = pyecloud_secemi_object
-            posC = None # just to be sure 
         else:
             self.flag_pyecloud = False
 
