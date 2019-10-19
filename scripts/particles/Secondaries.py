@@ -1,6 +1,8 @@
 """
 Secondaries: class for generating secondaries
 """
+
+
 from ..warp import *
 from ..utils.appendablearray import AppendableArray
 
@@ -72,7 +74,24 @@ class Secondaries:
                       l_set_params_user_only=0,lcallscrapercontrollers=0,l_trackssnparents=0,
                       l_usenew=1,
                       luseoldpositionifout=False,
-                      maxsec=None):
+                      maxsec=None, pyecloud_secemi_object=None):
+
+        if pyecloud_secemi_object is not None:
+            assert(l_set_params_user_only == 0)
+            assert(l_usenew == 1)
+            assert(luseoldpositionifout == False)
+            assert(min_age is None) # Could be removed (but please test!)
+            assert(set_params_user is None)
+            assert(material is None)
+            assert(maxsec is None) # Probably just ignored
+            
+            self.flag_pyecloud = True
+            self.pyeclsecemi = pyecloud_secemi_object
+            posC = None # just to be sure 
+        else:
+            self.flag_pyecloud = False
+
+
         self.totalcount = 0
         self.totallost = 0
         top.lresetlostpart=true
@@ -93,14 +112,15 @@ class Secondaries:
         self.set_params_user=set_params_user
         self.l_set_params_user_only=l_set_params_user_only
         self.mat_number=1
-        if maxsec is None:
-            if pos is None:
-                maxsec = 10
+        if not self.flag_pyecloud:
+            if maxsec is None:
+                if pos is None:
+                    maxsec = 10
+                else:
+                    maxsec = posC.maxsec
             else:
-                maxsec = posC.maxsec
-        else:
-            if pos is not None:
-                assert maxsec == posC.maxsec, Exception('maxsec must be the same as posC.maxsec')
+                if pos is not None:
+                    assert maxsec == posC.maxsec, Exception('maxsec must be the same as posC.maxsec')
         self.maxsec = maxsec
         self.call_set_params_user(maxsec,self.mat_number)
         self.min_age=min_age
@@ -163,9 +183,11 @@ class Secondaries:
         self.power_emit=AppendableArray(typecode='d') # instantaneous power emission [W]
         self.power_diff=AppendableArray(typecode='d') # instantaneous power deposition [W]
         self.piditype = 0
-        if pos is not None:
-            if posC.nsteps_g != 0:
-                self.piditype = nextpid()
+
+        if not self.flag_pyecloud:
+            if pos is not None:
+                if posC.nsteps_g != 0:
+                    self.piditype = nextpid()
 
         self.lrecursivegenerate = 0
 
@@ -704,26 +726,36 @@ class Secondaries:
                                 itype=self.inter[incident_species]['type'][ics]
                                 scale_factor=self.inter[incident_species]['scale_factor'][ics]
                                 if scale_factor is None:scale_factor=1.
-                                self.prepare_secondaries(itype,posC.maxsec)
+                                if not self.flag_pyecloud:
+                                    self.prepare_secondaries(itype,posC.maxsec)
                                 if top.wpid==0:weight=ones(n,'d')
-                                xnew = zeros(n*posC.maxsec,'d')
-                                ynew = zeros(n*posC.maxsec,'d')
-                                znew = zeros(n*posC.maxsec,'d')
-                                uxsec = zeros(n*posC.maxsec,'d')
-                                uysec = zeros(n*posC.maxsec,'d')
-                                uzsec = zeros(n*posC.maxsec,'d')
-                                ns = array([n*posC.maxsec])
-                                pos.secelecarray(n,e0,coseta,weight,ns,xnew,ynew,znew,uxsec,uysec,uzsec,
-                                            costheta,sintheta,sinphi,cosphi,n_unit0,xplost,yplost,zplost,vxplost,vyplost,vzplost,
-                                            top.pgroup.sm[js_new],Electron.mass,scale_factor,init_position_offset)
-                                ns = ns[0]
-                                if ns>0:
-                                    xnew=xnew[:ns]
-                                    ynew=ynew[:ns]
-                                    znew=znew[:ns]
-                                    uxsec=uxsec[:ns]
-                                    uysec=uysec[:ns]
-                                    uzsec=uzsec[:ns]
+                                
+                                if self.flag_pyecloud:
+                                    (xnew, ynew, znew, 
+                                     uxsec, uysec, uzsec) = self.pyeclsecemi.impacts(
+                                        sintheta[:n], costheta[:n], sinphi[:n], cosphi[:n],
+                                        xplost[:n], yplost[:n], zplost[:n],
+                                        vxplost[:n], vyplost[:n], vzplost[:n])
+
+                                else:
+                                    xnew = zeros(n*posC.maxsec,'d')
+                                    ynew = zeros(n*posC.maxsec,'d')
+                                    znew = zeros(n*posC.maxsec,'d')
+                                    uxsec = zeros(n*posC.maxsec,'d')
+                                    uysec = zeros(n*posC.maxsec,'d')
+                                    uzsec = zeros(n*posC.maxsec,'d')
+                                    ns = array([n*posC.maxsec])
+                                    pos.secelecarray(n,e0,coseta,weight,ns,xnew,ynew,znew,uxsec,uysec,uzsec,
+                                                costheta,sintheta,sinphi,cosphi,n_unit0,xplost,yplost,zplost,vxplost,vyplost,vzplost,
+                                                top.pgroup.sm[js_new],Electron.mass,scale_factor,init_position_offset)
+                                    ns = ns[0]
+                                    if ns>0:
+                                        xnew=xnew[:ns]
+                                        ynew=ynew[:ns]
+                                        znew=znew[:ns]
+                                        uxsec=uxsec[:ns]
+                                        uysec=uysec[:ns]
+                                        uzsec=uzsec[:ns]
                             else: # incidents are atoms or ions
                                 ##########################################
                                 # atom/ion-induced emission of electrons #
@@ -1086,6 +1118,10 @@ class Secondaries:
         if self.l_verbose>1:print 'secondaries generation finished'
 
     def call_set_params_user(self,maxsec,mat_num=None):
+        
+        if self.flag_pyecloud:
+            raise ValueError('This method shound not be used with pyecloud')
+
         # --- Always call the default version of the routine. The user's routine
         # --- only needs to set the parameters that are different.
         if not self.l_set_params_user_only:self.set_params(maxsec,mat_num)
@@ -1154,6 +1190,10 @@ class Secondaries:
         He -> Au - mat_num=4
         K  -> SS - mat_num=5
         """
+        if self.flag_pyecloud:
+            raise ValueError('This method shound not be used with pyecloud')
+        
+        
         if pos is None:
             return
         if mat_num is None:
@@ -1457,6 +1497,9 @@ class Secondaries:
 
     def prepare_secondaries(self,itype,maxsec):
 
+        if self.flag_pyecloud:
+            raise ValueError('This method shound not be used with pyecloud')
+        
         if(maxsec != posC.maxsec):
             posC.maxsec = maxsec
             posC.gchange("bincoeff")
@@ -1470,21 +1513,37 @@ class Secondaries:
             self.call_set_params_user(maxsec,self.mat_number)
 
     def getP1elast(self,E0,costheta,material,maxsec=10):
+        
+        if self.flag_pyecloud:
+            raise ValueError('This method shound not be used with pyecloud')
+        
         self.set_params(maxsec,material)
         return P1elast(E0,costheta,posC.P1einf,posC.P1epk,
                        posC.E0epk,posC.E0w,posC.powe,posC.epar1,posC.epar2)
 
     def getP1rediff(self,E0,costheta,material,maxsec=10):
+        
+        if self.flag_pyecloud:
+            raise ValueError('This method shound not be used with pyecloud')
+        
         self.set_params(maxsec,material)
         return P1rediff(E0,costheta,posC.Ecr,posC.rpar1,posC.rpar2,posC.qr,posC.P1rinf)
 
     def getdeltats(self,E0,costheta,material,maxsec=10):
-        self,set_params(maxsec,material)
+              
+        if self.flag_pyecloud:
+            raise ValueError('This method shound not be used with pyecloud')
+        
+        self.set_params(maxsec,material)
         return deltats(E0,costheta,posC.dtspk,posC.E0tspk,
                        posC.powts,posC.tpar1,posC.tpar2,posC.tpar3,
                        posC.tpar4,posC.tpar5,posC.tpar6)
 
     def sey2(self,energy):
+                
+        if self.flag_pyecloud:
+            raise ValueError('This method shound not be used with pyecloud')
+        
         maxsec=10
 
         if(maxsec != posC.maxsec):
