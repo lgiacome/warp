@@ -1,7 +1,8 @@
 """
 Secondaries: class for generating secondaries
 """
-
+from scipy.constants import m_e as e_mass
+from scipy.constants import e as qe
 
 from ..warp import *
 from ..utils.appendablearray import AppendableArray
@@ -1198,7 +1199,7 @@ class Secondaries:
     def pyecloud_secondary_emission(self, sintheta, costheta, sinphi, cosphi,
                                         weightplost, 
                                         xplost, yplost, zplost,
-                                        vxplost, vyplost, vzplost):
+                                        uxplost, uyplost, uzplost):
 
         #print('type(sintheta)', type(sintheta))
         #print('repr(sintheta)', repr(sintheta))
@@ -1258,7 +1259,7 @@ class Secondaries:
            vx_replace, vy_replace, vz_replace, i_seg_replace,
            nel_new_MPs, x_new_MPs, y_new_MPs, z_new_MPs,
            vx_new_MPs, vy_new_MPs, vz_new_MPs, i_seg_new_MPs,
-           ) = sey_mod.impacts_on_surface(
+           ) = self.pyeclsecemi.impacts_on_surface(
            e_mass, nel_impact, x_impact, y_impact, z_impact,
            vx_impact, vy_impact, vz_impact, Norm_x, Norm_y, i_found,
            v_impact_n, E_impact_eV, costheta_impact, nel_mp_th, flag_seg)
