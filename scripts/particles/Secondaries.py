@@ -119,7 +119,8 @@ class Secondaries:
         self.l_trackssnparents=l_trackssnparents
         # self.condids={}
         # self.emitted={}
-        self.set_params_user=set_params_user
+        if not self.flag_pyecloud:
+            self.set_params_user=set_params_user
         self.l_set_params_user_only=l_set_params_user_only
         self.mat_number=1
         if not self.flag_pyecloud:
