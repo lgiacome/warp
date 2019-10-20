@@ -133,7 +133,8 @@ class Secondaries:
                 if pos is not None:
                     assert maxsec == posC.maxsec, Exception('maxsec must be the same as posC.maxsec')
         self.maxsec = maxsec
-        self.call_set_params_user(maxsec,self.mat_number)
+        if not self.flag_pyecloud:
+            self.call_set_params_user(maxsec,self.mat_number)
         self.min_age=min_age
         if self.min_age is not None:
             w3d.l_inj_rec_inittime=true
@@ -742,11 +743,16 @@ class Secondaries:
                                 if top.wpid==0:weight=ones(n,'d')
                                 
                                 if self.flag_pyecloud:
+                                    if top.wpid == 0:
+                                        raise ValueError('Not compatible with pyecloud')
                                     (xnew, ynew, znew, 
-                                     uxsec, uysec, uzsec) = self.pyecloud_secondary_emission(
+                                     uxsec, uysec, uzsec,
+                                       weightsec) = self.pyecloud_secondary_emission(
                                         sintheta[:n], costheta[:n], sinphi[:n], cosphi[:n],
+                                        weight[:n],
                                         xplost[:n], yplost[:n], zplost[:n],
                                         vxplost[:n], vyplost[:n], vzplost[:n])
+                                    ns = len(xnew)
 
                                 else:
                                     xnew = zeros(n*posC.maxsec,'d')
@@ -767,6 +773,7 @@ class Secondaries:
                                         uxsec=uxsec[:ns]
                                         uysec=uysec[:ns]
                                         uzsec=uzsec[:ns]
+                                        weightsec = weight[0] + 0 * xnew
                             else: # incidents are atoms or ions
                                 ##########################################
                                 # atom/ion-induced emission of electrons #
@@ -910,7 +917,7 @@ class Secondaries:
                                     pxsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*uxsec)
                                     pysum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*uysec)
                                     pzsum -= sum(top.pgroup.sm[js_new]*top.pgroup.sw[js_new]*weight[i]*uzsec)
-                                    self.addparticles(ns,xnew,ynew,znew,uxsec,uysec,uzsec,js_new,ones(ns)*weight[i],itypes,ssnparent=ssnparent)
+                                    self.addparticles(ns,xnew,ynew,znew,uxsec,uysec,uzsec,js_new,weightsec,ssnparent=ssnparent)
                                 ek0emitsum += sum(e0emit)
 
                             if self.l_record_timing:
@@ -1188,11 +1195,13 @@ class Secondaries:
             znew +=n_unit0[2][i]*init_position_offset
         return xnew,ynew,znew,uxsec,uysec,uzsec
 
-    def pyecloud_secondary_emission(sintheta, costheta, sinphi, cosphi,
+    def pyecloud_secondary_emission(self, sintheta, costheta, sinphi, cosphi,
                                         weightplost, 
                                         xplost, yplost, zplost,
                                         vxplost, vyplost, vzplost):
 
+        #print('type(sintheta)', type(sintheta))
+        #print('repr(sintheta)', repr(sintheta))
         # Build normal and tangent unit vectors 
         it1_impact = np.array([
             cosphi * costheta,
