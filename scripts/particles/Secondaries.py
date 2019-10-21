@@ -1249,8 +1249,8 @@ class Secondaries:
         v_impact_mod = np.sqrt(np.sum(u_vect*u_vect, axis=0))
         costheta_impact = np.abs(v_impact_n / v_impact_mod)
         E_impact_eV = 0.5 * e_mass / qe * v_impact_mod * v_impact_mod
-        i_found = None
-        flag_seg = False
+        i_found = np.arange(0, len(x_impact)) # I use this to trace the emitting MP
+        flag_seg = True
         nel_mp_th = self.pyecloud_fact_split * self.pyecloud_nel_mp_ref
         nel_impact = weightplost
 
@@ -1284,7 +1284,14 @@ class Secondaries:
         weightnew = weight_impact_new[mask_keep]
 
         # Transform velocities to warp frame
-        u_new = vx_impact_new * ix_impact + vy_impact_new * iy_impact + vz_impact_new * iz_impact 
+        ix_impact_new = np.concatenate(ix_impact,
+                np.take(ix_impact, i_seg_new_MPs))
+        iy_impact_new = np.concatenate(iy_impact,
+                np.take(iy_impact, i_seg_new_MPs))
+        iz_impact_new = np.concatenate(iz_impact,
+                np.take(iz_impact, i_seg_new_MPs))
+
+        u_new = vx_impact_new * ix_impact_new + vy_impact_new * iy_impact_new + vz_impact_new * iz_impact_new
         uxnew = u_new[0, :]
         uynew = u_new[1, :]
         uznew = u_new[2, :]
