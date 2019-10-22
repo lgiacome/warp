@@ -1303,9 +1303,6 @@ class Secondaries:
 
 
         # Transform velocities to warp frame
-        print('type(i_seg_new_MPs): %s, %s, (%s)'%(str(type(i_seg_new_MPs)), str(type(i_seg_new_MPs)), repr(i_seg_new_MPs.shape)))
-        print('type(ix_impact): %s, %s, (%s)'%(str(type(ix_impact)), str(type(ix_impact)), repr(ix_impact.shape)))
-
         u_new = vx_impact_new * ix_impact_new + vy_impact_new * iy_impact_new + vz_impact_new * iz_impact_new
         uxnew = u_new[0, :]
         uynew = u_new[1, :]
