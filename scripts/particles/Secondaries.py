@@ -1253,7 +1253,7 @@ class Secondaries:
         flag_seg = True
         nel_mp_th = self.pyecloud_fact_split * self.pyecloud_nel_mp_ref
         nel_impact = weightplost
-
+        
         (nel_emit_tot_events, event_type, event_info,
            nel_replace, x_replace, y_replace, z_replace,
            vx_replace, vy_replace, vz_replace, i_seg_replace,
@@ -1272,6 +1272,20 @@ class Secondaries:
         vz_impact_new = np.concatenate([vz_replace, vz_new_MPs])
         weight_impact_new = np.concatenate([nel_replace, nel_new_MPs])
 
+        if len(i_seg_new_MPs)>0:
+            ix_impact_new = np.concatenate((ix_impact,
+                    np.take(ix_impact, i_seg_new_MPs, axis=1)), axis=1)
+            iy_impact_new = np.concatenate((iy_impact,
+                    np.take(iy_impact, i_seg_new_MPs, axis=1)), axis=1)
+            iz_impact_new = np.concatenate((iz_impact,
+                    np.take(iz_impact, i_seg_new_MPs, axis=1)), axis=1)
+        else:
+            ix_impact_new = ix_impact
+            iy_impact_new = iy_impact
+            iz_impact_new = iz_impact
+
+
+
         # Remove small macroparticles
         mask_keep = weight_impact_new > (self.pyecloud_fact_clean * self.pyecloud_nel_mp_ref)
         
@@ -1282,14 +1296,15 @@ class Secondaries:
         vy_impact_new = vy_impact_new[mask_keep]
         vz_impact_new = vz_impact_new[mask_keep]
         weightnew = weight_impact_new[mask_keep]
+        
+        ix_impact_new = ix_impact_new[:, mask_keep] 
+        iy_impact_new = iy_impact_new[:, mask_keep] 
+        iz_impact_new = iz_impact_new[:, mask_keep] 
+
 
         # Transform velocities to warp frame
-        ix_impact_new = np.concatenate(ix_impact,
-                np.take(ix_impact, i_seg_new_MPs))
-        iy_impact_new = np.concatenate(iy_impact,
-                np.take(iy_impact, i_seg_new_MPs))
-        iz_impact_new = np.concatenate(iz_impact,
-                np.take(iz_impact, i_seg_new_MPs))
+        print('type(i_seg_new_MPs): %s, %s, (%s)'%(str(type(i_seg_new_MPs)), str(type(i_seg_new_MPs)), repr(i_seg_new_MPs.shape)))
+        print('type(ix_impact): %s, %s, (%s)'%(str(type(ix_impact)), str(type(ix_impact)), repr(ix_impact.shape)))
 
         u_new = vx_impact_new * ix_impact_new + vy_impact_new * iy_impact_new + vz_impact_new * iz_impact_new
         uxnew = u_new[0, :]
