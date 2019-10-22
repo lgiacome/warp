@@ -237,7 +237,7 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
                                     vxmean=ux_m, vymean=uy_m, vzmean=uz_m,
                                     lmomentum=1, spacing='random',
                                     lallindomain=warp.true,
-                                    w=w)
+                                    w=w[0])
 
 
 class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
@@ -346,7 +346,7 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
                                     vthx=ux_th, vthy=uy_th, vthz=uz_th,
                                     vxmean=ux_m, vymean=uy_m, vzmean=uz_m,
                                     lmomentum=1, spacing='random',
-                                    lallindomain=warp.true, w=w)
+                                    lallindomain=warp.true, w=w[0])
 
 
 class ParticleListDistribution(picmistandard.PICMI_ParticleListDistribution):
