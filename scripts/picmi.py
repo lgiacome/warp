@@ -353,7 +353,7 @@ class ParticleListDistribution(picmistandard.PICMI_ParticleListDistribution):
     def loaddistribution(self, species, layout, density_scale):
         # Something is needed to set the particle weight
         species.addparticles(x=self.x, y=self.y, z=self.z, ux=self.ux, uy=self.uy, uz=self.uz,
-                             vx=None, vy=None, vz=None)
+                             vx=None, vy=None, vz=None, w=self.weight)
 
 
 class ParticleDistributionPlanarInjector(picmistandard.PICMI_ParticleDistributionPlanarInjector):
