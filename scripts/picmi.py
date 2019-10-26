@@ -88,7 +88,7 @@ class GaussianBunchDistribution(picmistandard.PICMI_GaussianBunchDistribution):
     def loaddistribution(self, species, layout, density_scale):
         assert isinstance(layout, PseudoRandomLayout), Exception('Warp only supports PseudoRandomLayout with GaussianBunchDistribution')
         assert layout.n_macroparticles is not None, Exception('Warp only support n_macroparticles with PseudoRandomLayout with GaussianBunchDistribution')
-        np = layout.n_macroparticles
+        n_simulation_particles = layout.n_macroparticles
         deltax = self.rms_bunch_size[0]
         deltay = self.rms_bunch_size[1]
         deltaz = self.rms_bunch_size[2]
@@ -104,10 +104,10 @@ class GaussianBunchDistribution(picmistandard.PICMI_GaussianBunchDistribution):
         vxdiv = self.velocity_divergence[0]
         vydiv = self.velocity_divergence[1]
         vzdiv = self.velocity_divergence[2]
-        w = self.n_physical_particles/np
+        w = self.n_physical_particles/n_simulation_particles
         if density_scale is not None:
             w *= density_scale
-        species.add_gaussian_dist(np, deltax, deltay, deltaz, vthx, vthy, vthz,
+        species.add_gaussian_dist(n_simulation_particles, deltax, deltay, deltaz, vthx, vthy, vthz,
                                   xmean, ymean, zmean, vxmean, vymean, vzmean, vxdiv, vydiv, vzdiv,
                                   zdist='random', rdist='linear', fourfold=False, lmomentum=True, w=w)
 
@@ -194,8 +194,8 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
                 p_ny = 1
             p_nz = layout.n_macroparticle_per_cell[-1]
 
-            npreal_per_cell = density*w3d.dx*w3d.dy*w3d.dz
-            w = npreal_per_cell/(p_nx*p_ny*p_nz)
+            n_physical_particles_per_cell = density*w3d.dx*w3d.dy*w3d.dz
+            w = n_physical_particles_per_cell/(p_nx*p_ny*p_nz)
             def dens_func(x, y, z, w=w):
                 return w
 
@@ -226,18 +226,18 @@ class UniformDistribution(picmistandard.PICMI_UniformDistribution):
             zmax = min(zmax, w3d.zmmax)
             # Determine the number of particles to load
             if layout.n_macroparticles_per_cell is not None:
-                npart = layout.n_macroparticles_per_cell*w3d.nx*w3d.ny*w3d.nz
+                n_simulation_particles = layout.n_macroparticles_per_cell*w3d.nx*w3d.ny*w3d.nz
             elif layout.n_macroparticles is not None:
-                npart = layout.n_macroparticles
+                n_simulation_particles = layout.n_macroparticles
             # The particle weight
-            npreal = density*(xmax - xmin)*(ymax - ymin)*(zmax - zmin)
-            w = np.full(npart, npreal/npart)
-            species.add_uniform_box(np=npart, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
+            n_physical_particles = density*(xmax - xmin)*(ymax - ymin)*(zmax - zmin)
+            weight = n_physical_particles/n_simulation_particles
+            species.add_uniform_box(np=n_simulation_particles, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
                                     vthx=ux_th, vthy=uy_th, vthz=uz_th,
                                     vxmean=ux_m, vymean=uy_m, vzmean=uz_m,
                                     lmomentum=1, spacing='random',
                                     lallindomain=warp.true,
-                                    w=w[0])
+                                    w=weight)
 
 
 class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
@@ -300,8 +300,8 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
                         d *= density_scale
                     return d*cell_volume_per_particle
             else:
-                npreal_per_cell = self.density_expression*w3d.dx*w3d.dy*w3d.dz*density_boost_converter
-                w = npreal_per_cell/(p_nx*p_ny*p_nz)
+                n_physical_particles_per_cell = self.density_expression*w3d.dx*w3d.dy*w3d.dz*density_boost_converter
+                w = n_physical_particles_per_cell/(p_nx*p_ny*p_nz)
                 if density_scale is not None:
                     w *= density_scale
                 def dens_func(x, y, z, w=w):
@@ -334,26 +334,26 @@ class AnalyticDistribution(picmistandard.PICMI_AnalyticDistribution):
             zmax = min(zmax, w3d.zmmax)
             # Determine the number of particles to load
             if layout.n_macroparticles_per_cell is not None:
-                np = layout.n_macroparticles_per_cell*w3d.nx*w3d.ny*w3d.nz
+                n_simulation_particles = layout.n_macroparticles_per_cell*w3d.nx*w3d.ny*w3d.nz
             elif layout.n_macroparticles is not None:
-                np = layout.n_macroparticles
+                n_simulation_particles = layout.n_macroparticles
             # The particle weight
-            npreal = self.density_expression*(xmax - xmin)*(ymax - ymin)*(zmax - zmin)*density_boost_converter
+            n_physical_particles = self.density_expression*(xmax - xmin)*(ymax - ymin)*(zmax - zmin)*density_boost_converter
             if density_scale is not None:
-                npreal *= density_scale
-            w = np.full(np, npreal/np)
-            species.add_uniform_box(np=np, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
+                n_physical_particles *= density_scale
+            weight = n_physical_particles/n_simulation_particles
+            species.add_uniform_box(np=n_simulation_particles, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax,
                                     vthx=ux_th, vthy=uy_th, vthz=uz_th,
                                     vxmean=ux_m, vymean=uy_m, vzmean=uz_m,
                                     lmomentum=1, spacing='random',
-                                    lallindomain=warp.true, w=w[0])
+                                    lallindomain=warp.true, w=weight)
 
 
 class ParticleListDistribution(picmistandard.PICMI_ParticleListDistribution):
     def loaddistribution(self, species, layout, density_scale):
         # Something is needed to set the particle weight
         species.addparticles(x=self.x, y=self.y, z=self.z, ux=self.ux, uy=self.uy, uz=self.uz,
-                             vx=None, vy=None, vz=None)
+                             vx=None, vy=None, vz=None, w=self.weight)
 
 
 class ParticleDistributionPlanarInjector(picmistandard.PICMI_ParticleDistributionPlanarInjector):
